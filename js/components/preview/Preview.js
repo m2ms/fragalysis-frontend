@@ -2,7 +2,7 @@
  * Created by abradley on 14/04/2018.
  */
 
-import React, { Fragment, memo, useRef, useState } from 'react';
+import React, { Fragment, memo, useEffect, useRef, useState } from 'react';
 import { Grid, makeStyles, useTheme } from '@material-ui/core';
 import NGLView from '../nglView/nglView';
 import MoleculeList from './molecule/moleculeList';
@@ -16,6 +16,8 @@ import ModalStateSave from '../session/modalStateSave';
 import { VIEWS } from '../../constants/constants';
 import { withLoadingProtein } from './withLoadingProtein';
 import { withSessionManagement } from '../session/withSessionManagement';
+import { useDispatch } from 'react-redux';
+import { removeAllNglComponents } from '../../reducers/ngl/nglActions';
 import { ProjectHistory } from './projectHistory';
 import { ProjectDetailDrawer } from '../projects/projectDetailDrawer';
 //import HotspotList from '../hotspot/hotspotList';
@@ -33,6 +35,7 @@ const Preview = memo(({ isStateLoaded, headerHeight }) => {
   const classes = useStyles();
   const theme = useTheme();
   const nglViewerControlsRef = useRef(null);
+  const dispatch = useDispatch();
 
   const [molGroupsHeight, setMolGroupsHeight] = useState(0);
   const [filterItemsHeight, setFilterItemsHeight] = useState(0);
@@ -53,6 +56,13 @@ const Preview = memo(({ isStateLoaded, headerHeight }) => {
     2
   )}px - ${summaryViewHeight}px  - ${projectHistoryHeight}px - 72px)`;
   const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    // Unmount Preview - reset NGL state
+    return () => {
+      dispatch(removeAllNglComponents());
+    };
+  }, [dispatch]);
 
   return (
     <>

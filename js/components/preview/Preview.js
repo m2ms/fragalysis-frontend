@@ -17,9 +17,9 @@ import { VIEWS } from '../../constants/constants';
 import { withLoadingProtein } from './withLoadingProtein';
 import { withSessionManagement } from '../session/withSessionManagement';
 import { useDispatch } from 'react-redux';
-import { removeAllNglComponents } from '../../reducers/ngl/nglActions';
 import { ProjectHistory } from './projectHistory';
 import { ProjectDetailDrawer } from '../projects/projectDetailDrawer';
+import { removeAllNglComponents } from '../../reducers/ngl/actions';
 //import HotspotList from '../hotspot/hotspotList';
 
 const useStyles = makeStyles(theme => ({

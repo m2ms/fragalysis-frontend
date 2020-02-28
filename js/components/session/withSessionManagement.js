@@ -106,7 +106,16 @@ export const withSessionManagement = WrappedComponent => {
         setSnackBarTitle(null);
         setHeaderNavbarTitle('');
       };
-    }, [disableButtons, dispatch, sessionTitle, setHeaderNavbarTitle, setHeaderButtons, setSnackBarTitle, targetIdList, setSnackBarColor]);
+    }, [
+      disableButtons,
+      dispatch,
+      sessionTitle,
+      setHeaderNavbarTitle,
+      setHeaderButtons,
+      setSnackBarTitle,
+      targetIdList,
+      setSnackBarColor
+    ]);
 
     return <WrappedComponent {...rest} />;
   });

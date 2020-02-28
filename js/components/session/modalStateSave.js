@@ -2,7 +2,7 @@
  * Created by ricgillams on 14/06/2018.
  */
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useContext } from 'react';
 import { connect } from 'react-redux';
 import Modal from '../common/Modal';
 import { Grid, makeStyles } from '@material-ui/core';
@@ -12,6 +12,7 @@ import { Button } from '../common/Inputs/Button';
 import { savingStateConst } from './constants';
 import { updateClipboard } from './helpers';
 import { api } from '../../utils/api';
+import { HeaderContext } from '../header/headerContext';
 
 const useStyles = makeStyles(theme => ({
   row: {
@@ -29,7 +30,7 @@ const ModalStateSave = memo(
     const [snapshotLoc, setSnapshotLoc] = useState();
     const [title, setTitle] = useState('');
     const classes = useStyles();
-    const [state, setState] = useState();
+    const { setError } = useContext(HeaderContext);
 
     let urlToCopy = '';
     const port = window.location.port ? `:${window.location.port}` : '';
@@ -92,9 +93,7 @@ const ModalStateSave = memo(
         })
         .then(t => setTitle(t))
         .catch(error => {
-          setState(() => {
-            throw error;
-          });
+          setError(error);
         });
     };
 
@@ -117,9 +116,7 @@ const ModalStateSave = memo(
           },
           body: JSON.stringify(formattedState)
         }).catch(error => {
-          setState(() => {
-            throw error;
-          });
+          setError(error);
         });
       }
     };

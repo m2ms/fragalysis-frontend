@@ -1,4 +1,5 @@
 import { constants } from './constants';
+import { compounds } from './reducer';
 
 export const setCurrentCompounds = loadedCompounds => ({
   type: constants.SET_CURRENT_COMPOUNDS,
@@ -23,17 +24,20 @@ export const updateCurrentCompound = ({ id, key, value }) => ({
   }
 });
 
-export const setCompoundClasses = (compoundClasses, currentCompoundClass) => {
-  return {
-    type: constants.SET_COMPOUND_CLASSES,
-    compoundClasses: compoundClasses,
-    currentCompoundClass: currentCompoundClass
-  };
-};
+export const setCompoundClasses = compoundClasses => ({
+  type: constants.SET_COMPOUND_CLASSES,
+  payload: compoundClasses
+});
 
-export const resetCompoundClasses = () => {
+export const resetCompoundClasses = compoundClasses => ({
+  type: constants.RESET_COMPOUND_CLASSES,
+  payload: compoundClasses
+});
+
+export const setCurrentCompoundClass = currentCompoundClass => {
   return {
-    type: constants.RESET_COMPOUND_CLASSES
+    type: constants.SET_CURRENT_COMPOUND_CLASS,
+    payload: currentCompoundClass
   };
 };
 
@@ -70,4 +74,9 @@ export const removeSelectedCompoundClass = compoundID => ({
 
 export const resetSelectedCompoundClass = () => ({
   type: constants.RESET_SELECTED_COMPOUND_CLASS
+});
+
+export const reloadCompoundsReducer = newState => ({
+  type: constants.RELOAD_REDUCER,
+  payload: newState
 });

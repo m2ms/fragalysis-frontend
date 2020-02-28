@@ -56,14 +56,17 @@ export const compounds = (state = INITIAL_STATE, action = {}) => {
     case constants.RESET_CURRENT_COMPOUNDS_SETTINGS:
       return Object.assign({}, INITIAL_STATE);
 
+    case constants.SET_CURRENT_COMPOUND_CLASS:
+      return Object.assign({}, state, {
+        currentCompoundClass: action.payload
+      });
     case constants.SET_COMPOUND_CLASSES:
       return Object.assign({}, state, {
-        compoundClasses: action.compoundClasses,
-        currentCompoundClass: action.currentCompoundClass
+        compoundClasses: action.payload
       });
 
     case constants.RESET_COMPOUND_CLASSES:
-      return Object.assign({}, state, { compoundClasses: JSON.parse(JSON.stringify(defaultCompoundsClasses)) });
+      return Object.assign({}, state, { compoundClasses: {} });
 
     case constants.SET_HIGHLIGHTED_COMPOUND_ID:
       return Object.assign({}, state, { highlightedCompoundId: action.payload });
@@ -126,6 +129,9 @@ export const compounds = (state = INITIAL_STATE, action = {}) => {
       return Object.assign({}, state, {
         selectedCompoundsClass: defaultSelectedCmpdsClass
       });
+
+    case constants.RELOAD_REDUCER:
+      return Object.assign({}, state, { ...action.payload });
 
     default:
       return state;

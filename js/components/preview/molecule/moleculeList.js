@@ -19,8 +19,7 @@ import { Panel } from '../../common/Surfaces/Panel';
 import { ComputeSize } from '../../../utils/computeSize';
 import { moleculeProperty } from './helperConstants';
 import { setSortDialogOpen } from './redux/actions';
-import { VIEWS } from '../../../constants/constants';
-import { NglContext } from '../../nglView/nglProvider';
+import { HeaderContext } from '../../header/headerContext';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -112,7 +111,7 @@ const MoleculeList = memo(
     const classes = useStyles();
     const list_type = listType.MOLECULE;
     const oldUrl = useRef('');
-    const [state, setState] = useState();
+    const { setError } = useContext(HeaderContext);
     const setOldUrl = url => {
       oldUrl.current = url;
     };
@@ -121,9 +120,6 @@ const MoleculeList = memo(
     const [currentPage, setCurrentPage] = useState(0);
     const imgHeight = 34;
     const imgWidth = 150;
-
-    const { getNglView } = useContext(NglContext);
-    const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
 
     const isActiveFilter = !!(filterSettings || {}).active;
 
@@ -159,11 +155,9 @@ const MoleculeList = memo(
         mol_group_on,
         cached_mol_lists
       }).catch(error => {
-        setState(() => {
-          throw error;
-        });
+        setError(error);
       });
-    }, [list_type, mol_group_on, setMoleculeList, target_on, setCachedMolLists, cached_mol_lists]);
+    }, [list_type, mol_group_on, setMoleculeList, target_on, setCachedMolLists, cached_mol_lists, setError]);
 
     const listItemOffset = (currentPage + 1) * moleculesPerPage;
     const currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);

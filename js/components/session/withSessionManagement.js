@@ -16,7 +16,7 @@ import { snackbarColors } from '../header/constants';
 
 export const withSessionManagement = WrappedComponent => {
   return memo(({ ...rest }) => {
-    const [/* state */ setState] = useState();
+    const { setError } = useContext(HeaderContext);
 
     const { pathname } = window.location;
     const { nglViewList } = useContext(NglContext);
@@ -38,16 +38,14 @@ export const withSessionManagement = WrappedComponent => {
       false;
 
     useEffect(() => {
-      dispatch(setTargetAndReloadSession({ pathname, nglViewList, loadedSession, targetIdList }));
-    }, [dispatch, loadedSession, nglViewList, pathname, targetIdList]);
+      dispatch(setTargetAndReloadSession({ pathname, nglViewList, loadedSession, targetIdList, setError }));
+    }, [dispatch, loadedSession, nglViewList, pathname, setError, targetIdList]);
 
     useEffect(() => {
       dispatch(reloadScene({ saveType, newSessionFlag, nextUuid, uuid, sessionId })).catch(error => {
-        setState(() => {
-          throw error;
-        });
+        setError(error);
       });
-    }, [dispatch, newSessionFlag, nextUuid, saveType, sessionId, setState, uuid]);
+    }, [dispatch, newSessionFlag, nextUuid, saveType, sessionId, setError, uuid]);
 
     // Function for set Header buttons, target title and snackBar information about session
     useEffect(() => {

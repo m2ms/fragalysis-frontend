@@ -30,7 +30,6 @@ const ModalStateSave = memo(
     const [snapshotLoc, setSnapshotLoc] = useState();
     const [title, setTitle] = useState('');
     const classes = useStyles();
-    const { setError } = useContext(HeaderContext);
     const { setSnackBarTitle } = useContext(HeaderContext);
 
     let urlToCopy = '';
@@ -95,7 +94,7 @@ const ModalStateSave = memo(
         })
         .then(t => setTitle(t))
         .catch(error => {
-          setError(error);
+          throw new Error(error);
         });
     };
 
@@ -118,7 +117,7 @@ const ModalStateSave = memo(
           },
           body: JSON.stringify(formattedState)
         }).catch(error => {
-          setError(error);
+          throw new Error(error);
         });
       }
     };

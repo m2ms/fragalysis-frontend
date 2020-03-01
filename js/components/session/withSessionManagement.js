@@ -16,7 +16,7 @@ import { snackbarColors } from '../header/constants';
 
 export const withSessionManagement = WrappedComponent => {
   return memo(({ ...rest }) => {
-    const { setError } = useContext(HeaderContext);
+    const [state, setState] = useState();
 
     const { pathname } = window.location;
     const { nglViewList } = useContext(NglContext);
@@ -38,14 +38,16 @@ export const withSessionManagement = WrappedComponent => {
       false;
 
     useEffect(() => {
-      dispatch(setTargetAndReloadSession({ pathname, nglViewList, loadedSession, targetIdList, setError }));
-    }, [dispatch, loadedSession, nglViewList, pathname, setError, targetIdList]);
+      dispatch(setTargetAndReloadSession({ pathname, nglViewList, loadedSession, targetIdList }));
+    }, [dispatch, loadedSession, nglViewList, pathname, targetIdList]);
 
     useEffect(() => {
       dispatch(reloadScene({ saveType, newSessionFlag, nextUuid, uuid, sessionId })).catch(error => {
-        setError(error);
+        setState(() => {
+          throw error;
+        });
       });
-    }, [dispatch, newSessionFlag, nextUuid, saveType, sessionId, setError, uuid]);
+    }, [dispatch, newSessionFlag, nextUuid, saveType, sessionId, setState, uuid]);
 
     // Function for set Header buttons, target title and snackBar information about session
     useEffect(() => {
@@ -87,22 +89,10 @@ export const withSessionManagement = WrappedComponent => {
           >
             Save Session
           </Button>,
-          <Button
-            key="saveAs"
-            color="primary"
-            onClick={() => dispatch(newSession())}
-            startIcon={<Save />}
-            disabled={disableButtons}
-          >
+          <Button key="saveAs" color="primary" onClick={newSession} startIcon={<Save />} disabled={disableButtons}>
             Save Session As
           </Button>,
-          <Button
-            key="share"
-            color="primary"
-            onClick={() => dispatch(newSnapshot())}
-            startIcon={<Share />}
-            disabled={disableButtons}
-          >
+          <Button key="share" color="primary" onClick={newSnapshot} startIcon={<Share />} disabled={disableButtons}>
             Share Snapshot
           </Button>,
           <DownloadPdb key="download" />

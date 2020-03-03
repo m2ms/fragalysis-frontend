@@ -142,9 +142,16 @@ export const generateNextUuid = () => (dispatch, getState) => {
 };
 
 export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionId }) => dispatch => {
+  console.log('saveType', saveType);
+  console.log('newSessionFlag', newSessionFlag);
+  console.log('nextUuid', nextUuid);
+  console.log('uuid', uuid);
+  console.log('sessionId', sessionId);
+
   dispatch(generateNextUuid());
 
   if (saveType.length <= 0 && uuid !== 'UNSET') {
+    console.log('loading session');
     return api({ method: METHOD.GET, url: '/api/viewscene/?uuid=' + uuid }).then(response =>
       dispatch(setLoadedSession(response.data.results[0]))
     );
@@ -177,6 +184,7 @@ export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionI
   };
 
   if (saveType === savingTypeConst.sessionNew && newSessionFlag === 1) {
+    console.log('creating session');
     dispatch(setNewSessionFlag(0));
     const formattedState = {
       uuid: nextUuid,
@@ -198,6 +206,7 @@ export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionI
       dispatch(setLatestSession(nextUuid));
     });
   } else if (saveType === savingTypeConst.sessionSave) {
+    console.log('saving session');
     const formattedState = {
       scene: JSON.stringify(JSON.stringify(fullState))
     };
@@ -214,6 +223,7 @@ export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionI
       dispatch(updateCurrentTarget(response.data));
     });
   } else if (saveType === savingTypeConst.snapshotNew) {
+    console.log('creating snapshot');
     const uuidv4 = require('uuid/v4');
     const formattedState = {
       uuid: uuidv4(),
@@ -234,5 +244,6 @@ export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionI
       dispatch(updateCurrentTarget(response.data));
     });
   }
+  console.log('nothing to do');
   return Promise.resolve('No scene data to reload');
 };

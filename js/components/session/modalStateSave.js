@@ -138,6 +138,8 @@ const ModalStateSave = memo(
 
     let isLoading = true;
 
+    console.log('modal', isLoading, snapshotLoc, fraggleBoxLoc);
+
     if (snapshotLoc !== undefined || fraggleBoxLoc !== undefined) {
       if (savingState === savingStateConst.savingSnapshot) {
         urlToCopy =

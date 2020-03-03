@@ -81,6 +81,7 @@ export const setTargetAndReloadSession = ({ pathname, nglViewList, loadedSession
 };
 
 export const postToServer = sessionState => dispatch => {
+  console.log('to server', sessionState);
   dispatch(saveCurrentStateAsSessionScene());
   dispatch(setSavingState(sessionState));
 };
@@ -221,6 +222,8 @@ export const reloadScene = ({ saveType, newSessionFlag, nextUuid, uuid, sessionI
       data: JSON.stringify(formattedState)
     }).then(response => {
       dispatch(updateCurrentTarget(response.data));
+      // latest session should be set also because of proper saving cycle
+      dispatch(setLatestSession(nextUuid));
     });
   } else if (saveType === savingTypeConst.snapshotNew) {
     console.log('creating snapshot');

@@ -151,12 +151,14 @@ const ModalStateSave = memo(
           latestSnapshot;
         linkTitle = 'A permanent, fixed snapshot of the current state has been saved: ';
         if (latestSnapshot !== undefined) {
+          console.log('saved snapshot');
           isLoading = false;
         }
       } else if (savingState === savingStateConst.savingSession) {
         if (title === '') {
           getTitle();
         } else {
+          console.log('created session');
           isLoading = false;
         }
         sessionRename = true;
@@ -170,6 +172,7 @@ const ModalStateSave = memo(
         linkTitle = 'A new session has been generated: ';
       } else if (savingState === savingStateConst.overwritingSession) {
         if (saveType === '') {
+          console.log('saved session');
           isLoading = false;
           // snackbar title is overwritten tho by withSessionManagement update
           setSnackBarTitle('Your session was successfully saved.');

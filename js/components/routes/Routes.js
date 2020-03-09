@@ -91,7 +91,7 @@ const Routes = memo(() => {
             <Close />
           </IconButton>
         }
-      ></Snackbar>
+      />
     </Box>
   );
 });

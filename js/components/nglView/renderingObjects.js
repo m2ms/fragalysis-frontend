@@ -84,7 +84,7 @@ const renderComplex = (ol, representations, orientationMatrix) => {
 const showComplex = (stage, input_dict, object_name, representations, orientationMatrix) => {
   let stringBlob = new Blob([input_dict.sdf_info], { type: 'text/plain' });
   return Promise.all([
-    stage.loadFile(input_dict.prot_url, { ext: 'pdb' }),
+    stage.loadFile(input_dict.prot_url, { ext: 'pdb', defaultAssembly: {type:"BU1"} }),
     stage.loadFile(stringBlob, { ext: 'sdf' }),
     stage,
     defaultFocus,
@@ -97,7 +97,7 @@ const showComplex = (stage, input_dict, object_name, representations, orientatio
 const showEvent = (stage, input_dict, object_name, representations, orientationMatrix) =>
   Promise.all(
     [
-      stage.loadFile(input_dict.pdb_info, { name: object_name, ext: 'pdb' }).then(comp => {
+      stage.loadFile(input_dict.pdb_info, { name: object_name, ext: 'pdb', defaultAssembly: {type:"BU1"} }).then(comp => {
         const repr1 = createRepresentationStructure(MOL_REPRESENTATION.cartoon, {});
         let selection = new Selection('LIG');
         let radius = 5;
@@ -207,7 +207,7 @@ const showArrow = (stage, input_dict, object_name, representations, orientationM
 };
 
 const showProtein = (stage, input_dict, object_name, representations, orientationMatrix) =>
-  stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb' }).then(comp => {
+  stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb', defaultAssembly: "BU1" }).then(comp => {
     const reprArray =
       representations || createRepresentationsArray([createRepresentationStructure(input_dict.nglProtStyle, {})]);
 

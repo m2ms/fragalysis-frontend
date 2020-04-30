@@ -24,14 +24,14 @@ export const SessionRedirect = memo(() => {
               if (res.data && res.data.session_project && res.data.session_project.id) {
                 history.push(`${URLS.projects}${res.data.session_project.id}/${session.snapshot}`);
               } else {
-                return Promise.reject('Project is not found!');
+                return Promise.reject('Snapshot is expired!');
               }
             });
           } else {
-            return Promise.reject('Snapshot is not found!');
+            return Promise.reject("Snapshot doesn't exist!");
           }
         } else {
-          return Promise.reject('Session is not found!');
+          return Promise.reject("Snapshot doesn't exist!");
         }
       })
       .catch(error => {

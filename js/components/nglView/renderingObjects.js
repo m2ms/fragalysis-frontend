@@ -1,11 +1,11 @@
-import { MOL_REPRESENTATION, MOL_REPRESENTATION_BUFFER, OBJECT_TYPE } from './constants';
+import { MOL_REPRESENTATION, MOL_REPRESENTATION_BUFFER, OBJECT_TYPE, SELECTION_TYPE } from './constants';
 import {
   assignRepresentationArrayToComp,
   createRepresentationsArray,
   createRepresentationStructure,
   defaultFocus
 } from './generatingObjects';
-import { concatStructures, Selection, Shape, Matrix4 } from 'ngl';
+import { concatStructures, Selection, Shape, Matrix4, Stage } from 'ngl';
 
 const showSphere = (stage, input_dict, object_name, representations, orientationMatrix) => {
   let colour = input_dict.colour;
@@ -109,27 +109,56 @@ const showHitProtein = (stage, input_dict, object_name, representations, orienta
 //     return Promise.resolve(assignRepresentationArrayToComp(reprArray, comp));
 //   });
 
-const renderComplex = (ol, representations, orientationMatrix) => {
+// TODO send there ligand DATA
+const renderComplex = (ol, input_dict, representations, orientationMatrix) => {
   let cs = concatStructures(
     ol[4],
     ol[0].structure.getView(new Selection('not ligand')),
-    ol[1].structure.getView(new Selection(''))
+    ol[6].structure.getView(new Selection(''))
   );
+  const ownLigandStage = ol[1];
   let stage = ol[2];
   let focus_let_temp = ol[3];
-  // Set the object name
   let comp = stage.addComponentFromObject(cs);
-  // duplication of protein
-  // const repr1 = createRepresentationStructure(MOL_REPRESENTATION.cartoon, {});
 
-  const repr2 = createRepresentationStructure(MOL_REPRESENTATION.contact, {
+  // start of rendering Ligand in temporary NGL object
+  const representationsArray =
+    representations ||
+    createRepresentationsArray([
+      createRepresentationStructure(MOL_REPRESENTATION.ballPlusStick, {
+        colorScheme: 'element',
+        colorValue: input_dict.colour,
+        multipleBond: true
+      })
+    ]);
+  ownLigandStage.autoView('ligand');
+  assignRepresentationArrayToComp(representationsArray, ownLigandStage);
+  // end of rendering Ligand in temporary NGL object
+
+  const ownLigandComponent = ownLigandStage?.stage.compList[0];
+  const selection = ownLigandComponent.object.atomSet;
+
+  let radius = 3;
+
+  let atomSet = comp.structure.getAtomSetWithinSelection(new Selection(selection.toSeleString()), radius);
+  let atomSet2 = comp.structure.getAtomSetWithinGroup(atomSet);
+  let expandedSelection = `${atomSet2.toSeleString()} and not (${selection.toSeleString()} and not (.C or .N)`;
+
+  console.log(expandedSelection);
+
+  const repr2 = createRepresentationStructure(MOL_REPRESENTATION.licorice, {
+    sele: expandedSelection
+  });
+
+  const repr3 = createRepresentationStructure(MOL_REPRESENTATION.contact, {
     masterModelIndex: 0,
     weakHydrogenBond: true,
     maxHbondDonPlaneAngle: 35,
-    sele: '/0 or /1'
+    sele: expandedSelection
+    //   sele: expandedSelection // '/0 or /1'
   });
 
-  const reprArray = representations || createRepresentationsArray([repr2]);
+  const reprArray = representations || createRepresentationsArray([repr2, repr3]);
   if (orientationMatrix) {
     stage.viewerControls.orient(orientationMatrix);
   } else if (orientationMatrix === undefined) {
@@ -143,14 +172,16 @@ const renderComplex = (ol, representations, orientationMatrix) => {
 
 const showComplex = (stage, input_dict, object_name, representations, orientationMatrix) => {
   let stringBlob = new Blob([input_dict.sdf_info], { type: 'text/plain' });
+  const tempStage = new Stage();
   return Promise.all([
     stage.loadFile(input_dict.prot_url, { ext: 'pdb', defaultAssembly: 'BU1' }),
-    stage.loadFile(stringBlob, { ext: 'sdf' }),
+    tempStage.loadFile(stringBlob, { ext: 'sdf' }),
     stage,
     defaultFocus,
     object_name,
-    input_dict.colour
-  ]).then(ol => renderComplex(ol, representations, orientationMatrix));
+    input_dict.colour,
+    stage.loadFile(stringBlob, { ext: 'sdf' })
+  ]).then(ol => renderComplex(ol, input_dict, representations, orientationMatrix));
 };
 
 const showSurface = (stage, input_dict, object_name, representations, orientationMatrix) =>

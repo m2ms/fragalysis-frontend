@@ -70,7 +70,7 @@ export const setNglClipNearAction = (newValue, oldValue) => {
   };
 }
 
-export const setNglOrientation = (orientation, div_id) => ({ type: CONSTANTS.SET_ORIENTATION, orientation, div_id });
+export const setNglOrientation = (orientation, oldOrientation, div_id) => ({ type: CONSTANTS.SET_ORIENTATION, orientation, oldOrientation, div_id });
 
 export const setProteinLoadingState = hasLoaded => ({ type: CONSTANTS.SET_PROTEINS_HAS_LOADED, payload: hasLoaded });
 

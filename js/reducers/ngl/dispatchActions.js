@@ -115,7 +115,7 @@ export const setOrientation = (div_id, orientation) => (dispatch, getState) => {
       isEmpty(nglOrientations) ||
       (nglOrientations && nglOrientations[div_id] === undefined))
   ) {
-    dispatch(setNglOrientation(orientation, div_id));
+    dispatch(setNglOrientation(orientation, nglOrientations[div_id], div_id));
   }
 };
 

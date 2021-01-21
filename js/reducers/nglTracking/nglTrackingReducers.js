@@ -17,8 +17,7 @@ export const INITIAL_STATE = {
   isActionRestoring: false,
   isActionRestored: false,
   isActionTracking: false,
-  trackingImageSource: '',
-  nglOrientationRestoring: undefined
+  trackingImageSource: ''
 };
 
 export function nglTrackingReducers(state = INITIAL_STATE, action = {}) {
@@ -115,11 +114,6 @@ export function nglTrackingReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.RESET_TRACKING_STATE:
       return INITIAL_STATE;
-    
-    case constants.SET_NGL_ORIENTATION_RESTORING:
-      return Object.assign({}, state, {
-        nglOrientationRestoring: action.payload
-      });
 
     default:
       return state;

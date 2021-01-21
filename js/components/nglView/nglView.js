@@ -4,7 +4,7 @@
 
 import { Stage } from 'ngl';
 import React, { memo, useEffect, useCallback, useContext, useState } from 'react';
-import { connect, useDispatch, useSelector } from 'react-redux';
+import { connect } from 'react-redux';
 import * as nglActions from '../../reducers/ngl/actions';
 import * as nglDispatchActions from '../../reducers/ngl/dispatchActions';
 import * as selectionActions from '../../reducers/selection/actions';
@@ -15,7 +15,6 @@ import { NGL_PARAMS } from './constants';
 import { makeStyles, useTheme } from '@material-ui/core';
 import { VIEWS } from '../../constants/constants';
 import { INITIAL_STATE as NGL_INITIAL } from '../../reducers/ngl/nglReducers';
-import { setNglOrientationRestoring } from '../../reducers/nglTracking/actions';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -36,18 +35,6 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
   const [stage, setStage] = useState();
   const classes = useStyles();
   const theme = useTheme();
-
-  const dispatch = useDispatch();
-  const nglOrientationRestoring = useSelector(state => state.nglTrackingReducers.nglOrientationRestoring);
-
-  useEffect(() => {
-    if (nglOrientationRestoring) {
-      const { orientation, div_id } = nglOrientationRestoring;
-      const newStage = getNglView(div_id);
-      newStage.stage.viewerControls.orient(orientation);
-      dispatch(setNglOrientationRestoring(undefined));
-    }
-  }, [dispatch, getNglView, nglOrientationRestoring]);
 
   const handleOrientationChanged = useCallback(
     throttle(() => {

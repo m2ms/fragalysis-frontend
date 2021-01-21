@@ -142,10 +142,3 @@ export const nglTrackingRedo = function() {
     type: undoConstants.NGL_TRACKING_REDO
   };
 }
-
-export const setNglOrientationRestoring = function(isRestoring) {
-  return {
-    type: constants.SET_NGL_ORIENTATION_RESTORING,
-    payload: isRestoring
-  }
-}

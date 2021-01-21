@@ -7,16 +7,14 @@ import {
   import { createInitAction } from './trackingActions';
   import { actionType, actionObjectType, NUM_OF_SECONDS_TO_IGNORE_MERGE } from './constants';
   import { VIEWS } from '../../../js/constants/constants';
-  import { setCurrentVector, appendToBuyList, removeFromToBuyList, setHideAll } from '../selection/actions';
+  import { setCurrentVector, appendToBuyList } from '../selection/actions';
   import {
     resetReducersForRestoringActions,
-    shouldLoadProtein,
     loadProteinOfRestoringActions
   } from '../../components/preview/redux/dispatchActions';
   import { setCurrentProject } from '../../components/projects/redux/actions';
   import {
     selectMoleculeGroup,
-    onDeselectMoleculeGroup,
     loadMoleculeGroupsOfTarget
   } from '../../components/preview/moleculeGroups/redux/dispatchActions';
   import { loadTargetList } from '../../components/target/redux/dispatchActions';
@@ -48,20 +46,16 @@ import {
   } from '../../components/datasets/redux/dispatchActions';
   import {
     appendMoleculeToCompoundsOfDatasetToBuy,
-    removeMoleculeFromCompoundsOfDatasetToBuy,
     setMoleculeListIsLoading
   } from '../../components/datasets/redux/actions';
   import { setAllMolLists } from '../api/actions';
   import { getUrl, loadAllMolsFromMolGroup } from '../../../js/utils/genericList';
   import {
-    removeComponentRepresentation,
     addComponentRepresentation,
-    updateComponentRepresentation,
-    changeComponentRepresentation
-  } from '../../../js/reducers/ngl/actions';
+    updateComponentRepresentation  } from '../../../js/reducers/ngl/actions';
   import * as listType from '../../constants/listTypes';
   import { assignRepresentationToComp } from '../../components/nglView/generatingObjects';
-  import { deleteObject, setOrientation, setNglBckGrndColor, setNglClipNear, restoreNglOrientation } from '../../../js/reducers/ngl/dispatchActions';
+  import { setOrientation, restoreNglOrientation } from '../../../js/reducers/ngl/dispatchActions';
   import {
     setSendActionsList,
     setIsActionsSending,
@@ -84,25 +78,19 @@ import {
   } from './actions';
   import {
     setSelectedAll,
-    setDeselectedAll,
-    setSelectedAllByType,
-    setDeselectedAllByType
-  } from '../../../js/reducers/selection/actions';
+    setSelectedAllByType  } from '../../../js/reducers/selection/actions';
   import {
     setSelectedAll as setSelectedAllOfDataset,
-    setDeselectedAll as setDeselectedAllOfDataset,
-    setSelectedAllByType as setSelectedAllByTypeOfDataset,
-    setDeselectedAllByType as setDeselectedAllByTypeOfDataset
-  } from '../../components/datasets/redux/actions';
+    setSelectedAllByType as setSelectedAllByTypeOfDataset  } from '../../components/datasets/redux/actions';
   
-  export const addCurrentActionsListToSnapshot = (snapshot, project, nglViewList) => async (dispatch, getState) => {
+  export const addCurrentActionsListToSnapshot = (snapshot, project, nglViewList) => async (dispatch) => {
     let projectID = project && project.projectID;
     let actionList = await dispatch(getTrackingActions(projectID));
   
     await dispatch(setSnapshotToActions(actionList, snapshot, projectID, project, nglViewList, true));
   };
   
-  export const saveCurrentActionsList = (snapshot, project, nglViewList, all = false) => async (dispatch, getState) => {
+  export const saveCurrentActionsList = (snapshot, project, nglViewList, all = false) => async (dispatch) => {
     let projectID = project && project.projectID;
     let actionList = await dispatch(getTrackingActions(projectID));
   
@@ -387,9 +375,7 @@ import {
   };
   
   const setSnapshotToActions = (actionList, snapshot, projectID, project, nglViewList, addToSnapshot) => async (
-    dispatch,
-    getState
-  ) => {
+    dispatch  ) => {
     if (actionList && snapshot) {
       let actionsWithoutSnapshot = actionList.filter(a => a.snapshotId === null || a.snapshotId === undefined);
       let updatedActions = actionsWithoutSnapshot.map(obj => ({ ...obj, snapshotId: snapshot.id }));
@@ -401,7 +387,7 @@ import {
     }
   };
   
-  const setSnapshotToAllActions = (actionList, snapshot, projectID) => async (dispatch, getState) => {
+  const setSnapshotToAllActions = (actionList, snapshot, projectID) => async (dispatch) => {
     if (actionList && snapshot) {
       let updatedActions = actionList.map(obj => ({ ...obj, snapshotId: snapshot.id }));
       dispatch(setAndUpdateTrackingActions(updatedActions, projectID));
@@ -428,7 +414,7 @@ import {
         method: METHOD.POST,
         data: JSON.stringify(dataToSend)
       })
-        .then(response => {
+        .then(() => {
           dispatch(setCurrentActionsList([]));
         })
         .catch(error => {
@@ -591,7 +577,7 @@ import {
     return list;
   };
   
-  export const resetRestoringState = () => (dispatch, getState) => {
+  export const resetRestoringState = () => (dispatch) => {
     dispatch(setActionsList([]));
     dispatch(setProjectActionList([]));
     dispatch(setSendActionsList([]));
@@ -600,7 +586,7 @@ import {
     dispatch(setIsActionsRestoring(false, false));
   };
   
-  export const restoreCurrentActionsList = snapshotID => async (dispatch, getState) => {
+  export const restoreCurrentActionsList = snapshotID => async (dispatch) => {
     dispatch(resetTrackingState());
     dispatch(setIsActionsRestoring(true, false));
   
@@ -612,7 +598,7 @@ import {
     dispatch(restoreStateBySavedActionList());
   };
   
-  const restoreTrackingActions = snapshotID => async (dispatch, getState) => {
+  const restoreTrackingActions = snapshotID => async (dispatch) => {
     if (snapshotID) {
       try {
         const response = await api({
@@ -681,7 +667,7 @@ import {
         loadMoleculeGroupsOfTarget({
           summaryView: summaryView.stage,
           isStateLoaded: false,
-          setOldUrl: url => {},
+          setOldUrl: () => {},
           target_on: targetId
         })
       )
@@ -701,7 +687,7 @@ import {
     }
   };
   
-  const restoreNglStateAction = (orderedActionList, stages) => (dispatch, getState) => {
+  const restoreNglStateAction = (orderedActionList, stages) => (dispatch) => {
     let actions = orderedActionList.filter(action => action.type === actionType.NGL_STATE);
     let action = [...actions].pop();
     if (action && action.nglStateList) {
@@ -715,16 +701,16 @@ import {
     }
   };
   
-  const restoreActions = (orderedActionList, stage) => (dispatch, getState) => {
+  const restoreActions = (orderedActionList, stage) => (dispatch) => {
     dispatch(restoreMoleculesActions(orderedActionList, stage));
   };
   
-  const loadData = (orderedActionList, targetId, majorView) => async (dispatch, getState) => {
+  const loadData = (orderedActionList, targetId, majorView) => async (dispatch) => {
     await dispatch(loadAllMolecules(orderedActionList, targetId, majorView.stage));
     await dispatch(loadAllDatasets(orderedActionList, targetId, majorView.stage));
   };
   
-  const loadAllDatasets = (orderedActionList, target_on, stage) => async (dispatch, getState) => {
+  const loadAllDatasets = (orderedActionList, target_on, stage) => async (dispatch) => {
     dispatch(setMoleculeListIsLoading(true));
   
     await dispatch(loadDataSets(target_on));
@@ -734,7 +720,7 @@ import {
     dispatch(restoreCompoundsActions(orderedActionList, stage));
   };
   
-  const loadAllMolecules = (orderedActionList, target_on, stage) => async (dispatch, getState) => {
+  const loadAllMolecules = (orderedActionList, target_on) => async (dispatch, getState) => {
     const state = getState();
     const list_type = listType.MOLECULE;
   
@@ -802,7 +788,7 @@ import {
     dispatch(setIsTrackingMoleculesRestoring(false));
   };
   
-  const restoreCartActions = moleculesAction => (dispatch, getState) => {
+  const restoreCartActions = moleculesAction => (dispatch) => {
     let shoppingCartActions = moleculesAction.filter(
       action => action.type === actionType.MOLECULE_ADDED_TO_SHOPPING_CART
     );
@@ -860,7 +846,7 @@ import {
     }
   };
   
-  const restoreAllSelectionByTypeActions = (moleculesAction, stage, isSelection) => (dispatch, getState) => {
+  const restoreAllSelectionByTypeActions = (moleculesAction, stage, isSelection) => (dispatch) => {
     let actions =
       isSelection === true
         ? moleculesAction.filter(
@@ -922,7 +908,7 @@ import {
     }
   };
   
-  const restoreRepresentationActions = (moleculesAction, stages) => (dispatch, getState) => {
+  const restoreRepresentationActions = (moleculesAction, stages) => (dispatch) => {
     const nglView = stages.find(view => view.id === VIEWS.MAJOR_VIEW);
   
     let representationsActions = moleculesAction.filter(action => action.type === actionType.REPRESENTATION_ADDED);
@@ -942,7 +928,7 @@ import {
     }
   };
   
-  const restoreSnapshotImageActions = projectID => async (dispatch, getState) => {
+  const restoreSnapshotImageActions = projectID => async (dispatch) => {
     let actionList = await dispatch(getTrackingActions(projectID));
   
     let snapshotActions = actionList.filter(action => action.type === actionType.SNAPSHOT);
@@ -956,7 +942,7 @@ import {
     }
   };
   
-  const restoreProject = projectId => (dispatch, getState) => {
+  const restoreProject = projectId => (dispatch) => {
     if (projectId !== undefined) {
       return api({ url: `${base_url}/api/session-projects/${projectId}/` }).then(response => {
         let promises = [];
@@ -1119,7 +1105,7 @@ import {
     return molecule;
   };
   
-  export const undoAction = (stages = []) => (dispatch, getState) => {
+  export const undoAction = (stages = []) => (dispatch) => {
     dispatch(setIsUndoRedoAction(true));
     let action = dispatch(getUndoAction());
     if (action) {
@@ -1190,7 +1176,7 @@ import {
     return action;
   };
   
-  export const redoAction = (stages = []) => (dispatch, getState) => {
+  export const redoAction = (stages = []) => (dispatch) => {
     dispatch(setIsUndoRedoAction(true));
     let action = dispatch(getRedoAction());
     if (action) {
@@ -1201,109 +1187,13 @@ import {
   };
   
   const handleUndoAction = (action, stages) => (dispatch, getState) => {
-    const state = getState();
-  
     if (action) {
-      const majorView = stages.find(view => view.id === VIEWS.MAJOR_VIEW);
-      const summaryView = stages.find(view => view.id === VIEWS.SUMMARY_VIEW);
-      const stageSummaryView = summaryView.stage;
-      const majorViewStage = majorView.stage;
-  
       const type = action.type;
       switch (type) {
-        case actionType.ALL_HIDE:
-          dispatch(handleAllHideAction(action, true, majorViewStage));
-          break;
-        case actionType.ALL_TURNED_ON:
-          dispatch(handleAllAction(action, false, majorViewStage, state));
-          break;
-        case actionType.ALL_TURNED_OFF:
-          dispatch(handleAllAction(action, true, majorViewStage, state));
-          break;
-        case actionType.ALL_TURNED_ON_BY_TYPE:
-          dispatch(handleAllActionByType(action, false, majorViewStage));
-          break;
-        case actionType.ALL_TURNED_OFF_BY_TYPE:
-          dispatch(handleAllActionByType(action, true, majorViewStage));
-          break;
-        case actionType.LIGAND_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'ligand', false, majorViewStage, state));
-          break;
-        case actionType.SIDECHAINS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'protein', false, majorViewStage, state));
-          break;
-        case actionType.INTERACTIONS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'complex', false, majorViewStage, state));
-          break;
-        case actionType.SURFACE_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'surface', false, majorViewStage, state));
-          break;
-        case actionType.VECTORS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'vector', false, majorViewStage, state));
-          break;
-        case actionType.LIGAND_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'ligand', true, majorViewStage, state));
-          break;
-        case actionType.SIDECHAINS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'protein', true, majorViewStage, state));
-          break;
-        case actionType.INTERACTIONS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'complex', true, majorViewStage, state));
-          break;
-        case actionType.SURFACE_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'surface', true, majorViewStage, state));
-          break;
-        case actionType.VECTORS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'vector', true, majorViewStage, state));
-          break;
-        case actionType.VECTOR_SELECTED:
-          dispatch(setCurrentVector(undefined));
-          break;
-        case actionType.VECTOR_DESELECTED:
-          dispatch(setCurrentVector(action.object_name));
-          break;
-        case actionType.TARGET_LOADED:
-          dispatch(handleTargetAction(action, false));
-          break;
-        case actionType.SITE_TURNED_ON:
-          dispatch(handleMoleculeGroupAction(action, false, stageSummaryView, majorViewStage));
-          break;
-        case actionType.SITE_TURNED_OFF:
-          dispatch(handleMoleculeGroupAction(action, true, stageSummaryView, majorViewStage));
-          break;
-        case actionType.MOLECULE_ADDED_TO_SHOPPING_CART:
-          dispatch(handleShoppingCartAction(action, false));
-          break;
-        case actionType.MOLECULE_REMOVED_FROM_SHOPPING_CART:
-          dispatch(handleShoppingCartAction(action, true));
-          break;
-        case actionType.COMPOUND_SELECTED:
-          dispatch(handleCompoundAction(action, false));
-          break;
-        case actionType.COMPOUND_DESELECTED:
-          dispatch(handleCompoundAction(action, true));
-          break;
-        case actionType.REPRESENTATION_UPDATED:
-          dispatch(handleUpdateRepresentationAction(action, false, majorView));
-          break;
-        case actionType.REPRESENTATION_ADDED:
-          dispatch(handleRepresentationAction(action, false, majorView));
-          break;
-        case actionType.REPRESENTATION_REMOVED:
-          dispatch(handleRepresentationAction(action, true, majorView));
-          break;
-        case actionType.REPRESENTATION_CHANGED:
-          dispatch(handleChangeRepresentationAction(action, false, majorView));
-          break;
-        case actionType.BACKGROUND_COLOR_CHANGED:
-          dispatch(setNglBckGrndColor(action.oldSetting, majorViewStage, stageSummaryView));
-          break;
-        case actionType.CLIP_NEAR:
-          dispatch(setNglClipNear(action.oldSetting, action.newSetting, majorViewStage));
-          break;
         case actionType.ORIENTATION:
           // The first two params might have to be swapped
-          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id));
+          // Has to be like that for now since each undo/redo action results in another empty setOrientation call
+          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id, stages));
           break;
         default:
           break;
@@ -1312,108 +1202,11 @@ import {
   };
   
   const handleRedoAction = (action, stages) => (dispatch, getState) => {
-    const state = getState();
-  
-    if (action) {
-      const majorView = stages.find(view => view.id === VIEWS.MAJOR_VIEW);
-      const summaryView = stages.find(view => view.id === VIEWS.SUMMARY_VIEW);
-      const stageSummaryView = summaryView.stage;
-      const majorViewStage = majorView.stage;
-  
+   if (action) {
       const type = action.type;
       switch (type) {
-        case actionType.ALL_HIDE:
-          dispatch(handleAllHideAction(action, false, majorViewStage));
-          break;
-        case actionType.ALL_TURNED_ON:
-          dispatch(handleAllAction(action, true, majorViewStage, state));
-          break;
-        case actionType.ALL_TURNED_OFF:
-          dispatch(handleAllAction(action, false, majorViewStage, state));
-          break;
-        case actionType.ALL_TURNED_ON_BY_TYPE:
-          dispatch(handleAllActionByType(action, true, majorViewStage));
-          break;
-        case actionType.ALL_TURNED_OFF_BY_TYPE:
-          dispatch(handleAllActionByType(action, false, majorViewStage));
-          break;
-        case actionType.LIGAND_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'ligand', true, majorViewStage, state));
-          break;
-        case actionType.SIDECHAINS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'protein', true, majorViewStage, state));
-          break;
-        case actionType.INTERACTIONS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'complex', true, majorViewStage, state));
-          break;
-        case actionType.SURFACE_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'surface', true, majorViewStage, state));
-          break;
-        case actionType.VECTORS_TURNED_ON:
-          dispatch(handleMoleculeAction(action, 'vector', true, majorViewStage, state));
-          break;
-        case actionType.LIGAND_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'ligand', false, majorViewStage, state));
-          break;
-        case actionType.SIDECHAINS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'protein', false, majorViewStage, state));
-          break;
-        case actionType.INTERACTIONS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'complex', false, majorViewStage, state));
-          break;
-        case actionType.SURFACE_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'surface', false, majorViewStage, state));
-          break;
-        case actionType.VECTORS_TURNED_OFF:
-          dispatch(handleMoleculeAction(action, 'vector', false, majorViewStage, state));
-          break;
-        case actionType.VECTOR_SELECTED:
-          dispatch(setCurrentVector(action.object_name));
-          break;
-        case actionType.VECTOR_DESELECTED:
-          dispatch(setCurrentVector(undefined));
-          break;
-        case actionType.TARGET_LOADED:
-          dispatch(handleTargetAction(action, true));
-          break;
-        case actionType.SITE_TURNED_ON:
-          dispatch(handleMoleculeGroupAction(action, true, stageSummaryView, majorViewStage));
-          break;
-        case actionType.SITE_TURNED_OFF:
-          dispatch(handleMoleculeGroupAction(action, false, stageSummaryView, majorViewStage));
-          break;
-        case actionType.MOLECULE_ADDED_TO_SHOPPING_CART:
-          dispatch(handleShoppingCartAction(action, true));
-          break;
-        case actionType.MOLECULE_REMOVED_FROM_SHOPPING_CART:
-          dispatch(handleShoppingCartAction(action, false));
-          break;
-        case actionType.COMPOUND_SELECTED:
-          dispatch(handleCompoundAction(action, true));
-          break;
-        case actionType.COMPOUND_DESELECTED:
-          dispatch(handleCompoundAction(action, false));
-          break;
-        case actionType.REPRESENTATION_UPDATED:
-          dispatch(handleUpdateRepresentationAction(action, true, majorView));
-          break;
-        case actionType.REPRESENTATION_ADDED:
-          dispatch(handleRepresentationAction(action, true, majorView));
-          break;
-        case actionType.REPRESENTATION_REMOVED:
-          dispatch(handleRepresentationAction(action, false, majorView));
-          break;
-        case actionType.REPRESENTATION_CHANGED:
-          dispatch(handleChangeRepresentationAction(action, true, majorView));
-          break;
-        case actionType.BACKGROUND_COLOR_CHANGED:
-          dispatch(setNglBckGrndColor(action.newSetting, majorViewStage, stageSummaryView));
-          break;
-        case actionType.CLIP_NEAR:
-          dispatch(setNglClipNear(action.newSetting, action.oldSetting, majorViewStage));
-          break;
         case actionType.ORIENTATION:
-          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id));
+          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id, stages));
           break;
         default:
           break;
@@ -1421,247 +1214,8 @@ import {
     }
   };
   
-  const handleAllActionByType = (action, isAdd, stage) => (dispatch, getState) => {
-    let actionItems = action.items;
-    let type = action.control_type;
-    if (action.object_type === actionObjectType.MOLECULE || action.object_type === actionObjectType.INSPIRATION) {
-      if (isAdd) {
-        dispatch(setSelectedAllByType(type, actionItems, action.object_type === actionObjectType.INSPIRATION));
-  
-        actionItems.forEach(data => {
-          if (data) {
-            if (type === 'ligand') {
-              dispatch(addType[type](stage, data, colourList[data.id % colourList.length], true, true));
-            } else {
-              dispatch(addType[type](stage, data, colourList[data.id % colourList.length], true));
-            }
-          }
-        });
-      } else {
-        dispatch(setDeselectedAllByType(type, actionItems, action.object_type === actionObjectType.INSPIRATION));
-  
-        actionItems.forEach(data => {
-          if (data) {
-            if (type === 'ligand') {
-              dispatch(removeType[type](stage, data, true));
-            } else {
-              dispatch(removeType[type](stage, data, colourList[data.id % colourList.length], true));
-            }
-          }
-        });
-      }
-    } else if (
-      action.object_type === actionObjectType.COMPOUND ||
-      action.object_type === actionObjectType.CROSS_REFERENCE
-    ) {
-      if (isAdd) {
-        dispatch(
-          setSelectedAllByTypeOfDataset(
-            type,
-            action.dataset_id,
-            actionItems,
-            action.object_type === actionObjectType.CROSS_REFERENCE
-          )
-        );
-  
-        actionItems.forEach(data => {
-          if (data && data.molecule) {
-            dispatch(
-              addTypeCompound[type](
-                stage,
-                data.molecule,
-                colourList[data.molecule.id % colourList.length],
-                data.datasetID,
-                true
-              )
-            );
-          }
-        });
-      } else {
-        dispatch(
-          setDeselectedAllByTypeOfDataset(
-            type,
-            action.dataset_id,
-            actionItems,
-            action.object_type === actionObjectType.CROSS_REFERENCE
-          )
-        );
-  
-        actionItems.forEach(data => {
-          if (data && data.molecule) {
-            dispatch(
-              removeTypeCompound[type](
-                stage,
-                data.molecule,
-                colourList[data.molecule.id % colourList.length],
-                data.datasetID,
-                true
-              )
-            );
-          }
-        });
-      }
-    }
-  };
-  
-  const handleAllHideAction = (action, isAdd, stage) => (dispatch, getState) => {
-    let data = action.data;
-    let ligandDataList = data.ligandList;
-    let proteinDataList = data.proteinList;
-    let complexDataList = data.complexList;
-    let surfaceDataList = data.surfaceList;
-    let vectorOnDataList = data.vectorOnList;
-  
-    dispatch(setHideAll(data, !isAdd));
-  
-    if (isAdd) {
-      ligandDataList.forEach(data => {
-        if (data) {
-          dispatch(addType['ligand'](stage, data, colourList[data.id % colourList.length], true, true));
-        }
-      });
-  
-      proteinDataList.forEach(data => {
-        if (data) {
-          dispatch(addType['protein'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-  
-      complexDataList.forEach(data => {
-        if (data) {
-          dispatch(addType['complex'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-  
-      surfaceDataList.forEach(data => {
-        if (data) {
-          dispatch(addType['surface'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-      vectorOnDataList.forEach(data => {
-        if (data) {
-          dispatch(addType['vector'](stage, data, true));
-        }
-      });
-    } else {
-      ligandDataList.forEach(data => {
-        if (data) {
-          dispatch(removeType['ligand'](stage, data, true));
-        }
-      });
-  
-      proteinDataList.forEach(data => {
-        if (data) {
-          dispatch(removeType['protein'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-  
-      complexDataList.forEach(data => {
-        if (data) {
-          dispatch(removeType['complex'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-  
-      surfaceDataList.forEach(data => {
-        if (data) {
-          dispatch(removeType['surface'](stage, data, colourList[data.id % colourList.length], true));
-        }
-      });
-      vectorOnDataList.forEach(data => {
-        if (data) {
-          dispatch(removeType['vector'](stage, data, true));
-        }
-      });
-    }
-  };
-  
-  const handleAllAction = (action, isSelected, majorViewStage, state) => (dispatch, getState) => {
-    let isSelection =
-      action.object_type === actionObjectType.MOLECULE || action.object_type === actionObjectType.INSPIRATION;
-  
-    if (isSelected) {
-      if (isSelection) {
-        dispatch(setSelectedAll(action.item, true, true, true));
-      } else {
-        dispatch(setSelectedAllOfDataset(action.dataset_id, action.item, true, true, true));
-      }
-    } else {
-      if (isSelection) {
-        dispatch(setDeselectedAll(action.item, action.isLigand, action.isProtein, action.isComplex));
-      } else {
-        dispatch(
-          setDeselectedAllOfDataset(action.dataset_id, action.item, action.isLigand, action.isProtein, action.isComplex)
-        );
-      }
-    }
-  
-    if (action.isLigand) {
-      dispatch(handleMoleculeAction(action, 'ligand', isSelected, majorViewStage, state, true));
-    }
-  
-    if (action.isProtein) {
-      dispatch(handleMoleculeAction(action, 'protein', isSelected, majorViewStage, state, true));
-    }
-  
-    if (action.isComplex) {
-      dispatch(handleMoleculeAction(action, 'complex', isSelected, majorViewStage, state, true));
-    }
-  };
-  
-  const handleTargetAction = (action, isSelected, stages) => (dispatch, getState) => {
-    const state = getState();
-    if (action) {
-      if (isSelected === false) {
-        dispatch(setTargetOn(undefined));
-      } else {
-        let target = getTarget(action.object_name, state);
-        if (target) {
-          dispatch(setTargetOn(target.id));
-          dispatch(shouldLoadProtein({ nglViewList: stages, currentSnapshotID: null, isLoadingCurrentSnapshot: false }));
-        }
-      }
-    }
-  };
-  
-  const handleCompoundAction = (action, isSelected) => (dispatch, getState) => {
-    const state = getState();
-    if (action) {
-      let data = getCompound(action, state);
-      if (data) {
-        if (isSelected === true) {
-          dispatch(appendMoleculeToCompoundsOfDatasetToBuy(action.dataset_id, data.id, data.name));
-        } else {
-          dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(action.dataset_id, data.id, data.name));
-        }
-      }
-    }
-  };
-  
-  const handleShoppingCartAction = (action, isAdd) => (dispatch, getState) => {
-    if (action) {
-      let data = action.item;
-      if (isAdd) {
-        dispatch(appendToBuyList(data));
-      } else {
-        dispatch(removeFromToBuyList(data));
-      }
-    }
-  };
-  
-  const handleRepresentationAction = (action, isAdd, nglView) => (dispatch, getState) => {
-    if (action) {
-      if (isAdd === true) {
-        dispatch(addRepresentation(action, action.object_id, action.representation, nglView));
-      } else {
-        dispatch(removeRepresentation(action, action.object_id, action.representation, nglView));
-      }
-    }
-  };
-  
   const addRepresentation = (action, parentKey, representation, nglView, update, skipTracking = false) => (
-    dispatch,
-    getState
-  ) => {
+    dispatch  ) => {
     const oldRepresentation = representation;
     const newRepresentationType = oldRepresentation.type;
     const comp = nglView.stage.getComponentsByName(parentKey).first;
@@ -1680,13 +1234,7 @@ import {
     dispatch(addComponentRepresentation(parentKey, newRepresentation, skipTracking));
   };
   
-  const handleUpdateRepresentationAction = (action, isAdd, nglView) => (dispatch, getState) => {
-    if (action) {
-      dispatch(updateRepresentation(isAdd, action.change, action.object_id, action.representation, nglView));
-    }
-  };
-  
-  const updateRepresentation = (isAdd, change, parentKey, representation, nglView) => (dispatch, getState) => {
+  const updateRepresentation = (isAdd, change, parentKey, representation, nglView) => (dispatch) => {
     const comp = nglView.stage.getComponentsByName(parentKey).first;
     const r = comp.reprList.find(rep => rep.uuid === representation.uuid || rep.uuid === representation.lastKnownID);
     if (r && change) {
@@ -1699,80 +1247,8 @@ import {
       dispatch(updateComponentRepresentation(parentKey, representation.uuid, representation));
     }
   };
-  
-  const removeRepresentation = (action, parentKey, representation, nglView, skipTracking = false) => (
-    dispatch,
-    getState
-  ) => {
-    const comp = nglView.stage.getComponentsByName(parentKey).first;
-    let foundedRepresentation = undefined;
-    comp.eachRepresentation(r => {
-      if (r.uuid === representation.uuid || r.uuid === representation.lastKnownID) {
-        foundedRepresentation = r;
-      }
-    });
-  
-    if (foundedRepresentation) {
-      comp.removeRepresentation(foundedRepresentation);
-  
-      if (comp.reprList.length === 0) {
-        dispatch(deleteObject(nglView, nglView.stage, true));
-      } else {
-        dispatch(removeComponentRepresentation(parentKey, representation, skipTracking));
-      }
-    }
-  };
-  
-  const handleChangeRepresentationAction = (action, isAdd, nglView) => (dispatch, getState) => {
-    if (action) {
-      dispatch(changeRepresentation(isAdd, action, nglView));
-    }
-  };
-  
-  const changeRepresentation = (isAdd, action, nglView) => (dispatch, getState) => {
-    let oldRepresentation = action.oldRepresentation;
-    let newRepresentation = action.newRepresentation;
-  
-    if (isAdd === true) {
-      dispatch(changeComponentRepresentation(action.object_id, oldRepresentation, newRepresentation));
-      dispatch(addRepresentation(action, action.object_id, newRepresentation, nglView, isAdd, true));
-      dispatch(removeRepresentation(action, action.object_id, oldRepresentation, nglView, true));
-    } else {
-      dispatch(changeComponentRepresentation(action.object_id, newRepresentation, oldRepresentation));
-      dispatch(addRepresentation(action, action.object_id, oldRepresentation, nglView, isAdd, true));
-      dispatch(removeRepresentation(action, action.object_id, newRepresentation, nglView, true));
-    }
-  };
-  
-  const handleMoleculeGroupAction = (action, isSelected, stageSummaryView, majorViewStage) => (dispatch, getState) => {
-    const state = getState();
-    if (action) {
-      const { selectionGroups, object_name } = action;
-      let moleculeGroup = getMolGroup(object_name, state);
-      if (moleculeGroup) {
-        if (isSelected === true) {
-          dispatch(selectMoleculeGroup(moleculeGroup, stageSummaryView));
-  
-          for (const type in selectionGroups) {
-            if (selectionGroups.hasOwnProperty(type)) {
-              const typeGroup = selectionGroups[type];
-              for (const mol of typeGroup) {
-                if (type === 'ligand') {
-                  dispatch(addType[type](majorViewStage, mol, colourList[mol.id % colourList.length], true, true));
-                } else {
-                  dispatch(addType[type](majorViewStage, mol, colourList[mol.id % colourList.length], true));
-                }
-              }
-            }
-          }
-        } else {
-          dispatch(onDeselectMoleculeGroup({ moleculeGroup, stageSummaryView, majorViewStage }));
-        }
-      }
-    }
-  };
-  
-  const handleMoleculeAction = (action, type, isAdd, stage, state, skipTracking) => (dispatch, getState) => {
+    
+  const handleMoleculeAction = (action, type, isAdd, stage, state, skipTracking) => (dispatch) => {
     if (action.object_type === actionObjectType.MOLECULE || action.object_type === actionObjectType.INSPIRATION) {
       if (isAdd) {
         dispatch(addNewTypeOfAction(action, type, stage, state, skipTracking));
@@ -1840,12 +1316,12 @@ import {
     return state.undoableNglTrackingReducers.future.length > 0;
   };
   
-  export const getUndoActionText = () => (dispatch, getState) => {
+  export const getUndoActionText = () => (dispatch) => {
     let action = dispatch(getNextUndoAction());
     return action?.text ?? '';
   };
   
-  export const getRedoActionText = () => (dispatch, getState) => {
+  export const getRedoActionText = () => (dispatch) => {
     let action = dispatch(getNextRedoAction());
     return action?.text ?? '';
   };
@@ -1907,7 +1383,7 @@ import {
     return diffInSeconds <= NUM_OF_SECONDS_TO_IGNORE_MERGE;
   };
   
-  export const manageSendTrackingActions = (projectID, copy) => (dispatch, getState) => {
+  export const manageSendTrackingActions = (projectID, copy) => (dispatch) => {
     if (copy) {
       dispatch(checkActionsProject(projectID));
     } else {
@@ -1926,7 +1402,7 @@ import {
     }
   };
   
-  const sendTrackingActions = (sendActions, project, clear = true) => async (dispatch, getState) => {
+  const sendTrackingActions = (sendActions, project, clear = true) => async (dispatch) => {
     if (project) {
       const projectID = project && project.projectID;
   
@@ -2150,7 +1626,7 @@ import {
     }, {});
   }
   
-  export const setAndUpdateTrackingActions = (actionList, projectID) => (dispatch, getState) => {
+  export const setAndUpdateTrackingActions = (actionList, projectID) => () => {
     if (projectID) {
       const groupBy = groupArrayOfObjects(actionList, 'actionId');
   

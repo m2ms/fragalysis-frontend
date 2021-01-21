@@ -26,6 +26,7 @@ import { nglObjectDictionary } from '../../components/nglView/renderingObjects';
 import { createInitialSnapshot } from '../../components/snapshot/redux/dispatchActions';
 import { VIEWS } from '../../constants/constants';
 import { NGL_PARAMS } from '../../components/nglView/constants/index';
+import { setNglOrientationRestoring } from '../nglTracking/actions';
 
 export const loadObject = ({
   target,
@@ -187,3 +188,8 @@ export const setNglClipNear = (newValue, oldValue, major) => (dispatch, getState
   dispatch(setNglViewParams(NGL_PARAMS.clipNear, newValue, major, VIEWS.MAJOR_VIEW));  
   dispatch(setNglClipNearAction(newValue, oldValue));
 };
+
+export const restoreNglOrientation = (orientation, oldOrientation, div_id) => (dispatch, getState) => {
+  dispatch(setNglOrientationRestoring({ orientation, div_id }));
+  dispatch(setNglOrientation(orientation, oldOrientation, div_id));
+}

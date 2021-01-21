@@ -57,12 +57,11 @@ import {
     removeComponentRepresentation,
     addComponentRepresentation,
     updateComponentRepresentation,
-    changeComponentRepresentation,
-    setNglOrientation
+    changeComponentRepresentation
   } from '../../../js/reducers/ngl/actions';
   import * as listType from '../../constants/listTypes';
   import { assignRepresentationToComp } from '../../components/nglView/generatingObjects';
-  import { deleteObject, setOrientation, setNglBckGrndColor, setNglClipNear } from '../../../js/reducers/ngl/dispatchActions';
+  import { deleteObject, setOrientation, setNglBckGrndColor, setNglClipNear, restoreNglOrientation } from '../../../js/reducers/ngl/dispatchActions';
   import {
     setSendActionsList,
     setIsActionsSending,
@@ -1303,7 +1302,8 @@ import {
           dispatch(setNglClipNear(action.oldSetting, action.newSetting, majorViewStage));
           break;
         case actionType.ORIENTATION:
-          dispatch(setNglOrientation(action.oldSetting, action.newSetting, action.div_id));
+          // The first two params might have to be swapped
+          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id));
           break;
         default:
           break;
@@ -1413,7 +1413,7 @@ import {
           dispatch(setNglClipNear(action.newSetting, action.oldSetting, majorViewStage));
           break;
         case actionType.ORIENTATION:
-          dispatch(setNglOrientation(action.newSetting, action.oldSetting, action.div_id));
+          dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id));
           break;
         default:
           break;

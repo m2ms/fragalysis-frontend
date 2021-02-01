@@ -109,6 +109,7 @@ export const actionAnnotation = {
 export const NUM_OF_SECONDS_TO_IGNORE_MERGE = 5;
 
 export const undoConstants = {
-    NGL_TRACKING_UNDO: prefix + 'UNDO',
-    NGL_TRACKING_REDO: prefix + 'REDO'
+  NGL_TRACKING_UNDO: prefix + 'UNDO',
+  NGL_TRACKING_REDO: prefix + 'REDO',
+  NGL_CLEAR_HISTORY: prefix + 'CLEAR_HISTORY'
 }

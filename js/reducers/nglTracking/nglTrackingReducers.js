@@ -124,6 +124,7 @@ export const undoableNglTrackingReducers = undoable(nglTrackingReducers, {
     limit: false,
     filter: includeAction(constants.SET_UNDO_REDO_ACTIONS_LIST),
     undoType: undoConstants.NGL_TRACKING_UNDO,
-    redoType: undoConstants.NGL_TRACKING_REDO
+    redoType: undoConstants.NGL_TRACKING_REDO,
+    clearHistoryType: undoConstants.NGL_CLEAR_HISTORY
 });
   

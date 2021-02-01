@@ -142,3 +142,9 @@ export const nglTrackingRedo = function() {
     type: undoConstants.NGL_TRACKING_REDO
   };
 }
+
+export const nglClearHistory = function() {
+  return {
+    type: undoConstants.NGL_CLEAR_HISTORY
+  }
+}

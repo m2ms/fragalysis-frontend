@@ -23,6 +23,7 @@ import { sendInitTrackingActionByProjectId } from '../../../reducers/tracking/di
 import { resetTrackingState } from '../../../reducers/tracking/actions';
 
 import moment from 'moment';
+import { resetNglTrackingState } from '../../../reducers/nglTracking/dispatchActions';
 
 export const assignSnapshotToProject = ({ projectID, snapshotID, ...rest }) => (dispatch, getState) => {
   dispatch(resetCurrentSnapshot());
@@ -323,6 +324,7 @@ export const createProjectFromSnapshot = ({ title, description, author, tags, hi
 
   dispatch(setProjectModalIsLoading(true));
   dispatch(resetTrackingState());
+  dispatch(resetNglTrackingState());
   return dispatch(
     createProject({
       title,
@@ -369,6 +371,7 @@ export const createProjectFromScratch = ({ title, description, target, author, t
 ) => {
   dispatch(setProjectModalIsLoading(true));
   dispatch(resetTrackingState());
+  dispatch(resetNglTrackingState());
   return api({
     url: `${base_url}/api/session-projects/`,
     method: METHOD.POST,

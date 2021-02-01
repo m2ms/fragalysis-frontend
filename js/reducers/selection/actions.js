@@ -11,17 +11,35 @@ export const setToBuyList = function(to_buy_list) {
   };
 };
 
-export const appendToBuyList = function(item) {
+export const appendToBuyList = function(item, index, skipTracking = false) {
   return {
     type: constants.APPEND_TO_BUY_LIST,
-    item: item
+    item: item,
+    index: index,
+    skipTracking: skipTracking
   };
 };
 
-export const removeFromToBuyList = function(item) {
+export const removeFromToBuyList = function(item, index, skipTracking = false) {
   return {
     type: constants.REMOVE_FROM_TO_BUY_LIST,
-    item: item
+    item: item,
+    index: index,
+    skipTracking: skipTracking
+  };
+};
+
+export const appendToBuyListAll = function(items) {
+  return {
+    type: constants.APPEND_TO_BUY_LIST_ALL,
+    items: items
+  };
+};
+
+export const removeFromToBuyListAll = function(items) {
+  return {
+    type: constants.REMOVE_FROM_BUY_LIST_ALL,
+    items: items
   };
 };
 
@@ -266,4 +284,14 @@ export const setHideAll = (data, isHide = true) => ({
   type: constants.SET_HIDE_ALL,
   isHide: isHide,
   data: data
+});
+
+export const setArrowUpDown = (item, newItem, arrowType, data) => ({
+  type: constants.SET_ARROW_UP_DOWN,
+  payload: {
+    item: item,
+    newItem: newItem,
+    arrowType: arrowType,
+    data
+  }
 });

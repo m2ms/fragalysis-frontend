@@ -1,8 +1,6 @@
 /**
  * Created by abradley on 03/03/2018.
  */
-import { constant } from 'lodash';
-import { constants } from '../selection/constants';
 import { CONSTANTS } from './constants';
 
 export const loadNglObject = (target, representations) => ({ type: CONSTANTS.LOAD_OBJECT, target, representations });
@@ -12,12 +10,41 @@ export const deleteNglObject = target => ({
   target
 });
 
-export const updateComponentRepresentation = (objectInViewID, representationID, newRepresentation, change) => ({
+export const updateComponentRepresentationVisibility = (
+  objectInViewID,
+  representationID,
+  representation,
+  newVisibility,
+  skipTracking = false
+) => ({
+  type: CONSTANTS.UPDATE_COMPONENT_REPRESENTATION_VISIBILITY,
+  representationID,
+  representation,
+  newVisibility,
+  objectInViewID,
+  skipTracking
+});
+
+export const updateComponentRepresentationVisibilityAll = (objectInViewID, newVisibility, skipTracking = false) => ({
+  type: CONSTANTS.UPDATE_COMPONENT_REPRESENTATION_VISIBILITY_ALL,
+  newVisibility,
+  objectInViewID,
+  skipTracking
+});
+
+export const updateComponentRepresentation = (
+  objectInViewID,
+  representationID,
+  newRepresentation,
+  change,
+  skipTracking = false
+) => ({
   type: CONSTANTS.UPDATE_COMPONENT_REPRESENTATION,
   representationID,
   newRepresentation,
   objectInViewID,
-  change
+  change,
+  skipTracking
 });
 
 export const addComponentRepresentation = (objectInViewID, newRepresentation, skipTracking = false) => ({
@@ -53,7 +80,7 @@ export const setNglViewParams = (key, value, stage = undefined, objectId = undef
   };
 };
 
-export const setBackgroundColor = (color) => {
+export const setBackgroundColor = color => {
   return {
     type: CONSTANTS.SET_BACKGROUND_COLOR,
     payload: color
@@ -68,7 +95,47 @@ export const setNglClipNearAction = (newValue, oldValue) => {
       oldValue: oldValue
     }
   };
-}
+};
+
+export const setNglClipFarAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_CLIP_FAR,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setNglClipDistAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_CLIP_DIST,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setNglFogNearAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_FOG_NEAR,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setNglFogFarAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_FOG_FAR,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
 
 export const setNglOrientation = (orientation, oldOrientation, div_id) => ({ type: CONSTANTS.SET_ORIENTATION, orientation, oldOrientation, div_id });
 

@@ -1305,16 +1305,6 @@ const removeNewTypeCompound = (action, type, stage, state, skipTracking) => disp
   }
 };
 
-export const getCanUndo = () => (dispatch, getState) => {
-  const state = getState();
-  return state.undoableNglTrackingReducers.past.length > 0;
-};
-
-export const getCanRedo = () => (dispatch, getState) => {
-  const state = getState();
-  return state.undoableNglTrackingReducers.future.length > 0;
-};
-
 export const getUndoActionText = () => (dispatch) => {
   let action = dispatch(getNextUndoAction());
   return action?.text ?? '';

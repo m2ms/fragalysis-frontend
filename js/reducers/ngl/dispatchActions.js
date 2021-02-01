@@ -13,7 +13,8 @@ import {
   setNglClipFarAction,
   setNglClipDistAction,
   setNglFogNearAction,
-  setNglFogFarAction
+  setNglFogFarAction,
+  setNglOrientationByInteraction
 } from './actions';
 import { isEmpty, isEqual } from 'lodash';
 import { createRepresentationsArray } from '../../components/nglView/generatingObjects';
@@ -119,7 +120,20 @@ export const setOrientation = (div_id, orientation) => (dispatch, getState) => {
       isEmpty(nglOrientations) ||
       (nglOrientations && nglOrientations[div_id] === undefined))
   ) {
-    dispatch(setNglOrientation(orientation, nglOrientations[div_id], div_id));
+    dispatch(setNglOrientation(orientation, div_id));
+  }
+};
+
+export const setOrientationByInteraction = (div_id, orientation) => (dispatch, getState) => {
+  const nglOrientations = getState().nglReducers.nglOrientations;
+
+  if (
+    orientation &&
+    ((nglOrientations && nglOrientations[div_id] && !isEqual(orientation.elements, nglOrientations[div_id].elements)) ||
+      isEmpty(nglOrientations) ||
+      (nglOrientations && nglOrientations[div_id] === undefined))
+  ) {
+    dispatch(setNglOrientationByInteraction(orientation, nglOrientations[div_id], div_id));
   }
 };
 
@@ -215,5 +229,5 @@ export const setNglFogFar = (newValue, oldValue, major) => (dispatch, getState) 
 export const restoreNglOrientation = (orientation, oldOrientation, div_id, stages) => (dispatch, getState) => {
   const view = stages.find(view => view.id === div_id);
   view.stage.viewerControls.orient(orientation);
-  dispatch(setNglOrientation(orientation, oldOrientation, div_id));
+  dispatch(setNglOrientationByInteraction(orientation, oldOrientation, div_id));
 }

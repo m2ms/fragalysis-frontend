@@ -147,7 +147,7 @@ function mapStateToProps(state) {
 }
 const mapDispatchToProps = {
   setMolGroupSelection: selectionActions.setMolGroupSelection,
-  setOrientation: nglDispatchActions.setOrientation,
+  setOrientation: nglDispatchActions.setOrientationByInteraction,
   removeAllNglComponents: nglActions.removeAllNglComponents,
   handleNglViewPick
 };

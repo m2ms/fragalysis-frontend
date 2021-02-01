@@ -143,7 +143,7 @@ export const ViewerControls = memo(({}) => {
             <Tooltip title={nglUndoTooltip}>
               <Button
                 size="small"
-                color="primary"
+                color="secondary"
                 onClick={() => {
                   nglDoUndo();
                 }}
@@ -207,7 +207,7 @@ export const ViewerControls = memo(({}) => {
             <Tooltip title={nglRedoTooltip}>
               <Button
                 size="small"
-                color="primary"
+                color="secondary"
                 onClick={() => {
                   nglDoRedo();
                 }}

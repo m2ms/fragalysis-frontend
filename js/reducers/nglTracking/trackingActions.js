@@ -8,7 +8,7 @@ export const findTrackAction = (action, state) => {
 
   let trackAction = null;
   if (isActionRestoring === false && action.skipTracking !== true) {
-    if (action.type.includes(nglConstants.SET_ORIENTATION)) {
+    if (action.type.includes(nglConstants.SET_ORIENTATION_BY_INTERACTION)) {
       const { oldOrientation: oldSetting, orientation: newSetting, div_id } = action;
 
       trackAction = {

@@ -10,7 +10,7 @@ import * as nglDispatchActions from '../../reducers/ngl/dispatchActions';
 import * as selectionActions from '../../reducers/selection/actions';
 import { NglContext } from './nglProvider';
 import { handleNglViewPick } from './redux/dispatchActions';
-import { throttle } from 'lodash';
+import { debounce } from 'lodash';
 import { NGL_PARAMS } from './constants';
 import { makeStyles, useTheme } from '@material-ui/core';
 import { VIEWS } from '../../constants/constants';
@@ -37,7 +37,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
   const theme = useTheme();
 
   const handleOrientationChanged = useCallback(
-    throttle(() => {
+    debounce(() => {
       const newStage = getNglView(div_id);
       if (newStage) {
         const currentOrientation = newStage.stage.viewerControls.getOrientation();
@@ -63,8 +63,8 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
           handleNglViewPick(st, pickingProxy, getNglView)
         );
 
-        newStage.mouseObserver.signals.scrolled.add(handleOrientationChanged);
-        newStage.mouseObserver.signals.dropped.add(handleOrientationChanged);
+        //newStage.mouseObserver.signals.scrolled.add(handleOrientationChanged);
+        //newStage.mouseObserver.signals.dropped.add(handleOrientationChanged);
         newStage.mouseObserver.signals.dragged.add(handleOrientationChanged);
       }
     },

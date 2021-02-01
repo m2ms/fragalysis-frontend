@@ -1192,9 +1192,7 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
     const type = action.type;
     switch (type) {
       case actionType.ORIENTATION:
-        // The first two params might have to be swapped
-        // Has to be like that for now since each undo/redo action results in another empty setOrientation call
-        dispatch(restoreNglOrientation(action.newSetting, action.oldSetting, action.div_id, stages));
+        dispatch(restoreNglOrientation(action.oldSetting, action.newSetting, action.div_id, stages));
         break;
       default:
         break;

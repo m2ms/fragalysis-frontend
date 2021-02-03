@@ -1339,24 +1339,7 @@ export const appendAndSendTrackingActions = trackAction => (dispatch, getState) 
 };
 
 export const mergeActions = (trackAction, list) => {
-  if (needsToBeMerged(trackAction)) {
-    let newList = [];
-    if (list.length > 0) {
-      const lastEntry = list[list.length - 1];
-      if (isSameTypeOfAction(trackAction, lastEntry) && isActionWithinTimeLimit(lastEntry, trackAction)) {
-        trackAction.oldSetting = lastEntry.oldSetting;
-        trackAction.text = trackAction.getText();
-        newList = [...list.slice(0, list.length - 1), trackAction];
-      } else {
-        newList = [...list, trackAction];
-      }
-    } else {
-      newList.push(trackAction);
-    }
-    return newList;
-  } else {
-    return [...list, trackAction];
-  }
+  return [...list, trackAction];
 };
 
 const needsToBeMerged = (trackAction) => {

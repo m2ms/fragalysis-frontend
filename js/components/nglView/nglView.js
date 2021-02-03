@@ -63,8 +63,8 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
           handleNglViewPick(st, pickingProxy, getNglView)
         );
 
-        //newStage.mouseObserver.signals.scrolled.add(handleOrientationChanged);
-        //newStage.mouseObserver.signals.dropped.add(handleOrientationChanged);
+        newStage.mouseObserver.signals.scrolled.add(handleOrientationChanged);
+        newStage.mouseObserver.signals.dropped.add(handleOrientationChanged);
         newStage.mouseObserver.signals.dragged.add(handleOrientationChanged);
       }
     },

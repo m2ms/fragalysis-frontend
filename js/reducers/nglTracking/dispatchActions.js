@@ -1342,19 +1342,6 @@ export const mergeActions = (trackAction, list) => {
   return [...list, trackAction];
 };
 
-const needsToBeMerged = (trackAction) => {
-  return trackAction.merge !== undefined ? trackAction.merge : false;
-};
-
-const isSameTypeOfAction = (firstAction, secondAction) => {
-  return firstAction.type === secondAction.type;
-};
-
-const isActionWithinTimeLimit = (firstAction, secondAction) => {
-  const diffInSeconds = Math.abs(firstAction.timestamp - secondAction.timestamp) / 1000;
-  return diffInSeconds <= NUM_OF_SECONDS_TO_IGNORE_MERGE;
-};
-
 export const manageSendTrackingActions = (projectID, copy) => (dispatch) => {
   if (copy) {
     dispatch(checkActionsProject(projectID));

@@ -1,5 +1,6 @@
 import { constants, undoConstants } from './constants';
-import undoable, { includeAction } from 'redux-undo';
+import { undoable } from '../../undoredo/reducer';
+import { includeAction } from '../../undoredo/helpers';
 
 export const INITIAL_STATE = {
   track_actions_list: [],

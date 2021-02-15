@@ -417,8 +417,8 @@ export const DatasetMoleculeView = memo(
       }
     };
 
-    const removeSelectedSurface = () => {
-      dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID));
+    const removeSelectedSurface = (skipTracking = false) => {
+      dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID, skipTracking));
       selectedAll.current = false;
     };
 
@@ -429,10 +429,10 @@ export const DatasetMoleculeView = memo(
     const onSurface = calledFromSelectAll => {
       if (calledFromSelectAll === true && selectedAll.current === true) {
         if (isSurfaceOn === false) {
-          addNewSurface();
+          addNewSurface(calledFromSelectAll);
         }
       } else if (calledFromSelectAll && selectedAll.current === false) {
-        removeSelectedSurface();
+        removeSelectedSurface(calledFromSelectAll);
       } else if (!calledFromSelectAll) {
         if (isSurfaceOn === false) {
           addNewSurface();

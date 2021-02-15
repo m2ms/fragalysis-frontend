@@ -138,7 +138,14 @@ export const removeDatasetComplex = (stage, data, colourToggle, datasetID, skipT
   dispatch(removeFromComplexList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
-export const addDatasetSurface = (stage, data, colourToggle, datasetID, representations = undefined) => dispatch => {
+export const addDatasetSurface = (
+  stage,
+  data,
+  colourToggle,
+  datasetID,
+  skipTracking = false,
+  representations = undefined
+) => dispatch => {
   dispatch(
     loadObject({
       target: Object.assign(
@@ -153,17 +160,17 @@ export const addDatasetSurface = (stage, data, colourToggle, datasetID, represen
     const currentOrientation = stage.viewerControls.getOrientation();
     dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
   });
-  dispatch(appendSurfaceList(datasetID, generateMoleculeCompoundId(data)));
+  dispatch(appendSurfaceList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
-export const removeDatasetSurface = (stage, data, colourToggle, datasetID) => dispatch => {
+export const removeDatasetSurface = (stage, data, colourToggle, datasetID, skipTracking = false) => dispatch => {
   dispatch(
     deleteObject(
       Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateSurfaceObject(data, colourToggle, base_url, datasetID)),
       stage
     )
   );
-  dispatch(removeFromSurfaceList(datasetID, generateMoleculeCompoundId(data)));
+  dispatch(removeFromSurfaceList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
 export const addDatasetLigand = (

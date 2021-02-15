@@ -161,22 +161,24 @@ export const setSurfaceList = function(datsetID, surfaceList) {
     }
   };
 };
-export const appendSurfaceList = function(datsetID, item) {
+export const appendSurfaceList = function(datsetID, item, skipTracking = false) {
   return {
     type: constants.APPEND_SURFACE_LIST,
     payload: {
       datasetID: datsetID,
       item: item
-    }
+    },
+    skipTracking: skipTracking
   };
 };
-export const removeFromSurfaceList = function(datsetID, item) {
+export const removeFromSurfaceList = function(datsetID, item, skipTracking = false) {
   return {
     type: constants.REMOVE_FROM_SURFACE_LIST,
     payload: {
       datasetID: datsetID,
       item: item
-    }
+    },
+    skipTracking: skipTracking
   };
 };
 

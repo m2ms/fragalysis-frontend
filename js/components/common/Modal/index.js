@@ -60,6 +60,7 @@ export const Modal = memo(
           )}
         >
           <div
+            id="simple-modal-content"
             className={classNames(noPadding ? undefined : classes.withPadding, {
               [otherContentClasses]: !!otherContentClasses
             })}

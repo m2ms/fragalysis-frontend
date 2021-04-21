@@ -47,22 +47,24 @@ export const ModalShareSnapshot = memo(({}) => {
   };
 
   return (
-    <Modal open={sharedSnapshot.url !== null && dontShowShareSnapshot === false}>
+    <Modal id="modal-share" open={sharedSnapshot.url !== null && dontShowShareSnapshot === false}>
       {isLoadingSnapshotDialog === false ? (
         <>
           <DialogTitle id="form-dialog-title">{sharedSnapshot.title}</DialogTitle>
-          <DialogContent>
+          <DialogContent id="form-dialog-content">
             <DialogContentText>{sharedSnapshot.description}</DialogContentText>
-            <a href={sharedSnapshot.url}>{sharedSnapshot.url}</a>
+            <a id="form-dialog-url" href={sharedSnapshot.url}>
+              {sharedSnapshot.url}
+            </a>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => updateClipboard(sharedSnapshot.url)} color="primary">
+          <DialogActions id="form-dialog-actions">
+            <Button id="form-dialog-copy-button" onClick={() => updateClipboard(sharedSnapshot.url)} color="primary">
               Copy link
             </Button>
-            <Button onClick={openInNewTab} color="primary">
+            <Button id="form-dialog-open-button" onClick={openInNewTab} color="primary">
               Open in new tab
             </Button>
-            <Button onClick={closeModal} color="secondary">
+            <Button id="form-dialog-close-button" onClick={closeModal} color="secondary">
               Close
             </Button>
           </DialogActions>
@@ -70,7 +72,7 @@ export const ModalShareSnapshot = memo(({}) => {
       ) : (
         <>
           <DialogTitle id="form-dialog-title">Preparing data...</DialogTitle>
-          <DialogContent>
+          <DialogContent id="form-dialog-content">
             <Grid container alignItems="center" justify="center" className={classes.loading}>
               <Grid item>
                 <CircularProgress />

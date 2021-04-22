@@ -179,21 +179,24 @@ export const MoleculeListSortFilterDialog = memo(
     const [filteredCount, setFilteredCount] = useState(getFilteredMoleculesCount(joinedMoleculeLists, filter));
     const [predefinedFilter, setPredefinedFilter] = useState(filter.predefined);
 
-    const handleFilterChange = useCallback(filter => {
-      const filterSet = Object.assign({}, filter);
-      for (let attr of MOL_ATTRIBUTES) {
-        if (filterSet.filter[attr.key].priority === undefined || filterSet.filter[attr.key].priority === '') {
-          filterSet.filter[attr.key].priority = 0;
+    const handleFilterChange = useCallback(
+      filter => {
+        const filterSet = Object.assign({}, filter);
+        for (let attr of MOL_ATTRIBUTES) {
+          if (filterSet.filter[attr.key].priority === undefined || filterSet.filter[attr.key].priority === '') {
+            filterSet.filter[attr.key].priority = 0;
+          }
         }
-      }
-      dispatch(setFilter(filterSet));
-    }, [dispatch]);
+        dispatch(setFilter(filterSet));
+      },
+      [dispatch]
+    );
 
     useEffect(() => {
       const init = initialize();
 
       setInitState(init);
-      
+
       if (!filter.active) {
         const initCopy = { ...init };
         dispatch(setFilter(initCopy));
@@ -339,6 +342,7 @@ export const MoleculeListSortFilterDialog = memo(
               return (
                 <MoleculeListSortFilterItem
                   key={attr}
+                  atribute={attrDef.key}
                   property={attrDef.name}
                   order={filter.filter[attr].order}
                   minValue={filter.filter[attr].minValue}

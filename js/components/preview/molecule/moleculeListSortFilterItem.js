@@ -73,7 +73,7 @@ const widthMin = 30;
 const widthSlider = 170;
 
 const moleculeListSortFilterItem = memo(props => {
-  const { property, min, max, onChange, isFloat, color, disabled, onChangePrio, filter } = props;
+  const { atribute, property, min, max, onChange, isFloat, color, disabled, onChangePrio, filter } = props;
   const { order, minValue, maxValue } = props;
   // Because Slider works only with Integers we convert Float to Int by multiplying with 100
   const MULT = 100;
@@ -126,6 +126,7 @@ const moleculeListSortFilterItem = memo(props => {
         <Grid item container justify="center">
           <Grid item>
             <Button
+              id={'prio-' + atribute + '-up'}
               variant="outlined"
               className={classNames(classes.prioButton, classes.prioButtonGreen)}
               onClick={onChangePrio(-1)}
@@ -135,6 +136,7 @@ const moleculeListSortFilterItem = memo(props => {
           </Grid>
           <Grid item>
             <Button
+              id={'prio-' + atribute + '-down'}
               variant="outlined"
               className={classNames(classes.prioButton, classes.prioButtonRed)}
               onClick={onChangePrio(1)}
@@ -146,6 +148,7 @@ const moleculeListSortFilterItem = memo(props => {
       </Grid>
       <Grid item className={classes.centered} style={{ width: widthOrder }}>
         <Radio
+          id={'order-' + atribute + '-up'}
           classes={{ root: classes.radioOrder }}
           style={{ left: 4 }}
           checked={order === 1}
@@ -154,6 +157,7 @@ const moleculeListSortFilterItem = memo(props => {
           name="radio-button-demo"
         />
         <Radio
+          id={'order-' + atribute + '-down'}
           classes={{ root: classes.radioOrder }}
           style={{ right: 4 }}
           checked={order === -1}
@@ -172,6 +176,7 @@ const moleculeListSortFilterItem = memo(props => {
           </Grid>
           <Grid item className={classNames(classes.centered, classes.slider)} style={{ width: widthSlider }}>
             <Slider
+              id={'slider-' + atribute}
               value={sliderValue}
               onChange={handleChangeSlider}
               onChangeCommitted={handleCommitChangeSlider}

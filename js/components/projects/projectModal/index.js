@@ -117,7 +117,7 @@ export const ProjectModal = memo(({}) => {
   };
 
   return (
-    <Modal open={isProjectModalOpen} onClose={handleCloseModal}>
+    <Modal id="modal-add-project" open={isProjectModalOpen} onClose={handleCloseModal}>
       <Typography variant="h3">Create project</Typography>
       <Formik
         initialValues={{
@@ -406,12 +406,23 @@ export const ProjectModal = memo(({}) => {
             </Grid>
             <Grid container justify="flex-end" direction="row">
               <Grid item>
-                <Button color="secondary" disabled={isProjectModalLoading || isSubmitting} onClick={handleCloseModal}>
+                <Button
+                  id="cancel-project-button"
+                  color="secondary"
+                  disabled={isProjectModalLoading || isSubmitting}
+                  onClick={handleCloseModal}
+                >
                   Cancel
                 </Button>
               </Grid>
               <Grid item>
-                <Button color="primary" onClick={submitForm} disabled={isSubmitting} loading={isProjectModalLoading}>
+                <Button
+                  id="create-project-button"
+                  color="primary"
+                  onClick={submitForm}
+                  disabled={isSubmitting}
+                  loading={isProjectModalLoading}
+                >
                   Create
                 </Button>
               </Grid>

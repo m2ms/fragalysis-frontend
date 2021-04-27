@@ -123,6 +123,7 @@ export const Projects = memo(({}) => {
             onChange={handleSearch}
           />,
           <IconButton
+            id="add-new-project"
             color="inherit"
             onClick={() => dispatch(setProjectModalOpen(true))}
             disabled={DJANGO_CONTEXT['username'] === 'NOT_LOGGED_IN'}

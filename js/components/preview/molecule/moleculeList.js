@@ -745,7 +745,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
       height={filterItemsHeight}
       forceCompute={isActiveFilter}
     >
-      <Panel hasHeader title="Hit navigator" headerActions={actions}>
+      <Panel id="hit-navigator-panel" hasHeader title="Hit navigator" headerActions={actions}>
         <AlertModal
           title="Are you sure?"
           description={`Loading of ${joinedMoleculeLists?.length} may take a long time`}
@@ -883,7 +883,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
           </Grid>
           {currentMolecules.length > 0 && (
             <>
-              <Grid item className={classes.gridItemList}>
+              <Grid id="molecule-list-panel" item className={classes.gridItemList}>
                 <InfiniteScroll
                   pageStart={0}
                   loadMore={loadNextMolecules}

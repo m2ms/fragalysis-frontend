@@ -276,6 +276,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
               className={classes.tabButtonGroup}
             >
               <Button
+                id="vector-selector-button"
                 size="small"
                 variant={getTabValue() === 0 ? 'contained' : 'text'}
                 onClick={() => dispatch(setTabValue(tabValue, 0, 'Vector selector', getTabName()))}
@@ -283,6 +284,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
                 Vector selector
               </Button>
               <Button
+                id="selected-compounds-button"
                 size="small"
                 variant={getTabValue() === 1 ? 'contained' : 'text'}
                 onClick={() => dispatch(setTabValue(tabValue, 1, 'Selected compounds', getTabName()))}
@@ -290,6 +292,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
                 Selected compounds
               </Button>
               <Button
+                id="selected-dataset-button"
                 size="small"
                 variant={getTabValue() >= 2 ? 'contained' : 'text'}
                 onClick={() => dispatch(setTabValue(tabValue, 2, currentDataset?.title, getTabName()))}
@@ -297,6 +300,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
                 {currentDataset?.title}
               </Button>
               <Button
+                id="select-dataset-button"
                 variant="text"
                 size="small"
                 onClick={() => {

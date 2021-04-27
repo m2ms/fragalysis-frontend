@@ -43,7 +43,11 @@ import { isString } from 'lodash';
 import { SvgTooltip } from '../common';
 import { getMolImage } from '../preview/molecule/redux/dispatchActions';
 import { MOL_TYPE } from '../preview/molecule/redux/constants';
-import { deselectVectorCompound, isCompoundFromVectorSelector, showHideLigand } from '../preview/compounds/redux/dispatchActions';
+import {
+  deselectVectorCompound,
+  isCompoundFromVectorSelector,
+  showHideLigand
+} from '../preview/compounds/redux/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -554,11 +558,20 @@ export const DatasetMoleculeView = memo(
 
     return (
       <>
-        <Grid container justify="space-between" direction="row" className={classes.container} wrap="nowrap" ref={ref}>
+        <Grid
+          data-id="datasetMoleculeView"
+          container
+          justify="space-between"
+          direction="row"
+          className={classes.container}
+          wrap="nowrap"
+          ref={ref}
+        >
           {/*Site number*/}
           <Grid item container justify="space-between" direction="column" className={classes.site}>
             <Grid item>
               <Checkbox
+                data-id="selectCompoundButton"
                 checked={isCheckedToBuy}
                 className={classes.checkbox}
                 size="small"
@@ -589,7 +602,10 @@ export const DatasetMoleculeView = memo(
             >
               <Grid item className={classes.inheritWidth}>
                 <Tooltip title={moleculeTitle} placement="bottom-start">
-                  <div className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}>
+                  <div
+                    data-id="datasetMoleculeTitle"
+                    className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}
+                  >
                     {moleculeTitle}
                   </div>
                 </Tooltip>

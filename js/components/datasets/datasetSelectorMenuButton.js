@@ -41,7 +41,7 @@ export const DatasetSelectorMenuButton = ({
   };
 
   return (
-    <Popper open={open} anchorEl={anchorRef.current} role={undefined} transition>
+    <Popper id="dataset-selector-menu" open={open} anchorEl={anchorRef.current} role={undefined} transition>
       {({ TransitionProps, placement }) => (
         <Grow
           {...TransitionProps}
@@ -54,6 +54,7 @@ export const DatasetSelectorMenuButton = ({
               <MenuList id="split-button-menu" className={classes.menu}>
                 {customDatasets?.map((dataset, index) => (
                   <MenuItem
+                    data-id="datasetMenuItem"
                     key={index}
                     selected={index === selectedDatasetIndex}
                     onClick={event => handleMenuItemClick(event, index)}

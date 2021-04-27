@@ -629,7 +629,9 @@ const MoleculeView = memo(
             {/* Title label */}
             <Grid item xs={6}>
               <Tooltip title={moleculeTitle} placement="bottom-start">
-                <div className={classes.moleculeTitleLabel}>{moleculeTitle}</div>
+                <div data-id="moleculeTitle" className={classes.moleculeTitleLabel}>
+                  {moleculeTitle}
+                </div>
               </Tooltip>
             </Grid>
             {/* Control Buttons A, L, C, V */}
@@ -645,6 +647,7 @@ const MoleculeView = memo(
                 <Tooltip title="centre on">
                   <Grid item>
                     <Button
+                      data-id="centreOnButton"
                       variant="outlined"
                       className={classes.myLocationButton}
                       onClick={() => {
@@ -659,6 +662,7 @@ const MoleculeView = memo(
                 <Tooltip title="all">
                   <Grid item>
                     <Button
+                      data-id="allButton"
                       variant="outlined"
                       className={classNames(
                         classes.contColButton,
@@ -823,6 +827,7 @@ const MoleculeView = memo(
             <Grid container direction="column" justify="space-between" className={classes.arrows}>
               <Grid item>
                 <IconButton
+                  data-id="arrowUpButton"
                   color="primary"
                   size="small"
                   disabled={false || !previousItemData || !areArrowsVisible}
@@ -833,6 +838,7 @@ const MoleculeView = memo(
               </Grid>
               <Grid item>
                 <IconButton
+                  data-id="arrowDownButton"
                   color="primary"
                   size="small"
                   disabled={false || !nextItemData || !areArrowsVisible}

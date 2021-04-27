@@ -623,7 +623,7 @@ export const DatasetMoleculeList = memo(
             )}
             {isLoadingMoleculeList === false && currentMolecules.length > 0 && (
               <>
-                <Grid item className={classes.gridItemList} ref={scrollBarRef}>
+                <Grid id="dataset-molecule-list-panel" item className={classes.gridItemList} ref={scrollBarRef}>
                   <InfiniteScroll
                     getScrollParent={() =>
                       dispatch(

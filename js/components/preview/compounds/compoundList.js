@@ -100,7 +100,7 @@ export const CompoundList = memo(({ height }) => {
   }
 
   return (
-    <Panel hasHeader title={headerMessage} ref={panelRef}>
+    <Panel id="compound-list-panel" hasHeader title={headerMessage} ref={panelRef}>
       {currentCompounds && (
         <Box height={height} width="100%">
           <Grid container direction="row" justify="space-between" alignItems="center">

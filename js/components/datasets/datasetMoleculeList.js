@@ -464,7 +464,7 @@ export const DatasetMoleculeList = memo(
         height={filterItemsHeight}
         forceCompute={isActiveFilter}
       >
-        <Panel hasHeader title={title} withTooltip headerActions={actions}>
+        <Panel id="dataset-molecule-list-panel" hasHeader title={title} withTooltip headerActions={actions}>
           <AlertModal
             title="Are you sure?"
             description={`Loading of ${joinedMoleculeLists?.length} may take a long time`}
@@ -623,7 +623,7 @@ export const DatasetMoleculeList = memo(
             )}
             {isLoadingMoleculeList === false && currentMolecules.length > 0 && (
               <>
-                <Grid id="dataset-molecule-list-panel" item className={classes.gridItemList} ref={scrollBarRef}>
+                <Grid id="dataset-molecule-list" item className={classes.gridItemList} ref={scrollBarRef}>
                   <InfiniteScroll
                     getScrollParent={() =>
                       dispatch(

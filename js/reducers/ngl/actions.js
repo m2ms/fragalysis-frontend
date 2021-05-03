@@ -137,7 +137,59 @@ export const setNglFogFarAction = (newValue, oldValue) => {
   };
 };
 
+export const setIsoLevelAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_ISO_LEVEL,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setBoxSizeAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_BOX_SIZE,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setOpacityAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_OPACITY,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setContourAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_CONTOUR,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
+export const setWarningIconAction = (newValue, oldValue) => {
+  return {
+    type: CONSTANTS.SET_WARNING_ICON,
+    payload: {
+      newValue: newValue,
+      oldValue: oldValue
+    }
+  };
+};
+
 export const setNglOrientation = (orientation, div_id) => ({ type: CONSTANTS.SET_ORIENTATION, orientation, div_id });
+
+export const setNglOrientationByInteraction = (orientation, oldOrientation, div_id) => ({ type: CONSTANTS.SET_ORIENTATION_BY_INTERACTION, orientation, oldOrientation, div_id });
 
 export const setProteinLoadingState = hasLoaded => ({ type: CONSTANTS.SET_PROTEINS_HAS_LOADED, payload: hasLoaded });
 
@@ -185,5 +237,10 @@ export const removeMoleculeOrientation = moleculeGroupID => ({
 
 export const addToPdbCache = (name, cacheItem) => ({
   type: CONSTANTS.ADD_TO_PDB_CACHE,
+  payload: { name: name, cacheItem: cacheItem }
+});
+
+export const addToQualityCache = (name, cacheItem) => ({
+  type: CONSTANTS.ADD_TO_QUALITY_CACHE,
   payload: { name: name, cacheItem: cacheItem }
 });

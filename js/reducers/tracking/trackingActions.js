@@ -244,6 +244,80 @@ export const findTrackAction = (action, state) => {
           )}`
         };
       }
+    } else if (action.type === selectionConstants.APPEND_DENSITY_LIST) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.DENSITY_TURNED_ON,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.DENSITY} ${actionDescription.TURNED_ON} ${objectType} ${getMoleculeTitle(
+            objectName,
+            target_on_name
+          )}`
+        };
+      }
+    } else if (action.type === selectionConstants.REMOVE_FROM_DENSITY_LIST) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.DENSITY_TURNED_OFF,
+          annotation: actionAnnotation.CLEAR,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.DENSITY} ${actionDescription.TURNED_OFF} ${objectType} ${getMoleculeTitle(
+            objectName,
+            target_on_name
+          )}`
+        };
+      }
+    } else if (action.type === selectionConstants.APPEND_DENSITY_LIST_CUSTOM) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.DENSITY_CUSTOM_TURNED_ON,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.DENSITY} ${actionDescription.CUSTOM_VIEW} ${
+            actionDescription.TURNED_ON
+          } ${objectType} ${getMoleculeTitle(objectName, target_on_name)}`
+        };
+      }
+    } else if (action.type === selectionConstants.REMOVE_FROM_DENSITY_LIST_CUSTOM) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.DENSITY_CUSTOM_TURNED_OFF,
+          annotation: actionAnnotation.CLEAR,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.DENSITY} ${actionDescription.CUSTOM_VIEW} ${
+            actionDescription.TURNED_OFF
+          } ${objectType} ${getMoleculeTitle(objectName, target_on_name)}`
+        };
+      }
     } else if (action.type === selectionConstants.APPEND_COMPLEX_LIST) {
       if (action.item) {
         let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
@@ -315,6 +389,44 @@ export const findTrackAction = (action, state) => {
           object_name: objectName,
           object_id: action.item.id,
           text: `${actionDescription.SURFACE} ${actionDescription.TURNED_OFF} ${objectType} ${getMoleculeTitle(
+            objectName,
+            target_on_name
+          )}`
+        };
+      }
+    } else if (action.type === selectionConstants.APPEND_QUALITY_LIST) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.QUALITY_TURNED_ON,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.QUALITY} ${actionDescription.TURNED_ON} ${objectType} ${getMoleculeTitle(
+            objectName,
+            target_on_name
+          )}`
+        };
+      }
+    } else if (action.type === selectionConstants.REMOVE_FROM_QUALITY_LIST) {
+      if (action.item) {
+        let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;
+        let objectName = action.item.name || getMoleculeName(action.item.id, state);
+
+        trackAction = {
+          type: actionType.QUALITY_TURNED_OFF,
+          annotation: actionAnnotation.CLEAR,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: action.item.id,
+          text: `${actionDescription.QUALITY} ${actionDescription.TURNED_OFF} ${objectType} ${getMoleculeTitle(
             objectName,
             target_on_name
           )}`
@@ -449,6 +561,7 @@ export const findTrackAction = (action, state) => {
     } else if (action.type === previewCompoundConstants.APPEND_SHOWED_COMPOUND_LIST) {
       let objectType = actionObjectType.COMPOUND;
       let objectName = action.item && action.item.vector;
+      let objectId = action.item && action.item.smiles;
 
       trackAction = {
         type: actionType.VECTOR_COUMPOUND_ADDED,
@@ -457,7 +570,7 @@ export const findTrackAction = (action, state) => {
         username: username,
         object_type: objectType,
         object_name: objectName,
-        object_id: action.payload,
+        object_id: objectId,
         item: action.item,
         compoundId: action.payload,
         text: `${actionDescription.COMPOUND} ${objectName} ${actionDescription.ADDED}`
@@ -465,6 +578,7 @@ export const findTrackAction = (action, state) => {
     } else if (action.type === previewCompoundConstants.REMOVE_SHOWED_COMPOUND_LIST) {
       let objectType = actionObjectType.COMPOUND;
       let objectName = action.item && action.item.vector;
+      let objectId = action.item && action.item.smiles;
 
       trackAction = {
         type: actionType.VECTOR_COUMPOUND_REMOVED,
@@ -473,7 +587,7 @@ export const findTrackAction = (action, state) => {
         username: username,
         object_type: objectType,
         object_name: objectName,
-        object_id: action.payload,
+        object_id: objectId,
         item: action.item,
         compoundId: action.payload,
         text: `${actionDescription.COMPOUND} ${objectName} ${actionDescription.REMOVED}`
@@ -1172,6 +1286,134 @@ export const findTrackAction = (action, state) => {
         },
         text: `Fog far of NGL ${actionDescription.CHANGED} to value: ${newSetting}`
       };
+    } else if (action.type === nglConstants.SET_ISO_LEVEL) {
+      let oldSetting = action.payload.oldValue;
+      let newSetting = action.payload.newValue;
+
+      trackAction = {
+        type: actionType.ISO_LEVEL,
+        merge: true,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: 'NGL',
+        object_name: 'NGL',
+        oldSetting: oldSetting,
+        newSetting: newSetting,
+        getText: function() {
+          return (
+            'ISO of NGL ' +
+            actionDescription.CHANGED +
+            ' from value: ' +
+            this.oldSetting +
+            ' to value: ' +
+            this.newSetting
+          );
+        },
+        text: `ISO of NGL ${actionDescription.CHANGED} to value: ${newSetting}`
+      };
+    } else if (action.type === nglConstants.SET_BOX_SIZE) {
+      let oldSetting = action.payload.oldValue;
+      let newSetting = action.payload.newValue;
+
+      trackAction = {
+        type: actionType.BOX_SIZE,
+        merge: true,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: 'NGL',
+        object_name: 'NGL',
+        oldSetting: oldSetting,
+        newSetting: newSetting,
+        getText: function() {
+          return (
+            'Box size of NGL ' +
+            actionDescription.CHANGED +
+            ' from value: ' +
+            this.oldSetting +
+            ' to value: ' +
+            this.newSetting
+          );
+        },
+        text: `Boz size of NGL ${actionDescription.CHANGED} to value: ${newSetting}`
+      };
+    } else if (action.type === nglConstants.SET_OPACITY) {
+      let oldSetting = action.payload.oldValue;
+      let newSetting = action.payload.newValue;
+
+      trackAction = {
+        type: actionType.OPACITY,
+        merge: true,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: 'NGL',
+        object_name: 'NGL',
+        oldSetting: oldSetting,
+        newSetting: newSetting,
+        getText: function() {
+          return (
+            'Opacity of NGL ' +
+            actionDescription.CHANGED +
+            ' from value: ' +
+            this.oldSetting +
+            ' to value: ' +
+            this.newSetting
+          );
+        },
+        text: `Opacity of NGL ${actionDescription.CHANGED} to value: ${newSetting}`
+      };
+    } else if (action.type === nglConstants.SET_CONTOUR) {
+      let oldSetting = action.payload.oldValue;
+      let newSetting = action.payload.newValue;
+
+      let oldSettingDescription = getContourChangeDescription(oldSetting);
+      let newSettingDescription = getContourChangeDescription(newSetting);
+
+      trackAction = {
+        type: actionType.CONTOUR,
+        merge: true,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: 'NGL',
+        object_name: 'NGL',
+        oldSetting: oldSetting,
+        newSetting: newSetting,
+        getText: function() {
+          return (
+            'Surface/wireframe of NGL ' +
+            actionDescription.CHANGED +
+            ' from value: ' +
+            oldSettingDescription +
+            ' to value: ' +
+            newSettingDescription
+          );
+        },
+        text: `Surface/wireframe of NGL ${actionDescription.CHANGED} to value: ${newSettingDescription}`
+      };
+    } else if (action.type === nglConstants.SET_WARNING_ICON) {
+      let oldSetting = action.payload.oldValue;
+      let newSetting = action.payload.newValue;
+
+      trackAction = {
+        type: actionType.WARNING_ICON,
+        merge: true,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: 'NGL',
+        object_name: 'NGL',
+        oldSetting: oldSetting,
+        newSetting: newSetting,
+        getText: function() {
+          return (
+            'Warning icon showing ' + (newSetting === true ? actionDescription.TURNED_ON : actionDescription.TURNED_OFF)
+          );
+        },
+        text: `Warning icon showing ${newSetting === true ? actionDescription.TURNED_ON : actionDescription.TURNED_OFF}`
+      };
     }
   }
   return trackAction;
@@ -1318,6 +1560,16 @@ const getBooleanDescription = value => {
     return 'true';
   }
   return description;
+};
+
+const getContourChangeDescription = value => {
+  if (value === true) {
+    return 'wireframe';
+  } else if (value === false) {
+    return 'surface';
+  } else {
+    return '';
+  }
 };
 
 export const createInitAction = target_on => (dispatch, getState) => {

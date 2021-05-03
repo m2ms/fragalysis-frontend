@@ -159,17 +159,80 @@ export const setDensityList = function(densityList) {
   };
 };
 
-export const appendDensityList = function(item) {
+export const appendDensityList = function(item, skipTracking = false) {
   return {
     type: constants.APPEND_DENSITY_LIST,
+    item: item,
+    skipTracking
+  };
+};
+
+export const removeFromDensityList = function(item, skipTracking = false) {
+  return {
+    type: constants.REMOVE_FROM_DENSITY_LIST,
+    item: item,
+    skipTracking
+  };
+};
+
+export const setDensityListCustom = function(densityListCustom) {
+  return {
+    type: constants.SET_DENSITY_LIST_CUSTOM,
+    densityListCustom: densityListCustom
+  };
+};
+
+export const appendDensityListCustom = function(item, skipTracking = false) {
+  return {
+    type: constants.APPEND_DENSITY_LIST_CUSTOM,
+    item: item,
+    skipTracking
+  };
+};
+
+export const removeFromDensityListCustom = function(item, skipTracking = false) {
+  return {
+    type: constants.REMOVE_FROM_DENSITY_LIST_CUSTOM,
+    item: item,
+    skipTracking
+  };
+};
+
+export const setQualityList = function(qualityList, skipTracking = false) {
+  return {
+    type: constants.SET_QUALITY_LIST,
+    qualityList: qualityList,
+    skipTracking
+  };
+};
+
+export const appendInformationList = function(item) {
+  return {
+    type: constants.APPEND_INFORMATION_LIST,
     item: item
   };
 };
 
-export const removeFromDensityList = function(item) {
+export const removeFromInformationList = function(item) {
   return {
-    type: constants.REMOVE_FROM_DENSITY_LIST,
+    type: constants.REMOVE_FROM_INFORMATION_LIST,
     item: item
+  };
+};
+
+export const appendQualityList = function(item, skipTracking = false) {
+  return {
+    type: constants.APPEND_QUALITY_LIST,
+    item: item,
+    skipTracking: skipTracking
+  };
+};
+
+export const removeFromQualityList = function(item, skipTracking = false) {
+  return {
+    type: constants.REMOVE_FROM_QUALITY_LIST,
+    item: item,
+    skipTracking: skipTracking
   };
 };
 
@@ -295,3 +358,51 @@ export const setArrowUpDown = (item, newItem, arrowType, data) => ({
     data
   }
 });
+
+export const setSelectedTagList = function(selectedTagList, skipTracking = false) {
+  return {
+    type: constants.SET_SELECTED_TAG_LIST,
+    selectedTagList: selectedTagList,
+    skipTracking
+  };
+};
+
+export const appendSelectedTagList = function(item, skipTracking = false) {
+  return {
+    type: constants.APPEND_SELECTED_TAG_LIST,
+    item: item,
+    skipTracking: skipTracking
+  };
+};
+
+export const removeFromSelectedTagList = function(item, skipTracking = false) {
+  return {
+    type: constants.REMOVE_FROM_SELECTED_TAG_LIST,
+    item: item,
+    skipTracking: skipTracking
+  };
+};
+
+export const setCategoryList = function(categoryList, skipTracking = false) {
+  return {
+    type: constants.SET_CATEGORY_LIST,
+    categoryList: categoryList,
+    skipTracking
+  };
+};
+
+export const setTagList = function(tagList, skipTracking = false) {
+  return {
+    type: constants.SET_TAG_LIST,
+    tagList: tagList,
+    skipTracking
+  };
+};
+
+export const setSpecialTagList = function(tagList, skipTracking = false) {
+  return {
+    type: constants.SET_SPECIAL_TAG_LIST,
+    tagList: tagList,
+    skipTracking
+  };
+};

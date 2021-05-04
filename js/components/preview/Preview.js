@@ -40,6 +40,7 @@ import {
 } from '../datasets/redux/actions';
 import { prepareFakeFilterData } from './compounds/redux/dispatchActions';
 import { setTagSelectorData } from './tags/redux/dispatchActions';
+import { withLoadingMolecules } from './tags/withLoadingMolecules';
 
 const hitNavigatorWidth = 504;
 
@@ -374,4 +375,4 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   );
 });
 
-export default withSnapshotManagement(withUpdatingTarget(withLoadingProtein(Preview)));
+export default withSnapshotManagement(withUpdatingTarget(withLoadingProtein(withLoadingMolecules(Preview))));

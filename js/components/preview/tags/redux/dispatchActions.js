@@ -7,7 +7,7 @@ import {
   setSpecialTagList
 } from '../../../../reducers/selection/actions';
 import { TAG_TYPE } from '../../../../constants/constants';
-import { categories, tags } from './tempData';
+import { tags } from './tempData';
 import { specialTags } from './data';
 
 import {
@@ -27,7 +27,7 @@ import { setMolGroupOn } from '../../../../reducers/api/actions';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
 import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
 
-export const setTagSelectorData = () => dispatch => {
+export const setTagSelectorData = (categories, tags) => dispatch => {
   dispatch(setCategoryList(categories));
   dispatch(setTagList(tags));
   dispatch(setSpecialTagList(specialTags));
@@ -73,4 +73,14 @@ const clearSelectionState = () => (dispatch, getState) => {
   dispatch(setFilter(undefined));
   dispatch(setSortDialogOpen(false));
   dispatch(resetCurrentCompoundsSettings(true));
+};
+
+export const storeData = data => (dispatch, getState) => {
+  const categories = data.tag_categories;
+  const tags = data.tags_info;
+
+  dispatch(setTagSelectorData(categories, tags));
+
+  let allMolecules = [];
+  data.molecules.forEach(mol => {});
 };

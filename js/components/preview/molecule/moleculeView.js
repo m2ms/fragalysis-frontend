@@ -5,7 +5,7 @@
 import React, { memo, useEffect, useState, useRef, useContext, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Grid, Button, makeStyles, Typography, Tooltip, IconButton } from '@material-ui/core';
-import { MyLocation, ArrowDownward, ArrowUpward, Warning } from '@material-ui/icons';
+import { MyLocation, ArrowDownward, ArrowUpward, Warning, Label } from '@material-ui/icons';
 import SVGInline from 'react-svg-inline';
 import classNames from 'classnames';
 import { VIEWS, ARROW_TYPE } from '../../../constants/constants';
@@ -40,6 +40,7 @@ import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchAction
 import { SvgTooltip } from '../../common';
 import { MOL_TYPE } from './redux/constants';
 import { DensityMapsModal } from './modals/densityMapsModal';
+import { TagAddModal } from '../tags/modal/tagAddModal';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -186,9 +187,16 @@ const useStyles = makeStyles(theme => ({
   },
   warningIcon: {
     padding: '0px',
-    color: theme.palette.warning.dark,
+    color: theme.palette.warning.darkLight,
     '&:hover': {
-      color: theme.palette.warning.main
+      color: theme.palette.warning.dark
+    }
+  },
+  tagIcon: {
+    padding: '0px',
+    color: theme.palette.primary.main,
+    '&:hover': {
+      color: theme.palette.primary.dark
     }
   }
 }));
@@ -301,6 +309,7 @@ const MoleculeView = memo(
     );
 
     const [densityModalOpen, setDensityModalOpen] = useState(false);
+    const [tagAddModalOpen, setTagAddModalOpen] = useState(false);
     const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
     const moleculeImgRef = useRef(null);
     const openMoleculeTooltip = () => {
@@ -857,9 +866,29 @@ const MoleculeView = memo(
             onMouseLeave={closeMoleculeTooltip}
             ref={moleculeImgRef}
           >
-            <Grid item xs={warningIconVisible === true ? 10 : 12}>
+            <Grid
+              item
+              xs={
+                warningIconVisible === true
+                  ? moleculeTooltipOpen === true
+                    ? 8
+                    : 10
+                  : moleculeTooltipOpen === true
+                  ? 10
+                  : 12
+              }
+            >
               {svg_image}
             </Grid>
+            {moleculeTooltipOpen === true && (
+              <Grid item xs={2}>
+                <IconButton color="primary" className={classes.tagIcon} onClick={() => setTagAddModalOpen(true)}>
+                  <Tooltip title="Add tag">
+                    <Label />
+                  </Tooltip>
+                </IconButton>
+              </Grid>
+            )}
             {warningIconVisible === true && (
               <Grid item xs={2}>
                 <IconButton className={classes.warningIcon} onClick={() => onQuality()}>
@@ -884,6 +913,7 @@ const MoleculeView = memo(
           data={data}
           setDensity={addNewDensity}
         />
+        <TagAddModal openDialog={tagAddModalOpen} setOpenDialog={setTagAddModalOpen} molecule={data} />
       </>
     );
   }

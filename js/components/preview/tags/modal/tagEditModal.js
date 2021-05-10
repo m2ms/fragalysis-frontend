@@ -25,6 +25,9 @@ const useStyles = makeStyles(theme => ({
   },
   margin: {
     margin: theme.spacing(1)
+  },
+  marginTop: {
+    marginTop: theme.spacing(1)
   }
 }));
 
@@ -62,7 +65,7 @@ export const TagEditModal = memo(({ openDialog, setOpenDialog, tag }) => {
 
   return (
     <Modal open={openDialog} onClose={handleCloseModal}>
-      <Typography variant="h4">Edit tag: {tag.text}</Typography>
+      <Typography variant="h4">Edit tag</Typography>
       <Formik
         initialValues={{
           text: tag.text,
@@ -113,7 +116,16 @@ export const TagEditModal = memo(({ openDialog, setOpenDialog, tag }) => {
               <Grid item xs={12} className={classes.input}>
                 <InputFieldAvatar
                   icon={<Title />}
-                  field={<Field component={TextField} className={classes.input} name="text" label="Name" required />}
+                  field={
+                    <Field
+                      component={TextField}
+                      className={classes.input}
+                      name="text"
+                      label="Name"
+                      required
+                      disabled={isSubmitting}
+                    />
+                  }
                 />
               </Grid>
               <Grid
@@ -136,6 +148,7 @@ export const TagEditModal = memo(({ openDialog, setOpenDialog, tag }) => {
                         name="color"
                         label="Color"
                         required
+                        disabled={isSubmitting}
                         inputProps={{
                           readOnly: true,
                           value: tagColor,
@@ -155,7 +168,9 @@ export const TagEditModal = memo(({ openDialog, setOpenDialog, tag }) => {
                   icon={<Class />}
                   field={
                     <Autocomplete
+                      disabled={isSubmitting}
                       defaultValue={tagCategory}
+                      value={selectedCategory}
                       freeSolo
                       id="category-standard"
                       options={categoryList}
@@ -186,7 +201,15 @@ export const TagEditModal = memo(({ openDialog, setOpenDialog, tag }) => {
               <Grid item xs={12} className={classes.input}>
                 <InputFieldAvatar
                   icon={<Description />}
-                  field={<Field component={TextField} className={classes.input} name="forumPost" label="Forum post" />}
+                  field={
+                    <Field
+                      component={TextField}
+                      className={classes.input}
+                      name="forumPost"
+                      label="Forum post"
+                      disabled={isSubmitting}
+                    />
+                  }
                 />
               </Grid>
             </Grid>

@@ -7,7 +7,7 @@ import {
   setSpecialTagList
 } from '../../../../reducers/selection/actions';
 import { TAG_TYPE } from '../../../../constants/constants';
-import { tags } from './tempData';
+import { categories, tags } from './tempData';
 import { specialTags } from './data';
 
 import {

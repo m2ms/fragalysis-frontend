@@ -51,6 +51,14 @@ export const removeSelectedTag = tagItem => dispatch => {
   dispatch(removeFromSelectedTagList(tagItem));
 };
 
+export const editTag = ({ tag, data }) => (dispatch, getState) => {
+  tag.text = data.text;
+  tag.color = data.color;
+  tag.forumPost = data.forumPost;
+  tag.category = data.category?.id;
+  return Promise.resolve(null);
+};
+
 export const clearTagSelection = () => (dispatch, getState) => {
   dispatch(setSelectedTagList([]));
   dispatch(clearSelectionState());

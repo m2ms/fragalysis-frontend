@@ -773,7 +773,6 @@ export const applyDirectSelection = (stage, stageSummaryView) => (dispatch, getS
 
   if (!directAccessProcessed && directDisplay && directDisplay.molecules && directDisplay.molecules.length > 0) {
     const allMols = state.apiReducers.all_mol_lists;
-    //const molGroupMap = getMolGroupNameToId();
     directDisplay.molecules.forEach(m => {
       let keys = Object.keys(allMols);
       let directProteinNameModded = m.name.toLowerCase();

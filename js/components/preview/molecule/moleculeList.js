@@ -409,16 +409,6 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     loadAllMolecules();
   }, [proteinsHasLoaded, target_on, mol_group_list, loadAllMolecules]);
 
-  const getMolGroupNameToId = useCallback(() => {
-    const molGroupMap = {};
-    if (mol_group_list && mol_group_list.length > 0) {
-      mol_group_list.forEach(mg => {
-        molGroupMap[mg.description] = mg.id;
-      });
-      return molGroupMap;
-    }
-  }, [mol_group_list]);
-
   useEffect(() => {
     const allMolsGroupsCount = Object.keys(all_mol_lists || {}).length;
     if ((proteinsHasLoaded === true || proteinsHasLoaded === null) && allMolsGroupsCount > 0) {
@@ -453,8 +443,6 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     proteinsHasLoaded,
     joinedMoleculeLists,
     all_mol_lists,
-    loadAllMolecules,
-    getMolGroupNameToId,
     directDisplay,
     directAccessProcessed,
     stageSummaryView,

@@ -35,7 +35,7 @@ export const setTagSelectorData = (categories, tags) => dispatch => {
 };
 
 export const addSelectedTag = (tagItem, tags) => dispatch => {
-  if (tagItem.text === TAG_TYPE.ALL && tags) {
+  if (tagItem.data[0].tag === TAG_TYPE.ALL && tags) {
     tags.forEach(tag => {
       dispatch(appendSelectedTagList(tag));
     });
@@ -44,7 +44,7 @@ export const addSelectedTag = (tagItem, tags) => dispatch => {
 };
 
 export const removeSelectedTag = tagItem => dispatch => {
-  if (tagItem.text === TAG_TYPE.ALL && tags) {
+  if (tagItem.data[0].tag === TAG_TYPE.ALL && tags) {
     tags.forEach(tag => {
       dispatch(removeFromSelectedTagList(tag));
     });

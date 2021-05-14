@@ -139,9 +139,8 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   }, [customDatasets.length, dispatch, target_on, isTrackingRestoring]);
 
   useEffect(() => {
-    const allMolsGroupsCount = Object.keys(all_mol_lists || {}).length;
     const moleculeListsCount = Object.keys(moleculeLists || {}).length;
-    if (allMolsGroupsCount > 0 && moleculeListsCount > 0 && !isLoadingMoleculeList) {
+    if (moleculeListsCount > 0 && !isLoadingMoleculeList) {
       const allDatasets = {};
       const allMolsMap = linearizeMoleculesLists();
       const keys = Object.keys(moleculeLists);
@@ -163,14 +162,10 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   }, [all_mol_lists, moleculeLists, isLoadingMoleculeList, linearizeMoleculesLists, dispatch]);
 
   const linearizeMoleculesLists = useCallback(() => {
-    const keys = Object.keys(all_mol_lists);
     const allMolsMap = {};
 
-    keys.forEach(key => {
-      let molList = all_mol_lists[key];
-      molList.forEach(mol => {
-        allMolsMap[mol.id] = mol;
-      });
+    all_mol_lists.forEach(mol => {
+      allMolsMap[mol.id] = mol;
     });
 
     return allMolsMap;

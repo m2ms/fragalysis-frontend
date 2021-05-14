@@ -370,44 +370,44 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     firstInitializationMolecule.current = first;
   }
 
-  const loadAllMolecules = useCallback(() => {
-    if (
-      (proteinsHasLoaded === true || proteinsHasLoaded === null) &&
-      target_on &&
-      mol_group_list &&
-      mol_group_list.length > 0 &&
-      Object.keys(all_mol_lists).length <= 0 &&
-      isTrackingRestoring === false
-    ) {
-      let promises = [];
-      mol_group_list.forEach(molGroup => {
-        let id = molGroup.id;
-        let url = getUrl({ list_type, target_on, mol_group_on: id });
-        promises.push(
-          loadAllMolsFromMolGroup({
-            url,
-            mol_group: id
-          })
-        );
-      });
-      Promise.all(promises)
-        .then(results => {
-          let listToSet = {};
-          let allMolecules = [];
-          results.forEach(molResult => {
-            listToSet[molResult.mol_group] = molResult.molecules;
-            allMolecules.push(...molResult.molecules);
-          });
-          dispatch(setAllMolLists(listToSet));
-          dispatch(setAllMolecules(allMolecules));
-        })
-        .catch(err => console.log(err));
-    }
-  }, [proteinsHasLoaded, mol_group_list, list_type, target_on, dispatch, all_mol_lists, isTrackingRestoring]);
+  // const loadAllMolecules = useCallback(() => {
+  //   if (
+  //     (proteinsHasLoaded === true || proteinsHasLoaded === null) &&
+  //     target_on &&
+  //     mol_group_list &&
+  //     mol_group_list.length > 0 &&
+  //     Object.keys(all_mol_lists).length <= 0 &&
+  //     isTrackingRestoring === false
+  //   ) {
+  //     let promises = [];
+  //     mol_group_list.forEach(molGroup => {
+  //       let id = molGroup.id;
+  //       let url = getUrl({ list_type, target_on, mol_group_on: id });
+  //       promises.push(
+  //         loadAllMolsFromMolGroup({
+  //           url,
+  //           mol_group: id
+  //         })
+  //       );
+  //     });
+  //     Promise.all(promises)
+  //       .then(results => {
+  //         let listToSet = {};
+  //         let allMolecules = [];
+  //         results.forEach(molResult => {
+  //           listToSet[molResult.mol_group] = molResult.molecules;
+  //           allMolecules.push(...molResult.molecules);
+  //         });
+  //         dispatch(setAllMolLists(listToSet));
+  //         dispatch(setAllMolecules(allMolecules));
+  //       })
+  //       .catch(err => console.log(err));
+  //   }
+  // }, [proteinsHasLoaded, mol_group_list, list_type, target_on, dispatch, all_mol_lists, isTrackingRestoring]);
 
-  useEffect(() => {
-    loadAllMolecules();
-  }, [proteinsHasLoaded, target_on, mol_group_list, loadAllMolecules]);
+  // useEffect(() => {
+  //   loadAllMolecules();
+  // }, [proteinsHasLoaded, target_on, mol_group_list, loadAllMolecules]);
 
   useEffect(() => {
     const allMolsGroupsCount = Object.keys(all_mol_lists || {}).length;

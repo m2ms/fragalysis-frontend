@@ -34,7 +34,7 @@ const TagCategoryView = memo(({ name, tags, specialTags }) => {
           <Grid className={classes.divContainer}>
             {specialTags &&
               specialTags.map((tag, idx) => {
-                let selected = selectedTagList.some(i => i.data[0].id === tag.data[0].id);
+                let selected = selectedTagList.some(i => i.id === tag.id);
                 return (
                   <TagView
                     key={`tag-special-item-${idx}`}
@@ -47,7 +47,7 @@ const TagCategoryView = memo(({ name, tags, specialTags }) => {
               })}
             {tags &&
               tags.map((tag, idx) => {
-                let selected = selectedTagList.some(i => i.data[0].id === tag.data[0].id);
+                let selected = selectedTagList.some(i => i.id === tag.id);
                 return <TagView key={`tag-item-${idx}`} tag={tag} selected={selected}></TagView>;
               })}
           </Grid>

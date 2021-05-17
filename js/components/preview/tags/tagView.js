@@ -32,7 +32,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const TagView = memo(({ tag, selected, allTags, isSpecialTag }) => {
-  const tagData = tag?.data[0];
+  const tagData = tag;
   const classes = useStyles();
   const dispatch = useDispatch();
   const [tagEditModalOpen, setTagEditModalOpen] = useState(false);

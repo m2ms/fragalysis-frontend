@@ -25,9 +25,9 @@ const TagCategory = memo(({ headerPadding = 0 }) => {
   const seriesCategory = categoryList.find(c => c.category === CATEGORY_TYPE.SERIES);
   const forumCategory = categoryList.find(c => c.category === CATEGORY_TYPE.FORUM);
 
-  const siteTags = tagList.filter(c => c.data[0].category_id === siteCategory?.id);
-  const seriesTags = tagList.filter(c => c.data[0].category_id === seriesCategory?.id);
-  const forumTags = tagList.filter(c => c.data[0].category_id === forumCategory?.id);
+  const siteTags = tagList.filter(c => c.category_id === siteCategory?.id);
+  const seriesTags = tagList.filter(c => c.category_id === seriesCategory?.id);
+  const forumTags = tagList.filter(c => c.category_id === forumCategory?.id);
   const otherTags = tagList.filter(
     c =>
       c.category_id !== siteCategory?.id && c.category_id !== seriesCategory?.id && c.category_id !== forumCategory?.id

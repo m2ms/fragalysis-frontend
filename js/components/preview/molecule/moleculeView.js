@@ -365,9 +365,9 @@ const MoleculeView = memo(
         : not_selected_style;
 
     const addNewLigand = (skipTracking = false) => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addLigand(stage, data, colourToggle, false, true, skipTracking));
     };
 
@@ -398,9 +398,9 @@ const MoleculeView = memo(
     };
 
     const addNewProtein = (skipTracking = false) => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addHitProtein(stage, data, colourToggle, skipTracking));
     };
 
@@ -426,9 +426,9 @@ const MoleculeView = memo(
     };
 
     const addNewComplex = (skipTracking = false) => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addComplex(stage, data, colourToggle, skipTracking));
     };
 
@@ -453,9 +453,9 @@ const MoleculeView = memo(
     };
 
     const addNewSurface = () => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addSurface(stage, data, colourToggle));
     };
 
@@ -476,9 +476,9 @@ const MoleculeView = memo(
     };
 
     const addNewDensity = () => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addDensity(stage, data, colourToggle, isWireframeStyle));
     };
 
@@ -519,9 +519,9 @@ const MoleculeView = memo(
     };
 
     const addNewVector = () => {
-      if (selectMoleculeSite) {
-        selectMoleculeSite(data.site);
-      }
+      // if (selectMoleculeSite) {
+      //   selectMoleculeSite(data.site);
+      // }
       dispatch(addVector(stage, data)).catch(error => {
         throw new Error(error);
       });

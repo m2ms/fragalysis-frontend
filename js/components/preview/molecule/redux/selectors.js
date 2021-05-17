@@ -2,36 +2,32 @@ import { createSelector } from 'reselect';
 
 const getMoleculeGroupLists = state => state.apiReducers.mol_group_list;
 //const getMoleculeGroupSelection = state => state.selectionReducers.mol_group_selection;
-const getObjectSelection = state => state.selectionReducers.object_selection;
 const getAllMolecules = state => state.apiReducers.all_mol_lists;
 const getAllSelectedTags = state => state.selectionReducers.selectedTagList;
 
 export const selectJoinedMoleculeList = createSelector(
   getAllMolecules,
-  getMoleculeGroupLists,
   getAllSelectedTags,
-  getObjectSelection,
-  (all_mol_lists, mol_group_list, selectedTagList, obj_selection) => {
-    const object_selection = obj_selection;
-    let joinedMoleculeLists = [];
-    if (object_selection) {
-      object_selection.forEach(obj => {
-        const cachedData = all_mol_lists[obj];
-        const site = (mol_group_list || []).findIndex(group => group.id === obj) + 1;
-
-        let cachedDataArray = [];
-        if (cachedData && Array.isArray(cachedData)) {
-          cachedDataArray = cachedData;
-        } else if (cachedData && cachedData.results && Array.isArray(cachedData.results)) {
-          cachedDataArray = cachedData.results;
+  (all_mol_lists, selectedTagList) => {
+    const allMoleculesList = [];
+    selectedTagList.forEach(tag => {
+      let filteredMols = all_mol_lists.filter(mol => {
+        let foundTag = mol.tags_set.filter(t => t === tag.id);
+        if (foundTag && foundTag.length > 0) {
+          return true;
+        } else {
+          return false;
         }
-        cachedDataArray.forEach(r => {
-          joinedMoleculeLists.push(Object.assign({ site: site }, r));
-        });
       });
-    }
+      filteredMols.forEach(mol => {
+        let found = allMoleculesList.filter(addedMol => addedMol.id === mol.id);
+        if (!found || found.length === 0) {
+          allMoleculesList.push(mol);
+        }
+      });
+    });
 
-    return joinedMoleculeLists;
+    return allMoleculesList;
   }
 );
 
@@ -61,12 +57,17 @@ export const selectAllMoleculeList = createSelector(
   (all_mol_lists, selectedTagList) => {
     const allMoleculesList = [];
     selectedTagList.forEach(tag => {
-      let filteredMols = all_mol_lists.filter(mol => mol?.tags_set.filter(t => t === tag.data[0].id));
+      let filteredMols = all_mol_lists.filter(mol => {
+        let foundTag = mol.tags_set.filter(t => t === tag.id);
+        if (foundTag && foundTag.length > 0) {
+          return true;
+        } else {
+          return false;
+        }
+      });
       filteredMols.forEach(mol => {
         let found = allMoleculesList.filter(addedMol => addedMol.id === mol.id);
-        if (allMoleculesList.length === 0) {
-          allMoleculesList.push(mol);
-        } else if (!found || found.length === 0) {
+        if (!found || found.length === 0) {
           allMoleculesList.push(mol);
         }
       });

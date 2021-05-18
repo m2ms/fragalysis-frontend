@@ -55,24 +55,24 @@ export const selectAllMoleculeList = createSelector(
   getAllMolecules,
   getAllSelectedTags,
   (all_mol_lists, selectedTagList) => {
-    const allMoleculesList = [];
-    selectedTagList.forEach(tag => {
-      let filteredMols = all_mol_lists.filter(mol => {
-        let foundTag = mol.tags_set.filter(t => t === tag.id);
-        if (foundTag && foundTag.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      });
-      filteredMols.forEach(mol => {
-        let found = allMoleculesList.filter(addedMol => addedMol.id === mol.id);
-        if (!found || found.length === 0) {
-          allMoleculesList.push(mol);
-        }
-      });
-    });
+    // const allMoleculesList = [];
+    // selectedTagList.forEach(tag => {
+    //   let filteredMols = all_mol_lists.filter(mol => {
+    //     let foundTag = mol.tags_set.filter(t => t === tag.id);
+    //     if (foundTag && foundTag.length > 0) {
+    //       return true;
+    //     } else {
+    //       return false;
+    //     }
+    //   });
+    //   filteredMols.forEach(mol => {
+    //     let found = allMoleculesList.filter(addedMol => addedMol.id === mol.id);
+    //     if (!found || found.length === 0) {
+    //       allMoleculesList.push(mol);
+    //     }
+    //   });
+    // });
 
-    return allMoleculesList;
+    return all_mol_lists;
   }
 );

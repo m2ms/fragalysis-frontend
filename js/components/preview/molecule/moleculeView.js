@@ -25,7 +25,6 @@ import {
   removeDensity,
   addLigand,
   removeLigand,
-  searchMoleculeGroupByMoleculeID,
   getMolImage,
   moveSelectedMolSettings,
   removeQuality,
@@ -249,7 +248,6 @@ const MoleculeView = memo(
     const currentID = (data && data.id) || undefined;
     const classes = useStyles();
     const key = 'mol_image';
-    const [moleculeGroupID, setMoleculeGroupID] = useState();
 
     const dispatch = useDispatch();
     const target_on_name = useSelector(state => state.apiReducers.target_on_name);
@@ -329,18 +327,6 @@ const MoleculeView = memo(
     useEffect(() => {
       dispatch(getQualityInformation(data));
     }, [data, dispatch]);
-
-    useEffect(() => {
-      if (searchMoleculeGroup) {
-        dispatch(searchMoleculeGroupByMoleculeID(currentID))
-          .then(molGroupID => {
-            setMoleculeGroupID(molGroupID);
-          })
-          .catch(error => {
-            throw new Error(error);
-          });
-      }
-    }, [currentID, dispatch, searchMoleculeGroup]);
 
     const svg_image = (
       <SVGInline
@@ -628,7 +614,7 @@ const MoleculeView = memo(
           {/* Site number */}
           <Grid item container justify="space-between" direction="column" className={classes.site}>
             <Grid item>
-              <Typography variant="subtitle2">{data.site || moleculeGroupID}</Typography>
+              <Typography variant="subtitle2">{data.site}</Typography>
             </Grid>
             <Grid item className={classes.rank}>
               {index + 1}.

@@ -782,28 +782,6 @@ export const removeAllSelectedMolTypes = (majorViewStage, molecules, skipTrackin
 //     return Promise.resolve(resultMolGroupID);
 //   });
 
-export const searchMoleculeGroupByMoleculeID = moleculeId => (dispatch, getState) => {
-  const state = getState();
-  const all_mol_lists = state.apiReducers.all_mol_lists;
-
-  let resultMolGroupID = null;
-  const molGroupIds = Object.keys(all_mol_lists);
-  for (let groupId of molGroupIds) {
-    const mols = all_mol_lists[groupId];
-    for (let mol of mols) {
-      if (mol.id === moleculeId) {
-        resultMolGroupID = groupId;
-        break;
-      }
-    }
-    if (resultMolGroupID != null) {
-      break;
-    }
-  }
-
-  return Promise.resolve(resultMolGroupID);
-};
-
 export const applyDirectSelection = (stage, stageSummaryView) => (dispatch, getState) => {
   const state = getState();
 

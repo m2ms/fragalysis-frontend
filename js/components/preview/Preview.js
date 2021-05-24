@@ -164,9 +164,11 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const linearizeMoleculesLists = useCallback(() => {
     const allMolsMap = {};
 
-    all_mol_lists.forEach(mol => {
-      allMolsMap[mol.id] = mol;
-    });
+    if (all_mol_lists && all_mol_lists.length > 0) {
+      all_mol_lists.forEach(mol => {
+        allMolsMap[mol.id] = mol;
+      });
+    }
 
     return allMolsMap;
   }, [all_mol_lists]);

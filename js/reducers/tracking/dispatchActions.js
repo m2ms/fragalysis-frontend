@@ -35,7 +35,7 @@ import {
   removeQuality,
   removeVector,
   moveSelectedMolSettings,
-  removeAllSelectedMolTypes,
+  removeSelectedMolTypes,
   hideAllSelectedMolecules,
   addDensity,
   addDensityCustomView,
@@ -2768,7 +2768,7 @@ const handleArrowNavigationActionOfMolecule = (action, isSelected, majorViewStag
     let isInspiration = newItem && newItem.isInspiration;
     let data = action.data;
 
-    dispatch(removeAllSelectedMolTypes(majorViewStage, molecules, true, isInspiration));
+    dispatch(removeSelectedMolTypes(majorViewStage, molecules, true, isInspiration));
     dispatch(moveSelectedMolSettings(majorViewStage, item, newItem, data, true));
     dispatch(setArrowUpDown(item, newItem, action.arrowType, data));
   }

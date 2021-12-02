@@ -228,7 +228,7 @@ const MoleculeView = memo(
     previousItemData,
     nextItemData,
     setRef,
-    removeOfAllSelectedTypes,
+    removeSelectedTypes,
     L,
     P,
     C,
@@ -615,7 +615,7 @@ const MoleculeView = memo(
       });
     };
 
-    const handleClickOnDownArrow = () => {
+    const handleClickOnDownArrow = async () => {
       const refNext = ref.current.nextSibling;
       scrollToElement(refNext);
 
@@ -631,12 +631,13 @@ const MoleculeView = memo(
         objectsInView: objectsInView,
         colourToggle: colourToggle
       };
-      removeOfAllSelectedTypes(true);
-      dispatch(moveSelectedMolSettings(stage, data, nextItemData, dataValue, true));
+      // Needs to be awaited since adding elements to NGL viewer is done asynchronously
+      await dispatch(moveSelectedMolSettings(stage, data, nextItemData, dataValue, true));
       dispatch(setArrowUpDown(data, nextItemData, ARROW_TYPE.DOWN, dataValue));
+      removeSelectedTypes([nextItemData], true);
     };
 
-    const handleClickOnUpArrow = () => {
+    const handleClickOnUpArrow = async () => {
       const refPrevious = ref.current.previousSibling;
       scrollToElement(refPrevious);
 
@@ -652,9 +653,10 @@ const MoleculeView = memo(
         objectsInView: objectsInView,
         colourToggle: colourToggle
       };
-      removeOfAllSelectedTypes(true);
-      dispatch(moveSelectedMolSettings(stage, data, previousItemData, dataValue, true));
+      // Needs to be awaited since adding elements to NGL viewer is done asynchronously
+      await dispatch(moveSelectedMolSettings(stage, data, previousItemData, dataValue, true));
       dispatch(setArrowUpDown(data, previousItemData, ARROW_TYPE.UP, dataValue));
+      removeSelectedTypes([previousItemData], true);
     };
 
     let moleculeTitle = data?.protein_code.replace(new RegExp(`${target_on_name}-`, 'i'), '');

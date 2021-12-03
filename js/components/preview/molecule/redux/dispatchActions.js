@@ -316,11 +316,11 @@ export const addDensity = (
 ) => (dispatch, getState) => {
   if (data.proteinData) {
     return dispatch(setDensity(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
-  } else {
-    dispatch(getDensityMapData(data)).then(() => {
-      return dispatch(setDensity(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
-    });
   }
+
+  return dispatch(getDensityMapData(data)).then(() => {
+    return dispatch(setDensity(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
+  });
 };
 
 const setDensity = (stage, data, colourToggle, isWireframeStyle, skipTracking = false, representations = undefined) => (
@@ -406,18 +406,18 @@ export const addDensityCustomView = (
   // const contour_DENSITY_MAP_sigmaa = viewParams[NGL_PARAMS.contour_DENSITY_MAP_sigmaa];
   // const contour_DENSITY_MAP_diff = viewParams[NGL_PARAMS.contour_DENSITY_MAP_diff];
   if (data.proteinData) {
+    return dispatch(setDensityCustom(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
+    // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY, invertedWireframe));
+    // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_sigmaa, invertedWireframe));
+    // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_diff, invertedWireframe));
+  }
+
+  return dispatch(getDensityMapData(data)).then(() => {
     dispatch(setDensityCustom(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
     // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY, invertedWireframe));
     // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_sigmaa, invertedWireframe));
     // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_diff, invertedWireframe));
-  } else {
-    dispatch(getDensityMapData(data)).then(() => {
-      dispatch(setDensityCustom(stage, data, colourToggle, isWireframeStyle, skipTracking, representations));
-      // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY, invertedWireframe));
-      // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_sigmaa, invertedWireframe));
-      // dispatch(setNglViewParams(NGL_PARAMS.contour_DENSITY_MAP_diff, invertedWireframe));
-    });
-  }
+  });
 };
 
 export const toggleDensityWireframe = (currentWireframeSetting, densityData) => dispatch => {

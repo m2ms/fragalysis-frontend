@@ -61,7 +61,7 @@ import {
   removeDatasetSurface,
   loadDataSets,
   loadDatasetCompoundsWithScores,
-  removeAllSelectedDatasetMolecules,
+  removeSelectedDatasetMolecules,
   moveSelectedMoleculeSettings,
   moveSelectedInspirations,
   moveMoleculeInspirationsSettings,
@@ -2795,7 +2795,7 @@ const handleArrowNavigationActionOfCompound = (action, isSelected, majorViewStag
     const qualityListMolecule = data.qualityList;
 
     dispatch(hideAllSelectedMolecules(majorViewStage, molecules, false, true));
-    dispatch(removeAllSelectedDatasetMolecules(majorViewStage, true));
+    dispatch(removeSelectedDatasetMolecules(majorViewStage, true));
 
     const newDatasetID = (newItem.hasOwnProperty('datasetID') && newItem.datasetID) || datasetID;
     const moleculeTitlePrev = newItem && newItem.name;

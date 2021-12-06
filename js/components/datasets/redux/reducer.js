@@ -45,7 +45,10 @@ export const INITIAL_STATE = {
   crossReferenceCompoundsDataList: [],
 
   // shopping cart
-  compoundsToBuyDatasetMap: {} // map of $datasetID and its list of moleculeID
+  compoundsToBuyDatasetMap: {}, // map of $datasetID and its list of moleculeID
+
+  // drag and drop state
+  dragDropMap: {}
 };
 
 /**
@@ -276,7 +279,7 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.UPDATE_FILTER_SHOWED_SCORE_PROPERTIES:
       if (state.filteredScoreProperties[action.payload.datasetID]) {
-        return {...state};
+        return { ...state };
       } else {
         return {
           ...state,
@@ -285,7 +288,7 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
             [action.payload.datasetID]: action.payload.scoreList
           }
         };
-      };
+      }
 
     case constants.REMOVE_FROM_FILTER_SHOWED_SCORE_PROPERTIES:
       const diminishedFilterShowedScoreProperties = JSON.parse(JSON.stringify(state.filteredScoreProperties));
@@ -423,6 +426,20 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
       return Object.assign({}, state, {
         moleculeAllTypeSelection: action.payload.type
       });
+
+    case constants.RESET_DRAG_DROP_STATE: {
+      const { datasetID } = action.payload;
+      const dragDropMap = { ...state.dragDropMap };
+      delete dragDropMap[datasetID];
+      return { ...state, dragDropMap };
+    }
+
+    case constants.SET_DRAG_DROP_STATE: {
+      const { datasetID, sortedMoleculeList } = action.payload;
+      const dragDropState = Object.fromEntries(sortedMoleculeList.map((molecule, index) => [molecule.name, index]));
+      const dragDropMap = { ...state.dragDropMap, [datasetID]: dragDropState };
+      return { ...state, dragDropMap };
+    }
     default:
       return state;
   }

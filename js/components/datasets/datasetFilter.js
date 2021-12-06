@@ -9,7 +9,8 @@ import {
   setFilterProperties,
   setFilterSettings,
   setDatasetFilter,
-  setFilterWithInspirations
+  setFilterWithInspirations,
+  resetDragDropState
 } from './redux/actions';
 import {
   getFilteredDatasetMoleculeList,
@@ -107,6 +108,7 @@ export const DatasetFilter = memo(
           newFilterProperties[attrKey].oldPrio = oldPrio;
         }
       });
+      dispatch(resetDragDropState(datasetID));
       dispatch(setDatasetFilter(datasetID, newFilterProperties, newFilterSettings, key));
       dispatch(setFilterProperties(datasetID, newFilterProperties));
       dispatch(setFilterSettings(datasetID, newFilterSettings));

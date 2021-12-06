@@ -412,3 +412,13 @@ export const setArrowUpDown = (datasetID, item, newItem, arrowType, data) => ({
     data
   }
 });
+
+export const resetDragDropState = datasetID => ({
+  type: constants.RESET_DRAG_DROP_STATE,
+  payload: { datasetID }
+});
+
+export const setDragDropState = (datasetID, sortedMoleculeList) => ({
+  type: constants.SET_DRAG_DROP_STATE,
+  payload: { datasetID, sortedMoleculeList }
+});

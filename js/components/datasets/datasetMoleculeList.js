@@ -14,7 +14,7 @@ import {
   IconButton,
   ButtonGroup
 } from '@material-ui/core';
-import React, { useState, useEffect, memo, useRef, useContext, useCallback } from 'react';
+import React, { useState, useEffect, memo, useRef, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DatasetMoleculeView } from './datasetMoleculeView';
 import { colourList } from '../preview/molecule/utils/color';
@@ -39,7 +39,7 @@ import {
   moveMoleculeInspirationsSettings,
   removeAllSelectedDatasetMolecules
 } from './redux/dispatchActions';
-import { setFilterDialogOpen, setSearchStringOfCompoundSet, replaceAllMoleculeLists } from './redux/actions';
+import { setFilterDialogOpen, setSearchStringOfCompoundSet, setDragDropState } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Search, Link } from '@material-ui/icons';
 import { getFilteredDatasetMoleculeList } from './redux/selectors';
@@ -53,6 +53,7 @@ import { setSelectedAllByType, setDeselectedAllByType } from './redux/actions';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { sortMoleculesByDragDropState } from './helpers';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -216,6 +217,7 @@ export const DatasetMoleculeList = memo(
     const searchString = useSelector(state => state.datasetsReducers.searchString);
 
     const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
+    const dragDropMap = useSelector(state => state.datasetsReducers.dragDropMap);
     const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
     const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
     const filterMap = useSelector(state => state.datasetsReducers.filterDatasetMap);
@@ -233,6 +235,7 @@ export const DatasetMoleculeList = memo(
 
     const filterRef = useRef();
     let joinedMoleculeLists = moleculeLists[datasetID] || [];
+    const dragDropState = dragDropMap[datasetID];
 
     const getJoinedMoleculeList = useSelector(state => getMoleculeList(state));
     const inspirationMoleculeDataList = useSelector(state => state.datasetsReducers.allInspirationMoleculeDataList);
@@ -242,11 +245,20 @@ export const DatasetMoleculeList = memo(
     // TODO Reset Infinity scroll
 
     if (isActiveFilter) {
-      joinedMoleculeLists = filteredDatasetMolecules;
+      if (dragDropState) {
+        joinedMoleculeLists = sortMoleculesByDragDropState(filteredDatasetMolecules, dragDropState);
+      } else {
+        joinedMoleculeLists = filteredDatasetMolecules;
+      }
     } else {
-      // default sort is by site
-      joinedMoleculeLists.sort((a, b) => a.site - b.site);
+      if (dragDropState) {
+        joinedMoleculeLists = sortMoleculesByDragDropState(joinedMoleculeLists, dragDropState);
+      } else {
+        // default sort is by site
+        joinedMoleculeLists.sort((a, b) => a.site - b.site);
+      }
     }
+
     if (searchString !== null) {
       joinedMoleculeLists = joinedMoleculeLists.filter(molecule =>
         molecule.name.toLowerCase().includes(searchString.toLowerCase())
@@ -461,18 +473,15 @@ export const DatasetMoleculeList = memo(
 
     const [isOpenAlert, setIsOpenAlert] = useState(false);
 
-    const moveMolecule = useCallback(
-      (dragIndex, hoverIndex) => {
-        const moleculeList = [...moleculeLists[datasetID]];
-        const draggedElement = moleculeList[dragIndex];
+    const moveMolecule = (dragIndex, hoverIndex) => {
+      const dragDropMolecules = [...currentMolecules];
+      const draggedElement = dragDropMolecules[dragIndex];
 
-        moleculeList.splice(dragIndex, 1);
-        moleculeList.splice(hoverIndex, 0, draggedElement);
+      dragDropMolecules.splice(dragIndex, 1);
+      dragDropMolecules.splice(hoverIndex, 0, draggedElement);
 
-        dispatch(replaceAllMoleculeLists({ ...moleculeLists, [datasetID]: moleculeList }));
-      },
-      [dispatch, datasetID, moleculeLists]
-    );
+      dispatch(setDragDropState(datasetID, dragDropMolecules));
+    };
 
     return (
       <ComputeSize

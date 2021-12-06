@@ -14,7 +14,7 @@ import {
   IconButton,
   ButtonGroup
 } from '@material-ui/core';
-import React, { useState, useEffect, memo, useRef, useContext } from 'react';
+import React, { useState, useEffect, memo, useRef, useContext, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DatasetMoleculeView } from './datasetMoleculeView';
 import { colourList } from '../preview/molecule/utils/color';
@@ -39,7 +39,7 @@ import {
   moveMoleculeInspirationsSettings,
   removeAllSelectedDatasetMolecules
 } from './redux/dispatchActions';
-import { setFilterDialogOpen, setSearchStringOfCompoundSet } from './redux/actions';
+import { setFilterDialogOpen, setSearchStringOfCompoundSet, replaceAllMoleculeLists } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Search, Link } from '@material-ui/icons';
 import { getFilteredDatasetMoleculeList } from './redux/selectors';
@@ -50,6 +50,9 @@ import { AlertModal } from '../common/Modal/AlertModal';
 import { hideAllSelectedMolecules } from '../preview/molecule/redux/dispatchActions';
 import { getMoleculeList } from '../preview/molecule/redux/selectors';
 import { setSelectedAllByType, setDeselectedAllByType } from './redux/actions';
+
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -458,6 +461,19 @@ export const DatasetMoleculeList = memo(
 
     const [isOpenAlert, setIsOpenAlert] = useState(false);
 
+    const moveMolecule = useCallback(
+      (dragIndex, hoverIndex) => {
+        const moleculeList = [...moleculeLists[datasetID]];
+        const draggedElement = moleculeList[dragIndex];
+
+        moleculeList.splice(dragIndex, 1);
+        moleculeList.splice(hoverIndex, 0, draggedElement);
+
+        dispatch(replaceAllMoleculeLists({ ...moleculeLists, [datasetID]: moleculeList }));
+      },
+      [dispatch, datasetID, moleculeLists]
+    );
+
     return (
       <ComputeSize
         componentRef={filterRef.current}
@@ -653,29 +669,33 @@ export const DatasetMoleculeList = memo(
                     }
                     useWindow={false}
                   >
-                    {datasetID &&
-                      currentMolecules.map((data, index, array) => (
-                        <DatasetMoleculeView
-                          key={index}
-                          index={index}
-                          imageHeight={imgHeight}
-                          imageWidth={imgWidth}
-                          data={data}
-                          datasetID={datasetID}
-                          setRef={setSelectedMoleculeRef}
-                          showCrossReferenceModal
-                          previousItemData={index > 0 && array[index - 1]}
-                          nextItemData={index < array?.length && array[index + 1]}
-                          removeOfAllSelectedTypes={removeOfAllSelectedTypes}
-                          removeOfAllSelectedTypesOfInspirations={removeOfAllSelectedTypesOfInspirations}
-                          moveSelectedMoleculeInspirationsSettings={moveSelectedMoleculeInspirationsSettings}
-                          L={ligandList.includes(data.id)}
-                          P={proteinList.includes(data.id)}
-                          C={complexList.includes(data.id)}
-                          S={surfaceList.includes(data.id)}
-                          V={false}
-                        />
-                      ))}
+                    {datasetID && (
+                      <DndProvider backend={HTML5Backend}>
+                        {currentMolecules.map((data, index, array) => (
+                          <DatasetMoleculeView
+                            key={data.id}
+                            index={index}
+                            imageHeight={imgHeight}
+                            imageWidth={imgWidth}
+                            data={data}
+                            datasetID={datasetID}
+                            setRef={setSelectedMoleculeRef}
+                            showCrossReferenceModal
+                            previousItemData={index > 0 && array[index - 1]}
+                            nextItemData={index < array?.length && array[index + 1]}
+                            removeOfAllSelectedTypes={removeOfAllSelectedTypes}
+                            removeOfAllSelectedTypesOfInspirations={removeOfAllSelectedTypesOfInspirations}
+                            moveSelectedMoleculeInspirationsSettings={moveSelectedMoleculeInspirationsSettings}
+                            L={ligandList.includes(data.id)}
+                            P={proteinList.includes(data.id)}
+                            C={complexList.includes(data.id)}
+                            S={surfaceList.includes(data.id)}
+                            V={false}
+                            moveMolecule={moveMolecule}
+                          />
+                        ))}
+                      </DndProvider>
+                    )}
                   </InfiniteScroll>
                 </Grid>
                 <Grid item>

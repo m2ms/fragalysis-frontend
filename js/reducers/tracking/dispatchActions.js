@@ -78,7 +78,8 @@ import {
   setFilterProperties,
   setFilterSettings,
   updateFilterShowedScoreProperties,
-  setFilterShowedScoreProperties
+  setFilterShowedScoreProperties,
+  setDragDropState
 } from '../../components/datasets/redux/actions';
 import { getUrl, loadAllMolsFromMolGroup } from '../../../js/utils/genericList';
 import {
@@ -1916,6 +1917,9 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.DATASET_FILTER_SCORE:
         dispatch(handleFilterScoreAction(action, false));
         break;
+      case actionType.DRAG_DROP_FINISHED:
+        dispatch(handleDragDropFinished(action, false));
+        break;
       case actionType.REPRESENTATION_VISIBILITY_UPDATED:
         dispatch(handleUpdateRepresentationVisibilityAction(action, false, majorView));
         break;
@@ -2148,6 +2152,9 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.DATASET_FILTER_SCORE:
         dispatch(handleFilterScoreAction(action, true));
+        break;
+      case actionType.DRAG_DROP_FINISHED:
+        dispatch(handleDragDropFinished(action, true));
         break;
       case actionType.REPRESENTATION_VISIBILITY_UPDATED:
         dispatch(handleUpdateRepresentationVisibilityAction(action, true, majorView));
@@ -2514,6 +2521,13 @@ const handleFilterScoreAction = (action, isSelected) => (dispatch, getState) => 
     let isChecked = isSelected === true ? action.isChecked : !action.isChecked;
     let scoreName = action.object_name;
     dispatch(selectScoreProperty({ isChecked, datasetID, scoreName }));
+  }
+};
+
+const handleDragDropFinished = (action, isSelected) => dispatch => {
+  if (action) {
+    const { oldDragDropState, newDragDropState, datasetID } = action;
+    dispatch(setDragDropState(datasetID, isSelected ? newDragDropState : oldDragDropState));
   }
 };
 

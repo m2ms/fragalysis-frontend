@@ -48,7 +48,12 @@ export const INITIAL_STATE = {
   compoundsToBuyDatasetMap: {}, // map of $datasetID and its list of moleculeID
 
   // drag and drop state
-  dragDropMap: {}
+  dragDropMap: {},
+  dragDropStatus: {
+    inProgress: false,
+    startingDragDropState: {},
+    startingIndex: -1
+  }
 };
 
 /**
@@ -427,18 +432,35 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
         moleculeAllTypeSelection: action.payload.type
       });
 
+    case constants.SET_DRAG_DROP_STATE: {
+      const { datasetID, dragDropState } = action.payload;
+      const dragDropMap = { ...state.dragDropMap, [datasetID]: dragDropState };
+      return { ...state, dragDropMap };
+    }
+
     case constants.RESET_DRAG_DROP_STATE: {
-      const { datasetID } = action.payload;
+      const datasetID = action.payload;
       const dragDropMap = { ...state.dragDropMap };
       delete dragDropMap[datasetID];
       return { ...state, dragDropMap };
     }
 
-    case constants.SET_DRAG_DROP_STATE: {
-      const { datasetID, sortedMoleculeList } = action.payload;
-      const dragDropState = Object.fromEntries(sortedMoleculeList.map((molecule, index) => [molecule.name, index]));
-      const dragDropMap = { ...state.dragDropMap, [datasetID]: dragDropState };
-      return { ...state, dragDropMap };
+    case constants.DRAG_DROP_STARTED: {
+      const { datasetId, startIndex } = action.payload;
+      const { dragDropMap } = state;
+      const dragDropStatus = {
+        inProgress: true,
+        startingDragDropState: dragDropMap[datasetId],
+        startingIndex: startIndex
+      };
+      return { ...state, dragDropStatus };
+    }
+
+    case constants.DRAG_DROP_FINISHED: {
+      const dragDropStatus = {
+        inProgress: false
+      };
+      return { ...state, dragDropStatus };
     }
     default:
       return state;

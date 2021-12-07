@@ -264,7 +264,7 @@ export const DatasetMoleculeView = memo(
   }) => {
     const ref = useRef(null);
 
-    const { handlerId, isDragging } = useDragDropMoleculeView(ref, data.id, index, moveMolecule);
+    const { handlerId, isDragging } = useDragDropMoleculeView(ref, datasetID, data, index, moveMolecule);
     const opacity = isDragging ? 0 : 1;
 
     const selectedAll = useRef(false);

@@ -1081,6 +1081,25 @@ export const findTrackAction = (action, state) => {
               : `Filter parameter: ${key} ${actionDescription.CHANGED} ${descriptionProperties} of dataset: ${action.payload.datasetID}`
         };
       }
+    } else if (action.type === customDatasetConstants.DRAG_DROP_FINISHED) {
+      const { datasetID, molecule, index } = action.payload;
+      const {
+        dragDropMap,
+        dragDropStatus: { startingDragDropState, startingIndex }
+      } = state.datasetsReducers;
+
+      trackAction = {
+        type: actionType.DRAG_DROP_FINISHED,
+        annotation: actionAnnotation.CHECK,
+        timestamp: Date.now(),
+        username: username,
+        object_type: actionObjectType.COMPOUND,
+        oldDragDropState: startingDragDropState,
+        newDragDropState: dragDropMap[datasetID],
+        datasetID,
+        text: `Position for molecule ${molecule.name} from dataset ${datasetID} changed from ${startingIndex +
+          1} to ${index + 1}`
+      };
     } else if (action.type === customDatasetConstants.SET_FILTER_SHOWED_SCORE_PROPERTIES) {
       if (action.payload) {
         let objectType = actionObjectType.COMPOUND;

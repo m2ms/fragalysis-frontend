@@ -37,9 +37,10 @@ import {
   removeDatasetSurface,
   autoHideDatasetDialogsOnScroll,
   moveMoleculeInspirationsSettings,
-  removeAllSelectedDatasetMolecules
+  removeAllSelectedDatasetMolecules,
+  dragDropMoleculeInProgress
 } from './redux/dispatchActions';
-import { setFilterDialogOpen, setSearchStringOfCompoundSet, setDragDropState } from './redux/actions';
+import { setFilterDialogOpen, setSearchStringOfCompoundSet } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Search, Link } from '@material-ui/icons';
 import { getFilteredDatasetMoleculeList } from './redux/selectors';
@@ -474,13 +475,7 @@ export const DatasetMoleculeList = memo(
     const [isOpenAlert, setIsOpenAlert] = useState(false);
 
     const moveMolecule = (dragIndex, hoverIndex) => {
-      const dragDropMolecules = [...currentMolecules];
-      const draggedElement = dragDropMolecules[dragIndex];
-
-      dragDropMolecules.splice(dragIndex, 1);
-      dragDropMolecules.splice(hoverIndex, 0, draggedElement);
-
-      dispatch(setDragDropState(datasetID, dragDropMolecules));
+      dispatch(dragDropMoleculeInProgress(datasetID, joinedMoleculeLists, dragIndex, hoverIndex));
     };
 
     return (

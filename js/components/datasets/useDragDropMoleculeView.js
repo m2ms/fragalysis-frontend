@@ -1,9 +1,13 @@
 import { useDrag, useDrop } from 'react-dnd';
+import { useDispatch } from 'react-redux';
+import { dragDropMoleculeFinished, dragDropMoleculeStarted } from './redux/dispatchActions';
 
 const DND_TYPE = 'DATASET_MOLECULE_VIEW';
 
 // Taken and adjusted from https://react-dnd.github.io/react-dnd/examples/sortable/simple
-export const useDragDropMoleculeView = (ref, id, index, moveMolecule) => {
+export const useDragDropMoleculeView = (ref, datasetID, molecule, index, moveMolecule) => {
+  const dispatch = useDispatch();
+
   const [{ handlerId }, drop] = useDrop({
     accept: DND_TYPE,
     collect(monitor) {
@@ -17,6 +21,9 @@ export const useDragDropMoleculeView = (ref, id, index, moveMolecule) => {
       }
       const dragIndex = item.index;
       const hoverIndex = index;
+
+      dispatch(dragDropMoleculeStarted(datasetID, dragIndex));
+
       // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
         return;
@@ -47,13 +54,16 @@ export const useDragDropMoleculeView = (ref, id, index, moveMolecule) => {
       // but it's good here for the sake of performance
       // to avoid expensive index searches.
       item.index = hoverIndex;
+    },
+    drop(item, monitor) {
+      dispatch(dragDropMoleculeFinished(datasetID, molecule, index));
     }
   });
 
   const [{ isDragging }, drag] = useDrag({
     type: DND_TYPE,
     item: () => {
-      return { id, index };
+      return { id: molecule.id, index };
     },
     collect: monitor => ({
       isDragging: monitor.isDragging()

@@ -438,19 +438,12 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
       return { ...state, dragDropMap };
     }
 
-    case constants.RESET_DRAG_DROP_STATE: {
-      const datasetID = action.payload;
-      const dragDropMap = { ...state.dragDropMap };
-      delete dragDropMap[datasetID];
-      return { ...state, dragDropMap };
-    }
-
     case constants.DRAG_DROP_STARTED: {
-      const { datasetId, startIndex } = action.payload;
+      const { datasetID, startIndex } = action.payload;
       const { dragDropMap } = state;
       const dragDropStatus = {
         inProgress: true,
-        startingDragDropState: dragDropMap[datasetId],
+        startingDragDropState: dragDropMap[datasetID],
         startingIndex: startIndex
       };
       return { ...state, dragDropStatus };

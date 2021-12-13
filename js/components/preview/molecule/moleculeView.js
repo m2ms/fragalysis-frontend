@@ -820,20 +820,6 @@ const MoleculeView = memo(
                     </Button>
                   </Grid>
                 </Tooltip>
-                <Tooltip title="atom quality">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classNames(classes.contColButton, {
-                        [classes.contColButtonSelected]: isQualityOn
-                      })}
-                      onClick={() => onQuality()}
-                      disabled={!hasAdditionalInformation}
-                    >
-                      Q
-                    </Button>
-                  </Grid>
-                </Tooltip>
                 <Tooltip title="vectors">
                   <Grid item>
                     <Button
@@ -978,6 +964,7 @@ const MoleculeView = memo(
           setOpenDialog={setDensityModalOpen}
           data={data}
           setDensity={addNewDensity}
+          isQualityOn={isQualityOn}
         />
       </>
     );

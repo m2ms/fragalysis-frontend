@@ -78,6 +78,9 @@ const useStyles = makeStyles(theme => ({
       backgroundColor: theme.palette.success.dark,
       color: theme.palette.success.contrastText
     }
+  },
+  category: {
+    overflowWrap: 'break-word'
   }
 }));
 
@@ -156,6 +159,7 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
       alignItems="center"
       xs={12}
     >
+      {/* TagView Chip */}
       <Grid item xs={3}>
         <TagView
           key={`tag-item-editor${tag.id}`}
@@ -167,13 +171,15 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
           isTagEditor={true}
         ></TagView>
       </Grid>
+      {/* category */}
       <Grid item xs={1}>
         <Tooltip title={CATEGORY_TYPE_BY_ID[tag.category_id]}>
-          <Typography variant="body2">
+          <Typography variant="body2" className={classes.category}>
             {CATEGORY_TYPE_BY_ID[tag.category_id]}
           </Typography>
         </Tooltip>
       </Grid>
+      {/* select hits button */}
       <Grid item xs={2}>
         <Tooltip title="Select hits">
           <Grid item>
@@ -191,6 +197,7 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
           </Grid>
         </Tooltip>
       </Grid>
+      {/* discourse button */}
       <Grid item xs={2}>
         <Tooltip title="Discourse link">
           <Grid item>
@@ -219,11 +226,13 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
           </Grid>
         </Tooltip>
       </Grid>
+      {/* user */}
       <Grid item xs={1}>
         <Typography variant="body2">
           {tag.user_id}
         </Typography>
       </Grid>
+      {/* date */}
       <Grid item xs={2}>
         <Typography variant="body2" noWrap>
           {navigator.language ?
@@ -232,20 +241,8 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
           }
         </Typography>
       </Grid>
+      {/* edit button */}
       <Grid item xs={1}>
-        {/*<Tooltip title="Edit">
-          <Grid item>
-            <Button
-              variant="contained"
-              className={classes.editButton}
-              size="small"
-              onClick={() => handleEditTag(tag)}
-              disabled={!DJANGO_CONTEXT.pk}
-            >
-              Edit
-            </Button>
-          </Grid>{theme.palette.error.light}
-        </Tooltip>*/}
         <IconButton
           variant="contained"
           className={classes.editButton}

@@ -109,7 +109,6 @@ const NewTagDetailRow = memo(({ moleculesToEditIds, moleculesToEdit }) => {
 
   const createTag = () => {
     if (newTagName && newTagCategory) {
-      const newTag = { tag: newTagName, colour: newTagColor, category_id: newTagCategory, discourse_url: newTagLink };
       const tagObject = createMoleculeTagObject(
         newTagName,
         moleculesToEdit.length ? moleculesToEdit[0].proteinData.target_id : targetId,
@@ -120,7 +119,18 @@ const NewTagDetailRow = memo(({ moleculesToEditIds, moleculesToEdit }) => {
         [...moleculesToEditIds]
       );
       createNewTag(tagObject, targetName).then(molTag => {
-        let augMolTagObject = augumentTagObjectWithId(newTag, molTag.id);
+        let augMolTagObject = augumentTagObjectWithId({
+          tag: molTag.tag,
+          category_id: molTag.category,
+          target_id: molTag.target,
+          user_id: molTag.user,
+          create_date: molTag.create_date,
+          colour: molTag.colour,
+          discourse_url: molTag.discourse_url,
+          help_text: molTag.help_text,
+          additional_info: molTag.additional_info,
+          mol_group_id: molTag.mol_group
+        }, molTag.id);
         dispatch(appendTagList(augMolTagObject));
         dispatch(appendMoleculeTag(molTag));
       });

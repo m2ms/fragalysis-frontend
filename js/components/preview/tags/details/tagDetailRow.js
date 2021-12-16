@@ -78,9 +78,6 @@ const useStyles = makeStyles(theme => ({
       backgroundColor: theme.palette.success.dark,
       color: theme.palette.success.contrastText
     }
-  },
-  category: {
-    overflowWrap: 'break-word'
   }
 }));
 
@@ -172,9 +169,9 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
         ></TagView>
       </Grid>
       {/* category */}
-      <Grid item xs={1}>
+      <Grid item xs={1} wrap="nowrap">
         <Tooltip title={CATEGORY_TYPE_BY_ID[tag.category_id]}>
-          <Typography variant="body2" className={classes.category}>
+          <Typography variant="body2" noWrap>
             {CATEGORY_TYPE_BY_ID[tag.category_id]}
           </Typography>
         </Tooltip>

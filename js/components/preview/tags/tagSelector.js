@@ -32,7 +32,9 @@ const useStyles = makeStyles(theme => ({
     height: '100%'
   },
   tagModeSwitch: {
-    width: 132 // Should be adjusted if a label for the switch changes
+    width: 132, // Should be adjusted if a label for the switch changes
+    // justify: 'flex-end',
+    marginRight: '0px'
   },
   headerContainer: {
     marginRight: '0px',
@@ -59,6 +61,9 @@ const useStyles = makeStyles(theme => ({
     },
     '& .MuiButton-containedPrimary': {
       backgroundColor: 'primary'
+    },
+    '& .MuiButton-label': {
+      paddingTop: '4px'
     }
   },
   headerButtonActive: {
@@ -68,6 +73,9 @@ const useStyles = makeStyles(theme => ({
     },
     '& .MuiButton-containedPrimary': {
       backgroundColor: '#4472C4'
+    },
+    '& .MuiButton-label': {
+      paddingTop: '4px'
     }
   }
 }));
@@ -161,6 +169,10 @@ const TagSelector = memo(({ handleHeightChange }) => {
     dispatch(setTagFilteringMode(!tagMode));
   };
   const TagModeSwitch = withStyles({
+    // '& .MuiFormControlLabel-root': {
+    //   marginLeft: '0px',
+    //   marginRight: '0px'
+    // },
     switchBase: {
       color: blue[300],
       '&$checked': {
@@ -192,17 +204,11 @@ const TagSelector = memo(({ handleHeightChange }) => {
                   : 'Only the compounds labelled with all the active tags will be selected'
               }
             >
-              <Button
-                onClick={() => filteringModeSwitched()}
-                disabled={false}
-                color="inherit"
-                variant="text"
-                size="small"
-                data-id="tagSelectionButton"
-                className={classes.headerButton}
-              >
-                {tagMode ? 'Intersection' : 'Union'}
-              </Button>
+              <FormControlLabel
+                className={classes.tagModeSwitch}
+                control={<TagModeSwitch checked={tagMode} onChange={filteringModeSwitched} name="tag-filtering-mode" />}
+                label={tagMode ? 'Intersection' : 'Union'}
+              />
             </Tooltip>
           </Grid>
           <Grid item>

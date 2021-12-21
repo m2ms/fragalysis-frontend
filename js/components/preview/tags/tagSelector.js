@@ -6,7 +6,7 @@ import { Button } from '../../common/Inputs/Button';
 import TagCategory from './tagCategory';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectAllTags, clearAllTags } from './redux/dispatchActions';
-import { setTagFilteringMode } from '../../../reducers/selection/actions';
+import { setTagFilteringMode, setDisplayAllMolecules } from '../../../reducers/selection/actions';
 import { withStyles } from '@material-ui/core/styles';
 import { blue } from '@material-ui/core/colors';
 
@@ -33,6 +33,42 @@ const useStyles = makeStyles(theme => ({
   },
   tagModeSwitch: {
     width: 132 // Should be adjusted if a label for the switch changes
+  },
+  headerContainer: {
+    marginRight: '0px',
+    paddingLeft: '0px',
+    paddingRight: '0px',
+    justify: 'flex-end',
+    minHeight: '100%',
+    alignItems: 'center'
+  },
+  mainPanel: {
+    '& .MuiGrid-root': {
+      flexWrap: 'nowrap'
+    }
+  },
+  headerButton: {
+    '& .MuiButton-root': {
+      minWidth: '0px'
+    }
+  },
+  headerButtonInactive: {
+    backgroundColor: 'primary',
+    '& .MuiButton-root': {
+      minWidth: '0px'
+    },
+    '& .MuiButton-containedPrimary': {
+      backgroundColor: 'primary'
+    }
+  },
+  headerButtonActive: {
+    backgroundColor: '#4472C4',
+    '& .MuiButton-root': {
+      minWidth: '0px'
+    },
+    '& .MuiButton-containedPrimary': {
+      backgroundColor: '#4472C4'
+    }
   }
 }));
 
@@ -45,6 +81,11 @@ const TagSelector = memo(({ handleHeightChange }) => {
   const [elementHeight, setElementHeight] = useState(0);
   const tagMode = useSelector(state => state.selectionReducers.tagFilteringMode);
   const [selectAll, setSelectAll] = useState(true);
+  const displayAllMolecules = useSelector(state => state.selectionReducers.displayAllMolecules);
+
+  const handleAllMoleculesButton = () => {
+    dispatch(setDisplayAllMolecules(!displayAllMolecules));
+  };
 
   const handleSelectionButton = () => {
     if (selectAll) {
@@ -140,31 +181,57 @@ const TagSelector = memo(({ handleHeightChange }) => {
       hasExpansion
       defaultExpanded
       title="Hit List Filter"
+      className={classes.mainPanel}
       headerActions={[
-        <Tooltip
-          title={
-            tagMode
-              ? 'Any compound labelled with any of the active tags will be selected'
-              : 'Only the compounds labelled with all the active tags will be selected'
-          }
-        >
-          <FormControlLabel
-            className={classes.tagModeSwitch}
-            control={<TagModeSwitch checked={tagMode} onChange={filteringModeSwitched} name="tag-filtering-mode" />}
-            label={tagMode ? 'Intersection' : 'Union'}
-          />
-        </Tooltip>,
-        <Button
-          onClick={() => handleSelectionButton()}
-          disabled={false}
-          color="inherit"
-          variant="text"
-          size="small"
-          startIcon={<DoneAll />}
-          data-id="tagSelectionButton"
-        >
-          {selectAll ? 'Select all tags' : 'Unselect'}
-        </Button>
+        <Grid container item direction="row" className={classes.headerContainer}>
+          <Grid item>
+            <Tooltip
+              title={
+                tagMode
+                  ? 'Any compound labelled with any of the active tags will be selected'
+                  : 'Only the compounds labelled with all the active tags will be selected'
+              }
+            >
+              <Button
+                onClick={() => filteringModeSwitched()}
+                disabled={false}
+                color="inherit"
+                variant="text"
+                size="small"
+                data-id="tagSelectionButton"
+                className={classes.headerButton}
+              >
+                {tagMode ? 'Intersection' : 'Union'}
+              </Button>
+            </Tooltip>
+          </Grid>
+          <Grid item>
+            <Button
+              onClick={() => handleAllMoleculesButton()}
+              disabled={false}
+              color="inherit"
+              variant="text"
+              size="small"
+              data-id="tagSelectionButton"
+              className={displayAllMolecules ? classes.headerButtonActive : classes.headerButtonInactive}
+            >
+              Select all hits
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              onClick={() => handleSelectionButton()}
+              disabled={false}
+              color="inherit"
+              variant="text"
+              size="small"
+              data-id="tagSelectionButton"
+              className={selectAll ? classes.headerButtonInactive : classes.headerButtonActive}
+            >
+              Select all tags
+            </Button>
+          </Grid>
+        </Grid>
       ]}
       onExpandChange={expand => {
         if (ref.current && handleHeightChange instanceof Function) {

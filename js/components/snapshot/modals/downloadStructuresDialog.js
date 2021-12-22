@@ -1,4 +1,4 @@
-import React, { memo, useState, useContext } from 'react';
+import React, { memo, useState, useContext, useEffect } from 'react';
 import Modal from '../../common/Modal';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -66,6 +66,7 @@ export const DownloadStructureDialog = memo(({}) => {
   const selectedMoleculesIds = useSelector(state => state.selectionReducers.moleculesToEdit);
   const taggedMolecules = useSelector(state => selectJoinedMoleculeList(state));
   const downloadTags = useSelector(state => state.apiReducers.downloadTags);
+  const associatedDownloadTagName = useSelector(state => state.apiReducers.associatedDownloadTagName);
 
   const [structuresSelection, setStructuresSelection] = useState('allStructures');
   const [bound, setBound] = useState(true);
@@ -87,6 +88,11 @@ export const DownloadStructureDialog = memo(({}) => {
   const [downloadTagUrl, setDownloadTagUrl] = useState(null);
   const [selectedDownload, setSelectedDownload] = useState(newDownload);
   const [linkType, setLinkType] = useState('incremental');
+
+  useEffect(() => {
+    if (associatedDownloadTagName) {
+    }
+  }, [associatedDownloadTagName, downloadTags]);
 
   const isStaticDownload = () => {
     return linkType !== 'incremental';

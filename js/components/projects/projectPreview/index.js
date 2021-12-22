@@ -6,6 +6,8 @@ import { loadCurrentSnapshotByID, loadSnapshotByProjectID } from '../redux/dispa
 import { HeaderContext } from '../../header/headerContext';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import { restoreCurrentActionsList } from '../../../reducers/tracking/dispatchActions';
+import { setAssociatedDownloadTagName } from '../../../reducers/api/actions';
+import { setDownloadStructuresDialogOpen } from '../../snapshot/redux/actions';
 
 export const ProjectPreview = memo(({}) => {
   const { setSnackBarTitle } = useContext(HeaderContext);
@@ -48,7 +50,8 @@ export const ProjectPreview = memo(({}) => {
                 }
                 if (response.data) {
                   const dataObj = JSON.parse(response.data);
-                  console.log(dataObj.downloadTag);
+                  dispatch(setAssociatedDownloadTagName(dataObj.downloadTag));
+                  dispatch(setDownloadStructuresDialogOpen(true));
                 }
               } else {
                 isSnapshotLoaded.current = response;

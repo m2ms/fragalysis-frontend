@@ -46,6 +46,10 @@ export const ProjectPreview = memo(({}) => {
                 } else {
                   setCanShow(false);
                 }
+                if (response.data) {
+                  const dataObj = JSON.parse(response.data);
+                  console.log(dataObj.downloadTag);
+                }
               } else {
                 isSnapshotLoaded.current = response;
                 setCanShow(false);

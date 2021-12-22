@@ -245,13 +245,6 @@ export const setSnapshotDownloadUrl = snapshotDownloadUrl => {
   };
 };
 
-export const setAssociatedDownloadTagName = tagName => {
-  return {
-    type: constants.SET_ASSOCIATED_DOWNLOAD_TAG_NAME,
-    tagName: tagName
-  };
-};
-
 export const reloadApiState = function(apiReducers) {
   const cachedMolList = apiReducers.cached_mol_lists;
   let fixedCachedMolList = {};

@@ -45,8 +45,7 @@ export const INITIAL_STATE = {
   noTagsReceived: true,
   downloadTags: [],
   directDownloadInProgress: false,
-  snapshotDownloadUrl: null,
-  associatedDownloadTagName: null
+  snapshotDownloadUrl: null
 };
 
 export const RESET_TARGET_STATE = {
@@ -83,8 +82,7 @@ export const RESET_TARGET_STATE = {
   // direct_access_processed: false
   downloadTags: [],
   directDownloadInProgress: false,
-  snapshotDownloadUrl: null,
-  associatedDownloadTagName: null
+  snapshotDownloadUrl: null
 };
 
 export default function apiReducers(state = INITIAL_STATE, action = {}) {
@@ -227,7 +225,11 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
       return { ...state, downloadTags: [...action.downloadTags] };
 
     case constants.APPEND_TO_DOWNLOAD_TAGS:
-      return { ...state, downloadTags: [...state.downloadTags, action.tag] };
+      if (!state.downloadTags.find(dt => action.tag.tag)) {
+        return { ...state, downloadTags: [...state.downloadTags, action.tag] };
+      } else {
+        return state;
+      }
 
     case constants.SET_SESSION_ID_LIST:
       let sessionSummaryNew = [];
@@ -279,9 +281,6 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_SNAPSHOT_DOWNLOAD_URL:
       return { ...state, snapshotDownloadUrl: action.snapshotDownloadUrl };
-
-    case constants.SET_ASSOCIATED_DOWNLOAD_TAG_NAME:
-      return { ...state, associatedDownloadTagName: action.tagName };
 
     case constants.RELOAD_API_STATE:
       return Object.assign({}, state, {

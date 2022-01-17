@@ -709,6 +709,7 @@ export const DatasetMoleculeList = memo(
                             C={complexList.includes(data.id)}
                             S={surfaceList.includes(data.id)}
                             V={false}
+                            dragDropEnabled
                             moveMolecule={moveMolecule}
                             disableAllNglControlButtonsMap={disableAllNglControlButtonsMap}
                             withDisabledListNglControlButton={withDisabledListNglControlButton}

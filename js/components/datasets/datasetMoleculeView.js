@@ -49,7 +49,6 @@ import {
   showHideLigand
 } from '../preview/compounds/redux/dispatchActions';
 import { colourList } from '../preview/molecule/utils/color';
-import { useDrag, useDrop } from 'react-dnd';
 import { useDragDropMoleculeView } from './useDragDropMoleculeView';
 import useDisableNglControlButtons from '../../hooks/useDisableNglControlButtons';
 
@@ -57,7 +56,9 @@ const useStyles = makeStyles(theme => ({
   container: {
     padding: theme.spacing(1) / 4,
     color: 'black',
-    height: 54,
+    height: 54
+  },
+  dragDropCursor: {
     cursor: 'move'
   },
   contButtonsMargin: {
@@ -261,6 +262,7 @@ export const DatasetMoleculeView = memo(
     S,
     V,
     fromSelectedCompounds = false,
+    dragDropEnabled = false,
     moveMolecule,
     disableAllNglControlButtonsMap,
     withDisabledListNglControlButton,
@@ -593,10 +595,10 @@ export const DatasetMoleculeView = memo(
           container
           justify="space-between"
           direction="row"
-          className={classes.container}
+          className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
           wrap="nowrap"
-          ref={ref}
-          data-handler-id={handlerId}
+          ref={dragDropEnabled ? ref : undefined}
+          data-handler-id={dragDropEnabled ? handlerId : undefined}
           style={{ opacity }}
         >
           {/*Site number*/}

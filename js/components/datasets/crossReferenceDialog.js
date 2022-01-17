@@ -29,6 +29,8 @@ import {
   getListOfSelectedProteinOfAllDatasets
 } from './redux/selectors';
 import { changeButtonClassname } from './helpers';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -331,34 +333,36 @@ export const CrossReferenceDialog = memo(
                       </Grid>
                     </Grid>
                     <div className={classes.content}>
-                      {moleculeList.length > 0 &&
-                        moleculeList.map((data, index, array) => {
-                          let molecule = Object.assign({ isCrossReference: true }, data.molecule);
-                          let previousData = index > 0 && Object.assign({ isCrossReference: true }, array[index - 1]);
-                          let nextData =
-                            index < array?.length && Object.assign({ isCrossReference: true }, array[index + 1]);
+                      <DndProvider backend={HTML5Backend}>
+                        {moleculeList.length > 0 &&
+                          moleculeList.map((data, index, array) => {
+                            let molecule = Object.assign({ isCrossReference: true }, data.molecule);
+                            let previousData = index > 0 && Object.assign({ isCrossReference: true }, array[index - 1]);
+                            let nextData =
+                              index < array?.length && Object.assign({ isCrossReference: true }, array[index + 1]);
 
-                          return (
-                            <DatasetMoleculeView
-                              key={index}
-                              index={index}
-                              imageHeight={imgHeight}
-                              imageWidth={imgWidth}
-                              data={molecule}
-                              datasetID={data.datasetID}
-                              hideFButton
-                              showDatasetName
-                              previousItemData={previousData}
-                              nextItemData={nextData}
-                              removeOfAllSelectedTypes={removeOfAllSelectedTypes}
-                              L={ligandList.includes(data.id)}
-                              P={proteinList.includes(data.id)}
-                              C={complexList.includes(data.id)}
-                              S={false}
-                              V={false}
-                            />
-                          );
-                        })}
+                            return (
+                              <DatasetMoleculeView
+                                key={index}
+                                index={index}
+                                imageHeight={imgHeight}
+                                imageWidth={imgWidth}
+                                data={molecule}
+                                datasetID={data.datasetID}
+                                hideFButton
+                                showDatasetName
+                                previousItemData={previousData}
+                                nextItemData={nextData}
+                                removeOfAllSelectedTypes={removeOfAllSelectedTypes}
+                                L={ligandList.includes(data.id)}
+                                P={proteinList.includes(data.id)}
+                                C={complexList.includes(data.id)}
+                                S={false}
+                                V={false}
+                              />
+                            );
+                          })}
+                      </DndProvider>
                       {!(moleculeList.length > 0) && (
                         <Grid
                           container

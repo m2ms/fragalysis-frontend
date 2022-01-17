@@ -731,7 +731,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
         }
       }}
     >
-      <Tooltip title="Edit tags">
+      <Tooltip title="Assign tags">
         <Edit />
       </Tooltip>
     </IconButton>,

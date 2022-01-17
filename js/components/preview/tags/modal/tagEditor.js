@@ -123,58 +123,46 @@ export const TagEditor = memo(
     };
 
     const handleTagClick = (selected, tag) => {
-      let molTagObjects = [];
+      const moleculeTag = getMoleculeTagForTag(moleculeTags, tag.id);
+      let newMolList = [...moleculeTag.molecules];
+      let targetId = null;
       if (selected) {
+        // unassign tags
         moleculesToEdit.forEach(m => {
           let newMol = { ...m };
           newMol.tags_set = newMol.tags_set.filter(id => id !== tag.id);
           dispatch(updateMoleculeInMolLists(newMol));
-          const moleculeTag = getMoleculeTagForTag(moleculeTags, tag.id);
-          let newMolList = [...moleculeTag.molecules];
+          // remove tag id from list
           newMolList = newMolList.filter(id => id !== m.id);
-          const mtObject = createMoleculeTagObject(
-            tag.tag,
-            newMol.proteinData.target_id,
-            tag.category_id,
-            DJANGO_CONTEXT.pk,
-            tag.colour,
-            tag.discourse_url,
-            newMolList,
-            tag.create_date,
-            tag.additional_info
-          );
-          molTagObjects.push(mtObject);
+          if (targetId === null) targetId = newMol.proteinData.target_id;
         });
       } else {
+        // assign tags
         moleculesToEdit.forEach(m => {
           if (!m.tags_set.some(id => id === tag.id)) {
             let newMol = { ...m };
             newMol.tags_set.push(tag.id);
             dispatch(updateMoleculeInMolLists(newMol));
-            const moleculeTag = getMoleculeTagForTag(moleculeTags, tag.id);
-            const mtObject = createMoleculeTagObject(
-              tag.tag,
-              newMol.proteinData.target_id,
-              tag.category_id,
-              DJANGO_CONTEXT.pk,
-              tag.colour,
-              tag.discourse_url,
-              [...moleculeTag.molecules, newMol.id],
-              tag.create_date,
-              tag.additional_info
-            );
-            molTagObjects.push(mtObject);
+            // add tag id to list if is not in already
+            if (!newMolList.includes(newMol.id)) newMolList.push(newMol.id);
+            if (targetId === null) targetId = newMol.proteinData.target_id;
           }
         });
       }
-      if (molTagObjects) {
-        molTagObjects.forEach(mto => {
-          let molTagObject = { ...mto };
-          let augMolTagObject = augumentTagObjectWithId(molTagObject, tag.id);
-          dispatch(updateMoleculeTag(augMolTagObject));
-          updateExistingTag(molTagObject, tag.id);
-        });
-      }
+      const molTagObject = createMoleculeTagObject(
+        tag.tag,
+        targetId,
+        tag.category_id,
+        DJANGO_CONTEXT.pk,
+        tag.colour,
+        tag.discourse_url,
+        newMolList,
+        tag.create_date,
+        tag.additional_info
+      );
+      let augMolTagObject = augumentTagObjectWithId(molTagObject, tag.id);
+      dispatch(updateMoleculeTag(augMolTagObject));
+      updateExistingTag(molTagObject, tag.id);
     };
 
     return (

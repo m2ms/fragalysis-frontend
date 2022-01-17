@@ -12,7 +12,8 @@ import {
   removeLigand,
   removeHitProtein,
   removeSurface,
-  removeSelectedMolTypes
+  removeSelectedMolTypes,
+  withDisabledMoleculesNglControlButtons
 } from '../preview/molecule/redux/dispatchActions';
 import MoleculeView from '../preview/molecule/moleculeView';
 import { moleculeProperty } from '../preview/molecule/helperConstants';
@@ -27,6 +28,7 @@ import { Panel } from '../common/Surfaces/Panel';
 import { changeButtonClassname } from './helpers';
 import { setSelectedAllByType, setDeselectedAllByType } from '../../reducers/selection/actions';
 import SearchField from '../common/Components/SearchField';
+import useDisableNglControlButtons from '../preview/molecule/useDisableControlButtons';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -205,17 +207,40 @@ export const InspirationDialog = memo(
     };
 
     const addNewType = (type, skipTracking = false) => {
-      if (type === 'ligand') {
-        allSelectedMolecules.forEach(molecule => {
-          dispatch(
-            addType[type](stage, molecule, colourList[molecule.id % colourList.length], false, true, skipTracking)
-          );
-        });
-      } else {
-        allSelectedMolecules.forEach(molecule => {
-          dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
-        });
-      }
+      dispatch(
+        withDisabledMoleculesNglControlButtons(
+          allSelectedMolecules.map(molecule => molecule.id),
+          type,
+          async () => {
+            const promises = [];
+
+            if (type === 'ligand') {
+              allSelectedMolecules.forEach(molecule => {
+                promises.push(
+                  dispatch(
+                    addType[type](
+                      stage,
+                      molecule,
+                      colourList[molecule.id % colourList.length],
+                      false,
+                      true,
+                      skipTracking
+                    )
+                  )
+                );
+              });
+            } else {
+              allSelectedMolecules.forEach(molecule => {
+                promises.push(
+                  dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking))
+                );
+              });
+            }
+
+            await Promise.all(promises);
+          }
+        )
+      );
     };
 
     const ucfirst = string => {
@@ -265,6 +290,8 @@ export const InspirationDialog = memo(
       let molecules = allSelectedMolecules.filter(m => list.includes(m.id));
       return molecules;
     };
+
+    const groupNglControlButtonsDisabledState = useDisableNglControlButtons(allSelectedMolecules);
 
     //  TODO refactor to this line
 
@@ -323,7 +350,7 @@ export const InspirationDialog = memo(
                                 [classes.contColButtonHalfSelected]: isLigandOn === null
                               })}
                               onClick={() => onButtonToggle('ligand')}
-                              disabled={false}
+                              disabled={groupNglControlButtonsDisabledState.ligand}
                             >
                               L
                             </Button>
@@ -338,7 +365,7 @@ export const InspirationDialog = memo(
                                 [classes.contColButtonHalfSelected]: isProteinOn === null
                               })}
                               onClick={() => onButtonToggle('protein')}
-                              disabled={false}
+                              disabled={groupNglControlButtonsDisabledState.protein}
                             >
                               P
                             </Button>
@@ -354,7 +381,7 @@ export const InspirationDialog = memo(
                                 [classes.contColButtonHalfSelected]: isComplexOn === null
                               })}
                               onClick={() => onButtonToggle('complex')}
-                              disabled={false}
+                              disabled={groupNglControlButtonsDisabledState.complex}
                             >
                               C
                             </Button>
@@ -393,6 +420,7 @@ export const InspirationDialog = memo(
                         Q={qualityList.includes(molecule.id)}
                         V={vectorOnList.includes(molecule.id)}
                         I={informationList.includes(data.id)}
+                        groupNglControlButtonsDisabledState={groupNglControlButtonsDisabledState}
                       />
                     );
                   })}

@@ -264,8 +264,10 @@ export const DatasetMoleculeView = memo(
     fromSelectedCompounds = false,
     dragDropEnabled = false,
     moveMolecule,
-    disableAllNglControlButtonsMap,
-    withDisabledListNglControlButton,
+    disableAllNglControlButtonsMap = {},
+    withDisabledListNglControlButton = (type, callback) => {
+      callback();
+    },
     allLPCButtonDisabled
   }) => {
     const ref = useRef(null);

@@ -244,8 +244,10 @@ const MoleculeView = memo(
     V,
     I,
     selectMoleculeSite,
-    disableAllNglControlButtonsMap,
-    withDisabledListNglControlButton,
+    disableAllNglControlButtonsMap = {},
+    withDisabledListNglControlButton = (type, callback) => {
+      callback();
+    },
     allLPCButtonDisabled
   }) => {
     // const [countOfVectors, setCountOfVectors] = useState('-');

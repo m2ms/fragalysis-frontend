@@ -136,6 +136,8 @@ export const InspirationDialog = memo(
     const qualityList = useSelector(state => state.selectionReducers.qualityList);
     const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
     const informationList = useSelector(state => state.selectionReducers.informationList);
+    const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
+    const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
 
     const dispatch = useDispatch();
     // const disableUserInteraction = useDisableUserInteraction();
@@ -148,18 +150,23 @@ export const InspirationDialog = memo(
     } else {
       moleculeList = inspirationMoleculeDataList;
     }
+
+    const allSelectedMolecules = moleculeList.filter(
+      molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId
+    );
+
     // TODO refactor from this line (duplicity in datasetMoleculeList.js)
     const isLigandOn = changeButtonClassname(
-      ligandList.filter(moleculeID => moleculeList.find(molecule => molecule.id === moleculeID) !== undefined),
-      moleculeList
+      ligandList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
+      allSelectedMolecules
     );
     const isProteinOn = changeButtonClassname(
-      proteinList.filter(moleculeID => moleculeList.find(molecule => molecule.id === moleculeID) !== undefined),
-      moleculeList
+      proteinList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
+      allSelectedMolecules
     );
     const isComplexOn = changeButtonClassname(
-      complexList.filter(moleculeID => moleculeList.find(molecule => molecule.id === moleculeID) !== undefined),
-      moleculeList
+      complexList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
+      allSelectedMolecules
     );
 
     const addType = {
@@ -178,17 +185,18 @@ export const InspirationDialog = memo(
 
     const selectMoleculeSite = moleculeGroupSite => {};
 
-    const removeOfAllSelectedTypes = (skipTracking = false) => {
-      dispatch(removeSelectedMolTypes(stage, moleculeList, skipTracking, true));
+    const removeSelectedTypes = (skipMolecules = [], skipTracking = false) => {
+      const molecules = [...moleculeList].filter(molecule => !skipMolecules.some(mol => molecule.id === mol.id));
+      dispatch(removeSelectedMolTypes(stage, molecules, skipTracking, true));
     };
 
     const removeSelectedType = (type, skipTracking = false) => {
       if (type === 'ligand') {
-        moleculeList.forEach(molecule => {
+        allSelectedMolecules.forEach(molecule => {
           dispatch(removeType[type](stage, molecule, skipTracking));
         });
       } else {
-        moleculeList.forEach(molecule => {
+        allSelectedMolecules.forEach(molecule => {
           dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
         });
       }
@@ -198,13 +206,13 @@ export const InspirationDialog = memo(
 
     const addNewType = (type, skipTracking = false) => {
       if (type === 'ligand') {
-        moleculeList.forEach(molecule => {
+        allSelectedMolecules.forEach(molecule => {
           dispatch(
             addType[type](stage, molecule, colourList[molecule.id % colourList.length], false, true, skipTracking)
           );
         });
       } else {
-        moleculeList.forEach(molecule => {
+        allSelectedMolecules.forEach(molecule => {
           dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
         });
       }
@@ -249,12 +257,12 @@ export const InspirationDialog = memo(
     };
 
     const getMoleculesToSelect = list => {
-      let molecules = moleculeList.filter(m => !list.includes(m.id));
+      let molecules = allSelectedMolecules.filter(m => !list.includes(m.id));
       return molecules;
     };
 
     const getMoleculesToDeselect = list => {
-      let molecules = moleculeList.filter(m => list.includes(m.id));
+      let molecules = allSelectedMolecules.filter(m => list.includes(m.id));
       return molecules;
     };
 
@@ -296,7 +304,7 @@ export const InspirationDialog = memo(
                       {moleculeProperty[key]}
                     </Grid>
                   ))}
-                  {moleculeList.length > 0 && (
+                  {allSelectedMolecules.length > 0 && (
                     <Grid item>
                       <Grid
                         container
@@ -374,7 +382,7 @@ export const InspirationDialog = memo(
                         searchMoleculeGroup
                         previousItemData={previousData}
                         nextItemData={nextData}
-                        removeOfAllSelectedTypes={removeOfAllSelectedTypes}
+                        removeSelectedTypes={removeSelectedTypes}
                         selectMoleculeSite={selectMoleculeSite}
                         L={ligandList.includes(molecule.id)}
                         P={proteinList.includes(molecule.id)}

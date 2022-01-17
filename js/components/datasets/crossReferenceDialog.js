@@ -148,11 +148,18 @@ export const CrossReferenceDialog = memo(
     const proteinListAllDatasets = useSelector(state => state.datasetsReducers.proteinLists);
     const complexListAllDatasets = useSelector(state => state.datasetsReducers.complexLists);
     const surfaceListAllDatasets = useSelector(state => state.datasetsReducers.surfaceLists);
+    const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
 
-    const removeOfAllSelectedTypes = skipTracking => {
+    const selectedMolecules = moleculeList.filter(mol => compoundsToBuyList?.includes(mol.id));
+
+    const removeSelectedTypes = (skipMolecules = {}, skipTracking = false) => {
+      const molecules = moleculeList?.filter(molecule => {
+        return !skipMolecules[datasetID]?.some(mol => molecule.id === mol.id);
+      });
+
       Object.keys(ligandListAllDatasets).forEach(datasetKey => {
         ligandListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = moleculeList?.find(mol => mol?.molecule?.id === moleculeID);
+          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
           dispatch(
             removeDatasetLigand(
               stage,
@@ -166,7 +173,7 @@ export const CrossReferenceDialog = memo(
       });
       Object.keys(proteinListAllDatasets).forEach(datasetKey => {
         proteinListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = moleculeList?.find(mol => mol?.molecule?.id === moleculeID);
+          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
           dispatch(
             removeDatasetHitProtein(
               stage,
@@ -180,7 +187,7 @@ export const CrossReferenceDialog = memo(
       });
       Object.keys(complexListAllDatasets).forEach(datasetKey => {
         complexListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = moleculeList?.find(mol => mol?.molecule?.id === moleculeID);
+          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
           dispatch(
             removeDatasetComplex(
               stage,
@@ -194,7 +201,8 @@ export const CrossReferenceDialog = memo(
       });
       Object.keys(surfaceListAllDatasets).forEach(datasetKey => {
         surfaceListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = moleculeList?.find(mol => mol?.molecule?.id === moleculeID);
+          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
+
           dispatch(
             removeDatasetSurface(
               stage,
@@ -265,7 +273,7 @@ export const CrossReferenceDialog = memo(
                   <>
                     <Grid container justify="flex-start" direction="row" className={classes.molHeader} wrap="nowrap">
                       <Grid item container justify="flex-start" direction="row">
-                        {moleculeList.length > 0 && (
+                        {selectedMolecules.length > 0 && (
                           <Grid item>
                             <Grid
                               container
@@ -284,7 +292,9 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonHalfSelected]: isLigandOn === null
                                     })}
                                     onClick={() =>
-                                      dispatch(handleAllLigandsOfCrossReferenceDialog(isLigandOn, moleculeList, stage))
+                                      dispatch(
+                                        handleAllLigandsOfCrossReferenceDialog(isLigandOn, selectedMolecules, stage)
+                                      )
                                     }
                                     disabled={false}
                                   >
@@ -301,7 +311,7 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonHalfSelected]: isProteinOn === null
                                     })}
                                     onClick={() =>
-                                      dispatch(removeOrAddAllHitProteinsOfList(isProteinOn, moleculeList, stage))
+                                      dispatch(removeOrAddAllHitProteinsOfList(isProteinOn, selectedMolecules, stage))
                                     }
                                     disabled={false}
                                   >
@@ -319,7 +329,7 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonHalfSelected]: isComplexOn === null
                                     })}
                                     onClick={() =>
-                                      dispatch(removeOrAddAllComplexesOfList(isComplexOn, moleculeList, stage))
+                                      dispatch(removeOrAddAllComplexesOfList(isComplexOn, selectedMolecules, stage))
                                     }
                                     disabled={false}
                                   >
@@ -353,7 +363,7 @@ export const CrossReferenceDialog = memo(
                                 showDatasetName
                                 previousItemData={previousData}
                                 nextItemData={nextData}
-                                removeOfAllSelectedTypes={removeOfAllSelectedTypes}
+                                removeSelectedTypes={removeSelectedTypes}
                                 L={ligandList.includes(data.id)}
                                 P={proteinList.includes(data.id)}
                                 C={complexList.includes(data.id)}

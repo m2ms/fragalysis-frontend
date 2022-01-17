@@ -98,7 +98,7 @@ export const SelectedCompoundList = memo(({ height }) => {
   const showedCompoundList = useSelector(state => state.previewReducers.compounds.showedCompoundList);
   const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
 
-  const removeOfAllSelectedTypes = () => {
+  const removeSelectedTypes = () => {
     Object.keys(ligandListAllDatasets).forEach(datasetKey => {
       ligandListAllDatasets[datasetKey]?.forEach(moleculeID => {
         const foundedMolecule = currentMolecules?.find(mol => mol?.molecule?.id === moleculeID);
@@ -443,7 +443,7 @@ export const SelectedCompoundList = memo(({ height }) => {
                       showCrossReferenceModal
                       previousItemData={index > 0 && array[index - 1]}
                       nextItemData={index < array?.length && array[index + 1]}
-                      removeOfAllSelectedTypes={removeOfAllSelectedTypes}
+                      removeSelectedTypes={removeSelectedTypes}
                       L={isLigandOn}
                       P={proteinList.includes(data.molecule.id)}
                       C={complexList.includes(data.molecule.id)}

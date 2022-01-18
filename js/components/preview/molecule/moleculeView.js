@@ -52,7 +52,6 @@ import { DensityMapsModal } from './modals/densityMapsModal';
 import { getRandomColor } from './utils/color';
 import { getAllTagsForMol } from '../tags/utils/tagUtils';
 import TagView from '../tags/tagView';
-import useDisableNglControlButtons from '../../../hooks/useDisableNglControlButtons';
 
 const useStyles = makeStyles(theme => ({
   container: {

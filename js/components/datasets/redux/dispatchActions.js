@@ -30,7 +30,9 @@ import {
   setSearchStringOfCompoundSet,
   dragDropStarted,
   setDragDropState,
-  dragDropFinished
+  dragDropFinished,
+  disableDatasetMoleculeNglControlButton,
+  enableDatasetMoleculeNglControlButton
 } from './actions';
 import { base_url } from '../../routes/constants';
 import {
@@ -1066,4 +1068,30 @@ export const dragDropMoleculeFinished = (datasetID, draggedMolecule, destination
   if (dragDropStatus.startingIndex !== destinationIndex) {
     dispatch(dragDropFinished(datasetID, draggedMolecule, destinationIndex));
   }
+};
+
+export const withDisabledDatasetMoleculeNglControlButton = (
+  datasetId,
+  moleculeId,
+  type,
+  callback
+) => async dispatch => {
+  dispatch(disableDatasetMoleculeNglControlButton(datasetId, moleculeId, type));
+  await callback();
+  dispatch(enableDatasetMoleculeNglControlButton(datasetId, moleculeId, type));
+};
+
+export const withDisabledDatasetMoleculesNglControlButtons = (
+  datasetId,
+  moleculeIds,
+  type,
+  callback
+) => async dispatch => {
+  moleculeIds.forEach(moleculeId => {
+    dispatch(disableDatasetMoleculeNglControlButton(datasetId, moleculeId, type));
+  });
+  await callback();
+  moleculeIds.forEach(moleculeId => {
+    dispatch(enableDatasetMoleculeNglControlButton(datasetId, moleculeId, type));
+  });
 };

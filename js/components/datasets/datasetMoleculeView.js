@@ -23,7 +23,8 @@ import {
   clickOnInspirations,
   getDatasetMoleculeID,
   moveSelectedMoleculeSettings,
-  getInspirationsForMol
+  getInspirationsForMol,
+  withDisabledDatasetMoleculeNglControlButton
 } from './redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from './redux/selectors';
@@ -50,7 +51,6 @@ import {
 } from '../preview/compounds/redux/dispatchActions';
 import { colourList } from '../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from './useDragDropMoleculeView';
-import useDisableNglControlButtons from '../../hooks/useDisableNglControlButtons';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -264,11 +264,7 @@ export const DatasetMoleculeView = memo(
     fromSelectedCompounds = false,
     dragDropEnabled = false,
     moveMolecule,
-    disableAllNglControlButtonsMap = {},
-    withDisabledListNglControlButton = (type, callback) => {
-      callback();
-    },
-    allLPCButtonDisabled
+    groupDatasetsNglControlButtonsDisabledState = {}
   }) => {
     const ref = useRef(null);
 
@@ -290,7 +286,8 @@ export const DatasetMoleculeView = memo(
       isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
     );
 
-    const [disableNglControlButtonsMap, withDisabledNglControlButton] = useDisableNglControlButtons();
+    const disableMoleculeNglControlButtons =
+      useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
 
     const filteredDatasetMoleculeList = useSelector(state => getFilteredDatasetMoleculeList(state, datasetID));
     const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
@@ -357,20 +354,12 @@ export const DatasetMoleculeView = memo(
     const not_selected_style = {};
     const current_style = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn ? selected_style : not_selected_style;
 
-    const withDisabledListNglControlButtonIfChecked = (type, callback) => {
-      if (isCheckedToBuy) {
-        withDisabledListNglControlButton(type, callback);
-      } else {
-        callback();
-      }
-    };
-
     const addNewLigand = (skipTracking = false) => {
-      withDisabledListNglControlButtonIfChecked('ligand', async () => {
-        await withDisabledNglControlButton('ligand', async () => {
+      dispatch(
+        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'ligand', async () => {
           await dispatch(addDatasetLigand(stage, data, colourToggle, datasetID, skipTracking));
-        });
-      });
+        })
+      );
     };
 
     const removeSelectedLigand = (skipTracking = false) => {
@@ -404,11 +393,11 @@ export const DatasetMoleculeView = memo(
     };
 
     const addNewProtein = (skipTracking = false) => {
-      withDisabledListNglControlButtonIfChecked('protein', async () => {
-        await withDisabledNglControlButton('protein', async () => {
+      dispatch(
+        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'protein', async () => {
           await dispatch(addDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
-        });
-      });
+        })
+      );
     };
 
     const onProtein = calledFromSelectAll => {
@@ -433,11 +422,11 @@ export const DatasetMoleculeView = memo(
     };
 
     const addNewComplex = (skipTracking = false) => {
-      withDisabledListNglControlButtonIfChecked('complex', async () => {
-        await withDisabledNglControlButton('complex', async () => {
+      dispatch(
+        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'complex', async () => {
           await dispatch(addDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
-        });
-      });
+        })
+      );
     };
 
     const onComplex = calledFromSelectAll => {
@@ -462,9 +451,11 @@ export const DatasetMoleculeView = memo(
     };
 
     const addNewSurface = async () => {
-      withDisabledNglControlButton('surface', async () => {
-        await dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
-      });
+      dispatch(
+        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'surface', async () => {
+          await dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
+        })
+      );
     };
 
     const onSurface = calledFromSelectAll => {
@@ -588,8 +579,13 @@ export const DatasetMoleculeView = memo(
 
     const allScores = { ...data?.numerical_scores, ...data?.text_scores };
 
-    const moleculeLPCButtonDisabled = ['ligand', 'protein', 'complex'].some(type => disableNglControlButtonsMap[type]);
-    const anyLPCButtonDisabled = allLPCButtonDisabled || moleculeLPCButtonDisabled;
+    const moleculeLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
+      type => disableMoleculeNglControlButtons[type]
+    );
+
+    const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
+      type => disableMoleculeNglControlButtons[type] || groupDatasetsNglControlButtonsDisabledState[type]
+    );
 
     return (
       <>
@@ -611,7 +607,7 @@ export const DatasetMoleculeView = memo(
                 className={classes.checkbox}
                 size="small"
                 color="primary"
-                disabled={anyLPCButtonDisabled}
+                disabled={moleculeAnyLPCControlButtonDisabled}
                 onChange={e => {
                   const result = e.target.checked;
                   if (result) {
@@ -707,7 +703,7 @@ export const DatasetMoleculeView = memo(
                         onProtein(true);
                         onComplex(true);
                       }}
-                      disabled={isFromVectorSelector || anyLPCButtonDisabled}
+                      disabled={isFromVectorSelector || moleculeLPCControlButtonDisabled}
                     >
                       A
                     </Button>
@@ -722,7 +718,8 @@ export const DatasetMoleculeView = memo(
                       })}
                       onClick={() => onLigand()}
                       disabled={
-                        (isCheckedToBuy && disableAllNglControlButtonsMap.ligand) || disableNglControlButtonsMap.ligand
+                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand) ||
+                        disableMoleculeNglControlButtons.ligand
                       }
                     >
                       L
@@ -739,8 +736,8 @@ export const DatasetMoleculeView = memo(
                       onClick={() => onProtein()}
                       disabled={
                         isFromVectorSelector ||
-                        (isCheckedToBuy && disableAllNglControlButtonsMap.protein) ||
-                        disableNglControlButtonsMap.protein
+                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein) ||
+                        disableMoleculeNglControlButtons.protein
                       }
                     >
                       P
@@ -758,8 +755,8 @@ export const DatasetMoleculeView = memo(
                       onClick={() => onComplex()}
                       disabled={
                         isFromVectorSelector ||
-                        (isCheckedToBuy && disableAllNglControlButtonsMap.complex) ||
-                        disableNglControlButtonsMap.complex
+                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex) ||
+                        disableMoleculeNglControlButtons.complex
                       }
                     >
                       C
@@ -774,7 +771,7 @@ export const DatasetMoleculeView = memo(
                         [classes.contColButtonSelected]: isSurfaceOn
                       })}
                       onClick={() => onSurface()}
-                      disabled={isFromVectorSelector || disableNglControlButtonsMap.surface}
+                      disabled={isFromVectorSelector || disableMoleculeNglControlButtons.surface}
                     >
                       S
                     </Button>

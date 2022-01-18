@@ -4,7 +4,9 @@ export const INITIAL_STATE = {
   sortDialogOpen: false,
   imageCache: {},
   proteinDataCache: {},
-  disableNglControlButtons: {}
+
+  // disables NGL control buttons for molecules
+  disableNglControlButtons: {} // moleculeID.nglButtonDisableState
 };
 
 export const molecule = (state = INITIAL_STATE, action = {}) => {

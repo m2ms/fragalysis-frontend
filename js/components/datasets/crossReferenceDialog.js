@@ -282,7 +282,7 @@ export const CrossReferenceDialog = memo(
     const addSelectedType = type => {
       dispatch(
         withDisabledDatasetMoleculesNglControlButtons(
-          [...new Set(selectedMolecules.map(({ datasetID }) => datasetID))],
+          [...new Set(selectedMolecules.map(({ datasetID }) => datasetID))], // distinct datasetIDs
           selectedMolecules.map(({ molecule }) => molecule.id),
           type,
           async () => {

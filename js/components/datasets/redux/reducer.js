@@ -55,6 +55,7 @@ export const INITIAL_STATE = {
     startingIndex: -1
   },
 
+  // disables NGL control buttons for molecules
   disableDatasetsNglControlButtons: {} // datasetID.moleculeID.nglButtonDisableState
 };
 

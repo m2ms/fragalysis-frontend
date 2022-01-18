@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 const useDisableDatasetNglControlButtons = selectedMolecules => {
@@ -6,26 +7,26 @@ const useDisableDatasetNglControlButtons = selectedMolecules => {
   );
 
   const selectedMoleculesControlButtons = [];
-  selectedMolecules.forEach(molecule => {
-    const disableMoleculeNglControlButtons = disableDatasetsNglControlButtons[molecule.datasetID]?.[molecule.id];
+  selectedMolecules.forEach(({ datasetID, molecule }) => {
+    const disableMoleculeNglControlButtons = disableDatasetsNglControlButtons[datasetID]?.[molecule.id];
     if (disableMoleculeNglControlButtons) {
       selectedMoleculesControlButtons.push(disableMoleculeNglControlButtons);
     }
   });
 
-  const ligandControlButtonDisabled = selectedMoleculesControlButtons.some(([_, buttonsState]) => buttonsState.ligand);
-  const proteinControlButtonDisabled = selectedMoleculesControlButtons.some(
-    ([_, buttonsState]) => buttonsState.protein
-  );
-  const complexControlButtonDisabled = selectedMoleculesControlButtons.some(
-    ([_, buttonsState]) => buttonsState.complex
-  );
+  const ligandControlButtonDisabled = selectedMoleculesControlButtons.some(buttonsState => buttonsState.ligand);
+  const proteinControlButtonDisabled = selectedMoleculesControlButtons.some(buttonsState => buttonsState.protein);
+  const complexControlButtonDisabled = selectedMoleculesControlButtons.some(buttonsState => buttonsState.complex);
 
-  return {
-    ligand: ligandControlButtonDisabled,
-    protein: proteinControlButtonDisabled,
-    complex: complexControlButtonDisabled
-  };
+  const groupDatasetsNglControlButtonsDisabledState = useMemo(() => {
+    return {
+      ligand: ligandControlButtonDisabled,
+      protein: proteinControlButtonDisabled,
+      complex: complexControlButtonDisabled
+    };
+  }, [ligandControlButtonDisabled, proteinControlButtonDisabled, complexControlButtonDisabled]);
+
+  return groupDatasetsNglControlButtonsDisabledState;
 };
 
 export default useDisableDatasetNglControlButtons;

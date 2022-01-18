@@ -5,14 +5,15 @@ import { makeStyles } from '@material-ui/styles';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   loadScoresOfCrossReferenceCompounds,
-  handleAllLigandsOfCrossReferenceDialog,
   resetCrossReferenceDialog,
-  removeOrAddAllHitProteinsOfList,
-  removeOrAddAllComplexesOfList,
   removeDatasetLigand,
   removeDatasetHitProtein,
   removeDatasetComplex,
-  removeDatasetSurface
+  removeDatasetSurface,
+  addDatasetLigand,
+  addDatasetHitProtein,
+  addDatasetComplex,
+  withDisabledDatasetMoleculesNglControlButtons
 } from './redux/dispatchActions';
 import { Button } from '../common/Inputs/Button';
 import classNames from 'classnames';
@@ -31,6 +32,20 @@ import {
 import { changeButtonClassname } from './helpers';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { setDeselectedAllByType, setSelectedAllByType } from './redux/actions';
+import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
+
+const addType = {
+  ligand: addDatasetLigand,
+  protein: addDatasetHitProtein,
+  complex: addDatasetComplex
+};
+
+const removeType = {
+  ligand: removeDatasetLigand,
+  protein: removeDatasetHitProtein,
+  complex: removeDatasetComplex
+};
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -126,7 +141,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export const CrossReferenceDialog = memo(
-  forwardRef(({ open = false, anchorEl, datasetID }, ref) => {
+  forwardRef(({ open = false, anchorEl }, ref) => {
     const dispatch = useDispatch();
     const id = open ? 'simple-popover-compound-cross-reference' : undefined;
     const imgHeight = 34;
@@ -148,13 +163,15 @@ export const CrossReferenceDialog = memo(
     const proteinListAllDatasets = useSelector(state => state.datasetsReducers.proteinLists);
     const complexListAllDatasets = useSelector(state => state.datasetsReducers.complexLists);
     const surfaceListAllDatasets = useSelector(state => state.datasetsReducers.surfaceLists);
-    const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
+    const compoundsToBuyDatasetMap = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap);
 
-    const selectedMolecules = moleculeList.filter(mol => compoundsToBuyList?.includes(mol.id));
+    const compoundsToBuyList = Object.values(compoundsToBuyDatasetMap).flat();
+
+    const selectedMolecules = moleculeList.filter(({ molecule }) => compoundsToBuyList?.includes(molecule.id));
 
     const removeSelectedTypes = (skipMolecules = {}, skipTracking = false) => {
       const molecules = moleculeList?.filter(molecule => {
-        return !skipMolecules[datasetID]?.some(mol => molecule.id === mol.id);
+        return !skipMolecules[molecule.datasetID]?.some(mol => molecule.id === mol.id);
       });
 
       Object.keys(ligandListAllDatasets).forEach(datasetKey => {
@@ -247,6 +264,62 @@ export const CrossReferenceDialog = memo(
       dispatch(resetCrossReferenceDialog());
     }
 
+    const removeSelectedType = type => {
+      dispatch(setDeselectedAllByType(type, null, selectedMolecules, true));
+      selectedMolecules.forEach(molecule => {
+        dispatch(
+          removeType[type](
+            stage,
+            molecule.molecule,
+            colourList[molecule.molecule.id % colourList.length],
+            molecule.datasetID,
+            true
+          )
+        );
+      });
+    };
+
+    const addSelectedType = type => {
+      dispatch(
+        withDisabledDatasetMoleculesNglControlButtons(
+          [...new Set(selectedMolecules.map(({ datasetID }) => datasetID))],
+          selectedMolecules.map(({ molecule }) => molecule.id),
+          type,
+          async () => {
+            dispatch(setSelectedAllByType(type, null, selectedMolecules, true));
+
+            const promises = [];
+
+            selectedMolecules.forEach(molecule => {
+              promises.push(
+                dispatch(
+                  addType[type](
+                    stage,
+                    molecule.molecule,
+                    colourList[molecule.molecule.id % colourList.length],
+                    molecule.datasetID,
+                    true
+                  )
+                )
+              );
+            });
+
+            await Promise.all(promises);
+          }
+        )
+      );
+    };
+
+    const removeOrAddType = (type, areSelected) => {
+      if (areSelected) {
+        removeSelectedType(type);
+      } else {
+        addSelectedType(type);
+      }
+    };
+
+    const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(selectedMolecules);
+
     return (
       <>
         {anchorEl && anchorEl !== null && (
@@ -291,12 +364,8 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonSelected]: isLigandOn,
                                       [classes.contColButtonHalfSelected]: isLigandOn === null
                                     })}
-                                    onClick={() =>
-                                      dispatch(
-                                        handleAllLigandsOfCrossReferenceDialog(isLigandOn, selectedMolecules, stage)
-                                      )
-                                    }
-                                    disabled={false}
+                                    onClick={() => removeOrAddType('ligand', isLigandOn)}
+                                    disabled={groupDatasetsNglControlButtonsDisabledState.ligand}
                                   >
                                     L
                                   </Button>
@@ -310,10 +379,8 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonSelected]: isProteinOn,
                                       [classes.contColButtonHalfSelected]: isProteinOn === null
                                     })}
-                                    onClick={() =>
-                                      dispatch(removeOrAddAllHitProteinsOfList(isProteinOn, selectedMolecules, stage))
-                                    }
-                                    disabled={false}
+                                    onClick={() => removeOrAddType('protein', isProteinOn)}
+                                    disabled={groupDatasetsNglControlButtonsDisabledState.protein}
                                   >
                                     P
                                   </Button>
@@ -328,10 +395,8 @@ export const CrossReferenceDialog = memo(
                                       [classes.contColButtonSelected]: isComplexOn,
                                       [classes.contColButtonHalfSelected]: isComplexOn === null
                                     })}
-                                    onClick={() =>
-                                      dispatch(removeOrAddAllComplexesOfList(isComplexOn, selectedMolecules, stage))
-                                    }
-                                    disabled={false}
+                                    onClick={() => removeOrAddType('complex', isComplexOn)}
+                                    disabled={groupDatasetsNglControlButtonsDisabledState.complex}
                                   >
                                     C
                                   </Button>
@@ -369,6 +434,9 @@ export const CrossReferenceDialog = memo(
                                 C={complexList.includes(data.id)}
                                 S={false}
                                 V={false}
+                                groupDatasetsNglControlButtonsDisabledState={
+                                  groupDatasetsNglControlButtonsDisabledState
+                                }
                               />
                             );
                           })}

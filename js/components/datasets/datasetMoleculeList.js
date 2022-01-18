@@ -366,7 +366,7 @@ export const DatasetMoleculeList = memo(
     const addNewType = (type, skipTracking) => {
       dispatch(
         withDisabledDatasetMoleculesNglControlButtons(
-          datasetID,
+          [datasetID],
           selectedMolecules.map(molecule => molecule.id),
           type,
           async () => {
@@ -485,7 +485,9 @@ export const DatasetMoleculeList = memo(
       dispatch(dragDropMoleculeInProgress(datasetID, joinedMoleculeLists, dragIndex, hoverIndex));
     };
 
-    const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(selectedMolecules);
+    const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(
+      selectedMolecules.map(molecule => ({ datasetID, molecule }))
+    );
 
     return (
       <ComputeSize

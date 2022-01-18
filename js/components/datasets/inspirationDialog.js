@@ -28,7 +28,7 @@ import { Panel } from '../common/Surfaces/Panel';
 import { changeButtonClassname } from './helpers';
 import { setSelectedAllByType, setDeselectedAllByType } from '../../reducers/selection/actions';
 import SearchField from '../common/Components/SearchField';
-import useDisableNglControlButtons from '../preview/molecule/useDisableControlButtons';
+import useDisableNglControlButtons from '../preview/molecule/useDisableNglControlButtons';
 
 const useStyles = makeStyles(theme => ({
   paper: {

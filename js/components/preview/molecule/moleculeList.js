@@ -69,7 +69,7 @@ import {
 import { TagEditor } from '../tags/modal/tagEditor';
 import { getMoleculeForId, selectTag } from '../tags/redux/dispatchActions';
 import SearchField from '../../common/Components/SearchField';
-import useDisableNglControlButtons from './useDisableControlButtons';
+import useDisableNglControlButtons from './useDisableNglControlButtons';
 
 const useStyles = makeStyles(theme => ({
   container: {

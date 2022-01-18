@@ -478,10 +478,8 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
 
   const allSelectedMolecules = useMemo(
     () =>
-      joinedMoleculeLists.filter(
-        molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId
-      ),
-    [joinedMoleculeLists, moleculesToEditIds, molForTagEditId]
+      allMoleculesList.filter(molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
+    [allMoleculesList, moleculesToEditIds, molForTagEditId]
   );
 
   const changePredefinedFilter = event => {

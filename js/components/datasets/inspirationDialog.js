@@ -153,7 +153,7 @@ export const InspirationDialog = memo(
       moleculeList = inspirationMoleculeDataList;
     }
 
-    const allSelectedMolecules = moleculeList.filter(
+    const allSelectedMolecules = inspirationMoleculeDataList.filter(
       molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId
     );
 

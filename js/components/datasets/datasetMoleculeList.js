@@ -226,7 +226,8 @@ export const DatasetMoleculeList = memo(
     const [selectedMoleculeRef, setSelectedMoleculeRef] = useState(null);
 
     const filterRef = useRef();
-    let joinedMoleculeLists = moleculeLists[datasetID] || [];
+    const moleculeList = moleculeLists[datasetID] || [];
+    let joinedMoleculeLists = moleculeList;
     const dragDropState = dragDropMap[datasetID];
 
     const getJoinedMoleculeList = useSelector(state => getMoleculeList(state));
@@ -291,8 +292,8 @@ export const DatasetMoleculeList = memo(
     const surfaceList = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
 
     const selectedMolecules = useMemo(() => {
-      return joinedMoleculeLists.filter(mol => compoundsToBuyList?.includes(mol.id));
-    }, [joinedMoleculeLists, compoundsToBuyList]);
+      return moleculeList.filter(mol => compoundsToBuyList?.includes(mol.id));
+    }, [moleculeList, compoundsToBuyList]);
 
     const isTypeOn = typeList => {
       if (typeList && compoundsToBuyList) {

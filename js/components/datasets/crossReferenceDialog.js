@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useContext, useEffect, useState } from 'react';
+import React, { forwardRef, memo, useContext, useEffect } from 'react';
 import { CircularProgress, Grid, Popper, IconButton, Typography, Tooltip } from '@material-ui/core';
 import { Close } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
@@ -9,7 +9,6 @@ import {
   removeDatasetLigand,
   removeDatasetHitProtein,
   removeDatasetComplex,
-  removeDatasetSurface,
   addDatasetLigand,
   addDatasetHitProtein,
   addDatasetComplex,
@@ -159,79 +158,11 @@ export const CrossReferenceDialog = memo(
     const proteinList = useSelector(state => getListOfSelectedProteinOfAllDatasets(state));
     const complexList = useSelector(state => getListOfSelectedComplexOfAllDatasets(state));
 
-    const ligandListAllDatasets = useSelector(state => state.datasetsReducers.ligandLists);
-    const proteinListAllDatasets = useSelector(state => state.datasetsReducers.proteinLists);
-    const complexListAllDatasets = useSelector(state => state.datasetsReducers.complexLists);
-    const surfaceListAllDatasets = useSelector(state => state.datasetsReducers.surfaceLists);
     const compoundsToBuyDatasetMap = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap);
 
     const compoundsToBuyList = Object.values(compoundsToBuyDatasetMap).flat();
 
     const selectedMolecules = moleculeList.filter(({ molecule }) => compoundsToBuyList?.includes(molecule.id));
-
-    const removeSelectedTypes = (skipMolecules = {}, skipTracking = false) => {
-      const molecules = moleculeList?.filter(molecule => {
-        return !skipMolecules[molecule.datasetID]?.some(mol => molecule.id === mol.id);
-      });
-
-      Object.keys(ligandListAllDatasets).forEach(datasetKey => {
-        ligandListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
-          dispatch(
-            removeDatasetLigand(
-              stage,
-              foundedMolecule?.molecule,
-              colourList[foundedMolecule?.molecule?.id % colourList.length],
-              datasetKey,
-              skipTracking
-            )
-          );
-        });
-      });
-      Object.keys(proteinListAllDatasets).forEach(datasetKey => {
-        proteinListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
-          dispatch(
-            removeDatasetHitProtein(
-              stage,
-              foundedMolecule?.molecule,
-              colourList[foundedMolecule?.molecule?.id % colourList.length],
-              datasetKey,
-              skipTracking
-            )
-          );
-        });
-      });
-      Object.keys(complexListAllDatasets).forEach(datasetKey => {
-        complexListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
-          dispatch(
-            removeDatasetComplex(
-              stage,
-              foundedMolecule?.molecule,
-              colourList[foundedMolecule?.molecule?.id % colourList.length],
-              datasetKey,
-              skipTracking
-            )
-          );
-        });
-      });
-      Object.keys(surfaceListAllDatasets).forEach(datasetKey => {
-        surfaceListAllDatasets[datasetKey]?.forEach(moleculeID => {
-          const foundedMolecule = molecules?.find(mol => mol?.molecule?.id === moleculeID);
-
-          dispatch(
-            removeDatasetSurface(
-              stage,
-              foundedMolecule?.molecule,
-              colourList[foundedMolecule?.molecule?.id % colourList.length],
-              datasetKey,
-              skipTracking
-            )
-          );
-        });
-      });
-    };
 
     useEffect(() => {
       if (moleculeList && Array.isArray(moleculeList) && moleculeList.length > 0) {
@@ -415,6 +346,10 @@ export const CrossReferenceDialog = memo(
                             let previousData = index > 0 && Object.assign({ isCrossReference: true }, array[index - 1]);
                             let nextData =
                               index < array?.length && Object.assign({ isCrossReference: true }, array[index + 1]);
+                            const isCheckedToBuy = selectedMolecules.some(
+                              ({ datasetID, molecule }) =>
+                                molecule.id === data.molecule.id && datasetID === data.datasetID
+                            );
 
                             return (
                               <DatasetMoleculeView
@@ -428,15 +363,16 @@ export const CrossReferenceDialog = memo(
                                 showDatasetName
                                 previousItemData={previousData}
                                 nextItemData={nextData}
-                                removeSelectedTypes={removeSelectedTypes}
                                 L={ligandList.includes(data.id)}
                                 P={proteinList.includes(data.id)}
                                 C={complexList.includes(data.id)}
                                 S={false}
                                 V={false}
-                                groupDatasetsNglControlButtonsDisabledState={
-                                  groupDatasetsNglControlButtonsDisabledState
-                                }
+                                isCheckedToBuy={isCheckedToBuy}
+                                disableL={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand}
+                                disableP={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein}
+                                disableC={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex}
+                                arrowsHidden
                               />
                             );
                           })}

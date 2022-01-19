@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 
 const useDisableDatasetNglControlButtons = selectedMolecules => {
@@ -18,15 +17,11 @@ const useDisableDatasetNglControlButtons = selectedMolecules => {
   const proteinControlButtonDisabled = selectedMoleculesControlButtons.some(buttonsState => buttonsState.protein);
   const complexControlButtonDisabled = selectedMoleculesControlButtons.some(buttonsState => buttonsState.complex);
 
-  const groupDatasetsNglControlButtonsDisabledState = useMemo(() => {
-    return {
-      ligand: ligandControlButtonDisabled,
-      protein: proteinControlButtonDisabled,
-      complex: complexControlButtonDisabled
-    };
-  }, [ligandControlButtonDisabled, proteinControlButtonDisabled, complexControlButtonDisabled]);
-
-  return groupDatasetsNglControlButtonsDisabledState;
+  return {
+    ligand: ligandControlButtonDisabled,
+    protein: proteinControlButtonDisabled,
+    complex: complexControlButtonDisabled
+  };
 };
 
 export default useDisableDatasetNglControlButtons;

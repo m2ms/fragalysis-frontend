@@ -24,7 +24,8 @@ import {
   getDatasetMoleculeID,
   moveSelectedMoleculeSettings,
   getInspirationsForMol,
-  withDisabledDatasetMoleculeNglControlButton
+  withDisabledDatasetMoleculeNglControlButton,
+  moveDatasetMoleculeUpDown
 } from './redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from './redux/selectors';
@@ -51,6 +52,7 @@ import {
 } from '../preview/compounds/redux/dispatchActions';
 import { colourList } from '../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from './useDragDropMoleculeView';
+import useChangedProps from 'use-changed-props';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -240,8 +242,9 @@ export const img_data_init = `<svg xmlns="http://www.w3.org/2000/svg" version="1
     <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="0.689655172413793s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform>
   </circle>  '</svg>`;
 
-export const DatasetMoleculeView = memo(
-  ({
+export const DatasetMoleculeView = memo(props => {
+  useChangedProps(props);
+  const {
     imageHeight,
     imageWidth,
     data,
@@ -253,401 +256,377 @@ export const DatasetMoleculeView = memo(
     index,
     previousItemData,
     nextItemData,
-    removeSelectedTypes,
-    removeSelectedTypesOfInspirations,
-    moveSelectedMoleculeInspirationsSettings,
     L,
     P,
     C,
     S,
     V,
-    fromSelectedCompounds = false,
+    arrowsHidden = false,
     dragDropEnabled = false,
     moveMolecule,
-    groupDatasetsNglControlButtonsDisabledState = {}
-  }) => {
-    const ref = useRef(null);
+    isCheckedToBuy,
+    disableL,
+    disableP,
+    disableC
+  } = props;
+  const ref = useRef(null);
 
-    const { handlerId, isDragging } = useDragDropMoleculeView(ref, datasetID, data, index, moveMolecule);
-    const opacity = isDragging ? 0 : 1;
+  const { handlerId, isDragging } = useDragDropMoleculeView(ref, datasetID, data, index, moveMolecule);
+  const opacity = isDragging ? 0 : 1;
 
-    const selectedAll = useRef(false);
-    const currentID = (data && data.id) || (data && data.smiles) || undefined;
-    const isFromVectorSelector = isCompoundFromVectorSelector(data);
-    const classes = useStyles();
-    const dispatch = useDispatch();
-    const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
-    const allInspirations = useSelector(state => state.datasetsReducers.allInspirations);
+  const selectedAll = useRef(false);
+  const currentID = (data && data.id) || (data && data.smiles) || undefined;
+  const isFromVectorSelector = isCompoundFromVectorSelector(data);
+  const classes = useStyles();
+  const dispatch = useDispatch();
 
-    const datasets = useSelector(state => state.datasetsReducers.datasets);
-    const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
-    const filter = useSelector(state => state.selectionReducers.filter);
-    const isAnyInspirationOn = useSelector(state =>
-      isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
+  const datasets = useSelector(state => state.datasetsReducers.datasets);
+  const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
+  const filter = useSelector(state => state.selectionReducers.filter);
+  const isAnyInspirationOn = useSelector(state =>
+    isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
+  );
+
+  const disableMoleculeNglControlButtons =
+    useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
+
+  const filteredDatasetMoleculeList = useSelector(state => getFilteredDatasetMoleculeList(state, datasetID));
+
+  const [image, setImage] = useState(img_data_init);
+
+  const { getNglView } = useContext(NglContext);
+  const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
+
+  const isLigandOn = L;
+  const isProteinOn = P;
+  const isComplexOn = C;
+  const isSurfaceOn = S;
+
+  const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
+  const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
+
+  let areArrowsVisible = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn;
+
+  if (arrowsHidden) {
+    areArrowsVisible = false;
+  }
+
+  // const disableUserInteraction = useDisableUserInteraction();
+
+  const refOnCancelImage = useRef();
+  const getRandomColor = () => colourList[currentID % colourList.length];
+  const colourToggle = getRandomColor();
+
+  const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
+  const moleculeImgRef = useRef(null);
+  const openMoleculeTooltip = () => {
+    setMoleculeTooltipOpen(true);
+  };
+  const closeMoleculeTooltip = () => {
+    setMoleculeTooltipOpen(false);
+  };
+
+  // componentDidMount
+  useEffect(() => {
+    dispatch(getMolImage(data.smiles, MOL_TYPE.DATASET, imageHeight, imageWidth)).then(i => {
+      setImage(i);
+    });
+  }, [C, currentID, data, L, imageHeight, imageWidth, data.smiles, data.id, filteredDatasetMoleculeList, dispatch]);
+
+  const svg_image = (
+    <SVGInline
+      component="div"
+      svg={image}
+      className={classes.imageMargin}
+      style={{
+        height: `${imageHeight}px`,
+        width: `${imageWidth}px`
+      }}
+    />
+  );
+  // Here add the logic that updates this based on the information
+  // const refinement = <Label bsStyle="success">{"Refined"}</Label>;
+  const selected_style = {
+    backgroundColor: colourToggle
+  };
+  const not_selected_style = {};
+  const current_style = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn ? selected_style : not_selected_style;
+
+  const addNewLigand = (skipTracking = false) => {
+    dispatch(
+      withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'ligand', async () => {
+        await dispatch(addDatasetLigand(stage, data, colourToggle, datasetID, skipTracking));
+      })
     );
+  };
 
-    const disableMoleculeNglControlButtons =
-      useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
+  const removeSelectedLigand = (skipTracking = false) => {
+    dispatch(removeDatasetLigand(stage, data, colourToggle, datasetID, skipTracking));
+    selectedAll.current = false;
+  };
 
-    const filteredDatasetMoleculeList = useSelector(state => getFilteredDatasetMoleculeList(state, datasetID));
-    const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
+  const onLigand = calledFromSelectAll => {
+    if (calledFromSelectAll === true && selectedAll.current === true) {
+      if (isLigandOn === false) {
+        addNewLigand(calledFromSelectAll);
+      }
+    } else if (calledFromSelectAll && selectedAll.current === false) {
+      removeSelectedLigand(calledFromSelectAll);
+    } else if (!calledFromSelectAll) {
+      if (isFromVectorSelector) {
+        dispatch(showHideLigand(data, stage));
+      } else {
+        if (isLigandOn === false) {
+          addNewLigand();
+        } else {
+          removeSelectedLigand();
+        }
+      }
+    }
+  };
 
-    const [image, setImage] = useState(img_data_init);
+  const removeSelectedProtein = (skipTracking = false) => {
+    dispatch(removeDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
+    selectedAll.current = false;
+  };
 
-    const { getNglView } = useContext(NglContext);
-    const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
+  const addNewProtein = (skipTracking = false) => {
+    dispatch(
+      withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'protein', async () => {
+        await dispatch(addDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
+      })
+    );
+  };
 
-    const isLigandOn = L;
-    const isProteinOn = P;
-    const isComplexOn = C;
-    const isSurfaceOn = S;
+  const onProtein = calledFromSelectAll => {
+    if (calledFromSelectAll === true && selectedAll.current === true) {
+      if (isProteinOn === false) {
+        addNewProtein(calledFromSelectAll);
+      }
+    } else if (calledFromSelectAll && selectedAll.current === false) {
+      removeSelectedProtein(calledFromSelectAll);
+    } else if (!calledFromSelectAll) {
+      if (isProteinOn === false) {
+        addNewProtein();
+      } else {
+        removeSelectedProtein();
+      }
+    }
+  };
 
-    const isCheckedToBuy = (currentID && compoundsToBuyList && compoundsToBuyList.includes(currentID)) || false;
+  const removeSelectedComplex = (skipTracking = false) => {
+    dispatch(removeDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
+    selectedAll.current = false;
+  };
 
-    const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
-    const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
+  const addNewComplex = (skipTracking = false) => {
+    dispatch(
+      withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'complex', async () => {
+        await dispatch(addDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
+      })
+    );
+  };
 
-    let areArrowsVisible = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn;
+  const onComplex = calledFromSelectAll => {
+    if (calledFromSelectAll === true && selectedAll.current === true) {
+      if (isComplexOn === false) {
+        addNewComplex(calledFromSelectAll);
+      }
+    } else if (calledFromSelectAll && selectedAll.current === false) {
+      removeSelectedComplex(calledFromSelectAll);
+    } else if (!calledFromSelectAll) {
+      if (isComplexOn === false) {
+        addNewComplex();
+      } else {
+        removeSelectedComplex();
+      }
+    }
+  };
 
-    if (fromSelectedCompounds) {
-      areArrowsVisible = false;
+  const removeSelectedSurface = () => {
+    dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID));
+    selectedAll.current = false;
+  };
+
+  const addNewSurface = async () => {
+    dispatch(
+      withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'surface', async () => {
+        await dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
+      })
+    );
+  };
+
+  const onSurface = calledFromSelectAll => {
+    if (calledFromSelectAll === true && selectedAll.current === true) {
+      if (isSurfaceOn === false) {
+        addNewSurface();
+      }
+    } else if (calledFromSelectAll && selectedAll.current === false) {
+      removeSelectedSurface();
+    } else if (!calledFromSelectAll) {
+      if (isSurfaceOn === false) {
+        addNewSurface();
+      } else {
+        removeSelectedSurface();
+      }
+    }
+  };
+
+  const setCalledFromAll = () => {
+    let isSelected = selectedAll.current === true;
+    if (isSelected) {
+      dispatch(setSelectedAll(datasetID, data, true, true, true));
+    } else {
+      dispatch(setDeselectedAll(datasetID, data, isLigandOn, isProteinOn, isComplexOn));
+    }
+  };
+
+  /**
+   * Check if given molecule is matching current filter
+   * @param Object item - item.name is attribute name, item.value is its value
+   * @return boolean
+   */
+  const isMatchingValue = item => {
+    let match = false;
+    if (!(item.value < filter.filter[item.name].minValue || item.value > filter.filter[item.name].maxValue)) {
+      match = true;
+    }
+    return match;
+  };
+
+  /**
+   * Get css class for value regarding to its filter match
+   * @param Object item - item.name is attribute name, item.value is its value
+   * @return string - css class
+   */
+  const getValueMatchingClass = item => {
+    let cssClass = '';
+    if (filter && filter.predefined !== 'none') {
+      cssClass = isMatchingValue(item) ? classes.matchingValue : classes.unmatchingValue;
+    }
+    return cssClass;
+  };
+
+  const scrollToElement = element => {
+    element.scrollIntoView({
+      behavior: 'auto',
+      block: 'nearest',
+      inline: 'nearest'
+    });
+  };
+
+  const handleClickOnDownArrow = async () => {
+    const refNext = ref.current.nextSibling;
+    scrollToElement(refNext);
+
+    const nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
+    const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
+    const moleculeTitleNext = nextItem && nextItem.name;
+
+    let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
+
+    dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+    if (setRef && ref.current) {
+      setRef(refNext);
     }
 
-    // const disableUserInteraction = useDisableUserInteraction();
+    dispatch(moveDatasetMoleculeUpDown(stage, datasetID, data, nextDatasetID, nextItem, dataValue, ARROW_TYPE.DOWN));
+  };
 
-    const refOnCancelImage = useRef();
-    const getRandomColor = () => colourList[currentID % colourList.length];
-    const colourToggle = getRandomColor();
+  const handleClickOnUpArrow = async () => {
+    const refPrevious = ref.current.previousSibling;
+    scrollToElement(refPrevious);
 
-    const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
-    const moleculeImgRef = useRef(null);
-    const openMoleculeTooltip = () => {
-      setMoleculeTooltipOpen(true);
-    };
-    const closeMoleculeTooltip = () => {
-      setMoleculeTooltipOpen(false);
-    };
+    const previousItem = (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
+    const previousDatasetID = (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
+    const moleculeTitlePrev = previousItem && previousItem.name;
 
-    // componentDidMount
-    useEffect(() => {
-      dispatch(getMolImage(data.smiles, MOL_TYPE.DATASET, imageHeight, imageWidth)).then(i => {
-        setImage(i);
-      });
-    }, [C, currentID, data, L, imageHeight, imageWidth, data.smiles, data.id, filteredDatasetMoleculeList, dispatch]);
+    let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
 
-    const svg_image = (
-      <SVGInline
-        component="div"
-        svg={image}
-        className={classes.imageMargin}
-        style={{
-          height: `${imageHeight}px`,
-          width: `${imageWidth}px`
-        }}
-      />
+    dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
+    if (setRef && ref.current) {
+      setRef(refPrevious);
+    }
+
+    dispatch(
+      moveDatasetMoleculeUpDown(stage, datasetID, data, previousDatasetID, previousItem, dataValue, ARROW_TYPE.UP)
     );
-    // Here add the logic that updates this based on the information
-    // const refinement = <Label bsStyle="success">{"Refined"}</Label>;
-    const selected_style = {
-      backgroundColor: colourToggle
-    };
-    const not_selected_style = {};
-    const current_style = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn ? selected_style : not_selected_style;
+  };
 
-    const addNewLigand = (skipTracking = false) => {
-      dispatch(
-        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'ligand', async () => {
-          await dispatch(addDatasetLigand(stage, data, colourToggle, datasetID, skipTracking));
-        })
-      );
-    };
+  const moleculeTitle = data && data.name;
+  const datasetTitle = datasets?.find(item => `${item.id}` === `${datasetID}`)?.title;
 
-    const removeSelectedLigand = (skipTracking = false) => {
-      dispatch(removeDatasetLigand(stage, data, colourToggle, datasetID, skipTracking));
-      selectedAll.current = false;
-    };
+  const allScores = { ...data?.numerical_scores, ...data?.text_scores };
 
-    const onLigand = calledFromSelectAll => {
-      if (calledFromSelectAll === true && selectedAll.current === true) {
-        if (isLigandOn === false) {
-          addNewLigand(calledFromSelectAll);
-        }
-      } else if (calledFromSelectAll && selectedAll.current === false) {
-        removeSelectedLigand(calledFromSelectAll);
-      } else if (!calledFromSelectAll) {
-        if (isFromVectorSelector) {
-          dispatch(showHideLigand(data, stage));
-        } else {
-          if (isLigandOn === false) {
-            addNewLigand();
-          } else {
-            removeSelectedLigand();
-          }
-        }
-      }
-    };
+  const moleculeLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
+    type => disableMoleculeNglControlButtons[type]
+  );
 
-    const removeSelectedProtein = (skipTracking = false) => {
-      dispatch(removeDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
-      selectedAll.current = false;
-    };
+  const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
+    type => disableMoleculeNglControlButtons[type] || disableL || disableP || disableC
+  );
 
-    const addNewProtein = (skipTracking = false) => {
-      dispatch(
-        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'protein', async () => {
-          await dispatch(addDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
-        })
-      );
-    };
-
-    const onProtein = calledFromSelectAll => {
-      if (calledFromSelectAll === true && selectedAll.current === true) {
-        if (isProteinOn === false) {
-          addNewProtein(calledFromSelectAll);
-        }
-      } else if (calledFromSelectAll && selectedAll.current === false) {
-        removeSelectedProtein(calledFromSelectAll);
-      } else if (!calledFromSelectAll) {
-        if (isProteinOn === false) {
-          addNewProtein();
-        } else {
-          removeSelectedProtein();
-        }
-      }
-    };
-
-    const removeSelectedComplex = (skipTracking = false) => {
-      dispatch(removeDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
-      selectedAll.current = false;
-    };
-
-    const addNewComplex = (skipTracking = false) => {
-      dispatch(
-        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'complex', async () => {
-          await dispatch(addDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
-        })
-      );
-    };
-
-    const onComplex = calledFromSelectAll => {
-      if (calledFromSelectAll === true && selectedAll.current === true) {
-        if (isComplexOn === false) {
-          addNewComplex(calledFromSelectAll);
-        }
-      } else if (calledFromSelectAll && selectedAll.current === false) {
-        removeSelectedComplex(calledFromSelectAll);
-      } else if (!calledFromSelectAll) {
-        if (isComplexOn === false) {
-          addNewComplex();
-        } else {
-          removeSelectedComplex();
-        }
-      }
-    };
-
-    const removeSelectedSurface = () => {
-      dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID));
-      selectedAll.current = false;
-    };
-
-    const addNewSurface = async () => {
-      dispatch(
-        withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'surface', async () => {
-          await dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
-        })
-      );
-    };
-
-    const onSurface = calledFromSelectAll => {
-      if (calledFromSelectAll === true && selectedAll.current === true) {
-        if (isSurfaceOn === false) {
-          addNewSurface();
-        }
-      } else if (calledFromSelectAll && selectedAll.current === false) {
-        removeSelectedSurface();
-      } else if (!calledFromSelectAll) {
-        if (isSurfaceOn === false) {
-          addNewSurface();
-        } else {
-          removeSelectedSurface();
-        }
-      }
-    };
-
-    const setCalledFromAll = () => {
-      let isSelected = selectedAll.current === true;
-      if (isSelected) {
-        dispatch(setSelectedAll(datasetID, data, true, true, true));
-      } else {
-        dispatch(setDeselectedAll(datasetID, data, isLigandOn, isProteinOn, isComplexOn));
-      }
-    };
-
-    /**
-     * Check if given molecule is matching current filter
-     * @param Object item - item.name is attribute name, item.value is its value
-     * @return boolean
-     */
-    const isMatchingValue = item => {
-      let match = false;
-      if (!(item.value < filter.filter[item.name].minValue || item.value > filter.filter[item.name].maxValue)) {
-        match = true;
-      }
-      return match;
-    };
-
-    /**
-     * Get css class for value regarding to its filter match
-     * @param Object item - item.name is attribute name, item.value is its value
-     * @return string - css class
-     */
-    const getValueMatchingClass = item => {
-      let cssClass = '';
-      if (filter && filter.predefined !== 'none') {
-        cssClass = isMatchingValue(item) ? classes.matchingValue : classes.unmatchingValue;
-      }
-      return cssClass;
-    };
-
-    const scrollToElement = element => {
-      element.scrollIntoView({
-        behavior: 'auto',
-        block: 'nearest',
-        inline: 'nearest'
-      });
-    };
-
-    const handleClickOnDownArrow = async () => {
-      const refNext = ref.current.nextSibling;
-      scrollToElement(refNext);
-
-      const nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
-      const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
-      const moleculeTitleNext = nextItem && nextItem.name;
-
-      let dataValue = { objectsInView, colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
-      dispatch(setArrowUpDown(datasetID, data, nextItem, ARROW_TYPE.DOWN, dataValue));
-
-      const inspirations = getInspirationsForMol(allInspirations, datasetID, nextItem.id);
-      dispatch(setInspirationMoleculeDataList(inspirations));
-      await Promise.all([
-        dispatch(moveSelectedMoleculeSettings(stage, data, nextItem, nextDatasetID, datasetID, dataValue, true)),
-        dispatch(moveSelectedMoleculeInspirationsSettings(data, nextItem, true))
-      ]);
-      dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
-      if (setRef && ref.current) {
-        setRef(refNext);
-      }
-
-      removeSelectedTypes({ [nextDatasetID]: [nextItem] }, true);
-      removeSelectedTypesOfInspirations([nextItem], true);
-    };
-
-    const handleClickOnUpArrow = async () => {
-      const refPrevious = ref.current.previousSibling;
-      scrollToElement(refPrevious);
-
-      const previousItem =
-        (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
-      const previousDatasetID =
-        (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
-      const moleculeTitlePrev = previousItem && previousItem.name;
-
-      let dataValue = { objectsInView, colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
-      dispatch(setArrowUpDown(datasetID, data, previousItem, ARROW_TYPE.UP, dataValue));
-
-      const inspirations = getInspirationsForMol(allInspirations, datasetID, previousItem.id);
-      dispatch(setInspirationMoleculeDataList(inspirations));
-      await Promise.all([
-        dispatch(
-          moveSelectedMoleculeSettings(stage, data, previousItem, previousDatasetID, datasetID, dataValue, true)
-        ),
-        dispatch(moveSelectedMoleculeInspirationsSettings(data, previousItem, true))
-      ]);
-
-      dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
-      if (setRef && ref.current) {
-        setRef(refPrevious);
-      }
-
-      removeSelectedTypes({ [previousDatasetID]: [previousItem] }, true);
-      removeSelectedTypesOfInspirations([previousItem], true);
-    };
-
-    const moleculeTitle = data && data.name;
-    const datasetTitle = datasets?.find(item => `${item.id}` === `${datasetID}`)?.title;
-
-    const allScores = { ...data?.numerical_scores, ...data?.text_scores };
-
-    const moleculeLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
-      type => disableMoleculeNglControlButtons[type]
-    );
-
-    const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
-      type => disableMoleculeNglControlButtons[type] || groupDatasetsNglControlButtonsDisabledState[type]
-    );
-
-    return (
-      <>
-        <Grid
-          container
-          justify="space-between"
-          direction="row"
-          className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
-          wrap="nowrap"
-          ref={dragDropEnabled ? ref : undefined}
-          data-handler-id={dragDropEnabled ? handlerId : undefined}
-          style={{ opacity }}
-        >
-          {/*Site number*/}
-          <Grid item container justify="space-between" direction="column" className={classes.site}>
-            <Grid item>
-              <Checkbox
-                checked={isCheckedToBuy}
-                className={classes.checkbox}
-                size="small"
-                color="primary"
-                disabled={moleculeAnyLPCControlButtonDisabled}
-                onChange={e => {
-                  const result = e.target.checked;
-                  if (result) {
-                    dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
-                  } else {
-                    dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
-                    dispatch(deselectVectorCompound(data));
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item className={classes.rank}>
-              {index + 1}.
-            </Grid>
+  return (
+    <>
+      <Grid
+        container
+        justify="space-between"
+        direction="row"
+        className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
+        wrap="nowrap"
+        ref={dragDropEnabled ? ref : undefined}
+        data-handler-id={dragDropEnabled ? handlerId : undefined}
+        style={{ opacity }}
+      >
+        {/*Site number*/}
+        <Grid item container justify="space-between" direction="column" className={classes.site}>
+          <Grid item>
+            <Checkbox
+              checked={isCheckedToBuy}
+              className={classes.checkbox}
+              size="small"
+              color="primary"
+              disabled={moleculeAnyLPCControlButtonDisabled}
+              onChange={e => {
+                const result = e.target.checked;
+                if (result) {
+                  dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+                } else {
+                  dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+                  dispatch(deselectVectorCompound(data));
+                }
+              }}
+            />
           </Grid>
-          <Grid item container className={classes.detailsCol} justify="space-between" direction="row">
-            {/* Title label */}
-            <Grid
-              item
-              xs={!showCrossReferenceModal && hideFButton ? 8 : 7}
-              container
-              direction="column"
-              className={!showCrossReferenceModal && hideFButton ? classes.widthOverflow : ''}
-            >
+          <Grid item className={classes.rank}>
+            {index + 1}.
+          </Grid>
+        </Grid>
+        <Grid item container className={classes.detailsCol} justify="space-between" direction="row">
+          {/* Title label */}
+          <Grid
+            item
+            xs={!showCrossReferenceModal && hideFButton ? 8 : 7}
+            container
+            direction="column"
+            className={!showCrossReferenceModal && hideFButton ? classes.widthOverflow : ''}
+          >
+            <Grid item className={classes.inheritWidth}>
+              <Tooltip title={moleculeTitle} placement="bottom-start">
+                <div className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}>
+                  {moleculeTitle}
+                </div>
+              </Tooltip>
+            </Grid>
+            {showDatasetName && (
               <Grid item className={classes.inheritWidth}>
-                <Tooltip title={moleculeTitle} placement="bottom-start">
-                  <div className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}>
-                    {moleculeTitle}
-                  </div>
+                <Tooltip title={datasetTitle} placement="bottom-start">
+                  <div className={classes.datasetTitleLabel}>{datasetTitle}</div>
                 </Tooltip>
               </Grid>
-              {showDatasetName && (
-                <Grid item className={classes.inheritWidth}>
-                  <Tooltip title={datasetTitle} placement="bottom-start">
-                    <div className={classes.datasetTitleLabel}>{datasetTitle}</div>
-                  </Tooltip>
-                </Grid>
-              )}
-            </Grid>
-            {/* Status code - #208 Remove the status labels (for now - until they are in the back-end/loader properly)
+            )}
+          </Grid>
+          {/* Status code - #208 Remove the status labels (for now - until they are in the back-end/loader properly)
         <Grid item>
           <Grid container direction="row" justify="space-between" alignItems="center">
             {Object.values(molStatusTypes).map(type => (
@@ -657,275 +636,265 @@ export const DatasetMoleculeView = memo(
             ))}
           </Grid>
         </Grid>*/}
-            {/* Control Buttons A, L, C, V */}
-            <Grid item>
-              <Grid
-                container
-                direction="row"
-                justify="flex-start"
-                alignItems="center"
-                wrap="nowrap"
-                className={classes.contButtonsMargin}
-              >
-                <Tooltip title="centre on">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classes.myLocationButton}
-                      onClick={() => {
-                        dispatch(centerOnLigandByMoleculeID(stage, getDatasetMoleculeID(datasetID, currentID)));
-                      }}
-                      disabled={false || !isLigandOn || isCompoundFromVectorSelector(data)}
-                    >
-                      <MyLocation className={classes.myLocation} />
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                <Tooltip title="all">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classNames(
-                        classes.contColButton,
-                        {
-                          [classes.contColButtonSelected]: hasAllValuesOn
-                        },
-                        {
-                          [classes.contColButtonHalfSelected]: hasSomeValuesOn
-                        }
-                      )}
-                      onClick={() => {
-                        // always deselect all if are selected only some of options
-                        selectedAll.current = hasSomeValuesOn ? false : !selectedAll.current;
-
-                        setCalledFromAll();
-                        onLigand(true);
-                        onProtein(true);
-                        onComplex(true);
-                      }}
-                      disabled={isFromVectorSelector || moleculeLPCControlButtonDisabled}
-                    >
-                      A
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                <Tooltip title="ligand">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classNames(classes.contColButton, {
-                        [classes.contColButtonSelected]: isLigandOn
-                      })}
-                      onClick={() => onLigand()}
-                      disabled={
-                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand) ||
-                        disableMoleculeNglControlButtons.ligand
-                      }
-                    >
-                      L
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                <Tooltip title="sidechains">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classNames(classes.contColButton, {
-                        [classes.contColButtonSelected]: isProteinOn
-                      })}
-                      onClick={() => onProtein()}
-                      disabled={
-                        isFromVectorSelector ||
-                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein) ||
-                        disableMoleculeNglControlButtons.protein
-                      }
-                    >
-                      P
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                <Tooltip title="interactions">
-                  <Grid item>
-                    {/* C stands for contacts now */}
-                    <Button
-                      variant="outlined"
-                      className={classNames(classes.contColButton, {
-                        [classes.contColButtonSelected]: isComplexOn
-                      })}
-                      onClick={() => onComplex()}
-                      disabled={
-                        isFromVectorSelector ||
-                        (isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex) ||
-                        disableMoleculeNglControlButtons.complex
-                      }
-                    >
-                      C
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                <Tooltip title="surface">
-                  <Grid item>
-                    <Button
-                      variant="outlined"
-                      className={classNames(classes.contColButton, {
-                        [classes.contColButtonSelected]: isSurfaceOn
-                      })}
-                      onClick={() => onSurface()}
-                      disabled={isFromVectorSelector || disableMoleculeNglControlButtons.surface}
-                    >
-                      S
-                    </Button>
-                  </Grid>
-                </Tooltip>
-                {!hideFButton && (
-                  <Tooltip title="computed inspirations">
-                    <Grid item>
-                      <Button
-                        variant="outlined"
-                        className={classNames(classes.contColButton, {
-                          [classes.contColButtonSelected]: isAnyInspirationOn
-                        })}
-                        onClick={() => {
-                          dispatch(
-                            clickOnInspirations({
-                              datasetID,
-                              currentID,
-                              computed_inspirations: getInspirationsForMol(allInspirations, datasetID, currentID)
-                            })
-                          );
-                          if (setRef) {
-                            setRef(ref.current);
-                          }
-                        }}
-                        disabled={isFromVectorSelector}
-                      >
-                        F
-                      </Button>
-                    </Grid>
-                  </Tooltip>
-                )}
-                {showCrossReferenceModal && (
-                  <Tooltip title="cross reference">
-                    <Grid item>
-                      <Button
-                        variant="outlined"
-                        className={classNames(classes.contColButton, {
-                          // [classes.contColButtonSelected]: isAnyInspirationOn
-                        })}
-                        onClick={() => {
-                          dispatch(setCrossReferenceCompoundName(moleculeTitle));
-                          dispatch(setIsOpenCrossReferenceDialog(true));
-                          if (setRef) {
-                            setRef(ref.current);
-                          }
-                        }}
-                        disabled={isFromVectorSelector}
-                      >
-                        X
-                      </Button>
-                    </Grid>
-                  </Tooltip>
-                )}
-              </Grid>
-            </Grid>
-            <Grid item xs={12}>
-              {/* Molecule properties */}
-              <Grid
-                item
-                container
-                justify="flex-start"
-                alignItems="flex-end"
-                direction="row"
-                wrap="nowrap"
-                className={classes.fullHeight}
-              >
-                {filteredScoreProperties &&
-                  datasetID &&
-                  filteredScoreProperties[datasetID] &&
-                  filteredScoreProperties[datasetID].map(score => {
-                    //const item = scoreCompoundMap && scoreCompoundMap[data?.compound]?.find(o => o.score.id === score.id);
-                    let value = allScores[score.name];
-                    if (!value) {
-                      value = data[score.name];
-                    }
-                    return (
-                      <Tooltip title={`${score.name} - ${score.description} : ${value}`} key={score.name}>
-                        {(value && (
-                          <Grid
-                            item
-                            className={classNames(
-                              classes.rightBorder
-                              // getValueMatchingClass(item)
-                            )}
-                          >
-                            {/*{item.value && Math.round(item.value)}*/}
-                            {(value === 'N' && <ClearOutlined className={classes.cancelIcon} />) ||
-                              (value === 'Y' && <CheckOutlined className={classes.checkIcon} />) ||
-                              (isString(value) && value?.slice(0, 4)) ||
-                              (!isNaN(value) && `${value}`?.slice(0, 4)) ||
-                              null}
-                          </Grid>
-                        )) || (
-                          <Grid item className={classes.rightBorder}>
-                            -
-                          </Grid>
-                        )}
-                      </Tooltip>
-                    );
-                  })}
-              </Grid>
-            </Grid>
-          </Grid>
-          {/* Up/Down arrows */}
+          {/* Control Buttons A, L, C, V */}
           <Grid item>
-            <Grid container direction="column" justify="space-between" className={classes.arrows}>
-              <Grid item>
-                <IconButton
-                  color="primary"
-                  size="small"
-                  disabled={false || !previousItemData || !areArrowsVisible}
-                  onClick={handleClickOnUpArrow}
-                >
-                  <ArrowUpward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
-                </IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton
-                  color="primary"
-                  size="small"
-                  disabled={false || !nextItemData || !areArrowsVisible}
-                  onClick={handleClickOnDownArrow}
-                >
-                  <ArrowDownward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
-                </IconButton>
-              </Grid>
+            <Grid
+              container
+              direction="row"
+              justify="flex-start"
+              alignItems="center"
+              wrap="nowrap"
+              className={classes.contButtonsMargin}
+            >
+              <Tooltip title="centre on">
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    className={classes.myLocationButton}
+                    onClick={() => {
+                      dispatch(centerOnLigandByMoleculeID(stage, getDatasetMoleculeID(datasetID, currentID)));
+                    }}
+                    disabled={false || !isLigandOn || isCompoundFromVectorSelector(data)}
+                  >
+                    <MyLocation className={classes.myLocation} />
+                  </Button>
+                </Grid>
+              </Tooltip>
+              <Tooltip title="all">
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    className={classNames(
+                      classes.contColButton,
+                      {
+                        [classes.contColButtonSelected]: hasAllValuesOn
+                      },
+                      {
+                        [classes.contColButtonHalfSelected]: hasSomeValuesOn
+                      }
+                    )}
+                    onClick={() => {
+                      // always deselect all if are selected only some of options
+                      selectedAll.current = hasSomeValuesOn ? false : !selectedAll.current;
+
+                      setCalledFromAll();
+                      onLigand(true);
+                      onProtein(true);
+                      onComplex(true);
+                    }}
+                    disabled={isFromVectorSelector || moleculeLPCControlButtonDisabled}
+                  >
+                    A
+                  </Button>
+                </Grid>
+              </Tooltip>
+              <Tooltip title="ligand">
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    className={classNames(classes.contColButton, {
+                      [classes.contColButtonSelected]: isLigandOn
+                    })}
+                    onClick={() => onLigand()}
+                    disabled={disableL || disableMoleculeNglControlButtons.ligand}
+                  >
+                    L
+                  </Button>
+                </Grid>
+              </Tooltip>
+              <Tooltip title="sidechains">
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    className={classNames(classes.contColButton, {
+                      [classes.contColButtonSelected]: isProteinOn
+                    })}
+                    onClick={() => onProtein()}
+                    disabled={isFromVectorSelector || disableP || disableMoleculeNglControlButtons.protein}
+                  >
+                    P
+                  </Button>
+                </Grid>
+              </Tooltip>
+              <Tooltip title="interactions">
+                <Grid item>
+                  {/* C stands for contacts now */}
+                  <Button
+                    variant="outlined"
+                    className={classNames(classes.contColButton, {
+                      [classes.contColButtonSelected]: isComplexOn
+                    })}
+                    onClick={() => onComplex()}
+                    disabled={isFromVectorSelector || disableC || disableMoleculeNglControlButtons.complex}
+                  >
+                    C
+                  </Button>
+                </Grid>
+              </Tooltip>
+              <Tooltip title="surface">
+                <Grid item>
+                  <Button
+                    variant="outlined"
+                    className={classNames(classes.contColButton, {
+                      [classes.contColButtonSelected]: isSurfaceOn
+                    })}
+                    onClick={() => onSurface()}
+                    disabled={isFromVectorSelector || disableMoleculeNglControlButtons.surface}
+                  >
+                    S
+                  </Button>
+                </Grid>
+              </Tooltip>
+              {!hideFButton && (
+                <Tooltip title="computed inspirations">
+                  <Grid item>
+                    <Button
+                      variant="outlined"
+                      className={classNames(classes.contColButton, {
+                        [classes.contColButtonSelected]: isAnyInspirationOn
+                      })}
+                      onClick={() => {
+                        dispatch((dispatch, getState) => {
+                          const allInspirations = getState().datasetsReducers.allInspirations;
+
+                          clickOnInspirations({
+                            datasetID,
+                            currentID,
+                            computed_inspirations: getInspirationsForMol(allInspirations, datasetID, currentID)
+                          });
+                        });
+                        if (setRef) {
+                          setRef(ref.current);
+                        }
+                      }}
+                      disabled={isFromVectorSelector}
+                    >
+                      F
+                    </Button>
+                  </Grid>
+                </Tooltip>
+              )}
+              {showCrossReferenceModal && (
+                <Tooltip title="cross reference">
+                  <Grid item>
+                    <Button
+                      variant="outlined"
+                      className={classNames(classes.contColButton, {
+                        // [classes.contColButtonSelected]: isAnyInspirationOn
+                      })}
+                      onClick={() => {
+                        dispatch(setCrossReferenceCompoundName(moleculeTitle));
+                        dispatch(setIsOpenCrossReferenceDialog(true));
+                        if (setRef) {
+                          setRef(ref.current);
+                        }
+                      }}
+                      disabled={isFromVectorSelector}
+                    >
+                      X
+                    </Button>
+                  </Grid>
+                </Tooltip>
+              )}
             </Grid>
           </Grid>
-          {/* Image */}
-          <Grid
-            item
-            style={{
-              ...current_style,
-              width: imageWidth
-            }}
-            container
-            justify="center"
-            className={classes.image}
-            onMouseEnter={openMoleculeTooltip}
-            onMouseLeave={closeMoleculeTooltip}
-            ref={moleculeImgRef}
-          >
-            <Grid item>{svg_image}</Grid>
+          <Grid item xs={12}>
+            {/* Molecule properties */}
+            <Grid
+              item
+              container
+              justify="flex-start"
+              alignItems="flex-end"
+              direction="row"
+              wrap="nowrap"
+              className={classes.fullHeight}
+            >
+              {filteredScoreProperties &&
+                datasetID &&
+                filteredScoreProperties[datasetID] &&
+                filteredScoreProperties[datasetID].map(score => {
+                  //const item = scoreCompoundMap && scoreCompoundMap[data?.compound]?.find(o => o.score.id === score.id);
+                  let value = allScores[score.name];
+                  if (!value) {
+                    value = data[score.name];
+                  }
+                  return (
+                    <Tooltip title={`${score.name} - ${score.description} : ${value}`} key={score.name}>
+                      {(value && (
+                        <Grid
+                          item
+                          className={classNames(
+                            classes.rightBorder
+                            // getValueMatchingClass(item)
+                          )}
+                        >
+                          {/*{item.value && Math.round(item.value)}*/}
+                          {(value === 'N' && <ClearOutlined className={classes.cancelIcon} />) ||
+                            (value === 'Y' && <CheckOutlined className={classes.checkIcon} />) ||
+                            (isString(value) && value?.slice(0, 4)) ||
+                            (!isNaN(value) && `${value}`?.slice(0, 4)) ||
+                            null}
+                        </Grid>
+                      )) || (
+                        <Grid item className={classes.rightBorder}>
+                          -
+                        </Grid>
+                      )}
+                    </Tooltip>
+                  );
+                })}
+            </Grid>
           </Grid>
         </Grid>
-        <SvgTooltip
-          open={moleculeTooltipOpen}
-          anchorEl={moleculeImgRef.current}
-          imgData={image}
-          width={imageWidth}
-          height={imageHeight}
-        />
-      </>
-    );
-  }
-);
+        {/* Up/Down arrows */}
+        <Grid item>
+          <Grid container direction="column" justify="space-between" className={classes.arrows}>
+            <Grid item>
+              <IconButton
+                color="primary"
+                size="small"
+                disabled={false || !previousItemData || !areArrowsVisible}
+                onClick={handleClickOnUpArrow}
+              >
+                <ArrowUpward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+              </IconButton>
+            </Grid>
+            <Grid item>
+              <IconButton
+                color="primary"
+                size="small"
+                disabled={false || !nextItemData || !areArrowsVisible}
+                onClick={handleClickOnDownArrow}
+              >
+                <ArrowDownward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+              </IconButton>
+            </Grid>
+          </Grid>
+        </Grid>
+        {/* Image */}
+        <Grid
+          item
+          style={{
+            ...current_style,
+            width: imageWidth
+          }}
+          container
+          justify="center"
+          className={classes.image}
+          onMouseEnter={openMoleculeTooltip}
+          onMouseLeave={closeMoleculeTooltip}
+          ref={moleculeImgRef}
+        >
+          <Grid item>{svg_image}</Grid>
+        </Grid>
+      </Grid>
+      <SvgTooltip
+        open={moleculeTooltipOpen}
+        anchorEl={moleculeImgRef.current}
+        imgData={image}
+        width={imageWidth}
+        height={imageHeight}
+      />
+    </>
+  );
+});

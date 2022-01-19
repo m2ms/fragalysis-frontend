@@ -229,7 +229,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByType(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'ligand',
       getCollection(currentLigands),
       currentActions
@@ -237,7 +237,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByType(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'protein',
       getCollection(currentProteins),
       currentActions
@@ -245,7 +245,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByType(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'complex',
       getCollection(currentComplexes),
       currentActions
@@ -253,7 +253,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByTypeOfDataset(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'ligand',
       getCollectionOfDataset(currentDatasetLigands),
       currentActions
@@ -261,7 +261,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByTypeOfDataset(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'protein',
       getCollectionOfDataset(currentDatasetProteins),
       currentActions
@@ -269,7 +269,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionListOfAllSelectionByTypeOfDataset(
       orderedActionList,
-      actionType.ALL_TURNED_ON_BY_TYPE,
+      actionType.SELECTED_TURNED_ON_BY_TYPE,
       'complex',
       getCollectionOfDataset(currentDatasetComplexes),
       currentActions
@@ -1355,12 +1355,12 @@ const restoreAllSelectionByTypeActions = (moleculesAction, stage, isSelection) =
     isSelection === true
       ? moleculesAction.filter(
           action =>
-            action.type === actionType.ALL_TURNED_ON_BY_TYPE &&
+            action.type === actionType.SELECTED_TURNED_ON_BY_TYPE &&
             (action.object_type === actionObjectType.INSPIRATION || action.object_type === actionObjectType.MOLECULE)
         )
       : moleculesAction.filter(
           action =>
-            action.type === actionType.ALL_TURNED_ON_BY_TYPE &&
+            action.type === actionType.SELECTED_TURNED_ON_BY_TYPE &&
             (action.object_type === actionObjectType.CROSS_REFERENCE ||
               action.object_type === actionObjectType.COMPOUND)
         );
@@ -1811,7 +1811,7 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.ALL_TURNED_OFF:
         dispatch(handleAllAction(action, true, majorViewStage, state));
         break;
-      case actionType.ALL_TURNED_ON_BY_TYPE:
+      case actionType.SELECTED_TURNED_ON_BY_TYPE:
         dispatch(handleAllActionByType(action, false, majorViewStage));
         break;
       case actionType.ALL_TURNED_OFF_BY_TYPE:
@@ -2047,7 +2047,7 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
       case actionType.ALL_TURNED_OFF:
         dispatch(handleAllAction(action, false, majorViewStage, state));
         break;
-      case actionType.ALL_TURNED_ON_BY_TYPE:
+      case actionType.SELECTED_TURNED_ON_BY_TYPE:
         dispatch(handleAllActionByType(action, true, majorViewStage));
         break;
       case actionType.ALL_TURNED_OFF_BY_TYPE:

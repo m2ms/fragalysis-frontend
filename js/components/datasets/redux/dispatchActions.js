@@ -45,7 +45,11 @@ import {
 import { VIEWS } from '../../../constants/constants';
 import { addMoleculeList } from './actions';
 import { api } from '../../../utils/api';
-import { getInitialDatasetFilterProperties, getInitialDatasetFilterSettings } from './selectors';
+import {
+  getInitialDatasetFilterProperties,
+  getInitialDatasetFilterSettings,
+  getJoinedMoleculeLists
+} from './selectors';
 import { COUNT_OF_VISIBLE_SCORES } from './constants';
 import { colourList } from '../../preview/molecule/utils/color';
 import { appendMoleculeOrientation } from '../../../reducers/ngl/actions';
@@ -996,6 +1000,12 @@ export const dragDropMoleculeFinished = (datasetID, draggedMolecule, destination
     dispatch(dragDropFinished(datasetID, draggedMolecule, destinationIndex));
   }
 };
+
+export const moveDatasetMolecule = (datasetID, dragIndex, hoverIndex) => (dispatch, getState) => {
+  const joinedMoleculeLists = getJoinedMoleculeLists(datasetID, getState());
+  dispatch(dragDropMoleculeInProgress(datasetID, joinedMoleculeLists, dragIndex, hoverIndex));
+};
+
 export const withDisabledDatasetMoleculeNglControlButton = (
   datasetId,
   moleculeId,

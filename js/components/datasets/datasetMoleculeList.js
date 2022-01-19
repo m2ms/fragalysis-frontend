@@ -12,7 +12,7 @@ import {
   IconButton,
   ButtonGroup
 } from '@material-ui/core';
-import React, { useState, useEffect, memo, useRef, useContext, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, memo, useRef, useContext, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DatasetMoleculeView } from './datasetMoleculeView';
 import { colourList } from '../preview/molecule/utils/color';
@@ -34,13 +34,13 @@ import {
   addDatasetSurface,
   removeDatasetSurface,
   autoHideDatasetDialogsOnScroll,
-  dragDropMoleculeInProgress,
-  withDisabledDatasetMoleculesNglControlButtons
+  withDisabledDatasetMoleculesNglControlButtons,
+  moveDatasetMolecule
 } from './redux/dispatchActions';
-import { setFilterDialogOpen, setSearchStringOfCompoundSet } from './redux/actions';
+import { setDragDropState, setFilterDialogOpen, setSearchStringOfCompoundSet } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Link } from '@material-ui/icons';
-import { getFilteredDatasetMoleculeList } from './redux/selectors';
+import { getJoinedMoleculeLists } from './redux/selectors';
 import { InspirationDialog } from './inspirationDialog';
 import { CrossReferenceDialog } from './crossReferenceDialog';
 import { AlertModal } from '../common/Modal/AlertModal';
@@ -48,7 +48,6 @@ import { setSelectedAllByType, setDeselectedAllByType } from './redux/actions';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { sortMoleculesByDragDropState } from './helpers';
 import SearchField from '../common/Components/SearchField';
 import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
 
@@ -201,17 +200,14 @@ export const DatasetMoleculeList = memo(
     const sortDialogOpen = useSelector(state => state.datasetsReducers.filterDialogOpen);
     const isOpenInspirationDialog = useSelector(state => state.datasetsReducers.isOpenInspirationDialog);
     const isOpenCrossReferenceDialog = useSelector(state => state.datasetsReducers.isOpenCrossReferenceDialog);
-    const searchString = useSelector(state => state.datasetsReducers.searchString);
 
     const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
-    const dragDropMap = useSelector(state => state.datasetsReducers.dragDropMap);
     const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
     const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
     const filterMap = useSelector(state => state.datasetsReducers.filterDatasetMap);
     const filterSettings = filterMap && datasetID && filterMap[datasetID];
     const filterPropertiesMap = useSelector(state => state.datasetsReducers.filterPropertiesDatasetMap);
     const filterProperties = filterPropertiesMap && datasetID && filterPropertiesMap[datasetID];
-    const filteredDatasetMolecules = useSelector(state => getFilteredDatasetMoleculeList(state, datasetID));
     const [sortDialogAnchorEl, setSortDialogAnchorEl] = useState(null);
 
     const isActiveFilter = !!(filterSettings || {}).active;
@@ -222,33 +218,7 @@ export const DatasetMoleculeList = memo(
 
     const filterRef = useRef();
 
-    const joinedMoleculeLists = useMemo(() => {
-      let moleculeList = moleculeLists[datasetID] || [];
-      const dragDropState = dragDropMap[datasetID];
-
-      if (isActiveFilter) {
-        if (dragDropState) {
-          moleculeList = sortMoleculesByDragDropState(filteredDatasetMolecules, dragDropState);
-        } else {
-          moleculeList = filteredDatasetMolecules;
-        }
-      } else {
-        if (dragDropState) {
-          moleculeList = sortMoleculesByDragDropState(moleculeList, dragDropState);
-        } else {
-          // default sort is by site
-          moleculeList.sort((a, b) => a.site - b.site);
-        }
-      }
-
-      if (searchString !== null) {
-        moleculeList = moleculeList.filter(molecule =>
-          molecule.name.toLowerCase().includes(searchString.toLowerCase())
-        );
-      }
-
-      return moleculeList;
-    }, [datasetID, dragDropMap, filteredDatasetMolecules, isActiveFilter, moleculeLists, searchString]);
+    const joinedMoleculeLists = useSelector(state => getJoinedMoleculeLists(datasetID, state));
 
     // const disableUserInteraction = useDisableUserInteraction();
 
@@ -400,7 +370,10 @@ export const DatasetMoleculeList = memo(
         className={classes.search}
         id="input-with-icon-textfield"
         placeholder="Search"
-        onChange={value => dispatch(setSearchStringOfCompoundSet(value))}
+        onChange={value => {
+          dispatch(setSearchStringOfCompoundSet(value));
+          dispatch(setDragDropState(datasetID, null));
+        }}
         disabled={isLoadingMoleculeList}
       />,
       <IconButton color={'inherit'} onClick={() => window.open(url, '_blank')}>
@@ -438,9 +411,9 @@ export const DatasetMoleculeList = memo(
 
     const moveMolecule = useCallback(
       (dragIndex, hoverIndex) => {
-        dispatch(dragDropMoleculeInProgress(datasetID, joinedMoleculeLists, dragIndex, hoverIndex));
+        dispatch(moveDatasetMolecule(datasetID, dragIndex, hoverIndex));
       },
-      [dispatch, datasetID, joinedMoleculeLists]
+      [dispatch, datasetID]
     );
 
     const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(

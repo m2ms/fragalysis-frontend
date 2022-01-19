@@ -4,8 +4,8 @@
 
 import React, { memo, useEffect, useState, useRef, useContext, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Grid, Button, makeStyles, Typography, Tooltip, IconButton, Checkbox, Paper } from '@material-ui/core';
-import { MyLocation, ArrowDownward, ArrowUpward, Warning, Label, Edit } from '@material-ui/icons';
+import { Grid, Button, makeStyles, Tooltip, IconButton, Checkbox, Paper } from '@material-ui/core';
+import { MyLocation, ArrowDownward, ArrowUpward, Warning } from '@material-ui/icons';
 import SVGInline from 'react-svg-inline';
 import classNames from 'classnames';
 import { VIEWS, ARROW_TYPE } from '../../../constants/constants';
@@ -26,18 +26,17 @@ import {
   addLigand,
   removeLigand,
   getMolImage,
-  moveSelectedMolSettings,
   removeQuality,
   addQuality,
   getQualityInformation,
   getDensityMapData,
   getProteinData,
-  withDisabledMoleculeNglControlButton
+  withDisabledMoleculeNglControlButton,
+  moveMoleculeUpDown
 } from './redux/dispatchActions';
 import {
   setSelectedAll,
   setDeselectedAll,
-  setArrowUpDown,
   setMoleculeForTagEdit,
   setTagEditorOpen,
   appendToMolListToEdit,
@@ -243,8 +242,11 @@ const MoleculeView = memo(
     Q,
     V,
     I,
-    selectMoleculeSite,
-    groupNglControlButtonsDisabledState = {}
+    selected,
+    isMolSelectedForEdit = false,
+    disableL,
+    disableP,
+    disableC
   }) => {
     // const [countOfVectors, setCountOfVectors] = useState('-');
     // const [cmpds, setCmpds] = useState('-');
@@ -261,11 +263,9 @@ const MoleculeView = memo(
     const [img_data, setImg_data] = useState(img_data_init);
 
     const viewParams = useSelector(state => state.nglReducers.viewParams);
-    const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
     const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
     const molIdForTagEditor = useSelector(state => state.selectionReducers.molForTagEdit);
     const tagList = useSelector(state => state.selectionReducers.tagList);
-    const moleculesToEdit = useSelector(state => state.selectionReducers.moleculesToEdit);
 
     const noTagsReceived = useSelector(state => state.apiReducers.noTagsReceived);
 
@@ -336,9 +336,7 @@ const MoleculeView = memo(
     };
 
     const proteinData = data?.proteinData;
-    const isMolSelectedForEdit = moleculesToEdit.some(mid => mid === currentID);
     const isTagEditorInvokedByMolecule = data && molIdForTagEditor === data.id;
-    const isChecked = isMolSelectedForEdit || isTagEditorInvokedByMolecule;
 
     const getDataForTagsTooltip = () => {
       const assignedTags = getAllTagsForMol(data, tagList);
@@ -667,12 +665,11 @@ const MoleculeView = memo(
         isDensityOn: isDensityOn,
         isDensityCustomOn: isDensityCustomOn,
         isVectorOn: isVectorOn,
-        objectsInView: objectsInView,
+        // objectsInView moved to moveMoleculeUpDown due to performance
         colourToggle: colourToggle
       };
       // Needs to be awaited since adding elements to NGL viewer is done asynchronously
-      await dispatch(moveSelectedMolSettings(stage, data, nextItemData, dataValue, true));
-      dispatch(setArrowUpDown(data, nextItemData, ARROW_TYPE.DOWN, dataValue));
+      await dispatch(moveMoleculeUpDown(stage, data, nextItemData, dataValue, ARROW_TYPE.DOWN));
       removeSelectedTypes([nextItemData], true);
     };
 
@@ -689,12 +686,11 @@ const MoleculeView = memo(
         isDensityOn: isDensityOn,
         isDensityCustomOn: isDensityCustomOn,
         isVectorOn: isVectorOn,
-        objectsInView: objectsInView,
+        // objectsInView moved to moveMoleculeUpDown due to performance
         colourToggle: colourToggle
       };
       // Needs to be awaited since adding elements to NGL viewer is done asynchronously
-      await dispatch(moveSelectedMolSettings(stage, data, previousItemData, dataValue, true));
-      dispatch(setArrowUpDown(data, previousItemData, ARROW_TYPE.UP, dataValue));
+      await dispatch(moveMoleculeUpDown(stage, data, previousItemData, dataValue, ARROW_TYPE.UP));
       removeSelectedTypes([previousItemData], true);
     };
 
@@ -705,7 +701,7 @@ const MoleculeView = memo(
     );
 
     const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
-      type => disableMoleculeNglControlButtons[type] || groupNglControlButtonsDisabledState[type]
+      type => disableMoleculeNglControlButtons[type] || disableL || disableP || disableC
     );
 
     return (
@@ -715,7 +711,7 @@ const MoleculeView = memo(
           <Grid item container justify="space-between" direction="column" className={classes.site}>
             <Grid item>
               <Checkbox
-                checked={isChecked}
+                checked={selected}
                 className={classes.checkbox}
                 size="small"
                 color="primary"
@@ -801,10 +797,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isLigandOn
                       })}
                       onClick={() => onLigand()}
-                      disabled={
-                        (isChecked && groupNglControlButtonsDisabledState.ligand) ||
-                        disableMoleculeNglControlButtons.ligand
-                      }
+                      disabled={disableL || disableMoleculeNglControlButtons.ligand}
                     >
                       L
                     </Button>
@@ -818,10 +811,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isProteinOn
                       })}
                       onClick={() => onProtein()}
-                      disabled={
-                        (isChecked && groupNglControlButtonsDisabledState.protein) ||
-                        disableMoleculeNglControlButtons.protein
-                      }
+                      disabled={disableP || disableMoleculeNglControlButtons.protein}
                     >
                       P
                     </Button>
@@ -836,10 +826,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isComplexOn
                       })}
                       onClick={() => onComplex()}
-                      disabled={
-                        (isChecked && groupNglControlButtonsDisabledState.complex) ||
-                        disableMoleculeNglControlButtons.complex
-                      }
+                      disabled={disableC || disableMoleculeNglControlButtons.complex}
                     >
                       C
                     </Button>

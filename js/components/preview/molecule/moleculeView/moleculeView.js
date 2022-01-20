@@ -8,9 +8,9 @@ import { Grid, Button, makeStyles, Tooltip, IconButton, Checkbox, Paper } from '
 import { MyLocation, ArrowDownward, ArrowUpward, Warning } from '@material-ui/icons';
 import SVGInline from 'react-svg-inline';
 import classNames from 'classnames';
-import { VIEWS, ARROW_TYPE } from '../../../constants/constants';
-import { NGL_PARAMS, COMMON_PARAMS } from '../../nglView/constants';
-import { NglContext } from '../../nglView/nglProvider';
+import { VIEWS, ARROW_TYPE } from '../../../../constants/constants';
+import { NGL_PARAMS, COMMON_PARAMS } from '../../../nglView/constants';
+import { NglContext } from '../../../nglView/nglProvider';
 import {
   addVector,
   removeVector,
@@ -33,7 +33,7 @@ import {
   getProteinData,
   withDisabledMoleculeNglControlButton,
   moveMoleculeUpDown
-} from './redux/dispatchActions';
+} from '../redux/dispatchActions';
 import {
   setSelectedAll,
   setDeselectedAll,
@@ -41,16 +41,17 @@ import {
   setTagEditorOpen,
   appendToMolListToEdit,
   removeFromMolListToEdit
-} from '../../../reducers/selection/actions';
-import { base_url } from '../../routes/constants';
-import { moleculeProperty } from './helperConstants';
-import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
-import { SvgTooltip } from '../../common';
-import { MOL_TYPE } from './redux/constants';
-import { DensityMapsModal } from './modals/densityMapsModal';
-import { getRandomColor } from './utils/color';
-import { getAllTagsForMol } from '../tags/utils/tagUtils';
-import TagView from '../tags/tagView';
+} from '../../../../reducers/selection/actions';
+import { base_url } from '../../../routes/constants';
+import { moleculeProperty } from '../helperConstants';
+import { centerOnLigandByMoleculeID } from '../../../../reducers/ngl/dispatchActions';
+import { SvgTooltip } from '../../../common';
+import { MOL_TYPE } from '../redux/constants';
+import { DensityMapsModal } from '../modals/densityMapsModal';
+import { getRandomColor } from '../utils/color';
+import { getAllTagsForMol } from '../../tags/utils/tagUtils';
+import TagView from '../../tags/tagView';
+import MoleculeSelectCheckbox from './moleculeSelectCheckbox';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -242,8 +243,9 @@ const MoleculeView = memo(
     Q,
     V,
     I,
+    isTagEditorInvokedByMolecule,
+    isTagEditorOpen,
     selected,
-    isMolSelectedForEdit = false,
     disableL,
     disableP,
     disableC
@@ -263,11 +265,7 @@ const MoleculeView = memo(
     const [img_data, setImg_data] = useState(img_data_init);
 
     const viewParams = useSelector(state => state.nglReducers.viewParams);
-    const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
-    const molIdForTagEditor = useSelector(state => state.selectionReducers.molForTagEdit);
     const tagList = useSelector(state => state.selectionReducers.tagList);
-
-    const noTagsReceived = useSelector(state => state.apiReducers.noTagsReceived);
 
     const { getNglView } = useContext(NglContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
@@ -336,7 +334,6 @@ const MoleculeView = memo(
     };
 
     const proteinData = data?.proteinData;
-    const isTagEditorInvokedByMolecule = data && molIdForTagEditor === data.id;
 
     const getDataForTagsTooltip = () => {
       const assignedTags = getAllTagsForMol(data, tagList);
@@ -702,21 +699,18 @@ const MoleculeView = memo(
 
     const groupMoleculeLPCControlButtonDisabled = disableL || disableP || disableC;
 
-    const moleculeAnyLPCControlButtonDisabled =
-      moleculeLPCControlButtonDisabled || groupMoleculeLPCControlButtonDisabled;
-
     return (
       <>
         <Grid container justify="space-between" direction="row" className={classes.container} wrap="nowrap" ref={ref}>
           {/* Site number */}
           <Grid item container justify="space-between" direction="column" className={classes.site}>
             <Grid item>
-              <Checkbox
+              <MoleculeSelectCheckbox
+                moleculeID={currentID}
                 checked={selected}
                 className={classes.checkbox}
                 size="small"
                 color="primary"
-                disabled={moleculeAnyLPCControlButtonDisabled}
                 onChange={e => {
                   const result = e.target.checked;
                   if (result) {
@@ -784,7 +778,7 @@ const MoleculeView = memo(
                         onProtein(true);
                         onComplex(true);
                       }}
-                      disabled={(selected && groupMoleculeLPCControlButtonDisabled) || moleculeLPCControlButtonDisabled}
+                      disabled={groupMoleculeLPCControlButtonDisabled || moleculeLPCControlButtonDisabled}
                     >
                       A
                     </Button>
@@ -798,7 +792,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isLigandOn
                       })}
                       onClick={() => onLigand()}
-                      disabled={(selected && disableL) || disableMoleculeNglControlButtons.ligand}
+                      disabled={disableL || disableMoleculeNglControlButtons.ligand}
                     >
                       L
                     </Button>
@@ -812,7 +806,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isProteinOn
                       })}
                       onClick={() => onProtein()}
-                      disabled={(selected && disableP) || disableMoleculeNglControlButtons.protein}
+                      disabled={disableP || disableMoleculeNglControlButtons.protein}
                     >
                       P
                     </Button>
@@ -827,7 +821,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isComplexOn
                       })}
                       onClick={() => onComplex()}
-                      disabled={(selected && disableC) || disableMoleculeNglControlButtons.complex}
+                      disabled={disableC || disableMoleculeNglControlButtons.complex}
                     >
                       C
                     </Button>
@@ -965,9 +959,8 @@ const MoleculeView = memo(
             </Grid>
             {(moleculeTooltipOpen === true || isTagEditorInvokedByMolecule) && (
               <Grid item xs={2}>
-                <IconButton
+                <MoleculeSelectCheckbox
                   color="primary"
-                  disabled={noTagsReceived || moleculeAnyLPCControlButtonDisabled}
                   className={classes.tagIcon}
                   onClick={() => {
                     // setTagAddModalOpen(!tagAddModalOpen);
@@ -999,7 +992,7 @@ const MoleculeView = memo(
                       color="primary"
                     />
                   </Tooltip>
-                </IconButton>
+                </MoleculeSelectCheckbox>
               </Grid>
             )}
             {warningIconVisible === true && (

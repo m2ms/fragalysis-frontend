@@ -29,6 +29,7 @@ import { changeButtonClassname } from './helpers';
 import { setSelectedAllByType, setDeselectedAllByType } from '../../reducers/selection/actions';
 import SearchField from '../common/Components/SearchField';
 import useDisableNglControlButtons from '../preview/molecule/useDisableNglControlButtons';
+import GroupNglControlButtonsContext from '../preview/molecule/groupNglControlButtonsContext';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -402,30 +403,33 @@ export const InspirationDialog = memo(
                     const selected = allSelectedMolecules.some(molecule => molecule.id === data.id);
 
                     return (
-                      <MoleculeView
-                        key={index}
-                        index={index}
-                        imageHeight={imgHeight}
-                        imageWidth={imgWidth}
-                        data={data}
-                        searchMoleculeGroup
-                        previousItemData={previousData}
-                        nextItemData={nextData}
-                        removeSelectedTypes={removeSelectedTypes}
-                        L={ligandList.includes(molecule.id)}
-                        P={proteinList.includes(molecule.id)}
-                        C={complexList.includes(molecule.id)}
-                        S={surfaceList.includes(molecule.id)}
-                        D={densityList.includes(molecule.id)}
-                        D_C={densityListCustom.includes(data.id)}
-                        Q={qualityList.includes(molecule.id)}
-                        V={vectorOnList.includes(molecule.id)}
-                        I={informationList.includes(data.id)}
-                        selected={selected}
-                        disableL={groupNglControlButtonsDisabledState.ligand}
-                        disableP={groupNglControlButtonsDisabledState.protein}
-                        disableC={groupNglControlButtonsDisabledState.complex}
-                      />
+                      <GroupNglControlButtonsContext.Provider value={groupNglControlButtonsDisabledState}>
+                        <MoleculeView
+                          key={index}
+                          index={index}
+                          imageHeight={imgHeight}
+                          imageWidth={imgWidth}
+                          data={data}
+                          searchMoleculeGroup
+                          previousItemData={previousData}
+                          nextItemData={nextData}
+                          removeSelectedTypes={removeSelectedTypes}
+                          L={ligandList.includes(molecule.id)}
+                          P={proteinList.includes(molecule.id)}
+                          C={complexList.includes(molecule.id)}
+                          S={surfaceList.includes(molecule.id)}
+                          D={densityList.includes(molecule.id)}
+                          D_C={densityListCustom.includes(data.id)}
+                          Q={qualityList.includes(molecule.id)}
+                          V={vectorOnList.includes(molecule.id)}
+                          I={informationList.includes(data.id)}
+                          selected={selected}
+                          isTagEditorInvokedByMolecule={data.id === molForTagEditId}
+                          disableL={selected && groupNglControlButtonsDisabledState.ligand}
+                          disableP={selected && groupNglControlButtonsDisabledState.protein}
+                          disableC={selected && groupNglControlButtonsDisabledState.complex}
+                        />
+                      </GroupNglControlButtonsContext.Provider>
                     );
                   })}
                 {!(moleculeList.length > 0) && (

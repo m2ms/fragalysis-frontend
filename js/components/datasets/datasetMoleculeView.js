@@ -562,9 +562,9 @@ export const DatasetMoleculeView = memo(props => {
     type => disableMoleculeNglControlButtons[type]
   );
 
-  const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
-    type => disableMoleculeNglControlButtons[type] || disableL || disableP || disableC
-  );
+  const groupMoleculeLPCControlButtonDisabled = disableL || disableP || disableC;
+
+  const moleculeAnyLPCControlButtonDisabled = moleculeLPCControlButtonDisabled || groupMoleculeLPCControlButtonDisabled;
 
   return (
     <>
@@ -682,7 +682,11 @@ export const DatasetMoleculeView = memo(props => {
                       onProtein(true);
                       onComplex(true);
                     }}
-                    disabled={isFromVectorSelector || moleculeLPCControlButtonDisabled}
+                    disabled={
+                      isFromVectorSelector ||
+                      (isCheckedToBuy && groupMoleculeLPCControlButtonDisabled) ||
+                      moleculeLPCControlButtonDisabled
+                    }
                   >
                     A
                   </Button>
@@ -696,7 +700,7 @@ export const DatasetMoleculeView = memo(props => {
                       [classes.contColButtonSelected]: isLigandOn
                     })}
                     onClick={() => onLigand()}
-                    disabled={disableL || disableMoleculeNglControlButtons.ligand}
+                    disabled={(isCheckedToBuy && disableL) || disableMoleculeNglControlButtons.ligand}
                   >
                     L
                   </Button>
@@ -710,7 +714,9 @@ export const DatasetMoleculeView = memo(props => {
                       [classes.contColButtonSelected]: isProteinOn
                     })}
                     onClick={() => onProtein()}
-                    disabled={isFromVectorSelector || disableP || disableMoleculeNglControlButtons.protein}
+                    disabled={
+                      isFromVectorSelector || (isCheckedToBuy && disableP) || disableMoleculeNglControlButtons.protein
+                    }
                   >
                     P
                   </Button>
@@ -725,7 +731,9 @@ export const DatasetMoleculeView = memo(props => {
                       [classes.contColButtonSelected]: isComplexOn
                     })}
                     onClick={() => onComplex()}
-                    disabled={isFromVectorSelector || disableC || disableMoleculeNglControlButtons.complex}
+                    disabled={
+                      isFromVectorSelector || (isCheckedToBuy && disableC) || disableMoleculeNglControlButtons.complex
+                    }
                   >
                     C
                   </Button>

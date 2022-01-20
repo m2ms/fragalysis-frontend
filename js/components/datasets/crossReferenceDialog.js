@@ -369,9 +369,9 @@ export const CrossReferenceDialog = memo(
                                 S={false}
                                 V={false}
                                 isCheckedToBuy={isCheckedToBuy}
-                                disableL={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand}
-                                disableP={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein}
-                                disableC={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex}
+                                disableL={groupDatasetsNglControlButtonsDisabledState.ligand}
+                                disableP={groupDatasetsNglControlButtonsDisabledState.protein}
+                                disableC={groupDatasetsNglControlButtonsDisabledState.complex}
                                 arrowsHidden
                               />
                             );

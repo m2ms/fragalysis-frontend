@@ -976,9 +976,9 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
                         sigmaaInfo={data?.proteinData?.sigmaa_info || null}
                         diffInfo={data?.proteinData?.diff_info || null}
                         selected={selected}
-                        disableL={selected && groupNglControlButtonsDisabledState.ligand}
-                        disableP={selected && groupNglControlButtonsDisabledState.protein}
-                        disableC={selected && groupNglControlButtonsDisabledState.complex}
+                        disableL={groupNglControlButtonsDisabledState.ligand}
+                        disableP={groupNglControlButtonsDisabledState.protein}
+                        disableC={groupNglControlButtonsDisabledState.complex}
                       />
                     );
                   })}

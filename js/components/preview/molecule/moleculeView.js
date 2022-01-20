@@ -700,9 +700,10 @@ const MoleculeView = memo(
       type => disableMoleculeNglControlButtons[type]
     );
 
-    const moleculeAnyLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
-      type => disableMoleculeNglControlButtons[type] || disableL || disableP || disableC
-    );
+    const groupMoleculeLPCControlButtonDisabled = disableL || disableP || disableC;
+
+    const moleculeAnyLPCControlButtonDisabled =
+      moleculeLPCControlButtonDisabled || groupMoleculeLPCControlButtonDisabled;
 
     return (
       <>
@@ -783,7 +784,7 @@ const MoleculeView = memo(
                         onProtein(true);
                         onComplex(true);
                       }}
-                      disabled={moleculeLPCControlButtonDisabled}
+                      disabled={(selected && groupMoleculeLPCControlButtonDisabled) || moleculeLPCControlButtonDisabled}
                     >
                       A
                     </Button>
@@ -797,7 +798,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isLigandOn
                       })}
                       onClick={() => onLigand()}
-                      disabled={disableL || disableMoleculeNglControlButtons.ligand}
+                      disabled={(selected && disableL) || disableMoleculeNglControlButtons.ligand}
                     >
                       L
                     </Button>
@@ -811,7 +812,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isProteinOn
                       })}
                       onClick={() => onProtein()}
-                      disabled={disableP || disableMoleculeNglControlButtons.protein}
+                      disabled={(selected && disableP) || disableMoleculeNglControlButtons.protein}
                     >
                       P
                     </Button>
@@ -826,7 +827,7 @@ const MoleculeView = memo(
                         [classes.contColButtonSelected]: isComplexOn
                       })}
                       onClick={() => onComplex()}
-                      disabled={disableC || disableMoleculeNglControlButtons.complex}
+                      disabled={(selected && disableC) || disableMoleculeNglControlButtons.complex}
                     >
                       C
                     </Button>

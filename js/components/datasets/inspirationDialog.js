@@ -422,9 +422,9 @@ export const InspirationDialog = memo(
                         V={vectorOnList.includes(molecule.id)}
                         I={informationList.includes(data.id)}
                         selected={selected}
-                        disableL={selected && groupNglControlButtonsDisabledState.ligand}
-                        disableP={selected && groupNglControlButtonsDisabledState.protein}
-                        disableC={selected && groupNglControlButtonsDisabledState.complex}
+                        disableL={groupNglControlButtonsDisabledState.ligand}
+                        disableP={groupNglControlButtonsDisabledState.protein}
+                        disableC={groupNglControlButtonsDisabledState.complex}
                       />
                     );
                   })}

@@ -28,7 +28,8 @@ import {
   setHideAll,
   removeFromInformationList,
   appendToDensityListType,
-  removeFromDensityListType
+  removeFromDensityListType,
+  setMolListToEdit
 } from '../../../../reducers/selection/actions';
 import { base_url } from '../../../routes/constants';
 import {
@@ -1072,4 +1073,14 @@ export const loadMolImage = (molId, molType, width, height) => {
       return response.data;
     }
   });
+};
+
+export const selectAllHits = (allFilteredMolecules, setNextXMolecules, unselect) => (dispatch, getState) => {
+  setNextXMolecules(allFilteredMolecules?.length || 0);
+  const listOfIds = allFilteredMolecules.map(m => m.id);
+  if (!unselect) {
+    dispatch(setMolListToEdit(listOfIds));
+  } else {
+    dispatch(setMolListToEdit([]));
+  }
 };

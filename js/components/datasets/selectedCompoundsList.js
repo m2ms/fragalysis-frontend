@@ -11,7 +11,7 @@ import {
   getListOfSelectedSurfaceOfAllDatasets
 } from './redux/selectors';
 import InfiniteScroll from 'react-infinite-scroller';
-import { DatasetMoleculeView } from './datasetMoleculeView';
+import DatasetMoleculeView from './datasetMoleculeView';
 import { InspirationDialog } from './inspirationDialog';
 import { setIsOpenInspirationDialog } from './redux/actions';
 import { CrossReferenceDialog } from './crossReferenceDialog';

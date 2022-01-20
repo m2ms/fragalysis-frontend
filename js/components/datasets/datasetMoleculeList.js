@@ -14,7 +14,7 @@ import {
 } from '@material-ui/core';
 import React, { useState, useEffect, memo, useRef, useContext, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DatasetMoleculeView } from './datasetMoleculeView';
+import DatasetMoleculeView from './datasetMoleculeView';
 import { colourList } from '../preview/molecule/utils/color';
 import InfiniteScroll from 'react-infinite-scroller';
 import { Button } from '../common/Inputs/Button';
@@ -50,6 +50,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import SearchField from '../common/Components/SearchField';
 import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
+import GroupDatasetNglControlButtonsContext from './groupDatasetNglControlButtonsContext';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -616,37 +617,41 @@ export const DatasetMoleculeList = memo(
                     useWindow={false}
                   >
                     {datasetID && (
-                      <DndProvider backend={HTML5Backend}>
-                        {currentMolecules.map((data, index, array) => {
-                          const isCheckedToBuy = selectedMolecules.some(molecule => molecule.id === data.id);
+                      <GroupDatasetNglControlButtonsContext.Provider
+                        value={groupDatasetsNglControlButtonsDisabledState}
+                      >
+                        <DndProvider backend={HTML5Backend}>
+                          {currentMolecules.map((data, index, array) => {
+                            const isCheckedToBuy = selectedMolecules.some(molecule => molecule.id === data.id);
 
-                          return (
-                            <DatasetMoleculeView
-                              key={data.id}
-                              index={index}
-                              imageHeight={imgHeight}
-                              imageWidth={imgWidth}
-                              data={data}
-                              datasetID={datasetID}
-                              setRef={setSelectedMoleculeRef}
-                              showCrossReferenceModal
-                              previousItemData={index > 0 && array[index - 1]}
-                              nextItemData={index < array?.length && array[index + 1]}
-                              L={ligandList.includes(data.id)}
-                              P={proteinList.includes(data.id)}
-                              C={complexList.includes(data.id)}
-                              S={surfaceList.includes(data.id)}
-                              V={false}
-                              moveMolecule={moveMolecule}
-                              isCheckedToBuy={isCheckedToBuy}
-                              disableL={groupDatasetsNglControlButtonsDisabledState.ligand}
-                              disableP={groupDatasetsNglControlButtonsDisabledState.protein}
-                              disableC={groupDatasetsNglControlButtonsDisabledState.complex}
-                              dragDropEnabled
-                            />
-                          );
-                        })}
-                      </DndProvider>
+                            return (
+                              <DatasetMoleculeView
+                                key={data.id}
+                                index={index}
+                                imageHeight={imgHeight}
+                                imageWidth={imgWidth}
+                                data={data}
+                                datasetID={datasetID}
+                                setRef={setSelectedMoleculeRef}
+                                showCrossReferenceModal
+                                previousItemData={index > 0 && array[index - 1]}
+                                nextItemData={index < array?.length && array[index + 1]}
+                                L={ligandList.includes(data.id)}
+                                P={proteinList.includes(data.id)}
+                                C={complexList.includes(data.id)}
+                                S={surfaceList.includes(data.id)}
+                                V={false}
+                                moveMolecule={moveMolecule}
+                                isCheckedToBuy={isCheckedToBuy}
+                                disableL={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand}
+                                disableP={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein}
+                                disableC={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex}
+                                dragDropEnabled
+                              />
+                            );
+                          })}
+                        </DndProvider>
+                      </GroupDatasetNglControlButtonsContext.Provider>
                     )}
                   </InfiniteScroll>
                 </Grid>

@@ -17,7 +17,7 @@ import {
 import { Button } from '../common/Inputs/Button';
 import classNames from 'classnames';
 // import { useDisableUserInteraction } from '../helpers/useEnableUserInteracion';
-import { DatasetMoleculeView } from './datasetMoleculeView';
+import DatasetMoleculeView from './datasetMoleculeView';
 import { colourList } from '../preview/molecule/utils/color';
 import { NglContext } from '../nglView/nglProvider';
 import { VIEWS } from '../../constants/constants';
@@ -33,6 +33,7 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { setDeselectedAllByType, setSelectedAllByType } from './redux/actions';
 import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
+import GroupDatasetNglControlButtonsContext from './groupDatasetNglControlButtonsContext';
 
 const addType = {
   ligand: addDatasetLigand,
@@ -339,44 +340,49 @@ export const CrossReferenceDialog = memo(
                       </Grid>
                     </Grid>
                     <div className={classes.content}>
-                      <DndProvider backend={HTML5Backend}>
-                        {moleculeList.length > 0 &&
-                          moleculeList.map((data, index, array) => {
-                            let molecule = Object.assign({ isCrossReference: true }, data.molecule);
-                            let previousData = index > 0 && Object.assign({ isCrossReference: true }, array[index - 1]);
-                            let nextData =
-                              index < array?.length && Object.assign({ isCrossReference: true }, array[index + 1]);
-                            const isCheckedToBuy = selectedMolecules.some(
-                              ({ datasetID, molecule }) =>
-                                molecule.id === data.molecule.id && datasetID === data.datasetID
-                            );
+                      <GroupDatasetNglControlButtonsContext.Provider
+                        value={groupDatasetsNglControlButtonsDisabledState}
+                      >
+                        <DndProvider backend={HTML5Backend}>
+                          {moleculeList.length > 0 &&
+                            moleculeList.map((data, index, array) => {
+                              let molecule = Object.assign({ isCrossReference: true }, data.molecule);
+                              let previousData =
+                                index > 0 && Object.assign({ isCrossReference: true }, array[index - 1]);
+                              let nextData =
+                                index < array?.length && Object.assign({ isCrossReference: true }, array[index + 1]);
+                              const isCheckedToBuy = selectedMolecules.some(
+                                ({ datasetID, molecule }) =>
+                                  molecule.id === data.molecule.id && datasetID === data.datasetID
+                              );
 
-                            return (
-                              <DatasetMoleculeView
-                                key={index}
-                                index={index}
-                                imageHeight={imgHeight}
-                                imageWidth={imgWidth}
-                                data={molecule}
-                                datasetID={data.datasetID}
-                                hideFButton
-                                showDatasetName
-                                previousItemData={previousData}
-                                nextItemData={nextData}
-                                L={ligandList.includes(data.id)}
-                                P={proteinList.includes(data.id)}
-                                C={complexList.includes(data.id)}
-                                S={false}
-                                V={false}
-                                isCheckedToBuy={isCheckedToBuy}
-                                disableL={groupDatasetsNglControlButtonsDisabledState.ligand}
-                                disableP={groupDatasetsNglControlButtonsDisabledState.protein}
-                                disableC={groupDatasetsNglControlButtonsDisabledState.complex}
-                                arrowsHidden
-                              />
-                            );
-                          })}
-                      </DndProvider>
+                              return (
+                                <DatasetMoleculeView
+                                  key={index}
+                                  index={index}
+                                  imageHeight={imgHeight}
+                                  imageWidth={imgWidth}
+                                  data={molecule}
+                                  datasetID={data.datasetID}
+                                  hideFButton
+                                  showDatasetName
+                                  previousItemData={previousData}
+                                  nextItemData={nextData}
+                                  L={ligandList.includes(data.id)}
+                                  P={proteinList.includes(data.id)}
+                                  C={complexList.includes(data.id)}
+                                  S={false}
+                                  V={false}
+                                  isCheckedToBuy={isCheckedToBuy}
+                                  disableL={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand}
+                                  disableP={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein}
+                                  disableC={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex}
+                                  arrowsHidden
+                                />
+                              );
+                            })}
+                        </DndProvider>
+                      </GroupDatasetNglControlButtonsContext.Provider>
                       {!(moleculeList.length > 0) && (
                         <Grid
                           container

@@ -123,7 +123,15 @@ const OTHERS = [
 
 // Creates an object with flag as keys with boolean values
 const createFlagObjectFromFlagList = flagList => {
-  return Object.fromEntries(flagList.map(item => [item.flag, false]));
+  return Object.fromEntries(
+    flagList.map(item => {
+      if (item.flag === 'single_sdf_file') {
+        return [item.flag, true];
+      } else {
+        return [item.flag, false];
+      }
+    })
+  );
 };
 
 export const DownloadStructureDialog = memo(({}) => {

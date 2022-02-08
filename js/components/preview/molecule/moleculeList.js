@@ -80,6 +80,9 @@ const useStyles = makeStyles(theme => ({
     width: 'inherit',
     color: theme.palette.black
   },
+  noOfSelectedHits: {
+    marginLeft: '5px'
+  },
   gridItemHeader: {
     height: '32px',
     fontSize: '8px',
@@ -922,6 +925,11 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
                         </Grid>
                       </Tooltip>
                     }
+                    <Grid item>
+                      <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected hits: ${
+                        allSelectedMolecules ? allSelectedMolecules.length : 0
+                      }`}</Typography>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Grid>

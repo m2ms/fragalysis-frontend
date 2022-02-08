@@ -197,7 +197,7 @@ export const TagEditor = memo(
             </Tooltip>
           ]}
         >
-          <Grid>
+          <Grid className={classes.content}>
             <TagCategory tagClickCallback={handleTagClick} disabled={!DJANGO_CONTEXT.pk} />
           </Grid>
         </Panel>

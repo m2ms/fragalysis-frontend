@@ -257,6 +257,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
   const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
+  const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
 
   const object_selection = useSelector(state => state.selectionReducers.mol_group_selection);
 
@@ -330,14 +331,16 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     joinedMoleculeLists,
     proteinList,
     molForTagEditId,
-    isTagEditorOpen
+    isTagEditorOpen,
+    moleculesToEditIds
   ]);
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, complexList), [
     addSelectedMoleculesFromUnselectedSites,
     joinedMoleculeLists,
     complexList,
     molForTagEditId,
-    isTagEditorOpen
+    isTagEditorOpen,
+    moleculesToEditIds
   ]);
   joinedMoleculeLists = useMemo(
     () => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, fragmentDisplayList),
@@ -346,7 +349,8 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
       joinedMoleculeLists,
       fragmentDisplayList,
       molForTagEditId,
-      isTagEditorOpen
+      isTagEditorOpen,
+      moleculesToEditIds
     ]
   );
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, surfaceList), [
@@ -354,21 +358,24 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     joinedMoleculeLists,
     surfaceList,
     molForTagEditId,
-    isTagEditorOpen
+    isTagEditorOpen,
+    moleculesToEditIds
   ]);
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, densityList), [
     addSelectedMoleculesFromUnselectedSites,
     joinedMoleculeLists,
     densityList,
     molForTagEditId,
-    isTagEditorOpen
+    isTagEditorOpen,
+    moleculesToEditIds
   ]);
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, vectorOnList), [
     addSelectedMoleculesFromUnselectedSites,
     joinedMoleculeLists,
     vectorOnList,
     molForTagEditId,
-    isTagEditorOpen
+    isTagEditorOpen,
+    moleculesToEditIds
   ]);
 
   if (isActiveFilter) {
@@ -396,9 +403,27 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     }
   }
 
+  if (moleculesToEditIds && moleculesToEditIds.length > 0 && isGlobalEdit) {
+    moleculesToEditIds.forEach(mid => {
+      if (!joinedMoleculeLists.some(m => m.id === mid)) {
+        const tagEditMol = dispatch(getMoleculeForId(mid));
+        if (tagEditMol) {
+          joinedMoleculeLists.push(tagEditMol);
+        }
+      }
+    });
+    joinedMoleculeLists.sort((a, b) => {
+      if (a.protein_code < b.protein_code) {
+        return -1;
+      }
+      if (a.protein_code > b.protein_code) {
+        return 1;
+      }
+      return 0;
+    });
+  }
+
   const listItemOffset = (currentPage + 1) * moleculesPerPage + nextXMolecules;
-  const currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
-  dispatch(setDisplayedMoleculesInHitNav(currentMolecules));
   const canLoadMore = listItemOffset < joinedMoleculeLists.length;
 
   const wereMoleculesInitialized = useRef(false);
@@ -482,6 +507,9 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
       allMoleculesList.filter(molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
     [allMoleculesList, moleculesToEditIds, molForTagEditId]
   );
+
+  let currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
+  dispatch(setDisplayedMoleculesInHitNav(currentMolecules));
 
   const changePredefinedFilter = event => {
     let newFilter = Object.assign({}, filter);

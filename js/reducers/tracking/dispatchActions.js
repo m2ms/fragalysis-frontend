@@ -7,7 +7,13 @@ import {
 import { createInitAction } from './trackingActions';
 import { actionType, actionObjectType, NUM_OF_SECONDS_TO_IGNORE_MERGE, mapTypesStrings } from './constants';
 import { VIEWS } from '../../../js/constants/constants';
-import { setHideAll, setArrowUpDown, appendToMolListToEdit, removeFromMolListToEdit } from '../selection/actions';
+import {
+  setHideAll,
+  setArrowUpDown,
+  appendToMolListToEdit,
+  removeFromMolListToEdit,
+  setNextXMolecules
+} from '../selection/actions';
 import {
   resetReducersForRestoringActions,
   shouldLoadProtein,
@@ -40,7 +46,8 @@ import {
   addDensity,
   addDensityCustomView,
   removeDensity,
-  getProteinData
+  getProteinData,
+  selectAllHits
 } from '../../components/preview/molecule/redux/dispatchActions';
 import { setSortDialogOpen } from '../../components/preview/molecule/redux/actions';
 import {
@@ -287,6 +294,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
       getCollectionOfDataset(currentDatasetLigands),
       getCollectionOfDataset(currentDatasetProteins),
       getCollectionOfDataset(currentDatasetComplexes)
+    );
+
+    getCurrentActionListOfSelectAllMolecules(
+      orderedActionList,
+      actionType.ALL_MOLECULES_SELECTED,
+      getCollection(selectedMolecules),
+      currentActions
     );
 
     getCurrentActionList(
@@ -654,6 +668,22 @@ const getCurrentActionListOfAllSelectionByTypeOfDataset = (
     let items = [];
     collection.forEach(data => {
       let item = actionItems.find(item => item.molecule.id === data.id && item.datasetID === data.datasetId);
+      if (item) {
+        items.push(item);
+      }
+    });
+
+    currentActions.push(Object.assign({ ...action, items: items }));
+  }
+};
+
+const getCurrentActionListOfSelectAllMolecules = (orderedActionList, type, collection, currentActions) => {
+  let action = orderedActionList.find(action => action.type === type);
+  if (action && collection) {
+    let actionItems = action.items;
+    let items = [];
+    collection.forEach(data => {
+      let item = actionItems.find(ai => ai.id === data.id);
       if (item) {
         items.push(item);
       }
@@ -1272,6 +1302,7 @@ const restoreMoleculesActions = (orderedActionList, stage) => async (dispatch, g
     await dispatch(addNewType(moleculesAction, actionType.DENSITY_TURNED_ON, 'density', stage, state));
     await dispatch(addNewType(moleculesAction, actionType.DENSITY_TYPE_ON, 'density', stage, state));
     await dispatch(addNewType(moleculesAction, actionType.DENSITY_CUSTOM_TURNED_ON, 'densityCustom', stage, state));
+    await dispatch(restoreSelectAllMolecules(moleculesAction));
   }
 
   dispatch(restoreAllSelectionActions(orderedActionList, stage, true));
@@ -1394,6 +1425,18 @@ const restoreAllSelectionActions = (moleculesAction, stage, isSelection) => (dis
           dispatch(handleMoleculeAction(action, 'complex', true, stage, state, true));
         }
       }
+    });
+  }
+};
+
+const restoreSelectAllMolecules = moleculesAction => (dispatch, getState) => {
+  let action = moleculesAction.find(ma => ma.type === actionType.ALL_MOLECULES_SELECTED);
+  if (action && action.items) {
+    const state = getState();
+    const allMolecules = state.apiReducers.all_mol_lists;
+    dispatch(setNextXMolecules(allMolecules.length));
+    action.items.forEach(m => {
+      dispatch(handleSelectMoleculeByName(m.protein_code, true));
     });
   }
 };
@@ -2018,6 +2061,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.MOLECULE_UNSELECTED:
         dispatch(handleSelectMoleculeAction(action, true));
         break;
+      case actionType.ALL_MOLECULES_SELECTED:
+        dispatch(handleSelectAllMolecules(action, false));
+        break;
+      case actionType.ALL_MOLECULES_UNSELECTED:
+        dispatch(handleSelectAllMolecules(action, true));
+        break;
       case actionType.TAB:
         dispatch(handleTabAction(action, false));
         break;
@@ -2262,6 +2311,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.MOLECULE_UNSELECTED:
         dispatch(handleSelectMoleculeAction(action, false));
+        break;
+      case actionType.ALL_MOLECULES_SELECTED:
+        dispatch(handleSelectAllMolecules(action, true));
+        break;
+      case actionType.ALL_MOLECULES_UNSELECTED:
+        dispatch(handleSelectAllMolecules(action, false));
         break;
       case actionType.TAB:
         dispatch(handleTabAction(action, true));
@@ -2682,9 +2737,15 @@ const handleCompoundAction = (action, isSelected) => (dispatch, getState) => {
 };
 
 const handleSelectMoleculeAction = (action, isSelected) => (dispatch, getState) => {
-  const state = getState();
   if (action) {
-    let mol = getMolecule(action.object_name, state);
+    dispatch(handleSelectMoleculeByName(action.object_name));
+  }
+};
+
+const handleSelectMoleculeByName = (molName, isSelected) => (dispatch, getState) => {
+  const state = getState();
+  if (molName) {
+    let mol = getMolecule(molName, state);
     if (mol) {
       if (isSelected) {
         dispatch(appendToMolListToEdit(mol.id));
@@ -2692,6 +2753,12 @@ const handleSelectMoleculeAction = (action, isSelected) => (dispatch, getState) 
         dispatch(removeFromMolListToEdit(mol.id));
       }
     }
+  }
+};
+
+const handleSelectAllMolecules = (action, isSelected) => (dispatch, getState) => {
+  if (action && action.items) {
+    dispatch(selectAllHits(action.items, setNextXMolecules, !isSelected));
   }
 };
 

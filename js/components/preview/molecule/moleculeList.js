@@ -54,7 +54,7 @@ import { DEFAULT_FILTER, PREDEFINED_FILTERS } from '../../../reducers/selection/
 import { Edit, FilterList } from '@material-ui/icons';
 import { selectAllMoleculeList, selectJoinedMoleculeList } from './redux/selectors';
 import { MOL_ATTRIBUTES } from './redux/constants';
-import { setFilter, setMolListToEdit } from '../../../reducers/selection/actions';
+import { setFilter, setMolListToEdit, setNextXMolecules } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import * as listType from '../../../constants/listTypes';
 import { useRouteMatch } from 'react-router-dom';
@@ -225,7 +225,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   let match = useRouteMatch();
   let target = match && match.params && match.params.target;
 
-  const [nextXMolecules, setNextXMolecules] = useState(0);
+  const nextXMolecules = useSelector(state => state.selectionReducers.nextXMolecules);
   const [selectAllHitsPressed, setSelectAllHitsPressed] = useState(false);
   const moleculesPerPage = 5;
   const [currentPage, setCurrentPage] = useState(0);
@@ -814,7 +814,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
           description={`Loading of ${joinedMoleculeLists?.length} may take a long time`}
           open={isOpenAlert}
           handleOnOk={() => {
-            setNextXMolecules(joinedMoleculeLists?.length || 0);
+            dispatch(setNextXMolecules(joinedMoleculeLists?.length || 0));
             setIsOpenAlert(false);
           }}
           handleOnCancel={() => {
@@ -1070,14 +1070,14 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
                     >
                       <Button
                         onClick={() => {
-                          setNextXMolecules(30);
+                          dispatch(setNextXMolecules(30));
                         }}
                       >
                         Load next 30
                       </Button>
                       <Button
                         onClick={() => {
-                          setNextXMolecules(100);
+                          dispatch(setNextXMolecules(100));
                         }}
                       >
                         Load next 100
@@ -1087,7 +1087,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
                           if (joinedMoleculeLists?.length > 300) {
                             setIsOpenAlert(true);
                           } else {
-                            setNextXMolecules(joinedMoleculeLists?.length || 0);
+                            dispatch(setNextXMolecules(joinedMoleculeLists?.length || 0));
                           }
                         }}
                       >

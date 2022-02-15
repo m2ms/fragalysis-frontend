@@ -203,6 +203,34 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
           text: `${actionDescription.ALL} ${paylodTypeDescription} ${actionDescription.TURNED_OFF} ${objectType}`
         };
       }
+    } else if (action.type === selectionConstants.SET_SELECT_ALL_MOLECULES) {
+      if (action && action.items) {
+        let objectType = actionObjectType.MOLECULE;
+
+        trackAction = {
+          type: actionType.ALL_MOLECULES_SELECTED,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          items: action.items,
+          text: `All hits were selected`
+        };
+      }
+    } else if (action.type === selectionConstants.SET_UNSELECT_ALL_MOLECULES) {
+      if (action && action.items) {
+        let objectType = actionObjectType.MOLECULE;
+
+        trackAction = {
+          type: actionType.ALL_MOLECULES_UNSELECTED,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          items: action.items,
+          text: `All hits were unselected`
+        };
+      }
     } else if (action.type === selectionConstants.APPEND_FRAGMENT_DISPLAY_LIST) {
       if (action.item) {
         let objectType = action.item.isInspiration === true ? actionObjectType.INSPIRATION : actionObjectType.MOLECULE;

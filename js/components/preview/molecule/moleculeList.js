@@ -54,7 +54,7 @@ import { DEFAULT_FILTER, PREDEFINED_FILTERS } from '../../../reducers/selection/
 import { Edit, FilterList } from '@material-ui/icons';
 import { selectAllMoleculeList, selectJoinedMoleculeList } from './redux/selectors';
 import { MOL_ATTRIBUTES } from './redux/constants';
-import { setFilter } from '../../../reducers/selection/actions';
+import { setFilter, setMolListToEdit } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import * as listType from '../../../constants/listTypes';
 import { useRouteMatch } from 'react-router-dom';
@@ -511,6 +511,16 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   let currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
   dispatch(setDisplayedMoleculesInHitNav(currentMolecules));
 
+  const newMolsToEdit = [];
+  currentMolecules.forEach(cm => {
+    if (moleculesToEditIds.includes(cm.id)) {
+      newMolsToEdit.push(cm.id);
+    }
+  });
+  if (newMolsToEdit.length !== moleculesToEditIds.length) {
+    dispatch(setMolListToEdit(newMolsToEdit));
+  }
+
   const changePredefinedFilter = event => {
     let newFilter = Object.assign({}, filter);
 
@@ -666,6 +676,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   };
 
   const onButtonToggle = (type, calledFromSelectAll = false) => {
+    setLastProcessedLPCType(type);
     if (calledFromSelectAll === true && selectedAll.current === true) {
       // REDO
       if (eval('is' + ucfirst(type) + 'On') === false) {
@@ -676,8 +687,12 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
     } else if (!calledFromSelectAll) {
       if (eval('is' + ucfirst(type) + 'On') === false) {
         let molecules = getSelectedMoleculesByType(type, true);
-        dispatch(setSelectedAllByType(type, molecules));
-        addNewType(type, true);
+        if (molecules && molecules.length > 100) {
+          setIsOpenLPCAlert(true);
+        } else {
+          dispatch(setSelectedAllByType(type, molecules));
+          addNewType(type, true);
+        }
       } else {
         let molecules = getSelectedMoleculesByType(type, false);
         dispatch(setDeselectedAllByType(type, molecules));
@@ -779,6 +794,8 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   ];
 
   const [isOpenAlert, setIsOpenAlert] = useState(false);
+  const [isOpenLPCAlert, setIsOpenLPCAlert] = useState(false);
+  const [lastProcessedLPCType, setLastProcessedLPCType] = useState(null);
 
   const groupNglControlButtonsDisabledState = useDisableNglControlButtons(allSelectedMolecules);
 
@@ -802,6 +819,20 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
           }}
           handleOnCancel={() => {
             setIsOpenAlert(false);
+          }}
+        />
+        <AlertModal
+          title="Are you sure?"
+          description={`Displaying of ${joinedMoleculeLists?.length} may take a long time`}
+          open={isOpenLPCAlert}
+          handleOnOk={() => {
+            let molecules = getSelectedMoleculesByType(lastProcessedLPCType, true);
+            dispatch(setSelectedAllByType(lastProcessedLPCType, molecules));
+            addNewType(lastProcessedLPCType, true);
+            setIsOpenLPCAlert(false);
+          }}
+          handleOnCancel={() => {
+            setIsOpenLPCAlert(false);
           }}
         />
         {isTagEditorOpen && (

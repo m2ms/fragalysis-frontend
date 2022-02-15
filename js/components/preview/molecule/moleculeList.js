@@ -985,7 +985,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
                       </Tooltip>
                     }
                     <Grid item>
-                      <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected hits: ${
+                      <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected: ${
                         allSelectedMolecules ? allSelectedMolecules.length : 0
                       }`}</Typography>
                     </Grid>

@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect, useRef } from 'react';
+import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../../common/Surfaces/Panel';
 import { templateExtend, TemplateName, Orientation, Gitgraph } from '@gitgraph/react';
 import { MergeType } from '@material-ui/icons';
@@ -11,6 +11,7 @@ import palette from '../../../theme/palette';
 import { ModalShareSnapshot } from '../../snapshot/modals/modalShareSnapshot';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 import { NglContext } from '../../nglView/nglProvider';
+import JobPopup from './JobPopup';
 
 export const heightOfProjectHistory = '164px';
 
@@ -37,7 +38,7 @@ const useStyles = makeStyles(theme => ({
 const template = templateExtend(TemplateName.Metro, {
   branch: {
     lineWidth: 3,
-    spacing: 12,
+    spacing: 20,
     label: {
       font: 'normal 8pt Arial',
       pointerWidth: 100,
@@ -48,9 +49,10 @@ const template = templateExtend(TemplateName.Metro, {
     message: {
       displayHash: false,
       font: 'normal 10pt Arial',
-      displayAuthor: false
+      displayAuthor: false,
+      display: false
     },
-    spacing: 24,
+    spacing: 30,
     dot: {
       size: 8
     }
@@ -58,8 +60,8 @@ const template = templateExtend(TemplateName.Metro, {
 
   tag: {
     font: 'normal 8pt Arial',
-    color: palette.primary.contrastText,
-    bgColor: palette.primary.main
+    color: palette.primary.main
+    //bgColor: palette.primary.main
   }
 });
 
@@ -67,6 +69,13 @@ const options = {
   template,
   orientation: Orientation.Horizontal
 };
+
+const [jobInfo, setJobInfo] = useState({
+  status: 'Running',
+  parameters: 'Parameter 1',
+  results: 'Result 1',
+  snapshotLink: 'test'
+});
 
 export const ProjectHistory = memo(({ showFullHistory }) => {
   const classes = useStyles();
@@ -96,6 +105,47 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
       (isSelected === true && { dot: { size: 10, color: 'red', strokeColor: 'blue', strokeWidth: 2 } }) || undefined
   });
 
+  const [jobPopUpAnchorEl, setJobPopUpAnchorEl] = useState(null);
+
+  const handleClickTriangle = (event, jobInfo) => {
+    setJobPopUpAnchorEl(event.currentTarget);
+  };
+
+  const commitJobFunction = ({ title, hash, customDot = null }) => ({
+    hash: `${hash}`,
+    subject: `${title}`,
+    renderDot: customDot !== null && customDot
+  });
+
+  const renderTriangle = (fill, commit, jobInfo) => () => {
+    return React.createElement(
+      'svg',
+      {
+        xmlns: 'http://www.w3.org/2000/svg',
+        viewBox: '0 0 71.84 75.33',
+        height: '30',
+        width: '30',
+        cursor: 'pointer',
+        onClick: event => handleClickTriangle(event, jobInfo),
+        onMessageClick: handleClickTriangle
+      },
+      React.createElement(
+        'g',
+        { fill, stroke: '#DDDDDD', strokeWidth: '4' },
+        React.createElement('path', {
+          d: 'M 25,0 49,49.5 0,49.5 z'
+        })
+      ),
+      React.createElement(
+        'g',
+        { fill: '#B7B7B7', stroke: '#BECEBE', strokeWidth: '0' },
+        React.createElement('path', {
+          d: 'M 25,0 49,49.5 25,35 z'
+        })
+      )
+    );
+  };
+
   const renderTreeNode = (childID, gitgraph, parentBranch) => {
     const node = currentSnapshotList[childID];
     if (node !== undefined) {
@@ -104,11 +154,40 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         from: parentBranch
       });
 
-      newBranch.commit(
+      const newCommit = newBranch.commit(
         commitFunction({
           title: node.title || '',
           hash: node.id,
           isSelected: currentSnapshotID === node.id
+        })
+      );
+
+      newBranch.commit(
+        commitJobFunction({
+          title: Math.floor(Math.random() * 1000),
+          hash: Math.floor(Math.random() * 1000),
+          customDot: renderTriangle('#D5E8D4', newCommit)
+        })
+      );
+      newBranch.commit(
+        commitJobFunction({
+          title: Math.floor(Math.random() * 1000),
+          hash: Math.floor(Math.random() * 1000),
+          customDot: renderTriangle('#F9D5D3', newCommit)
+        })
+      );
+      newBranch.commit(
+        commitJobFunction({
+          title: Math.floor(Math.random() * 1000),
+          hash: Math.floor(Math.random() * 1000),
+          customDot: renderTriangle('#FFF2CC', newCommit)
+        })
+      );
+      newBranch.commit(
+        commitJobFunction({
+          title: Math.floor(Math.random() * 1000),
+          hash: Math.floor(Math.random() * 1000),
+          customDot: renderTriangle('#FFF2CC', newCommit)
         })
       );
 
@@ -166,6 +245,8 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
                 }}
               </Gitgraph>
             )}
+
+          <JobPopup jobPopUpAnchorEl={jobPopUpAnchorEl} setJobPopUpAnchorEl={setJobPopUpAnchorEl} job={job} />
         </div>
       </Panel>
     </div>

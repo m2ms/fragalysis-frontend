@@ -1,5 +1,6 @@
 import { DJANGO_CONTEXT } from './djangoContext';
 import { api, METHOD } from './api';
+import { base_url } from '../components/routes/constants';
 
 const DEFAULT_PARENT_CATEGORY_NAME = 'Fragalysis targets';
 const DEFAULT_CATEGORY_COLOUR = '0088CC';
@@ -38,7 +39,7 @@ export const getDiscourseURL = () => {
 export const generateDiscourseTargetURL = targetName => {
   let jsonData = getDiscourseRequestObject({ category_name: targetName });
   return api({
-    url: '/api/discourse_post/',
+    url: `${base_url}/api/discourse_post/`,
     method: METHOD.POST,
     data: jsonData
   });
@@ -53,7 +54,7 @@ export const createProjectPost = (projectName, targetName, msg, tags) => {
   });
   console.log(JSON.stringify(jsonData));
   return api({
-    url: '/api/discourse_post/',
+    url: `${base_url}/api/discourse_post/`,
     method: METHOD.POST,
     data: jsonData
   });
@@ -67,7 +68,7 @@ export const createTagPost = (tag, targetName, msg) => {
   });
   console.log(JSON.stringify(jsonData));
   return api({
-    url: '/api/discourse_post/',
+    url: `${base_url}/api/discourse_post/`,
     method: METHOD.POST,
     data: jsonData
   });
@@ -79,7 +80,7 @@ export const getExistingPost = projectName => {
   });
   console.log(JSON.stringify(jsonData));
   return api({
-    url: '/api/discourse_post/',
+    url: `${base_url}/api/discourse_post/`,
     method: METHOD.POST,
     data: jsonData
   });
@@ -87,13 +88,17 @@ export const getExistingPost = projectName => {
 
 export const getProjectPosts = projectName => {
   return api({
-    url: `/api/discourse_post/?post_title=${encodeURIComponent(projectName)}`,
+    url: `${base_url}/api/discourse_post/?post_title=${encodeURIComponent(projectName)}`,
     method: METHOD.GET
   });
 };
 
 export const openDiscourseLink = url => {
-  window.open(`${DJANGO_CONTEXT.discourse_host}${url}`, '_blank');
+  if (url.includes('http')) {
+    window.open(`${url}`, '_blank');
+  } else {
+    window.open(`${DJANGO_CONTEXT.discourse_host}${url}`, '_blank');
+  }
 };
 
 console.log(DJANGO_CONTEXT.discourse_host);

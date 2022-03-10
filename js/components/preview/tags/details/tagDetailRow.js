@@ -187,7 +187,7 @@ const TagDetailRow = memo(({ tag, moleculesToEditIds, moleculesToEdit }) => {
           className={classes.discourseButton}
           onClick={() => {
             try {
-              if (isURL(tag.discourse_url)) {
+              if (tag.discourse_url) {
                 openDiscourseLink(tag.discourse_url);
               } else {
                 createTagPost(tag, targetName, getDefaultTagDiscoursePostText(tag)).then(resp => {

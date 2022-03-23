@@ -1,7 +1,7 @@
 import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../../common/Surfaces/Panel';
 import { templateExtend, TemplateName, Orientation, Gitgraph } from '@gitgraph/react';
-import { MergeType } from '@material-ui/icons';
+import { MergeType, PlayArrow } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/core';
 import { Button } from '../../common/Inputs/Button';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,6 +12,7 @@ import { ModalShareSnapshot } from '../../snapshot/modals/modalShareSnapshot';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 import { NglContext } from '../../nglView/nglProvider';
 import JobPopup from './JobPopup';
+import JobLauncherPopup from './JobLauncherPopup';
 
 export const heightOfProjectHistory = '164px';
 
@@ -70,13 +71,6 @@ const options = {
   orientation: Orientation.Horizontal
 };
 
-const [jobInfo, setJobInfo] = useState({
-  status: 'Running',
-  parameters: 'Parameter 1',
-  results: 'Result 1',
-  snapshotLink: 'test'
-});
-
 export const ProjectHistory = memo(({ showFullHistory }) => {
   const classes = useStyles();
   const ref = useRef(null);
@@ -88,8 +82,20 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
   const snapshotId = useSelector(state => state.projectReducers.currentSnapshot).id;
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
   const currentSnapshotList = useSelector(state => state.projectReducers.currentSnapshotList);
+  const currentSnapshotJobList = useSelector(state => state.projectReducers.currentSnapshotJobList);
   const currentSnapshotTree = useSelector(state => state.projectReducers.currentSnapshotTree);
   const isLoadingTree = useSelector(state => state.projectReducers.isLoadingTree);
+
+  const [jobPopupInfo, setJobPopupInfo] = useState({
+    hash: null,
+    jobInfo: null
+  });
+
+  const [jobLauncherPopUpAnchorEl, setJobLauncherPopUpAnchorEl] = useState(null);
+
+  const handleClickJobLauncher = event => {
+    setJobLauncherPopUpAnchorEl(event.currentTarget);
+  };
 
   const handleClickOnCommit = commit => {
     dispatch(setSelectedSnapshotToSwitch(commit.hash));
@@ -107,8 +113,9 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
 
   const [jobPopUpAnchorEl, setJobPopUpAnchorEl] = useState(null);
 
-  const handleClickTriangle = (event, jobInfo) => {
+  const handleClickTriangle = (event, hash, jobInfo) => {
     setJobPopUpAnchorEl(event.currentTarget);
+    setJobPopupInfo({ hash, jobInfo });
   };
 
   const commitJobFunction = ({ title, hash, customDot = null }) => ({
@@ -126,8 +133,8 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         height: '30',
         width: '30',
         cursor: 'pointer',
-        onClick: event => handleClickTriangle(event, jobInfo),
-        onMessageClick: handleClickTriangle
+        onClick: event => handleClickTriangle(event, commit, jobInfo),
+        onMessageClick: event => handleClickTriangle(event, commit, jobInfo)
       },
       React.createElement(
         'g',
@@ -162,34 +169,45 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         })
       );
 
+      currentSnapshotJobList[node.id].forEach(job => {
+        newBranch.commit(
+          commitJobFunction({
+            title: job.id,
+            hash: job.id,
+            customDot: renderTriangle('#D5E8D4', node.id, job)
+          })
+        );
+      });
+
+      /*
       newBranch.commit(
         commitJobFunction({
           title: Math.floor(Math.random() * 1000),
           hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#D5E8D4', newCommit)
+          customDot: renderTriangle('#D5E8D4', node.id, jobInfo)
         })
       );
       newBranch.commit(
         commitJobFunction({
           title: Math.floor(Math.random() * 1000),
           hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#F9D5D3', newCommit)
+          customDot: renderTriangle('#F9D5D3', node.id, jobInfo)
         })
       );
       newBranch.commit(
         commitJobFunction({
           title: Math.floor(Math.random() * 1000),
           hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#FFF2CC', newCommit)
+          customDot: renderTriangle('#FFF2CC', node.id, jobInfo)
         })
       );
       newBranch.commit(
         commitJobFunction({
           title: Math.floor(Math.random() * 1000),
           hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#FFF2CC', newCommit)
+          customDot: renderTriangle('#FFF2CC', node.id, jobInfo)
         })
-      );
+      );*/
 
       node.children.forEach(childID => {
         renderTreeNode(childID, gitgraph, newBranch);
@@ -212,6 +230,15 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         hasHeader
         title="Project History"
         headerActions={[
+          <Button
+            color="inherit"
+            variant="text"
+            size="small"
+            onClick={handleClickJobLauncher}
+            startIcon={<PlayArrow />}
+          >
+            Job Launcher
+          </Button>,
           <Button color="inherit" variant="text" size="small" onClick={showFullHistory} startIcon={<MergeType />}>
             Detail
           </Button>
@@ -246,7 +273,16 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
               </Gitgraph>
             )}
 
-          <JobPopup jobPopUpAnchorEl={jobPopUpAnchorEl} setJobPopUpAnchorEl={setJobPopUpAnchorEl} job={job} />
+          <JobPopup
+            jobPopUpAnchorEl={jobPopUpAnchorEl}
+            setJobPopUpAnchorEl={setJobPopUpAnchorEl}
+            jobPopupInfo={jobPopupInfo}
+          />
+          <JobLauncherPopup
+            jobLauncherPopUpAnchorEl={jobLauncherPopUpAnchorEl}
+            setJobLauncherPopUpAnchorEl={setJobLauncherPopUpAnchorEl}
+            snapshots={currentSnapshotList}
+          />
         </div>
       </Panel>
     </div>

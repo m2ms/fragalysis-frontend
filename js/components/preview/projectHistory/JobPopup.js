@@ -2,11 +2,13 @@ import { Popper } from '@material-ui/core';
 import React from 'react';
 import { makeStyles } from '@material-ui/core';
 import { Button } from '../../common/Inputs/Button';
+import { useDispatch } from 'react-redux';
+import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 
 const useStyles = makeStyles(theme => ({
   jobPopup: {
     width: '300px',
-    borderRadius: '10px',
+    borderRadius: '5px',
     border: '1px solid #000',
     display: 'flex',
     flexDirection: 'column'
@@ -14,7 +16,7 @@ const useStyles = makeStyles(theme => ({
 
   topPopup: {
     width: '100%',
-    borderRadius: '10px 10px 0 0',
+    borderRadius: '5px 5px 0 0',
     backgroundColor: '#3f51b5',
     color: '#fff',
     paddingLeft: '20px',
@@ -22,7 +24,7 @@ const useStyles = makeStyles(theme => ({
   },
 
   popUpButton: {
-    borderRadius: '0 10px 0 0',
+    borderRadius: '0 5px 0 0',
     backgroundColor: '#d33f3f',
     color: '#fff',
     padding: '5px 10px 5px 10px',
@@ -30,7 +32,7 @@ const useStyles = makeStyles(theme => ({
     float: 'right',
     height: '30px',
     '&:hover': {
-      borderRadius: '0 10px 0 0',
+      borderRadius: '0 5px 0 0',
       backgroundColor: '#aa3939',
       color: '#fff',
       cursor: 'pointer'
@@ -39,13 +41,16 @@ const useStyles = makeStyles(theme => ({
 
   bodyPopup: {
     padding: '10px',
-    backgroundColor: '#f3f3f3',
-    borderRadius: '0 0 10px 10px'
+    backgroundColor: '#ffffff',
+    borderRadius: '0 0 5px 5px'
   }
 }));
 
-const JobPopup = ({ jobPopUpAnchorEl, setJobPopUpAnchorEl, job }) => {
+const JobPopup = ({ jobPopUpAnchorEl, setJobPopUpAnchorEl, jobPopupInfo }) => {
   const classes = useStyles();
+  const dispatch = useDispatch();
+  const { jobInfo, hash } = jobPopupInfo;
+
   return (
     <Popper
       open={!!jobPopUpAnchorEl}
@@ -62,15 +67,23 @@ const JobPopup = ({ jobPopUpAnchorEl, setJobPopUpAnchorEl, job }) => {
         </div>
         <div className={classes.bodyPopup}>
           <p>
-            Status: <strong>{job.status}</strong>
+            Status: <strong>{jobInfo?.status}</strong>
           </p>
           <p>
-            Parameters: <strong>{job.parameters}</strong>
+            Parameters: <strong>{jobInfo?.parameters}</strong>
           </p>
           <p>
-            Results: <strong>{job.results}</strong>
+            Results: <strong>{jobInfo?.results}</strong>
           </p>
-          <Button color="primary">Open associated snapshot</Button>
+          <Button
+            color="primary"
+            onClick={() => {
+              dispatch(setSelectedSnapshotToSwitch(hash));
+              dispatch(setIsOpenModalBeforeExit(true));
+            }}
+          >
+            Open associated snapshot
+          </Button>
         </div>
       </div>
     </Popper>

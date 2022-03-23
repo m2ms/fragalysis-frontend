@@ -31,9 +31,15 @@ export const INITIAL_STATE = {
   isLoadingTree: false,
   currentSnapshotTree: null,
   currentSnapshotList: null,
+  currentSnapshotJobList: null,
   forceCreateProject: false,
   isForceProjectCreated: false,
-  projectDiscourseLinks: null
+  projectDiscourseLinks: null,
+  jobList: [
+    { id: 1, name: 'FragalysisJob1', description: 'This is description for FragalysisJob1.' },
+    { id: 2, name: 'FragalysisJob2', description: 'This is description for FragalysisJob2.' },
+    { id: 3, name: 'FragalysisJob3', description: 'This is description for FragalysisJob3.' }
+  ]
 };
 
 export const projectReducers = (state = INITIAL_STATE, action = {}) => {
@@ -88,7 +94,20 @@ export const projectReducers = (state = INITIAL_STATE, action = {}) => {
       return Object.assign({}, state, { isLoadingTree: action.payload });
 
     case constants.SET_CURRENT_SNAPSHOT_LIST:
-      return Object.assign({}, state, { currentSnapshotList: action.payload });
+      return Object.assign({}, state, {
+        currentSnapshotList: action.payload,
+        currentSnapshotJobList: Object.fromEntries(
+          Object.keys(action.payload).map(id => [
+            id,
+            new Array(3).fill(0).map(() => ({
+              id: Math.floor(Math.random() * 5000),
+              status: 'Running',
+              parameters: 'Parameter 1',
+              results: 'Result 1'
+            }))
+          ])
+        )
+      });
 
     case constants.SET_FORCE_CREATE_PROJECT:
       return Object.assign({}, state, { forceCreateProject: action.payload });

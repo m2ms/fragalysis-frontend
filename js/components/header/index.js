@@ -30,7 +30,9 @@ import {
   Description,
   Timeline,
   QuestionAnswer,
-  Chat
+  Chat,
+  Lock,
+  LockOpen
 } from '@material-ui/icons';
 import { HeaderContext } from './headerContext';
 import { Button } from '../common';
@@ -50,6 +52,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { generateDiscourseTargetURL, getExistingPost } from '../../utils/discourse';
 import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
+import { setCurrentLayout } from '../../reducers/layout/actions';
+import { defaultLayout } from '../../reducers/layout/constants';
+import { lockLayout } from '../../reducers/layout/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -105,6 +110,8 @@ export default memo(
     const [openMenu, setOpenMenu] = useState(false);
     const [openFunders, setOpenFunders] = useState(false);
     const [openTrackingModal, setOpenTrackingModal] = useState(false);
+
+    const [layoutLocked, setLayoutLocked] = useState(true);
 
     const currentProject = useSelector(state => state.projectReducers.currentProject);
     const targetName = useSelector(state => state.apiReducers.target_on_name);
@@ -205,6 +212,15 @@ export default memo(
       }
     }, [combinedRef, forceCompute]);
 
+    const handleResetLayout = () => {
+      dispatch(setCurrentLayout(defaultLayout));
+    };
+
+    const handleLockLayout = () => {
+      dispatch(lockLayout(!layoutLocked));
+      setLayoutLocked(!layoutLocked);
+    };
+
     return (
       <ComputeSize
         componentRef={combinedRef.current}
@@ -285,6 +301,27 @@ export default memo(
             </Grid>
             <Grid item>
               <Grid container direction="row" justify="flex-start" alignItems="center" spacing={1}>
+                <Grid>
+                  <Tooltip title={layoutLocked ? 'Unlock layout' : 'Lock layout'}>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        handleLockLayout();
+                      }}
+                    >
+                      {layoutLocked ? <Lock /> : <LockOpen />}
+                    </Button>
+                  </Tooltip>
+                </Grid>
+                <Grid item>
+                  <Button
+                    onClick={() => {
+                      handleResetLayout();
+                    }}
+                  >
+                    RESET LAYOUT
+                  </Button>
+                </Grid>
                 <Grid item>
                   <Button
                     startIcon={<Timeline />}

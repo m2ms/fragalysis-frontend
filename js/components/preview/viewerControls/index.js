@@ -5,7 +5,7 @@
 import React, { memo, useState, useContext, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../../common/Inputs/Button';
-import { Settings, Mouse, PersonalVideo, Undo, Redo, Restore } from '@material-ui/icons';
+import { Settings, Mouse, PersonalVideo, Undo, Redo, Restore, Lock, LockOpen } from '@material-ui/icons';
 import { ButtonGroup, Grid, makeStyles, Tooltip } from '@material-ui/core';
 import { SettingControls } from './settingsControls';
 import DisplayControls from './displayControls/';
@@ -74,6 +74,7 @@ export const ViewerControls = memo(() => {
   const [canRedo, setCanRedo] = useState(false);
   const [nglUndoTooltip, nglSetUndoTooltip] = useState('Undo');
   const [nglRedoTooltip, nglSetRedoTooltip] = useState('Redo');
+  const [nglLocked, setNglLocked] = useState(true);
   const isActionTracking = useSelector(state => state.trackingReducers.isActionTracking);
 
   const nglUndoLength = useSelector(state => state.undoableNglTrackingReducers.past).length;
@@ -253,10 +254,10 @@ export const ViewerControls = memo(() => {
               color="primary"
               onClick={() => dispatch(restoreNglViewSettings(nglViewList))}
               startIcon={<Restore />}
-              className={classes.button + " " + classes.restoreClipButton}
+              className={classes.button + ' ' + classes.restoreClipButton}
             >
               Restore clip/slab/centre
-            </Button> 
+            </Button>
           </Tooltip>
         </div>
 

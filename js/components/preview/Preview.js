@@ -47,14 +47,7 @@ import classNames from 'classnames';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
-
-const ReactGridLayout = WidthProvider(RGL);
-
-const layout = [
-  { i: 'LHS', x: 0, y: 0, w: 1, h: 1 },
-  { i: 'NGL', x: 1, y: 0, w: 1, h: 1 },
-  { i: 'RHS', x: 2, y: 0, w: 1, h: 1 }
-];
+import { setCurrentLayout } from '../../reducers/layout/actions';
 
 const columnWidth = 504;
 
@@ -106,6 +99,10 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
   const tabValue = useSelector(state => state.datasetsReducers.tabValue);
+  const layout = useSelector(state => state.layoutReducers.currentLayout);
+
+  //const ReactGridLayout = WidthProvider(RGL);
+  const ReactGridLayout = RGL;
 
   /*
      Loading datasets
@@ -224,36 +221,35 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
 
   const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
 
+  const onLayoutChange = updatedLayout => {
+    let newLayout = { name: layout.name, layout: [...updatedLayout] };
+    dispatch(setCurrentLayout(newLayout));
+  };
+
   return (
     <>
       <div className={classes.root}>
-        <ReactGridLayout cols={3} layout={layout}>
-          <div key="LHS">
-            <Grid
-              item
-              container
-              direction="column"
-              spacing={1}
-              className={classNames(classes.column, !sidesOpen.LHS && classes.columnHidden)}
-            >
-              {/* Tag details pane */}
-              <Grid item className={classes.hitSelectorWidth}>
-                <TagDetails handleHeightChange={setTagDetailsHeight} />
-              </Grid>
-              {/* Hit cluster selector */}
-              <Grid item>
-                <TagSelector handleHeightChange={setMolGroupsHeight} />
-              </Grid>
-              {/* Hit navigator */}
-              <Grid item>
-                <HitNavigator
-                  height={moleculeListHeight}
-                  setFilterItemsHeight={setFilterItemsHeight}
-                  filterItemsHeight={filterItemsHeight}
-                  hideProjects={hideProjects}
-                />
-              </Grid>
-            </Grid>
+        <ReactGridLayout
+          // cols={4}
+          cols={190}
+          layout={layout.layout}
+          width={1900 /*3 * columnWidth*/}
+          rowHeight={5}
+          onLayoutChange={onLayoutChange}
+        >
+          <div key="tagDetails">
+            <TagDetails handleHeightChange={setTagDetailsHeight} />
+          </div>
+          <div key="hitListFilter">
+            <TagSelector handleHeightChange={setMolGroupsHeight} />
+          </div>
+          <div key="hitNavigator">
+            <HitNavigator
+              height={moleculeListHeight}
+              setFilterItemsHeight={setFilterItemsHeight}
+              filterItemsHeight={filterItemsHeight}
+              hideProjects={hideProjects}
+            />
           </div>
           <div key="NGL" className={classes.nglColumn}>
             <Grid container direction="column">

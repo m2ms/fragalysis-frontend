@@ -23,8 +23,8 @@ import { DirectDownload } from '../direct/directDownload';
 
 const useStyles = makeStyles(theme => ({
   content: {
-    backgroundColor: theme.palette.background.default,
-    padding: theme.spacing(1)
+    backgroundColor: theme.palette.background.default
+    // padding: theme.spacing(1)
   }
 }));
 

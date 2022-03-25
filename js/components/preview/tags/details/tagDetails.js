@@ -24,10 +24,8 @@ export const defaultHeaderPadding = 15;
 
 const useStyles = makeStyles(theme => ({
   containerExpanded: {
-    height: heightOfBody,
     display: 'flex',
     flexDirection: 'column',
-    resize: 'vertical',
     overflow: 'hidden',
     width: '100%',
     marginTop: -theme.spacing(),
@@ -74,13 +72,11 @@ const useStyles = makeStyles(theme => ({
 /**
  * TagDetails is a wrapper panel for tags summary, their editing and creating new ones
  */
-const TagDetails = memo(({ handleHeightChange }) => {
+const TagDetails = memo(() => {
   const classes = useStyles();
   const ref = useRef(null);
   const elementRef = useRef(null);
   const dispatch = useDispatch();
-  const [headerPadding, setheaderPadding] = useState(defaultHeaderPadding);
-  const [elementHeight, setElementHeight] = useState(0);
   const [sortSwitch, setSortSwitch] = useState(0);
 
   const preTagList = useSelector(state => state.selectionReducers.tagList);
@@ -119,25 +115,6 @@ const TagDetails = memo(({ handleHeightChange }) => {
     }
     return () => { setMoleculesToEdit([]) };
   }, [moleculesToEditIds, dispatch]);*/
-
-  useEffect(() => {
-    const element = elementRef.current;
-    if (element) {
-      element.addEventListener('resize', handleResize);
-      const observer = new MutationObserver(checkResize);
-      observer.observe(element, { attributes: true, attributeOldValue: true, attributeFilter: ['style'] });
-    }
-
-    return () => {
-      if (element) {
-        element.removeEventListener('resize', handleResize);
-      }
-    };
-  }, [elementRef, handleResize, checkResize]);
-
-  useEffect(() => {
-    handleScroll(elementRef.current?.childNodes[1], headerPadding);
-  }, [elementRef, handleScroll, headerPadding, elementHeight]);
 
   const offsetName = 10;
   const offsetCategory = 20;
@@ -214,48 +191,6 @@ const TagDetails = memo(({ handleHeightChange }) => {
     [sortSwitch, tagList]
   );
 
-  const handleResize = useCallback(
-    event => {
-      //console.log('resize ' + ref.current.clientHeight);
-      handleHeightChange(ref.current.offsetHeight);
-    },
-    [handleHeightChange]
-  );
-
-  const handleScroll = useCallback(
-    (el, h) => {
-      if (el) {
-        const hasVerticalScrollbar = el.scrollHeight > el.clientHeight;
-        if (!hasVerticalScrollbar) {
-          if (h !== 0) {
-            setheaderPadding(0);
-          }
-        } else {
-          if (h !== defaultHeaderPadding) {
-            setheaderPadding(defaultHeaderPadding);
-          }
-        }
-      }
-    },
-    [setheaderPadding]
-  );
-
-  const checkResize = useCallback(
-    mutations => {
-      const el = mutations[0].target;
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-
-      if (elementHeight !== h) {
-        setElementHeight(h);
-
-        const event = new CustomEvent('resize', { detail: { width: w, height: h } });
-        el.dispatchEvent(event);
-      }
-    },
-    [elementHeight]
-  );
-
   return (
     <Panel
       ref={ref}
@@ -263,11 +198,6 @@ const TagDetails = memo(({ handleHeightChange }) => {
       hasExpansion
       defaultExpanded
       title="Tag Details"
-      onExpandChange={expand => {
-        if (ref.current && handleHeightChange instanceof Function) {
-          handleHeightChange(ref.current.offsetHeight);
-        }
-      }}
       headerActions={[<SearchField className={classes.search} id="search-tag-details" onChange={setSearchString} />]}
     >
       <div ref={elementRef} className={classes.containerExpanded}>

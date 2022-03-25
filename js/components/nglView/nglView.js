@@ -136,7 +136,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
 
   // If the size of the div is changed (due to layout shift with flexbox for instance) notify NGL to change its size
   const ref = useRef();
-  useEffect(() => {
+  /*useEffect(() => {
     const node = ref.current;
     const resizeObserver = new ResizeObserver(() => {
       handleResize();
@@ -147,7 +147,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
     return () => {
       resizeObserver.unobserve(node);
     };
-  }, [handleResize]);
+  }, [handleResize]);*/
 
   return (
     <>

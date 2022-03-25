@@ -14,21 +14,24 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 const useStyles = makeStyles(theme => ({
   root: {
     backgroundColor: theme.palette.background.paper,
-    height: '100%'
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column'
   },
   body: {
-    padding: theme.spacing(1)
+    padding: theme.spacing(1),
+    overflow: 'auto'
   },
   bodyOverflowHeader: {
     padding: theme.spacing(1),
     // 100% - header
     height: `calc( 100% - ${theme.spacing(5)}px )`,
-    overflowY: 'auto'
+    overflow: 'auto'
   },
   bodyOverflow: {
     padding: theme.spacing(1),
     height: `100%`,
-    overflowY: 'auto'
+    overflow: 'auto'
   },
   header: {
     color: theme.palette.white,

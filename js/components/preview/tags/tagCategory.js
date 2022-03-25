@@ -15,7 +15,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const TagCategory = memo(({ headerPadding = 0, tagClickCallback, disabled = false }) => {
+const TagCategory = memo(({ tagClickCallback, disabled = false }) => {
   const classes = useStyles();
 
   const categoryList = useSelector(state => state.selectionReducers.categoryList);
@@ -36,7 +36,7 @@ const TagCategory = memo(({ headerPadding = 0, tagClickCallback, disabled = fals
 
   return (
     <>
-      <Grid className={classes.category} style={{ paddingRight: headerPadding + 'px' }}>
+      <Grid className={classes.category}>
         <TagCategoryView name={CATEGORY_TYPE.SITE} disabled={disabled} />
         <TagCategoryView name={CATEGORY_TYPE.SERIES} disabled={disabled} />
         <TagCategoryView name={CATEGORY_TYPE.FORUM} disabled={disabled} />

@@ -4,6 +4,7 @@ import { makeStyles } from '@material-ui/core';
 import { Button } from '../../common/Inputs/Button';
 import { useDispatch } from 'react-redux';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
+import { setJobPopUpAnchorEl } from '../../projects/redux/actions';
 
 const useStyles = makeStyles(theme => ({
   jobPopup: {
@@ -46,7 +47,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const JobPopup = ({ jobPopUpAnchorEl, setJobPopUpAnchorEl, jobPopupInfo }) => {
+const JobPopup = ({ jobPopUpAnchorEl, jobPopupInfo }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const { jobInfo, hash } = jobPopupInfo;
@@ -54,14 +55,14 @@ const JobPopup = ({ jobPopUpAnchorEl, setJobPopUpAnchorEl, jobPopupInfo }) => {
   return (
     <Popper
       open={!!jobPopUpAnchorEl}
-      onClose={() => setJobPopUpAnchorEl(null)}
+      onClose={() => dispatch(setJobPopUpAnchorEl(null))}
       anchorEl={jobPopUpAnchorEl}
       placement="right"
     >
       <div className={classes.jobPopup}>
         <div className={classes.topPopup}>
           <span>Job</span>
-          <button className={classes.popUpButton} onClick={() => setJobPopUpAnchorEl(null)}>
+          <button className={classes.popUpButton} onClick={() => dispatch(setJobPopUpAnchorEl(null))}>
             X
           </button>
         </div>

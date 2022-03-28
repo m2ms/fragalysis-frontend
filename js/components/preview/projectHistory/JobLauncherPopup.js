@@ -6,6 +6,12 @@ import { Formik, Form, Field } from 'formik';
 import { TextField } from 'formik-material-ui';
 import HelpIcon from '@material-ui/icons/Help';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import {
+  setJobLauncherPopUpAnchorEl,
+  setJobFragmentProteinSelectWindowAnchorEl,
+  setJobLauncherData
+} from '../../projects/redux/actions';
 
 const useStyles = makeStyles(theme => ({
   jobLauncherPopup: {
@@ -108,8 +114,9 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, setJobLauncherPopUpAnchorEl, snapshots }) => {
+const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
   const classes = useStyles();
+  const dispatch = useDispatch();
 
   const [open, setOpen] = useState(false);
   const handleTooltipClose = () => {
@@ -135,27 +142,49 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, setJobLauncherPopUpAnchorE
 
   const jobList = useSelector(state => state.projectReducers.jobList);
 
+  let chosenCompounds = null;
+
   const onSubmitForm = ({ job, compounds, snapshot }) => {
     if (compounds == 'snapshot') {
-      console.log(snapshot);
+      chosenCompounds = [
+        'Compound from snapshot' // TODO
+      ];
     } else if (compounds == 'selected-compounds') {
-      console.log(currentSnapshotSelectedCompounds);
+      chosenCompounds = currentSnapshotSelectedCompounds;
     } else if (compounds == 'visible-compounds') {
-      console.log(currentSnapshotVisibleCompounds);
+      chosenCompounds = currentSnapshotVisibleCompounds;
     }
+
+    // Close the actual pop up window
+    dispatch(setJobLauncherPopUpAnchorEl(null));
+
+    const getFilteredJob = job => {
+      return jobList.find(jobFiltered => job === jobFiltered.id);
+    };
+
+    // Set options for second window
+    dispatch(
+      setJobLauncherData({
+        job: getFilteredJob(job),
+        chosenCompounds
+      })
+    );
+
+    // Open second window
+    dispatch(setJobFragmentProteinSelectWindowAnchorEl(true));
   };
 
   return (
     <Popper
       open={!!jobLauncherPopUpAnchorEl}
-      onClose={() => setJobLauncherPopUpAnchorEl(null)}
+      onClose={() => dispatch(setJobLauncherPopUpAnchorEl(null))}
       anchorEl={jobLauncherPopUpAnchorEl}
       placement="left"
     >
       <div className={classes.jobLauncherPopup}>
         <div className={classes.topPopup}>
-          <span>Jobs</span>
-          <button className={classes.popUpButton} onClick={() => setJobLauncherPopUpAnchorEl(null)}>
+          <span>Job launcher</span>
+          <button className={classes.popUpButton} onClick={() => dispatch(setJobLauncherPopUpAnchorEl(null))}>
             X
           </button>
         </div>
@@ -241,6 +270,7 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, setJobLauncherPopUpAnchorE
                       Visible compounds
                     </div>
                   </Box>
+
                   <Button color="primary" size="large" onClick={submitForm}>
                     Launch
                   </Button>

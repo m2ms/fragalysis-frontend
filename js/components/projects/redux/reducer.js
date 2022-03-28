@@ -36,10 +36,23 @@ export const INITIAL_STATE = {
   isForceProjectCreated: false,
   projectDiscourseLinks: null,
   jobList: [
-    { id: 1, name: 'FragalysisJob1', description: 'This is description for FragalysisJob1.' },
-    { id: 2, name: 'FragalysisJob2', description: 'This is description for FragalysisJob2.' },
-    { id: 3, name: 'FragalysisJob3', description: 'This is description for FragalysisJob3.' }
-  ]
+    {
+      id: 1,
+      name: 'Fragmenstein',
+      description: 'Combine fragments into a single merged molecule.',
+      slug: 'fragmenstein-combine'
+    },
+    {
+      id: 2,
+      name: 'Test job',
+      description: 'This is only for test.',
+      slug: 'test-slug'
+    }
+  ],
+  jobPopUpAnchorEl: null,
+  jobLauncherPopUpAnchorEl: null,
+  jobFragmentProteinSelectWindowAnchorEl: null,
+  jobLauncherData: null
 };
 
 export const projectReducers = (state = INITIAL_STATE, action = {}) => {
@@ -101,7 +114,7 @@ export const projectReducers = (state = INITIAL_STATE, action = {}) => {
             id,
             new Array(3).fill(0).map(() => ({
               id: Math.floor(Math.random() * 5000),
-              status: 'Running',
+              status: 'Error',
               parameters: 'Parameter 1',
               results: 'Result 1'
             }))
@@ -128,6 +141,18 @@ export const projectReducers = (state = INITIAL_STATE, action = {}) => {
       currentState.currentSnapshotList = null;
 
       return Object.assign({}, currentState);
+
+    case constants.SET_JOB_POP_UP_ANCHOR_EL:
+      return Object.assign({}, state, { jobPopUpAnchorEl: action.payload });
+
+    case constants.SET_JOB_LAUNCHER_POP_UP_ANCHOR_EL:
+      return Object.assign({}, state, { jobLauncherPopUpAnchorEl: action.payload });
+
+    case constants.SET_JOB_FRAGMENT_PROTEIN_SELECT_WINDOW_ANCHOR_EL:
+      return Object.assign({}, state, { jobFragmentProteinSelectWindowAnchorEl: action.payload });
+
+    case constants.SET_JOB_LAUNCHER_DATA:
+      return Object.assign({}, state, { jobLauncherData: action.payload });
 
     default:
       return state;

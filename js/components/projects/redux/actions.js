@@ -89,3 +89,23 @@ export const setCurrentProjectDiscourseLink = link => ({
   type: constants.SET_CURRENT_PROJECT_DISCOURSE_LINK,
   payload: link
 });
+
+export const setJobPopUpAnchorEl = jobPopUpAnchorEl => ({
+  type: constants.SET_JOB_POP_UP_ANCHOR_EL,
+  payload: jobPopUpAnchorEl
+});
+
+export const setJobLauncherPopUpAnchorEl = jobLauncherPopUpAnchorEl => ({
+  type: constants.SET_JOB_LAUNCHER_POP_UP_ANCHOR_EL,
+  payload: jobLauncherPopUpAnchorEl
+});
+
+export const setJobFragmentProteinSelectWindowAnchorEl = jobFragmentProteinSelectWindowAnchorEl => ({
+  type: constants.SET_JOB_FRAGMENT_PROTEIN_SELECT_WINDOW_ANCHOR_EL,
+  payload: jobFragmentProteinSelectWindowAnchorEl
+});
+
+export const setJobLauncherData = jobLauncherData => ({
+  type: constants.SET_JOB_LAUNCHER_DATA,
+  payload: jobLauncherData
+});

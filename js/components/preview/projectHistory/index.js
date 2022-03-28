@@ -8,11 +8,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { loadSnapshotTree } from '../../projects/redux/dispatchActions';
 import palette from '../../../theme/palette';
-import { ModalShareSnapshot } from '../../snapshot/modals/modalShareSnapshot';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 import { NglContext } from '../../nglView/nglProvider';
 import JobPopup from './JobPopup';
 import JobLauncherPopup from './JobLauncherPopup';
+import { setJobPopUpAnchorEl, setJobLauncherPopUpAnchorEl } from '../../projects/redux/actions';
+import JobFragmentProteinSelectWindow from './JobFragmentProteinSelectWindow';
 
 export const heightOfProjectHistory = '164px';
 
@@ -62,7 +63,6 @@ const template = templateExtend(TemplateName.Metro, {
   tag: {
     font: 'normal 8pt Arial',
     color: palette.primary.main
-    //bgColor: palette.primary.main
   }
 });
 
@@ -85,16 +85,16 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
   const currentSnapshotJobList = useSelector(state => state.projectReducers.currentSnapshotJobList);
   const currentSnapshotTree = useSelector(state => state.projectReducers.currentSnapshotTree);
   const isLoadingTree = useSelector(state => state.projectReducers.isLoadingTree);
+  const jobPopUpAnchorEl = useSelector(state => state.projectReducers.jobPopUpAnchorEl);
+  const jobLauncherPopUpAnchorEl = useSelector(state => state.projectReducers.jobLauncherPopUpAnchorEl);
 
   const [jobPopupInfo, setJobPopupInfo] = useState({
     hash: null,
     jobInfo: null
   });
 
-  const [jobLauncherPopUpAnchorEl, setJobLauncherPopUpAnchorEl] = useState(null);
-
   const handleClickJobLauncher = event => {
-    setJobLauncherPopUpAnchorEl(event.currentTarget);
+    dispatch(setJobLauncherPopUpAnchorEl(event.currentTarget));
   };
 
   const handleClickOnCommit = commit => {
@@ -111,10 +111,8 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
       (isSelected === true && { dot: { size: 10, color: 'red', strokeColor: 'blue', strokeWidth: 2 } }) || undefined
   });
 
-  const [jobPopUpAnchorEl, setJobPopUpAnchorEl] = useState(null);
-
   const handleClickTriangle = (event, hash, jobInfo) => {
-    setJobPopUpAnchorEl(event.currentTarget);
+    dispatch(setJobPopUpAnchorEl(event.currentTarget));
     setJobPopupInfo({ hash, jobInfo });
   };
 
@@ -153,6 +151,25 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
     );
   };
 
+  const getJobColorCode = status => {
+    let hexColor;
+    switch (status) {
+      case 'Running':
+        hexColor = '#FFF2CC';
+        break;
+      case 'Completed':
+        hexColor = '#D5E8D4';
+        break;
+      case 'Error':
+        hexColor = '#F9D5D3';
+        break;
+      default:
+        break;
+    }
+
+    return hexColor;
+  };
+
   const renderTreeNode = (childID, gitgraph, parentBranch) => {
     const node = currentSnapshotList[childID];
     if (node !== undefined) {
@@ -174,40 +191,10 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
           commitJobFunction({
             title: job.id,
             hash: job.id,
-            customDot: renderTriangle('#D5E8D4', node.id, job)
+            customDot: renderTriangle(getJobColorCode(job.status), node.id, job)
           })
         );
       });
-
-      /*
-      newBranch.commit(
-        commitJobFunction({
-          title: Math.floor(Math.random() * 1000),
-          hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#D5E8D4', node.id, jobInfo)
-        })
-      );
-      newBranch.commit(
-        commitJobFunction({
-          title: Math.floor(Math.random() * 1000),
-          hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#F9D5D3', node.id, jobInfo)
-        })
-      );
-      newBranch.commit(
-        commitJobFunction({
-          title: Math.floor(Math.random() * 1000),
-          hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#FFF2CC', node.id, jobInfo)
-        })
-      );
-      newBranch.commit(
-        commitJobFunction({
-          title: Math.floor(Math.random() * 1000),
-          hash: Math.floor(Math.random() * 1000),
-          customDot: renderTriangle('#FFF2CC', node.id, jobInfo)
-        })
-      );*/
 
       node.children.forEach(childID => {
         renderTreeNode(childID, gitgraph, newBranch);
@@ -273,16 +260,9 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
               </Gitgraph>
             )}
 
-          <JobPopup
-            jobPopUpAnchorEl={jobPopUpAnchorEl}
-            setJobPopUpAnchorEl={setJobPopUpAnchorEl}
-            jobPopupInfo={jobPopupInfo}
-          />
-          <JobLauncherPopup
-            jobLauncherPopUpAnchorEl={jobLauncherPopUpAnchorEl}
-            setJobLauncherPopUpAnchorEl={setJobLauncherPopUpAnchorEl}
-            snapshots={currentSnapshotList}
-          />
+          <JobPopup jobPopUpAnchorEl={jobPopUpAnchorEl} jobPopupInfo={jobPopupInfo} />
+          <JobLauncherPopup jobLauncherPopUpAnchorEl={jobLauncherPopUpAnchorEl} snapshots={currentSnapshotList} />
+          <JobFragmentProteinSelectWindow />
         </div>
       </Panel>
     </div>

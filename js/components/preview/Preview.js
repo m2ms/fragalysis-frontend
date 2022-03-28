@@ -216,6 +216,29 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     dispatch(setCurrentLayout(newLayout));
   };
 
+  const { getNglView } = useContext(NglContext);
+
+  const handleResize = useCallback(() => {
+    const newStage = getNglView(VIEWS.MAJOR_VIEW);
+    if (newStage) {
+      newStage.stage.handleResize();
+    }
+  }, [getNglView]);
+
+  const ref = useRef();
+  useEffect(() => {
+    const node = ref.current;
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    resizeObserver.observe(node);
+
+    return () => {
+      resizeObserver.unobserve(node);
+    };
+  }, [handleResize]);
+
   return (
     <>
       <div className={classes.root}>
@@ -237,9 +260,9 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
             <HitNavigator hideProjects={hideProjects} />
           </div>
           <div key="NGL" className={classes.nglColumn}>
-            <Grid container direction="column">
-              <Grid item>
-                <NGLView div_id={VIEWS.MAJOR_VIEW} height={300} />
+            <Grid container direction="column" style={{ height: '100%', flexWrap: 'nowrap' }} ref={ref}>
+              <Grid item style={{ display: 'flex', flexGrow: 1 }}>
+                <NGLView div_id={VIEWS.MAJOR_VIEW} />
               </Grid>
               <Grid item ref={nglViewerControlsRef}>
                 <ViewerControls />

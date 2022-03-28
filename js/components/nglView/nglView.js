@@ -25,8 +25,8 @@ const useStyles = makeStyles(theme => ({
       '0px 1px 1px 0px rgba(0,0,0,0.14)',
       '0px 1px 3px 0px rgba(0,0,0,0.12)'
     ],
-    marginBottom: theme.spacing(1),
     width: '100%',
+    height: 'calc(100% - 8px)',
     '& canvas': {
       width: '100% !important'
     }
@@ -149,18 +149,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
     };
   }, [handleResize]);*/
 
-  return (
-    <>
-      <div
-        ref={ref}
-        id={div_id}
-        className={div_id === VIEWS.MAJOR_VIEW ? classes.paper : {}}
-        style={{
-          height: `calc(${height || '600px'} - ${theme.spacing(1)}px)`
-        }}
-      />
-    </>
-  );
+  return <div ref={ref} id={div_id} className={div_id === VIEWS.MAJOR_VIEW ? classes.paper : {}} />;
 });
 
 function mapStateToProps(state) {

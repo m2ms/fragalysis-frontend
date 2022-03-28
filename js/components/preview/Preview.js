@@ -3,17 +3,14 @@
  */
 
 import React, { memo, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Grid, makeStyles, useTheme, ButtonGroup, Button } from '@material-ui/core';
+import { Grid, makeStyles, ButtonGroup, Button } from '@material-ui/core';
 import NGLView from '../nglView/nglView';
 import HitNavigator from './molecule/hitNavigator';
 import { CustomDatasetList } from '../datasets/customDatasetList';
-import MolGroupSelector from './moleculeGroups/molGroupSelector';
 import TagSelector from './tags/tagSelector';
 import TagDetails from './tags/details/tagDetails';
 import { SummaryView } from './summary/summaryView';
 import { CompoundList } from './compounds/compoundList';
-import { ViewerControls } from './viewerControls';
-import { ComputeSize } from '../../utils/computeSize';
 import { withUpdatingTarget } from '../target/withUpdatingTarget';
 import { VIEWS } from '../../constants/constants';
 import { withLoadingProtein } from './withLoadingProtein';
@@ -48,11 +45,6 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { setCurrentLayout } from '../../reducers/layout/actions';
-
-const columnWidth = 504;
-
-/* 48px is tabs header height */
-const TABS_HEADER_HEIGHT = 48;
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -96,10 +88,8 @@ const useStyles = makeStyles(theme => ({
 
 const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const classes = useStyles();
-  const theme = useTheme();
 
   const { nglViewList } = useContext(NglContext);
-  const nglViewerControlsRef = useRef(null);
   const dispatch = useDispatch();
 
   dispatch(prepareFakeFilterData());
@@ -216,29 +206,6 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     dispatch(setCurrentLayout(newLayout));
   };
 
-  const { getNglView } = useContext(NglContext);
-
-  const handleResize = useCallback(() => {
-    const newStage = getNglView(VIEWS.MAJOR_VIEW);
-    if (newStage) {
-      newStage.stage.handleResize();
-    }
-  }, [getNglView]);
-
-  const ref = useRef();
-  useEffect(() => {
-    const node = ref.current;
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize();
-    });
-
-    resizeObserver.observe(node);
-
-    return () => {
-      resizeObserver.unobserve(node);
-    };
-  }, [handleResize]);
-
   return (
     <>
       <div className={classes.root}>
@@ -260,15 +227,12 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
             <HitNavigator hideProjects={hideProjects} />
           </div>
           <div key="NGL" className={classes.nglColumn}>
-            <Grid container direction="column" style={{ height: '100%', flexWrap: 'nowrap' }} ref={ref}>
-              <Grid item style={{ display: 'flex', flexGrow: 1 }}>
-                <NGLView div_id={VIEWS.MAJOR_VIEW} />
-              </Grid>
-              <Grid item ref={nglViewerControlsRef}>
-                <ViewerControls />
-                {!hideProjects && <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />}
-              </Grid>
-            </Grid>
+            <NGLView div_id={VIEWS.MAJOR_VIEW} />
+            {/**
+             * Make separate layouts for these
+             * <ViewerControls />
+              {!hideProjects && <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />}
+             */}
           </div>
           <div key="RHS">
             <div className={classes.rhsWrapper}>

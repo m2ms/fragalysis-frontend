@@ -26,7 +26,7 @@ const useStyles = makeStyles(theme => ({
       '0px 1px 3px 0px rgba(0,0,0,0.12)'
     ],
     width: '100%',
-    height: 'calc(100% - 8px)',
+    height: '100%',
     '& canvas': {
       width: '100% !important'
     }
@@ -38,7 +38,6 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
   const { registerNglView, unregisterNglView, getNglView } = useContext(NglContext);
   const [stage, setStage] = useState();
   const classes = useStyles();
-  const theme = useTheme();
 
   const handleOrientationChanged = useCallback(
     debounce(() => {
@@ -136,7 +135,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
 
   // If the size of the div is changed (due to layout shift with flexbox for instance) notify NGL to change its size
   const ref = useRef();
-  /*useEffect(() => {
+  useEffect(() => {
     const node = ref.current;
     const resizeObserver = new ResizeObserver(() => {
       handleResize();
@@ -147,7 +146,7 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
     return () => {
       resizeObserver.unobserve(node);
     };
-  }, [handleResize]);*/
+  }, [handleResize]);
 
   return <div ref={ref} id={div_id} className={div_id === VIEWS.MAJOR_VIEW ? classes.paper : {}} />;
 });

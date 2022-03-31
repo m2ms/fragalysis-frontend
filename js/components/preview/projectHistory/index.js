@@ -1,7 +1,7 @@
 import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../../common/Surfaces/Panel';
 import { templateExtend, TemplateName, Orientation, Gitgraph } from '@gitgraph/react';
-import { MergeType, PlayArrow } from '@material-ui/icons';
+import { MergeType, PlayArrow, Refresh } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/core';
 import { Button } from '../../common/Inputs/Button';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,8 +12,10 @@ import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../sna
 import { NglContext } from '../../nglView/nglProvider';
 import JobPopup from './JobPopup';
 import JobLauncherPopup from './JobLauncherPopup';
-import { setJobPopUpAnchorEl, setJobLauncherPopUpAnchorEl } from '../../projects/redux/actions';
+import { setJobPopUpAnchorEl, setJobLauncherPopUpAnchorEl, setSnapshotJobList } from '../../projects/redux/actions';
 import JobFragmentProteinSelectWindow from './JobFragmentProteinSelectWindow';
+import { api } from '../../../utils/api';
+import { base_url } from '../../routes/constants';
 
 export const heightOfProjectHistory = '164px';
 
@@ -92,6 +94,8 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
     hash: null,
     jobInfo: null
   });
+  const [refreshData, setRefreshData] = useState(false);
+  const [graphKey, setGraphKey] = useState(new Date().getTime());
 
   const handleClickJobLauncher = event => {
     dispatch(setJobLauncherPopUpAnchorEl(event.currentTarget));
@@ -131,8 +135,7 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         height: '30',
         width: '30',
         cursor: 'pointer',
-        onClick: event => handleClickTriangle(event, commit, jobInfo),
-        onMessageClick: event => handleClickTriangle(event, commit, jobInfo)
+        onClick: event => handleClickTriangle(event, commit, jobInfo)
       },
       React.createElement(
         'g',
@@ -154,16 +157,26 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
   const getJobColorCode = status => {
     let hexColor;
     switch (status) {
-      case 'Running':
+      case 'STARTED':
         hexColor = '#FFF2CC';
         break;
-      case 'Completed':
+      case 'SUCCESS':
         hexColor = '#D5E8D4';
         break;
-      case 'Error':
+      case 'FAILURE':
         hexColor = '#F9D5D3';
         break;
+      case 'PENDING':
+        hexColor = '#8c8c8c';
+        break;
+      case 'RETRY':
+        hexColor = '#d2a5ff';
+        break;
+      case 'REVOKED':
+        hexColor = '#88f7e2';
+        break;
       default:
+        hexColor = '#F9D5D3';
         break;
     }
 
@@ -186,12 +199,12 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         })
       );
 
-      currentSnapshotJobList[node.id].forEach(job => {
+      currentSnapshotJobList[node.id]?.forEach(job => {
         newBranch.commit(
           commitJobFunction({
             title: job.id,
-            hash: job.id,
-            customDot: renderTriangle(getJobColorCode(job.status), node.id, job)
+            hash: `#${job.id}`,
+            customDot: renderTriangle(getJobColorCode(job.job_status), node.id, job)
           })
         );
       });
@@ -210,6 +223,16 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
     }
   }, [currentSnapshotID, dispatch, projectID, snapshotId]);
 
+  useEffect(() => {
+    Object.keys(currentSnapshotList || {}).forEach(snapshotId => {
+      api({ url: `${base_url}/api/job_request/?snapshot=${snapshotId}` }).then(response => {
+        const jobList = response.data.results;
+        dispatch(setSnapshotJobList({ snapshotId, jobList }));
+        setGraphKey(new Date().getTime());
+      });
+    });
+  }, [currentSnapshotList, refreshData]);
+
   return (
     <div className={classes.root}>
       <Panel
@@ -217,6 +240,15 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
         hasHeader
         title="Project History"
         headerActions={[
+          <Button
+            color="inherit"
+            variant="text"
+            size="small"
+            onClick={() => setRefreshData(!refreshData)}
+            startIcon={<Refresh />}
+          >
+            Refresh
+          </Button>,
           <Button
             color="inherit"
             variant="text"
@@ -240,8 +272,9 @@ export const ProjectHistory = memo(({ showFullHistory }) => {
             currentSnapshotTree.title !== null &&
             currentSnapshotTree.id !== null &&
             currentSnapshotID !== null &&
-            currentSnapshotList !== null && (
-              <Gitgraph options={options}>
+            currentSnapshotList !== null &&
+            Object.keys(currentSnapshotList).length === Object.keys(currentSnapshotJobList).length && (
+              <Gitgraph key={graphKey} options={options}>
                 {gitgraph => {
                   const initBranch = gitgraph.branch(currentSnapshotTree.title);
 

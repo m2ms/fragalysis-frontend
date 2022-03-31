@@ -70,6 +70,11 @@ export const setCurrentSnapshotList = list => ({
   payload: list
 });
 
+export const setSnapshotJobList = data => ({
+  type: constants.SET_CURRENT_SNAPSHOT_JOBLIST,
+  payload: data
+});
+
 export const setForceCreateProject = isForce => ({
   type: constants.SET_FORCE_CREATE_PROJECT,
   payload: isForce
@@ -108,4 +113,9 @@ export const setJobFragmentProteinSelectWindowAnchorEl = jobFragmentProteinSelec
 export const setJobLauncherData = jobLauncherData => ({
   type: constants.SET_JOB_LAUNCHER_DATA,
   payload: jobLauncherData
+});
+
+export const setJobLauncherSquonkUrl = squonkUrl => ({
+  type: constants.SET_JOB_LAUNCHER_SQUONK_URL,
+  payload: squonkUrl
 });

@@ -31,7 +31,7 @@ export const INITIAL_STATE = {
   isLoadingTree: false,
   currentSnapshotTree: null,
   currentSnapshotList: null,
-  currentSnapshotJobList: null,
+  currentSnapshotJobList: {},
   forceCreateProject: false,
   isForceProjectCreated: false,
   projectDiscourseLinks: null,
@@ -52,7 +52,8 @@ export const INITIAL_STATE = {
   jobPopUpAnchorEl: null,
   jobLauncherPopUpAnchorEl: null,
   jobFragmentProteinSelectWindowAnchorEl: null,
-  jobLauncherData: null
+  jobLauncherData: null,
+  jobLauncherSquonkUrl: null
 };
 
 export const projectReducers = (state = INITIAL_STATE, action = {}) => {
@@ -108,19 +109,16 @@ export const projectReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.SET_CURRENT_SNAPSHOT_LIST:
       return Object.assign({}, state, {
-        currentSnapshotList: action.payload,
-        currentSnapshotJobList: Object.fromEntries(
-          Object.keys(action.payload).map(id => [
-            id,
-            new Array(3).fill(0).map(() => ({
-              id: Math.floor(Math.random() * 5000),
-              status: 'Error',
-              parameters: 'Parameter 1',
-              results: 'Result 1'
-            }))
-          ])
-        )
+        currentSnapshotList: action.payload
       });
+
+    case constants.SET_CURRENT_SNAPSHOT_JOBLIST: {
+      const { snapshotId, jobList } = action.payload;
+
+      const currentSnapshotJobList = { ...state.currentSnapshotJobList };
+      currentSnapshotJobList[snapshotId] = jobList;
+      return { ...state, currentSnapshotJobList };
+    }
 
     case constants.SET_FORCE_CREATE_PROJECT:
       return Object.assign({}, state, { forceCreateProject: action.payload });
@@ -153,6 +151,9 @@ export const projectReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.SET_JOB_LAUNCHER_DATA:
       return Object.assign({}, state, { jobLauncherData: action.payload });
+
+    case constants.SET_JOB_LAUNCHER_SQUONK_URL:
+      return Object.assign({}, state, { jobLauncherSquonkUrl: action.payload });
 
     default:
       return state;

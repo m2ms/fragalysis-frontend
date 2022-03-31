@@ -1,11 +1,14 @@
-import React from 'react';
-import { Modal } from '@material-ui/core';
+import React, { useState } from 'react';
+import { Modal, Paper } from '@material-ui/core';
+import { Button } from '../../common/Inputs/Button';
 import { makeStyles } from '@material-ui/core';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { setJobFragmentProteinSelectWindowAnchorEl } from '../../projects/redux/actions';
 import { MuiForm as JSONForm } from '@rjsf/material-ui';
 import jobconfig from '../../../../jobconfigs/fragalysis-job-spec.json';
+import { jobRequest } from '../../projects/redux/dispatchActions';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
   jobLauncherPopup: {
@@ -48,6 +51,13 @@ const useStyles = makeStyles(theme => ({
     padding: '10px',
     backgroundColor: '#ffffff',
     borderRadius: '0 0 5px 5px'
+  },
+
+  paper: {
+    padding: '10px',
+    background: '#66BB6A',
+    color: '#ffffff',
+    fontWeight: 'bold'
   }
 }));
 
@@ -58,6 +68,12 @@ const JobFragmentProteinSelectWindow = () => {
   const jobFragmentProteinSelectWindowAnchorEl = useSelector(
     state => state.projectReducers.jobFragmentProteinSelectWindowAnchorEl
   );
+
+  const [isSubmitted, setIsSubmittet] = useState(false);
+  const jobLauncherSquonkUrl = useSelector(state => state.projectReducers.jobLauncherSquonkUrl);
+
+  const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
+  const targetId = useSelector(state => state.apiReducers.target_on);
 
   // Get data from previous window
   const jobLauncherData = useSelector(state => state.projectReducers.jobLauncherData);
@@ -135,7 +151,22 @@ const JobFragmentProteinSelectWindow = () => {
       formData.protein = getProteinTemplate(formData.protein);
     }
 
-    console.log(formData);
+    dispatch(
+      jobRequest({
+        squonk_job_name: 'fragmenstein-combine',
+        snapshot: currentSnapshotID,
+        target: targetId,
+        squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
+        squonk_job_spec: JSON.stringify({
+          collection: 'fragmenstein',
+          job: 'fragmenstein-combine',
+          version: '1.0.0',
+          variables: formData
+        })
+      })
+    );
+
+    setIsSubmittet(true);
   };
 
   return (
@@ -155,7 +186,21 @@ const JobFragmentProteinSelectWindow = () => {
           </button>
         </div>
         <div className={classes.bodyPopup}>
-          <JSONForm schema={schema} onSubmit={onSubmitForm} onChange={event => {}} />
+          <JSONForm schema={schema} onSubmit={onSubmitForm} onChange={event => {}}>
+            {jobLauncherSquonkUrl && (
+              <Paper variant="elevation" rounded="true" className={classes.paper}>
+                Job has been launched successfully.
+              </Paper>
+            )}
+            <Button disabled={isSubmitted} type="submit" color="primary" size="large">
+              Submit
+            </Button>
+            {jobLauncherSquonkUrl && (
+              <Button onClick={() => window.open(jobLauncherSquonkUrl, '_blank')} color="secondary" size="large">
+                Open in Squonk
+              </Button>
+            )}
+          </JSONForm>
         </div>
       </div>
     </Modal>

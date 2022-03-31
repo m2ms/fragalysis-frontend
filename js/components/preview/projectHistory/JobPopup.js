@@ -5,6 +5,7 @@ import { Button } from '../../common/Inputs/Button';
 import { useDispatch } from 'react-redux';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 import { setJobPopUpAnchorEl } from '../../projects/redux/actions';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
   jobPopup: {
@@ -51,6 +52,7 @@ const JobPopup = ({ jobPopUpAnchorEl, jobPopupInfo }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const { jobInfo, hash } = jobPopupInfo;
+  const jobLauncherSquonkUrl = DJANGO_CONTEXT['squonk_ui_url'] + jobInfo?.squonk_url_ext.replace('data-manager-ui', '');
 
   return (
     <Popper
@@ -68,13 +70,13 @@ const JobPopup = ({ jobPopUpAnchorEl, jobPopupInfo }) => {
         </div>
         <div className={classes.bodyPopup}>
           <p>
-            Status: <strong>{jobInfo?.status}</strong>
+            Status: <strong>{jobInfo?.job_status}</strong>
           </p>
           <p>
-            Parameters: <strong>{jobInfo?.parameters}</strong>
+            Parameters: <strong></strong>
           </p>
           <p>
-            Results: <strong>{jobInfo?.results}</strong>
+            Results: <strong></strong>
           </p>
           <Button
             color="primary"
@@ -84,6 +86,14 @@ const JobPopup = ({ jobPopUpAnchorEl, jobPopupInfo }) => {
             }}
           >
             Open associated snapshot
+          </Button>
+          <Button
+            key={jobInfo?.id}
+            onClick={() => window.open(jobLauncherSquonkUrl, '_blank')}
+            color="secondary"
+            size="large"
+          >
+            Open in Squonk
           </Button>
         </div>
       </div>

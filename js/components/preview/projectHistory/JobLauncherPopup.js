@@ -12,6 +12,7 @@ import {
   setJobFragmentProteinSelectWindowAnchorEl,
   setJobLauncherData
 } from '../../projects/redux/actions';
+import { jobFileTransfer } from '../../projects/redux/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   jobLauncherPopup: {
@@ -128,17 +129,24 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
 
   const getAllMolecules = useSelector(state => state.apiReducers.all_mol_lists);
 
+  const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
+  const targetId = useSelector(state => state.apiReducers.target_on);
+
   // get ids of selected/visible compounds
   const currentSnapshotSelectedCompoundsIDs = useSelector(state => state.selectionReducers.moleculesToEdit);
   const currentSnapshotVisibleCompoundsIDs = useSelector(state => state.selectionReducers.fragmentDisplayList);
 
+  const getMoleculeTitle = title => {
+    return title.replace(new RegExp(':.*$', 'i'), '');
+  };
+
   // get protein_code from ids of selected/visible compounds
   const currentSnapshotSelectedCompounds = getAllMolecules
     .filter(molecule => currentSnapshotSelectedCompoundsIDs.includes(molecule.id))
-    .map(molecule => molecule.protein_code);
+    .map(molecule => getMoleculeTitle(molecule.protein_code));
   const currentSnapshotVisibleCompounds = getAllMolecules
     .filter(molecule => currentSnapshotVisibleCompoundsIDs.includes(molecule.id))
-    .map(molecule => molecule.protein_code);
+    .map(molecule => getMoleculeTitle(molecule.protein_code));
 
   const jobList = useSelector(state => state.projectReducers.jobList);
 
@@ -167,6 +175,15 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
       setJobLauncherData({
         job: getFilteredJob(job),
         chosenCompounds
+      })
+    );
+
+    dispatch(
+      jobFileTransfer({
+        snapshot: currentSnapshotID,
+        target: targetId,
+        squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
+        proteins: chosenCompounds.join()
       })
     );
 

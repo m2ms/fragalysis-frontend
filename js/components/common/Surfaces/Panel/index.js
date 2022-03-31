@@ -51,7 +51,8 @@ const useStyles = makeStyles(theme => ({
     paddingLeft: theme.spacing(1)
   },
   headerGrid: {
-    height: 'inherit'
+    height: 'inherit',
+    flexWrap: 'nowrap'
   },
   hidden: {
     height: 0,
@@ -59,6 +60,10 @@ const useStyles = makeStyles(theme => ({
   },
   loading: {
     paddingTop: theme.spacing(2)
+  },
+  actionsContainer: {
+    flexWrap: 'nowrap',
+    justifyContent: 'flex-end'
   }
 }));
 
@@ -131,7 +136,7 @@ export const Panel = memo(
                 )}
                 {(headerActions || hasExpansion) && (
                   <Grid item>
-                    <Grid container direction="row" justify="flex-end">
+                    <Grid container direction="row" className={classes.actionsContainer}>
                       {headerActions &&
                         headerActions.map((action, index) => (
                           <Grid item key={index}>

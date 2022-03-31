@@ -43,9 +43,10 @@ const useStyles = makeStyles(theme => ({
     marginRight: '0px',
     paddingLeft: '0px',
     paddingRight: '0px',
-    justify: 'flex-end',
+    justifyContent: 'flex-end',
     minHeight: '100%',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexWrap: 'nowrap'
   },
   headerButton: {
     '& .MuiButton-root': {

@@ -470,9 +470,13 @@ export const jobFileTransfer = data => async () => {
     url: `${base_url}/api/job_file_transfer/`,
     method: METHOD.POST,
     data
-  }).then(response => {
-    console.log(response);
-  });
+  })
+    .then(response => {
+      console.log(response);
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 export const jobRequest = data => dispatch => {
@@ -480,11 +484,15 @@ export const jobRequest = data => dispatch => {
     url: `${base_url}/api/job_request/`,
     method: METHOD.POST,
     data
-  }).then(response => {
-    dispatch(
-      setJobLauncherSquonkUrl(
-        DJANGO_CONTEXT['squonk_ui_url'] + response.data.squonk_url_ext.replace('data-manager-ui', '')
-      )
-    );
-  });
+  })
+    .then(response => {
+      dispatch(
+        setJobLauncherSquonkUrl(
+          DJANGO_CONTEXT['squonk_ui_url'] + response.data.squonk_url_ext.replace('data-manager-ui', '')
+        )
+      );
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };

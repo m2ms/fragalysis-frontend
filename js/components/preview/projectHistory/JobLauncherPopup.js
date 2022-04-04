@@ -153,13 +153,13 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
   let chosenCompounds = null;
 
   const onSubmitForm = ({ job, compounds, snapshot }) => {
-    if (compounds == 'snapshot') {
+    if (compounds === 'snapshot') {
       chosenCompounds = [
         'Compound from snapshot' // TODO
       ];
-    } else if (compounds == 'selected-compounds') {
+    } else if (compounds === 'selected-compounds') {
       chosenCompounds = currentSnapshotSelectedCompounds;
-    } else if (compounds == 'visible-compounds') {
+    } else if (compounds === 'visible-compounds') {
       chosenCompounds = currentSnapshotVisibleCompounds;
     }
 
@@ -185,10 +185,14 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
         squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
         proteins: chosenCompounds.join()
       })
-    );
-
-    // Open second window
-    dispatch(setJobFragmentProteinSelectWindowAnchorEl(true));
+    )
+      .then(resp => {
+        // Open second window
+        dispatch(setJobFragmentProteinSelectWindowAnchorEl(true));
+      })
+      .catch(err => {
+        console.log(`Job file transfer failed: ${err}`);
+      });
   };
 
   return (
@@ -247,7 +251,7 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
                   </ClickAwayListener>
                   <Typography className={classes.typographyH}>Description</Typography>
                   <Typography align="justify" className={classes.marginTop5}>
-                    {jobList.filter(jobType => jobType['id'] == values.job).map(jobType => jobType['description'])}
+                    {jobList.filter(jobType => jobType['id'] === values.job).map(jobType => jobType['description'])}
                   </Typography>
                 </div>
                 <div className={classes.sideBody}>
@@ -269,7 +273,7 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
                         InputLabelProps={{ shrink: true }}
                         className={(classes.marginLeft10, classes.width60)}
                         label="Choose the snapshot"
-                        disabled={values.compounds != 'snapshot'}
+                        disabled={values.compounds !== 'snapshot'}
                       >
                         {Object.values(snapshots).map(item => (
                           <MenuItem key={item.id} value={item.id}>

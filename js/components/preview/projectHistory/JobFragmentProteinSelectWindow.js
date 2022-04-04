@@ -8,6 +8,7 @@ import { setJobFragmentProteinSelectWindowAnchorEl } from '../../projects/redux/
 import { MuiForm as JSONForm } from '@rjsf/material-ui';
 import jobconfig from '../../../../jobconfigs/fragalysis-job-spec.json';
 import { jobRequest } from '../../projects/redux/dispatchActions';
+import { setJobLauncherSquonkUrl } from '../../projects/redux/actions';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
@@ -170,17 +171,17 @@ const JobFragmentProteinSelectWindow = () => {
   };
 
   return (
-    <Modal
-      open={!!jobFragmentProteinSelectWindowAnchorEl}
-      onClose={() => dispatch(setJobFragmentProteinSelectWindowAnchorEl(null))}
-      hideBackdrop
-    >
+    <Modal open={!!jobFragmentProteinSelectWindowAnchorEl} hideBackdrop>
       <div className={classes.jobLauncherPopup}>
         <div className={classes.topPopup}>
           <span>Job launcher</span>
           <button
             className={classes.popUpButton}
-            onClick={() => dispatch(setJobFragmentProteinSelectWindowAnchorEl(null))}
+            onClick={() => {
+              setIsSubmittet(false);
+              dispatch(setJobLauncherSquonkUrl(null));
+              dispatch(setJobFragmentProteinSelectWindowAnchorEl(null));
+            }}
           >
             X
           </button>

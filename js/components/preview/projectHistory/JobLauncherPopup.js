@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, ClickAwayListener, IconButton, MenuItem, Popper, Tooltip, Typography } from '@material-ui/core';
+import { Box, ClickAwayListener, IconButton, MenuItem, Popper, Tooltip, Typography, Paper } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core';
 import { Button } from '../../common/Inputs/Button';
 import { Formik, Form, Field } from 'formik';
@@ -112,6 +112,20 @@ const useStyles = makeStyles(theme => ({
   typographyH: {
     marginTop: '10px',
     fontWeight: 'bold'
+  },
+
+  successMsg: {
+    padding: '10px',
+    background: '#66BB6A',
+    color: '#ffffff',
+    fontWeight: 'bold'
+  },
+
+  errorMsg: {
+    padding: '10px',
+    background: 'red',
+    color: '#ffffff',
+    fontWeight: 'bold'
   }
 }));
 
@@ -120,6 +134,8 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
   const dispatch = useDispatch();
 
   const [open, setOpen] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const handleTooltipClose = () => {
     setOpen(false);
   };
@@ -178,34 +194,47 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
       })
     );
 
-    dispatch(
-      jobFileTransfer({
-        snapshot: currentSnapshotID,
-        target: targetId,
-        squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
-        proteins: chosenCompounds.join()
-      })
-    )
+    jobFileTransfer({
+      snapshot: currentSnapshotID,
+      target: targetId,
+      squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
+      proteins: chosenCompounds.join()
+    })
       .then(resp => {
         // Open second window
+        setErrorMsg(null);
+        setIsError(false);
         dispatch(setJobFragmentProteinSelectWindowAnchorEl(true));
       })
       .catch(err => {
         console.log(`Job file transfer failed: ${err}`);
+        setErrorMsg(err.response.data);
+        setIsError(true);
       });
   };
 
   return (
     <Popper
       open={!!jobLauncherPopUpAnchorEl}
-      onClose={() => dispatch(setJobLauncherPopUpAnchorEl(null))}
+      onClose={() => {
+        setErrorMsg(null);
+        setIsError(false);
+        dispatch(setJobLauncherPopUpAnchorEl(null));
+      }}
       anchorEl={jobLauncherPopUpAnchorEl}
       placement="left"
     >
       <div className={classes.jobLauncherPopup}>
         <div className={classes.topPopup}>
           <span>Job launcher</span>
-          <button className={classes.popUpButton} onClick={() => dispatch(setJobLauncherPopUpAnchorEl(null))}>
+          <button
+            className={classes.popUpButton}
+            onClick={() => {
+              setErrorMsg(null);
+              setIsError(false);
+              dispatch(setJobLauncherPopUpAnchorEl(null));
+            }}
+          >
             X
           </button>
         </div>
@@ -291,7 +320,11 @@ const JobLauncherPopup = ({ jobLauncherPopUpAnchorEl, snapshots }) => {
                       Visible compounds
                     </div>
                   </Box>
-
+                  {isError && (
+                    <Paper variant="elevation" rounded="true" className={classes.errorMsg}>
+                      {errorMsg}
+                    </Paper>
+                  )}
                   <Button color="primary" size="large" onClick={submitForm}>
                     Launch
                   </Button>

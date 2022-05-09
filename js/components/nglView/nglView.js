@@ -26,10 +26,7 @@ const useStyles = makeStyles(theme => ({
       '0px 1px 3px 0px rgba(0,0,0,0.12)'
     ],
     width: '100%',
-    height: '100%',
-    '& canvas': {
-      width: '100% !important'
-    }
+    height: '100%'
   }
 }));
 

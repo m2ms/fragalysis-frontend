@@ -30,7 +30,6 @@ export const defaultLayout = {
     { i: layoutItemNames.NGL, x: 47, y: 0, w: 94, h: 58, static: true },
     { i: layoutItemNames.RHS, x: 141, y: 0, w: 46, h: 60, static: true },
     { i: layoutItemNames.VIEWER_CONTROLS, x: 47, y: 58, w: 94, h: 3, static: true }
-    //{ i: layoutItemNames.PROJECT_HISTORY, x: 47, y: 59, w: 94, h: 2, static: true }
   ]
 };
 

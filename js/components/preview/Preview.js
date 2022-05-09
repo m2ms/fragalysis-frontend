@@ -222,6 +222,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
           width={1900 /*3 * columnWidth*/}
           rowHeight={5}
           onLayoutChange={onLayoutChange}
+          useCSSTransforms={false}
         >
           <div key="tagDetails">
             <TagDetails />

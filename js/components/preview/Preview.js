@@ -2,7 +2,7 @@
  * Created by abradley on 14/04/2018.
  */
 
-import React, { memo, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Grid, makeStyles, ButtonGroup, Button } from '@material-ui/core';
 import NGLView from '../nglView/nglView';
 import HitNavigator from './molecule/hitNavigator';
@@ -40,11 +40,13 @@ import {
 import { prepareFakeFilterData } from './compounds/redux/dispatchActions';
 import { withLoadingMolecules } from './tags/withLoadingMolecules';
 import classNames from 'classnames';
+import { ViewerControls } from './viewerControls';
 
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { setCurrentLayout } from '../../reducers/layout/actions';
+import { defaultLayout, defaultLayoutWithHistory } from '../../reducers/layout/constants';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -206,6 +208,10 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     dispatch(setCurrentLayout(newLayout));
   };
 
+  useLayoutEffect(() => {
+    dispatch(setCurrentLayout(hideProjects ? defaultLayout : defaultLayoutWithHistory));
+  }, [dispatch, hideProjects]);
+
   return (
     <>
       <div className={classes.root}>
@@ -228,12 +234,15 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
           </div>
           <div key="NGL" className={classes.nglColumn}>
             <NGLView div_id={VIEWS.MAJOR_VIEW} />
-            {/**
-             * Make separate layouts for these
-             * <ViewerControls />
-              {!hideProjects && <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />}
-             */}
           </div>
+          <div key="viewerControls">
+            <ViewerControls />
+          </div>
+          {!hideProjects && (
+            <div key="projectHistory">
+              <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />
+            </div>
+          )}
           <div key="RHS">
             <div className={classes.rhsWrapper}>
               <Grid

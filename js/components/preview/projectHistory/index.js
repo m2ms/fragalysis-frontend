@@ -12,15 +12,12 @@ import { ModalShareSnapshot } from '../../snapshot/modals/modalShareSnapshot';
 import { setIsOpenModalBeforeExit, setSelectedSnapshotToSwitch } from '../../snapshot/redux/actions';
 import { NglContext } from '../../nglView/nglProvider';
 
-export const heightOfProjectHistory = '164px';
-
 const useStyles = makeStyles(theme => ({
   root: {
-    marginTop: theme.spacing()
+    height: '100%'
   },
   containerExpanded: {
     width: '100%',
-    height: heightOfProjectHistory,
     overflow: 'auto'
   },
   containerCollapsed: {

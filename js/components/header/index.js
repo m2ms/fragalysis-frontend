@@ -52,8 +52,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { generateDiscourseTargetURL, getExistingPost } from '../../utils/discourse';
 import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
-import { lockLayout, setCurrentLayout } from '../../reducers/layout/actions';
-import { defaultLayout } from '../../reducers/layout/constants';
+import { lockLayout, resetCurrentLayout } from '../../reducers/layout/actions';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -214,14 +213,6 @@ export default memo(
       }
     }, [combinedRef, forceCompute]);
 
-    const handleResetLayout = () => {
-      dispatch(setCurrentLayout(defaultLayout));
-    };
-
-    const handleLockLayout = () => {
-      dispatch(lockLayout(!layoutLocked));
-    };
-
     return (
       <ComputeSize
         componentRef={combinedRef.current}
@@ -306,7 +297,7 @@ export default memo(
                   <Tooltip title={layoutLocked ? 'Unlock layout' : 'Lock layout'}>
                     <Button
                       onClick={() => {
-                        handleLockLayout();
+                        dispatch(lockLayout(!layoutLocked));
                       }}
                     >
                       {layoutLocked ? <Lock /> : <LockOpen />}
@@ -317,7 +308,7 @@ export default memo(
                   <Button
                     className={classes.resetLayoutButton}
                     onClick={() => {
-                      handleResetLayout();
+                      dispatch(resetCurrentLayout());
                     }}
                   >
                     RESET LAYOUT

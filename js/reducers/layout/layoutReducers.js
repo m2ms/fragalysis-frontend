@@ -3,6 +3,7 @@ import { constants, defaultLayout, layoutItemNames } from './constants';
 export const INITIAL_STATE = {
   layoutLocked: true,
   currentLayout: defaultLayout,
+  defaultLayout,
   panelsExpanded: {
     [layoutItemNames.TAG_DETAILS]: true,
     [layoutItemNames.HIT_LIST_FILTER]: true,
@@ -13,7 +14,13 @@ export const INITIAL_STATE = {
 export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
     case constants.SET_CURRENT_LAYOUT: {
-      return { ...state, currentLayout: { ...action.newLayout } };
+      return { ...state, currentLayout: { ...action.payload } };
+    }
+    case constants.SET_DEFAULT_LAYOUT: {
+      return { ...state, defaultLayout: { ...action.payload } };
+    }
+    case constants.RESET_CURRENT_LAYOUT: {
+      return { ...state, currentLayout: { ...state.defaultLayout } };
     }
     case constants.UPDATE_CURRENT_LAYOUT: {
       let newLayout = { ...state.currentLayout };
@@ -28,14 +35,14 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
     }
     case constants.LOCK_LAYOUT: {
       const locked = action.payload;
-      const { currentLayout } = state;
+      const { currentLayout, defaultLayout } = state;
 
-      const newLayout = {
-        ...currentLayout,
-        layout: currentLayout.layout.map(item => ({ ...item, static: locked }))
+      return {
+        ...state,
+        layoutLocked: locked,
+        currentLayout: { ...currentLayout, layout: currentLayout.layout.map(item => ({ ...item, static: locked })) },
+        defaultLayout: { ...defaultLayout, layout: defaultLayout.layout.map(item => ({ ...item, static: locked })) }
       };
-
-      return { ...state, layoutLocked: locked, currentLayout: newLayout };
     }
     case constants.SET_PANEL_EXPANDED: {
       const { type, expanded } = action.payload;

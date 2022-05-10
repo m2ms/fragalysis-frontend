@@ -3,7 +3,20 @@ import { constants } from './constants';
 export const setCurrentLayout = newLayout => {
   return {
     type: constants.SET_CURRENT_LAYOUT,
-    newLayout: newLayout
+    payload: newLayout
+  };
+};
+
+export const setDefaultLayout = newLayout => {
+  return {
+    type: constants.SET_DEFAULT_LAYOUT,
+    payload: newLayout
+  };
+};
+
+export const resetCurrentLayout = () => {
+  return {
+    type: constants.RESET_CURRENT_LAYOUT
   };
 };
 

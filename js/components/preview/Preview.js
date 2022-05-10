@@ -45,7 +45,7 @@ import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { setCurrentLayout } from '../../reducers/layout/actions';
 import { layoutItemNames } from '../../reducers/layout/constants';
-import { updateLayout } from '../../reducers/layout/dispatchActions';
+import { updateLayoutOnDependencyChange } from '../../reducers/layout/dispatchActions';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -228,7 +228,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   }, []);
 
   useLayoutEffect(() => {
-    dispatch(updateLayout(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
+    dispatch(updateLayoutOnDependencyChange(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
   }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded]);
 
   const renderItem = id => {

@@ -1,4 +1,4 @@
-import { setCurrentLayout } from './actions';
+import { setCurrentLayout, setDefaultLayout } from './actions';
 import {
   baseColumnSize,
   hitListFilterLayout,
@@ -11,7 +11,10 @@ import {
   layoutItemNames
 } from './constants';
 
-export const updateLayout = (showLHS, showRHS, hideProjects, height, margin) => (dispatch, getState) => {
+export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, height, margin) => (
+  dispatch,
+  getState
+) => {
   const { layoutLocked, panelsExpanded } = getState().layoutReducers;
 
   const maxRows = Math.max(Math.floor((height - margin) / (margin + 1)), 60);
@@ -69,5 +72,7 @@ export const updateLayout = (showLHS, showRHS, hideProjects, height, margin) => 
     ];
   }
 
-  dispatch(setCurrentLayout({ name: 'defaultLayout', layout }));
+  const defaultLayout = { name: 'defaultLayout', layout };
+  dispatch(setDefaultLayout(defaultLayout));
+  dispatch(setCurrentLayout(defaultLayout));
 };

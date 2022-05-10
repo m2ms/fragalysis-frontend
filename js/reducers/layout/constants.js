@@ -46,5 +46,6 @@ export const defaultLayout = {
 export const constants = {
   SET_CURRENT_LAYOUT: prefix + 'SET_CURRENT_LAYOUT',
   UPDATE_CURRENT_LAYOUT: prefix + 'UPDATE_CURRENT_LAYOUT',
-  LOCK_LAYOUT: prefix + 'LOCK_LAYOUT'
+  LOCK_LAYOUT: prefix + 'LOCK_LAYOUT',
+  SET_PANEL_EXPANDED: prefix + 'SET_PANEL_EXPANDED'
 };

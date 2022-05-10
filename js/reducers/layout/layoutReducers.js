@@ -1,8 +1,13 @@
-import { constants, defaultLayout } from './constants';
+import { constants, defaultLayout, layoutItemNames } from './constants';
 
 export const INITIAL_STATE = {
   layoutLocked: true,
-  currentLayout: defaultLayout
+  currentLayout: defaultLayout,
+  panelsExpanded: {
+    [layoutItemNames.TAG_DETAILS]: true,
+    [layoutItemNames.HIT_LIST_FILTER]: true,
+    [layoutItemNames.PROJECT_HISTORY]: true
+  }
 };
 
 export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
@@ -31,6 +36,12 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       };
 
       return { ...state, layoutLocked: locked, currentLayout: newLayout };
+    }
+    case constants.SET_PANEL_EXPANDED: {
+      const { type, expanded } = action.payload;
+      const { panelsExpanded } = state;
+
+      return { ...state, panelsExpanded: { ...panelsExpanded, [type]: expanded } };
     }
     default:
       return state;

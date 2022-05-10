@@ -1,6 +1,5 @@
-import React, { memo, useRef, useEffect, useCallback, useState } from 'react';
+import React, { memo, useRef, useCallback, useState } from 'react';
 import { Grid, makeStyles, Switch, FormControlLabel, Tooltip } from '@material-ui/core';
-import { Delete, DoneAll } from '@material-ui/icons';
 import { Panel } from '../../common/Surfaces/Panel';
 import { Button } from '../../common/Inputs/Button';
 import TagCategory from './tagCategory';
@@ -13,6 +12,8 @@ import {
 } from '../../../reducers/selection/actions';
 import { withStyles } from '@material-ui/core/styles';
 import { blue } from '@material-ui/core/colors';
+import { setPanelsExpanded } from '../../../reducers/layout/actions';
+import { layoutItemNames } from '../../../reducers/layout/constants';
 
 export const heightOfBody = '164px';
 export const defaultHeaderPadding = 15;
@@ -149,6 +150,9 @@ const TagSelector = memo(() => {
       hasHeader
       hasExpansion
       defaultExpanded
+      onExpandChange={useCallback(expanded => dispatch(setPanelsExpanded(layoutItemNames.HIT_LIST_FILTER, expanded)), [
+        dispatch
+      ])}
       title="Hit List Filter"
       headerActions={[
         <Grid container item direction="row" className={classes.headerContainer}>

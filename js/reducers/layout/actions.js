@@ -20,3 +20,10 @@ export const lockLayout = lock => {
     payload: lock
   };
 };
+
+export const setPanelsExpanded = (type, expanded) => {
+  return {
+    type: constants.SET_PANEL_EXPANDED,
+    payload: { type, expanded }
+  };
+};

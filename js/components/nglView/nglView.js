@@ -12,7 +12,7 @@ import { NglContext } from './nglProvider';
 import { handleNglViewPick } from './redux/dispatchActions';
 import { debounce } from 'lodash';
 import { NGL_PARAMS } from './constants';
-import { makeStyles, useTheme } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core';
 import { VIEWS } from '../../constants/constants';
 import { INITIAL_STATE as NGL_INITIAL } from '../../reducers/ngl/nglReducers';
 

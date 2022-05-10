@@ -7,17 +7,22 @@ import {
   rhsLayout,
   tagDetailsLayout,
   viewerControlsLayout,
-  projectHistoryLayout
+  projectHistoryLayout,
+  layoutItemNames
 } from './constants';
 
 export const updateLayout = (showLHS, showRHS, hideProjects, height, margin) => (dispatch, getState) => {
-  const { layoutLocked } = getState().layoutReducers;
+  const { layoutLocked, panelsExpanded } = getState().layoutReducers;
 
   const maxRows = Math.max(Math.floor((height - margin) / (margin + 1)), 60);
-  console.log(maxRows);
 
-  const nglHeight = maxRows - 5 - !hideProjects * 16;
   const lhsBaseHeight = maxRows / 4;
+  const tagDetailsRows = panelsExpanded[layoutItemNames.TAG_DETAILS] ? lhsBaseHeight : 5;
+  const hitListFilterRows = panelsExpanded[layoutItemNames.HIT_LIST_FILTER] ? lhsBaseHeight : 5;
+  const hitNavigatorRows = maxRows - tagDetailsRows - hitListFilterRows;
+
+  const projectHistoryHeight = panelsExpanded[layoutItemNames.PROJECT_HISTORY] ? 16 : 5;
+  const nglHeight = maxRows - 5 - !hideProjects * projectHistoryHeight;
 
   let layout = [
     {
@@ -40,9 +45,9 @@ export const updateLayout = (showLHS, showRHS, hideProjects, height, margin) => 
   if (showLHS) {
     layout = [
       ...layout,
-      { ...tagDetailsLayout, h: lhsBaseHeight, static: layoutLocked },
-      { ...hitListFilterLayout, h: lhsBaseHeight, y: lhsBaseHeight, static: layoutLocked },
-      { ...hitNavigatorLayout, h: lhsBaseHeight * 2, y: lhsBaseHeight * 2, static: layoutLocked }
+      { ...tagDetailsLayout, h: tagDetailsRows, static: layoutLocked },
+      { ...hitListFilterLayout, h: hitListFilterRows, y: tagDetailsRows, static: layoutLocked },
+      { ...hitNavigatorLayout, h: hitNavigatorRows, y: tagDetailsRows + hitListFilterRows, static: layoutLocked }
     ];
   }
 
@@ -58,6 +63,7 @@ export const updateLayout = (showLHS, showRHS, hideProjects, height, margin) => 
         x: showLHS * baseColumnSize,
         w: (!showLHS + !showRHS + 1) * baseColumnSize,
         y: nglHeight + 5,
+        h: projectHistoryHeight,
         static: layoutLocked
       }
     ];

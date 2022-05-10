@@ -1,6 +1,6 @@
 import React, { memo, useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Grid, Typography, makeStyles, IconButton, Tooltip } from '@material-ui/core';
+import { Typography, makeStyles, IconButton, Tooltip } from '@material-ui/core';
 import { Panel } from '../../../common/Surfaces/Panel';
 import TagDetailRow from './tagDetailRow';
 import NewTagDetailRow from './newTagDetailRow';
@@ -18,6 +18,8 @@ import { UnfoldMore, KeyboardArrowDown, KeyboardArrowUp } from '@material-ui/ico
 import { getMoleculeForId } from '../redux/dispatchActions';
 import classNames from 'classnames';
 import SearchField from '../../../common/Components/SearchField';
+import { setPanelsExpanded } from '../../../../reducers/layout/actions';
+import { layoutItemNames } from '../../../../reducers/layout/constants';
 
 export const heightOfBody = '172px';
 export const defaultHeaderPadding = 15;
@@ -198,6 +200,9 @@ const TagDetails = memo(() => {
       hasExpansion
       defaultExpanded
       title="Tag Details"
+      onExpandChange={useCallback(expanded => dispatch(setPanelsExpanded(layoutItemNames.TAG_DETAILS, expanded)), [
+        dispatch
+      ])}
       headerActions={[<SearchField className={classes.search} id="search-tag-details" onChange={setSearchString} />]}
     >
       <div ref={elementRef} className={classes.containerExpanded}>

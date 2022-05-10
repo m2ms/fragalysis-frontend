@@ -114,7 +114,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
   const tabValue = useSelector(state => state.datasetsReducers.tabValue);
   const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
-  const { currentLayout, layoutLocked } = useSelector(state => state.layoutReducers);
+  const { currentLayout, layoutLocked, panelsExpanded } = useSelector(state => state.layoutReducers);
 
   /*
      Loading datasets
@@ -229,7 +229,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
 
   useLayoutEffect(() => {
     dispatch(updateLayout(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
-  }, [dispatch, height, hideProjects, sidesOpen, theme]);
+  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded]);
 
   const renderItem = id => {
     switch (id) {

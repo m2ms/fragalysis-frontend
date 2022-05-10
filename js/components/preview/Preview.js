@@ -3,7 +3,7 @@
  */
 
 import React, { memo, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Grid, makeStyles, ButtonGroup, Button } from '@material-ui/core';
+import { Grid, makeStyles, ButtonGroup, Button, useTheme } from '@material-ui/core';
 import NGLView from '../nglView/nglView';
 import HitNavigator from './molecule/hitNavigator';
 import { CustomDatasetList } from '../datasets/customDatasetList';
@@ -51,10 +51,11 @@ const ReactGridLayout = WidthProvider(RGL);
 
 const useStyles = makeStyles(theme => ({
   root: {
-    minHeight: 'inherit',
     display: 'flex',
     gap: theme.spacing(),
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    height: '100%',
+    overflow: 'auto'
   },
   nglColumn: {
     // Since the LHS and RHS columns require flex-grow to be 1 in case they are wrapped, this is needed to make NGL take
@@ -65,18 +66,13 @@ const useStyles = makeStyles(theme => ({
     height: 48
   },
   rhsWrapper: {
-    overflow: 'hidden',
+    display: 'flex',
     height: '100%'
-  },
-  rhs: {
-    overflowY: 'auto',
-    height: '100%',
-    flexWrap: 'nowrap',
-    overflowX: 'hidden'
   },
   rhsContainer: {
     height: '100%',
-    flexWrap: 'nowrap'
+    flexWrap: 'nowrap',
+    gap: theme.spacing()
   },
   summaryView: {
     flexGrow: 1
@@ -94,6 +90,7 @@ const useStyles = makeStyles(theme => ({
 
 const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const classes = useStyles();
+  const theme = useTheme();
 
   const { nglViewList } = useContext(NglContext);
   const dispatch = useDispatch();
@@ -208,9 +205,25 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     dispatch(setCurrentLayout(newLayout));
   };
 
+  const ref = useRef();
+  const [height, setHeight] = useState(1);
+  useEffect(() => {
+    const node = ref.current;
+    const resizeObserver = new ResizeObserver(entries => {
+      const entry = entries[0];
+      setHeight(entry.borderBoxSize[0].blockSize);
+    });
+
+    resizeObserver.observe(node);
+
+    return () => {
+      resizeObserver.unobserve(node);
+    };
+  }, []);
+
   useLayoutEffect(() => {
-    dispatch(updateLayout(sidesOpen.LHS, sidesOpen.RHS, hideProjects));
-  }, [dispatch, hideProjects, sidesOpen]);
+    dispatch(updateLayout(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
+  }, [dispatch, height, hideProjects, sidesOpen, theme]);
 
   const renderItem = id => {
     switch (id) {
@@ -247,7 +260,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
         return (
           <div key="RHS">
             <div className={classes.rhsWrapper}>
-              <Grid className={classes.rhs} container direction="column">
+              <Grid container direction="column">
                 <ButtonGroup
                   color="primary"
                   variant="contained"
@@ -297,7 +310,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
                 />
                 <TabPanel value={getTabValue()} index={0} className={classes.tabPanel}>
                   {/* Vector selector */}
-                  <Grid container direction="column" spacing={1} className={classes.rhsContainer}>
+                  <Grid container direction="column" className={classes.rhsContainer}>
                     <Grid item className={classes.summaryView}>
                       <SummaryView />
                     </Grid>
@@ -346,16 +359,17 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
 
   return (
     <>
-      <div className={classes.root}>
+      <div ref={ref} className={classes.root}>
         <ReactGridLayout
           // cols={4}
           autoSize
           cols={180}
           layout={currentLayout.layout}
-          rowHeight={5}
+          rowHeight={1}
           onLayoutChange={onLayoutChange}
           useCSSTransforms={false}
           className={classes.rgl}
+          margin={[theme.spacing(), theme.spacing()]}
         >
           {currentLayout.layout.map(item => renderItem(item.i))}
         </ReactGridLayout>

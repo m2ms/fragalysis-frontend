@@ -14,20 +14,20 @@ export const layoutItemNames = {
 
 export const tagDetailsLayout = { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: baseColumnSize, h: 15 };
 export const hitListFilterLayout = { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: baseColumnSize, h: 15 };
-export const hitNavigatorLayout = { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: baseColumnSize, h: 31 };
-export const nglLayout = { i: layoutItemNames.NGL, x: baseColumnSize, y: 0, w: baseColumnSize * 2, h: 58 };
+export const hitNavigatorLayout = { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: baseColumnSize, h: 30 };
+export const nglLayout = { i: layoutItemNames.NGL, x: baseColumnSize, y: 0, w: baseColumnSize * 2, h: 39 };
 export const rhsLayout = { i: layoutItemNames.RHS, x: 130, y: 0, w: baseColumnSize, h: 60 };
 export const viewerControlsLayout = {
   i: layoutItemNames.VIEWER_CONTROLS,
   x: baseColumnSize,
-  y: 58,
+  y: 39,
   w: baseColumnSize * 2,
-  h: 3
+  h: 5
 };
 export const projectHistoryLayout = {
   i: layoutItemNames.PROJECT_HISTORY,
   x: baseColumnSize,
-  y: 45,
+  y: 44,
   w: baseColumnSize * 2,
   h: 16
 };

@@ -1,5 +1,7 @@
 const prefix = 'REDUCERS_LAYOUT_';
 
+export const baseColumnSize = 60;
+
 export const layoutItemNames = {
   TAG_DETAILS: 'tagDetails',
   HIT_LIST_FILTER: 'hitListFilter',
@@ -10,43 +12,39 @@ export const layoutItemNames = {
   PROJECT_HISTORY: 'projectHistory'
 };
 
-// export const defaultLayout = {
-//   name: 'defaultLayout',
-//   layout: [
-//     { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: 1, h: 15, static: true },
-//     { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: 1, h: 15, static: true },
-//     { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: 1, h: 31, static: true },
-//     { i: layoutItemNames.NGL, x: 1, y: 0, w: 2, h: 61, static: true },
-//     { i: layoutItemNames.RHS, x: 3, y: 0, w: 1, h: 60, static: true }
-//   ]
-// };
+export const tagDetailsLayout = { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: baseColumnSize, h: 15 };
+export const hitListFilterLayout = { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: baseColumnSize, h: 15 };
+export const hitNavigatorLayout = { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: baseColumnSize, h: 31 };
+export const nglLayout = { i: layoutItemNames.NGL, x: baseColumnSize, y: 0, w: baseColumnSize * 2, h: 58 };
+export const rhsLayout = { i: layoutItemNames.RHS, x: 130, y: 0, w: baseColumnSize, h: 60 };
+export const viewerControlsLayout = {
+  i: layoutItemNames.VIEWER_CONTROLS,
+  x: baseColumnSize,
+  y: 58,
+  w: baseColumnSize * 2,
+  h: 3
+};
+export const projectHistoryLayout = {
+  i: layoutItemNames.PROJECT_HISTORY,
+  x: baseColumnSize,
+  y: 45,
+  w: baseColumnSize * 2,
+  h: 16
+};
 
 export const defaultLayout = {
   name: 'defaultLayout',
   layout: [
-    { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: 47, h: 15, static: true },
-    { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: 47, h: 15, static: true },
-    { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: 47, h: 31, static: true },
-    { i: layoutItemNames.NGL, x: 47, y: 0, w: 94, h: 58, static: true },
-    { i: layoutItemNames.RHS, x: 141, y: 0, w: 46, h: 60, static: true },
-    { i: layoutItemNames.VIEWER_CONTROLS, x: 47, y: 58, w: 94, h: 3, static: true }
-  ]
-};
-
-export const defaultLayoutWithHistory = {
-  name: 'defaultLayout',
-  layout: [
-    { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: 47, h: 15, static: true },
-    { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: 47, h: 15, static: true },
-    { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: 47, h: 31, static: true },
-    { i: layoutItemNames.NGL, x: 47, y: 0, w: 94, h: 42, static: true },
-    { i: layoutItemNames.RHS, x: 141, y: 0, w: 46, h: 60, static: true },
-    { i: layoutItemNames.VIEWER_CONTROLS, x: 47, y: 42, w: 94, h: 3, static: true },
-    { i: layoutItemNames.PROJECT_HISTORY, x: 47, y: 45, w: 94, h: 16, static: true }
+    { ...tagDetailsLayout, static: true },
+    { ...hitListFilterLayout, static: true },
+    { ...hitNavigatorLayout, static: true },
+    { ...nglLayout, static: true },
+    { ...viewerControlsLayout, static: true }
   ]
 };
 
 export const constants = {
   SET_CURRENT_LAYOUT: prefix + 'SET_CURRENT_LAYOUT',
-  UPDATE_CURRENT_LAYOUT: prefix + 'UPDATE_CURRENT_LAYOUT'
+  UPDATE_CURRENT_LAYOUT: prefix + 'UPDATE_CURRENT_LAYOUT',
+  LOCK_LAYOUT: prefix + 'LOCK_LAYOUT'
 };

@@ -19,7 +19,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ProjectHistory } from './projectHistory';
 import { ProjectDetailDrawer } from '../projects/projectDetailDrawer';
 import { NewSnapshotModal } from '../snapshot/modals/newSnapshotModal';
-import { HeaderContext } from '../header/headerContext';
 import { unmountPreviewComponent } from './redux/dispatchActions';
 import { NglContext } from '../nglView/nglProvider';
 import { SaveSnapshotBeforeExit } from '../snapshot/modals/saveSnapshotBeforeExit';
@@ -39,14 +38,16 @@ import {
 } from '../datasets/redux/actions';
 import { prepareFakeFilterData } from './compounds/redux/dispatchActions';
 import { withLoadingMolecules } from './tags/withLoadingMolecules';
-import classNames from 'classnames';
 import { ViewerControls } from './viewerControls';
 
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { setCurrentLayout } from '../../reducers/layout/actions';
-import { defaultLayout, defaultLayoutWithHistory } from '../../reducers/layout/constants';
+import { layoutItemNames } from '../../reducers/layout/constants';
+import { updateLayout } from '../../reducers/layout/dispatchActions';
+
+const ReactGridLayout = WidthProvider(RGL);
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -59,9 +60,6 @@ const useStyles = makeStyles(theme => ({
     // Since the LHS and RHS columns require flex-grow to be 1 in case they are wrapped, this is needed to make NGL take
     // all of the space in case they are not wrapped
     flex: '9999 1 0'
-  },
-  columnHidden: {
-    display: 'none'
   },
   tabButtonGroup: {
     height: 48
@@ -85,6 +83,12 @@ const useStyles = makeStyles(theme => ({
   },
   tabPanel: {
     flexGrow: 1
+  },
+  rgl: {
+    minWidth: '100%',
+    '& .react-resizable-handle': {
+      zIndex: 2000
+    }
   }
 }));
 
@@ -106,10 +110,8 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
   const tabValue = useSelector(state => state.datasetsReducers.tabValue);
-  const layout = useSelector(state => state.layoutReducers.currentLayout);
-
-  //const ReactGridLayout = WidthProvider(RGL);
-  const ReactGridLayout = RGL;
+  const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
+  const { currentLayout, layoutLocked } = useSelector(state => state.layoutReducers);
 
   /*
      Loading datasets
@@ -201,56 +203,51 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const anchorRefDatasetDropdown = useRef(null);
   const [openDatasetDropdown, setOpenDatasetDropdown] = useState(false);
 
-  const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
-
   const onLayoutChange = updatedLayout => {
-    let newLayout = { name: layout.name, layout: [...updatedLayout] };
+    let newLayout = { name: currentLayout.name, layout: [...updatedLayout] };
     dispatch(setCurrentLayout(newLayout));
   };
 
   useLayoutEffect(() => {
-    dispatch(setCurrentLayout(hideProjects ? defaultLayout : defaultLayoutWithHistory));
-  }, [dispatch, hideProjects]);
+    dispatch(updateLayout(sidesOpen.LHS, sidesOpen.RHS, hideProjects));
+  }, [dispatch, hideProjects, sidesOpen]);
 
-  return (
-    <>
-      <div className={classes.root}>
-        <ReactGridLayout
-          // cols={4}
-          cols={190}
-          layout={layout.layout}
-          width={1900 /*3 * columnWidth*/}
-          rowHeight={5}
-          onLayoutChange={onLayoutChange}
-          useCSSTransforms={false}
-        >
+  const renderItem = id => {
+    switch (id) {
+      case layoutItemNames.TAG_DETAILS: {
+        return (
           <div key="tagDetails">
             <TagDetails />
           </div>
+        );
+      }
+      case layoutItemNames.HIT_LIST_FILTER: {
+        return (
           <div key="hitListFilter">
             <TagSelector />
           </div>
+        );
+      }
+      case layoutItemNames.HIT_NAVIGATOR: {
+        return (
           <div key="hitNavigator">
             <HitNavigator hideProjects={hideProjects} />
           </div>
+        );
+      }
+      case layoutItemNames.NGL: {
+        return (
           <div key="NGL" className={classes.nglColumn}>
+            {!layoutLocked && <div style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1000 }} />}
             <NGLView div_id={VIEWS.MAJOR_VIEW} />
           </div>
-          <div key="viewerControls">
-            <ViewerControls />
-          </div>
-          {!hideProjects && (
-            <div key="projectHistory">
-              <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />
-            </div>
-          )}
+        );
+      }
+      case layoutItemNames.RHS: {
+        return (
           <div key="RHS">
             <div className={classes.rhsWrapper}>
-              <Grid
-                className={classNames(classes.rhs, !sidesOpen.RHS && classes.columnHidden)}
-                container
-                direction="column"
-              >
+              <Grid className={classes.rhs} container direction="column">
                 <ButtonGroup
                   color="primary"
                   variant="contained"
@@ -328,9 +325,39 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
               </Grid>
             </div>
           </div>
-          {/*<Grid item xs={12} sm={6} md={4} >
-          <HotspotList />
-        </Grid>*/}
+        );
+      }
+      case layoutItemNames.VIEWER_CONTROLS: {
+        return (
+          <div key="viewerControls">
+            <ViewerControls />
+          </div>
+        );
+      }
+      case layoutItemNames.PROJECT_HISTORY: {
+        return (
+          <div key="projectHistory">
+            <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />
+          </div>
+        );
+      }
+    }
+  };
+
+  return (
+    <>
+      <div className={classes.root}>
+        <ReactGridLayout
+          // cols={4}
+          autoSize
+          cols={180}
+          layout={currentLayout.layout}
+          rowHeight={5}
+          onLayoutChange={onLayoutChange}
+          useCSSTransforms={false}
+          className={classes.rgl}
+        >
+          {currentLayout.layout.map(item => renderItem(item.i))}
         </ReactGridLayout>
       </div>
       <NewSnapshotModal />

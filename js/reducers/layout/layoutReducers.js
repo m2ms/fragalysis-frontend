@@ -1,14 +1,16 @@
 import { constants, defaultLayout } from './constants';
 
 export const INITIAL_STATE = {
+  layoutLocked: true,
   currentLayout: defaultLayout
 };
 
 export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
-    case constants.SET_CURRENT_LAYOUT:
+    case constants.SET_CURRENT_LAYOUT: {
       return { ...state, currentLayout: { ...action.newLayout } };
-    case constants.UPDATE_CURRENT_LAYOUT:
+    }
+    case constants.UPDATE_CURRENT_LAYOUT: {
       let newLayout = { ...state.currentLayout };
       const indexOfItem = newLayout.layout.findIndex(i => i.i === action.payload.i);
       if (indexOfItem >= 0) {
@@ -18,7 +20,18 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       } else {
         return state;
       }
+    }
+    case constants.LOCK_LAYOUT: {
+      const locked = action.payload;
+      const { currentLayout } = state;
 
+      const newLayout = {
+        ...currentLayout,
+        layout: currentLayout.layout.map(item => ({ ...item, static: locked }))
+      };
+
+      return { ...state, layoutLocked: locked, currentLayout: newLayout };
+    }
     default:
       return state;
   }

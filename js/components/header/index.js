@@ -52,9 +52,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { generateDiscourseTargetURL, getExistingPost } from '../../utils/discourse';
 import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
-import { setCurrentLayout } from '../../reducers/layout/actions';
+import { lockLayout, setCurrentLayout } from '../../reducers/layout/actions';
 import { defaultLayout } from '../../reducers/layout/constants';
-import { lockLayout } from '../../reducers/layout/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -111,7 +110,7 @@ export default memo(
     const [openFunders, setOpenFunders] = useState(false);
     const [openTrackingModal, setOpenTrackingModal] = useState(false);
 
-    const [layoutLocked, setLayoutLocked] = useState(true);
+    const { layoutLocked } = useSelector(state => state.layoutReducers);
 
     const currentProject = useSelector(state => state.projectReducers.currentProject);
     const targetName = useSelector(state => state.apiReducers.target_on_name);
@@ -218,7 +217,6 @@ export default memo(
 
     const handleLockLayout = () => {
       dispatch(lockLayout(!layoutLocked));
-      setLayoutLocked(!layoutLocked);
     };
 
     return (

@@ -13,3 +13,10 @@ export const updateCurrentLayout = (i, props) => {
     payload: { i: i, props: props }
   };
 };
+
+export const lockLayout = lock => {
+  return {
+    type: constants.LOCK_LAYOUT,
+    payload: lock
+  };
+};

@@ -85,6 +85,12 @@ const useStyles = makeStyles(theme => ({
     '& .react-resizable-handle': {
       zIndex: 2000
     }
+  },
+  disableNgl: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    zIndex: 1000
   }
 }));
 
@@ -251,7 +257,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
       case layoutItemNames.NGL: {
         return (
           <div key="NGL" className={classes.nglColumn}>
-            {!layoutLocked && <div style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1000 }} />}
+            {!layoutLocked && <div className={classes.disableNgl} />}
             <NGLView div_id={VIEWS.MAJOR_VIEW} />
           </div>
         );

@@ -95,6 +95,9 @@ const useStyles = makeStyles(theme => ({
   inheritHeight: {
     height: 'inherit',
     paddingBottom: theme.spacing(1)
+  },
+  resetLayoutButton: {
+    margin: `${theme.spacing()}px 0`
   }
 }));
 
@@ -299,10 +302,9 @@ export default memo(
             </Grid>
             <Grid item>
               <Grid container direction="row" justify="flex-start" alignItems="center" spacing={1}>
-                <Grid>
+                <Grid item>
                   <Tooltip title={layoutLocked ? 'Unlock layout' : 'Lock layout'}>
                     <Button
-                      size="small"
                       onClick={() => {
                         handleLockLayout();
                       }}
@@ -313,6 +315,7 @@ export default memo(
                 </Grid>
                 <Grid item>
                   <Button
+                    className={classes.resetLayoutButton}
                     onClick={() => {
                       handleResetLayout();
                     }}

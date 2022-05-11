@@ -32,7 +32,9 @@ import {
   QuestionAnswer,
   Chat,
   Lock,
-  LockOpen
+  LockOpen,
+  Restore,
+  Layers
 } from '@material-ui/icons';
 import { HeaderContext } from './headerContext';
 import { Button } from '../common';
@@ -313,7 +315,17 @@ export default memo(
                           dispatch(resetCurrentLayout());
                         }}
                       >
-                        RESET LAYOUT
+                        <Restore />
+                      </Button>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        className={classes.resetLayoutButton}
+                        onClick={() => {
+                          dispatch(resetCurrentLayout());
+                        }}
+                      >
+                        <Layers />
                       </Button>
                     </Grid>
                   </>

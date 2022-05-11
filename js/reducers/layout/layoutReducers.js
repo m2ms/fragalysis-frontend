@@ -1,10 +1,15 @@
-import { constants, defaultLayout, layoutItemNames } from './constants';
+import { constants, layoutItemNames } from './constants';
+
+const initialLayout = {
+  name: 'initialLayout',
+  layout: []
+};
 
 export const INITIAL_STATE = {
   layoutEnabled: false,
   layoutLocked: true,
-  currentLayout: defaultLayout,
-  defaultLayout,
+  currentLayout: initialLayout,
+  defaultLayout: initialLayout,
   panelsExpanded: {
     [layoutItemNames.TAG_DETAILS]: true,
     [layoutItemNames.HIT_LIST_FILTER]: true,

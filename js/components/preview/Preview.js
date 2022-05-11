@@ -65,6 +65,10 @@ const useStyles = makeStyles(theme => ({
   tabButtonGroup: {
     height: 48
   },
+  rhs: {
+    flexWrap: 'nowrap',
+    overflow: 'auto'
+  },
   rhsWrapper: {
     display: 'flex',
     height: '100%'
@@ -274,7 +278,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
         return (
           <div key="RHS">
             <div className={classes.rhsWrapper}>
-              <Grid container direction="column">
+              <Grid container direction="column" className={classes.rhs}>
                 <ButtonGroup
                   color="primary"
                   variant="contained"

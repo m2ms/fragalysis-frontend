@@ -6,12 +6,18 @@ const initialLayout = {
 };
 
 export const INITIAL_STATE = {
-  layoutEnabled: false,
-  layoutLocked: true,
+  layoutEnabled: false, // Used to display the three control buttons in the header
+  layoutLocked: true, // Enables custom positioning and resizing
+  /**
+   * Used for changing currentLayout and defaultLayout through useEffect in Preview. The reason the fields are updated
+   * via a useEffect is that we need to know the amount of space in pixels we have available to calculate the amount
+   * of rows we can use in React Grid Layout.
+   */
   selectedLayoutName: 'Default',
   currentLayout: initialLayout,
-  defaultLayout: initialLayout,
+  defaultLayout: initialLayout, // Used for restoring to default selected layout
   panelsExpanded: {
+    // Whether or not the panels are collapsed, needed for space calculations
     [layoutItemNames.TAG_DETAILS]: true,
     [layoutItemNames.HIT_LIST_FILTER]: true,
     [layoutItemNames.PROJECT_HISTORY]: true

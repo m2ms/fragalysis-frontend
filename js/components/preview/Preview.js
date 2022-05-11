@@ -2,7 +2,7 @@
  * Created by abradley on 14/04/2018.
  */
 
-import React, { memo, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Grid, makeStyles, ButtonGroup, Button, useTheme } from '@material-ui/core';
 import NGLView from '../nglView/nglView';
 import HitNavigator from './molecule/hitNavigator';
@@ -43,7 +43,7 @@ import { ViewerControls } from './viewerControls';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
-import { setCurrentLayout } from '../../reducers/layout/actions';
+import { enableLayout, setCurrentLayout } from '../../reducers/layout/actions';
 import { layoutItemNames } from '../../reducers/layout/constants';
 import { updateLayoutOnDependencyChange } from '../../reducers/layout/dispatchActions';
 
@@ -227,7 +227,15 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     };
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    dispatch(enableLayout(true));
+
+    return () => {
+      dispatch(enableLayout(false));
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
     dispatch(updateLayoutOnDependencyChange(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
   }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded]);
 

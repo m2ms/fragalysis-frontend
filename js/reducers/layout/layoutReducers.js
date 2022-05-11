@@ -1,6 +1,7 @@
 import { constants, defaultLayout, layoutItemNames } from './constants';
 
 export const INITIAL_STATE = {
+  layoutEnabled: false,
   layoutLocked: true,
   currentLayout: defaultLayout,
   defaultLayout,
@@ -13,6 +14,11 @@ export const INITIAL_STATE = {
 
 export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
+    case constants.ENABLE_LAYOUT: {
+      const layoutEnabled = action.payload;
+
+      return { ...state, layoutEnabled };
+    }
     case constants.SET_CURRENT_LAYOUT: {
       return { ...state, currentLayout: { ...action.payload } };
     }

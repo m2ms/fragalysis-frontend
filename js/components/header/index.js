@@ -112,7 +112,7 @@ export default memo(
     const [openFunders, setOpenFunders] = useState(false);
     const [openTrackingModal, setOpenTrackingModal] = useState(false);
 
-    const { layoutLocked } = useSelector(state => state.layoutReducers);
+    const { layoutLocked, layoutEnabled } = useSelector(state => state.layoutReducers);
 
     const currentProject = useSelector(state => state.projectReducers.currentProject);
     const targetName = useSelector(state => state.apiReducers.target_on_name);
@@ -293,27 +293,31 @@ export default memo(
             </Grid>
             <Grid item>
               <Grid container direction="row" justify="flex-start" alignItems="center" spacing={1}>
-                <Grid item>
-                  <Tooltip title={layoutLocked ? 'Unlock layout' : 'Lock layout'}>
-                    <Button
-                      onClick={() => {
-                        dispatch(lockLayout(!layoutLocked));
-                      }}
-                    >
-                      {layoutLocked ? <Lock /> : <LockOpen />}
-                    </Button>
-                  </Tooltip>
-                </Grid>
-                <Grid item>
-                  <Button
-                    className={classes.resetLayoutButton}
-                    onClick={() => {
-                      dispatch(resetCurrentLayout());
-                    }}
-                  >
-                    RESET LAYOUT
-                  </Button>
-                </Grid>
+                {layoutEnabled && (
+                  <>
+                    <Grid item>
+                      <Tooltip title={layoutLocked ? 'Unlock layout' : 'Lock layout'}>
+                        <Button
+                          onClick={() => {
+                            dispatch(lockLayout(!layoutLocked));
+                          }}
+                        >
+                          {layoutLocked ? <Lock /> : <LockOpen />}
+                        </Button>
+                      </Tooltip>
+                    </Grid>
+                    <Grid item>
+                      <Button
+                        className={classes.resetLayoutButton}
+                        onClick={() => {
+                          dispatch(resetCurrentLayout());
+                        }}
+                      >
+                        RESET LAYOUT
+                      </Button>
+                    </Grid>
+                  </>
+                )}
                 <Grid item>
                   <Button
                     startIcon={<Timeline />}

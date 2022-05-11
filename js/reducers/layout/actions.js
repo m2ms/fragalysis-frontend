@@ -1,5 +1,12 @@
 import { constants } from './constants';
 
+export const enableLayout = enabled => {
+  return {
+    type: constants.ENABLE_LAYOUT,
+    payload: enabled
+  };
+};
+
 export const setCurrentLayout = newLayout => {
   return {
     type: constants.SET_CURRENT_LAYOUT,

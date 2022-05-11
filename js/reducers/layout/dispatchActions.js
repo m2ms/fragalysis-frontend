@@ -8,7 +8,8 @@ import {
   tagDetailsLayout,
   viewerControlsLayout,
   projectHistoryLayout,
-  layoutItemNames
+  layoutItemNames,
+  collapsedPanelSize
 } from './constants';
 
 export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, height, margin) => (
@@ -20,12 +21,12 @@ export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, h
   const maxRows = Math.max(Math.floor((height - margin) / (margin + 1)), 60);
 
   const lhsBaseHeight = maxRows / 4;
-  const tagDetailsRows = panelsExpanded[layoutItemNames.TAG_DETAILS] ? lhsBaseHeight : 5;
-  const hitListFilterRows = panelsExpanded[layoutItemNames.HIT_LIST_FILTER] ? lhsBaseHeight : 5;
+  const tagDetailsRows = panelsExpanded[layoutItemNames.TAG_DETAILS] ? lhsBaseHeight : collapsedPanelSize;
+  const hitListFilterRows = panelsExpanded[layoutItemNames.HIT_LIST_FILTER] ? lhsBaseHeight : collapsedPanelSize;
   const hitNavigatorRows = maxRows - tagDetailsRows - hitListFilterRows;
 
-  const projectHistoryHeight = panelsExpanded[layoutItemNames.PROJECT_HISTORY] ? 16 : 5;
-  const nglHeight = maxRows - 5 - !hideProjects * projectHistoryHeight;
+  const projectHistoryHeight = panelsExpanded[layoutItemNames.PROJECT_HISTORY] ? 16 : collapsedPanelSize;
+  const nglHeight = maxRows - collapsedPanelSize - !hideProjects * projectHistoryHeight;
 
   let layout = [
     {
@@ -65,7 +66,7 @@ export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, h
         ...projectHistoryLayout,
         x: showLHS * baseColumnSize,
         w: (!showLHS + !showRHS + 1) * baseColumnSize,
-        y: nglHeight + 5,
+        y: nglHeight + collapsedPanelSize,
         h: projectHistoryHeight,
         static: layoutLocked
       }

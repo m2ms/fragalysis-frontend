@@ -1,6 +1,7 @@
 const prefix = 'REDUCERS_LAYOUT_';
 
 export const baseColumnSize = 60;
+export const collapsedPanelSize = 5;
 
 export const layoutItemNames = {
   TAG_DETAILS: 'tagDetails',
@@ -12,24 +13,68 @@ export const layoutItemNames = {
   PROJECT_HISTORY: 'projectHistory'
 };
 
-export const tagDetailsLayout = { i: layoutItemNames.TAG_DETAILS, x: 0, y: 0, w: baseColumnSize, h: 15 };
-export const hitListFilterLayout = { i: layoutItemNames.HIT_LIST_FILTER, x: 0, y: 15, w: baseColumnSize, h: 15 };
-export const hitNavigatorLayout = { i: layoutItemNames.HIT_NAVIGATOR, x: 0, y: 30, w: baseColumnSize, h: 30 };
-export const nglLayout = { i: layoutItemNames.NGL, x: baseColumnSize, y: 0, w: baseColumnSize * 2, h: 39 };
-export const rhsLayout = { i: layoutItemNames.RHS, x: 130, y: 0, w: baseColumnSize, h: 60 };
+export const tagDetailsLayout = {
+  i: layoutItemNames.TAG_DETAILS,
+  x: 0,
+  y: 0,
+  w: baseColumnSize,
+  h: 15,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
+};
+export const hitListFilterLayout = {
+  i: layoutItemNames.HIT_LIST_FILTER,
+  x: 0,
+  y: 15,
+  w: baseColumnSize,
+  h: 15,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
+};
+export const hitNavigatorLayout = {
+  i: layoutItemNames.HIT_NAVIGATOR,
+  x: 0,
+  y: 30,
+  w: baseColumnSize,
+  h: 30,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
+};
+export const nglLayout = {
+  i: layoutItemNames.NGL,
+  x: baseColumnSize,
+  y: 0,
+  w: baseColumnSize * 2,
+  h: 39,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
+};
+export const rhsLayout = {
+  i: layoutItemNames.RHS,
+  x: 130,
+  y: 0,
+  w: baseColumnSize,
+  h: 60,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
+};
 export const viewerControlsLayout = {
   i: layoutItemNames.VIEWER_CONTROLS,
   x: baseColumnSize,
   y: 39,
   w: baseColumnSize * 2,
-  h: 5
+  h: collapsedPanelSize,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
 };
 export const projectHistoryLayout = {
   i: layoutItemNames.PROJECT_HISTORY,
   x: baseColumnSize,
   y: 44,
   w: baseColumnSize * 2,
-  h: 16
+  h: 16,
+  minW: baseColumnSize,
+  minH: collapsedPanelSize
 };
 
 export const defaultLayout = {

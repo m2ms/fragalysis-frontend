@@ -118,7 +118,11 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
   const tabValue = useSelector(state => state.datasetsReducers.tabValue);
   const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
-  const { currentLayout, layoutLocked, panelsExpanded } = useSelector(state => state.layoutReducers);
+
+  const currentLayout = useSelector(state => state.layoutReducers.currentLayout);
+  const layoutLocked = useSelector(state => state.layoutReducers.layoutLocked);
+  const panelsExpanded = useSelector(state => state.layoutReducers.panelsExpanded);
+  const selectedLayoutName = useSelector(state => state.layoutReducers.selectedLayoutName);
 
   /*
      Loading datasets
@@ -241,7 +245,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
 
   useEffect(() => {
     dispatch(updateLayoutOnDependencyChange(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
-  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded]);
+  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded, selectedLayoutName]);
 
   const renderItem = id => {
     switch (id) {

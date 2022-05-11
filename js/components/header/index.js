@@ -55,6 +55,7 @@ import { generateDiscourseTargetURL, getExistingPost } from '../../utils/discour
 import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
 import { lockLayout, resetCurrentLayout } from '../../reducers/layout/actions';
+import { ChangeLayoutButton } from './changeLayoutButton';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -114,7 +115,8 @@ export default memo(
     const [openFunders, setOpenFunders] = useState(false);
     const [openTrackingModal, setOpenTrackingModal] = useState(false);
 
-    const { layoutLocked, layoutEnabled } = useSelector(state => state.layoutReducers);
+    const layoutEnabled = useSelector(state => state.layoutReducers.layoutEnabled);
+    const layoutLocked = useSelector(state => state.layoutReducers.layoutLocked);
 
     const currentProject = useSelector(state => state.projectReducers.currentProject);
     const targetName = useSelector(state => state.apiReducers.target_on_name);
@@ -309,24 +311,21 @@ export default memo(
                       </Tooltip>
                     </Grid>
                     <Grid item>
-                      <Button
-                        className={classes.resetLayoutButton}
-                        onClick={() => {
-                          dispatch(resetCurrentLayout());
-                        }}
-                      >
-                        <Restore />
-                      </Button>
+                      <Tooltip title="Reset layout">
+                        <Button
+                          className={classes.resetLayoutButton}
+                          onClick={() => {
+                            dispatch(resetCurrentLayout());
+                          }}
+                        >
+                          <Restore />
+                        </Button>
+                      </Tooltip>
                     </Grid>
                     <Grid item>
-                      <Button
-                        className={classes.resetLayoutButton}
-                        onClick={() => {
-                          dispatch(resetCurrentLayout());
-                        }}
-                      >
+                      <ChangeLayoutButton className={classes.resetLayoutButton}>
                         <Layers />
-                      </Button>
+                      </ChangeLayoutButton>
                     </Grid>
                   </>
                 )}

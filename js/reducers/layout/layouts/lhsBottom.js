@@ -107,7 +107,7 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
     ];
   }
 
-  return { name: 'defaultLayout', layout };
+  return { name: 'LHS Bottom', layout };
 };
 
 export default createLayout;

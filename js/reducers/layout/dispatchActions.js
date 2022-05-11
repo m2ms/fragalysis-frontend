@@ -5,9 +5,17 @@ export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, h
   dispatch,
   getState
 ) => {
-  const { layoutLocked, panelsExpanded } = getState().layoutReducers;
+  const { layoutLocked, panelsExpanded, selectedLayoutName } = getState().layoutReducers;
 
-  const defaultLayout = layouts.lhsBottom(showLHS, showRHS, hideProjects, height, margin, layoutLocked, panelsExpanded);
+  const defaultLayout = layouts[selectedLayoutName](
+    showLHS,
+    showRHS,
+    hideProjects,
+    height,
+    margin,
+    layoutLocked,
+    panelsExpanded
+  );
 
   dispatch(setDefaultLayout(defaultLayout));
   dispatch(setCurrentLayout(defaultLayout));

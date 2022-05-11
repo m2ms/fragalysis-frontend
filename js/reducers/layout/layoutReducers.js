@@ -8,6 +8,7 @@ const initialLayout = {
 export const INITIAL_STATE = {
   layoutEnabled: false,
   layoutLocked: true,
+  selectedLayoutName: 'Default',
   currentLayout: initialLayout,
   defaultLayout: initialLayout,
   panelsExpanded: {
@@ -23,6 +24,11 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       const layoutEnabled = action.payload;
 
       return { ...state, layoutEnabled };
+    }
+    case constants.SET_SELECTED_LAYOUT_NAME: {
+      const selectedLayoutName = action.payload;
+
+      return { ...state, selectedLayoutName };
     }
     case constants.SET_CURRENT_LAYOUT: {
       return { ...state, currentLayout: { ...action.payload } };

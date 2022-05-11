@@ -15,6 +15,7 @@ export const layoutItemNames = {
 
 export const constants = {
   ENABLE_LAYOUT: prefix + 'ENABLE_LAYOUT',
+  SET_SELECTED_LAYOUT_NAME: prefix + 'SET_SELECTED_LAYOUT_NAME',
   SET_CURRENT_LAYOUT: prefix + 'SET_CURRENT_LAYOUT',
   SET_DEFAULT_LAYOUT: prefix + 'SET_DEFAULT_LAYOUT',
   RESET_CURRENT_LAYOUT: prefix + 'RESET_CURRENT_LAYOUT',

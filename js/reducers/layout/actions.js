@@ -7,6 +7,13 @@ export const enableLayout = enabled => {
   };
 };
 
+export const setSelectedLayoutName = name => {
+  return {
+    type: constants.SET_SELECTED_LAYOUT_NAME,
+    payload: name
+  };
+};
+
 export const setCurrentLayout = newLayout => {
   return {
     type: constants.SET_CURRENT_LAYOUT,

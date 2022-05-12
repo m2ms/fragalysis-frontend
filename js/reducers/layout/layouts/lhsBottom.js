@@ -10,7 +10,11 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
 
   const rhsHeight = showLHS ? halfRows : maxRows;
 
-  const projectHistoryHeight = panelsExpanded[layoutItemNames.PROJECT_HISTORY] ? 16 : collapsedPanelSize;
+  const projectHistoryHeight = panelsExpanded[layoutItemNames.PROJECT_HISTORY]
+    ? showLHS
+      ? halfRows - collapsedPanelSize
+      : maxRows - collapsedPanelSize
+    : collapsedPanelSize;
 
   let layout = [
     {
@@ -97,7 +101,11 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
       {
         i: layoutItemNames.PROJECT_HISTORY,
         x: (!showLHS * !showRHS + 1) * baseColumnSize,
-        y: collapsedPanelSize,
+        y: panelsExpanded[layoutItemNames.PROJECT_HISTORY]
+          ? collapsedPanelSize
+          : showLHS
+          ? halfRows - collapsedPanelSize
+          : maxRows - collapsedPanelSize,
         w: baseColumnSize,
         h: projectHistoryHeight,
         minW: baseColumnSize,

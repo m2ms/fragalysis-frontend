@@ -49,7 +49,9 @@ export const ChangeLayoutButton = () => {
             onChange={e => dispatch(setSelectedLayoutName(e.target.value))}
           >
             {Object.keys(layouts).map(layoutName => (
-              <MenuItem value={layoutName}>{layoutName}</MenuItem>
+              <MenuItem key={layoutName} value={layoutName}>
+                {layoutName}
+              </MenuItem>
             ))}
           </Select>
         </Paper>

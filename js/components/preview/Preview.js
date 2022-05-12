@@ -43,9 +43,9 @@ import { ViewerControls } from './viewerControls';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import RGL, { WidthProvider } from 'react-grid-layout';
-import { enableLayout, setCurrentLayout } from '../../reducers/layout/actions';
+import { setCurrentLayout } from '../../reducers/layout/actions';
 import { layoutItemNames } from '../../reducers/layout/constants';
-import { updateLayoutOnDependencyChange } from '../../reducers/layout/dispatchActions';
+import { useUpdateGridLayout } from './useUpdateGridLayout';
 
 const ReactGridLayout = WidthProvider(RGL);
 
@@ -121,8 +121,6 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
 
   const currentLayout = useSelector(state => state.layoutReducers.currentLayout);
   const layoutLocked = useSelector(state => state.layoutReducers.layoutLocked);
-  const panelsExpanded = useSelector(state => state.layoutReducers.panelsExpanded);
-  const selectedLayoutName = useSelector(state => state.layoutReducers.selectedLayoutName);
 
   /*
      Loading datasets
@@ -219,33 +217,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     dispatch(setCurrentLayout(newLayout));
   };
 
-  const ref = useRef();
-  const [height, setHeight] = useState(1);
-  useEffect(() => {
-    const node = ref.current;
-    const resizeObserver = new ResizeObserver(entries => {
-      const entry = entries[0];
-      setHeight(entry.borderBoxSize[0].blockSize);
-    });
-
-    resizeObserver.observe(node);
-
-    return () => {
-      resizeObserver.unobserve(node);
-    };
-  }, []);
-
-  useEffect(() => {
-    dispatch(enableLayout(true));
-
-    return () => {
-      dispatch(enableLayout(false));
-    };
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(updateLayoutOnDependencyChange(sidesOpen.LHS, sidesOpen.RHS, hideProjects, height, theme.spacing()));
-  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded, selectedLayoutName]);
+  const ref = useUpdateGridLayout(hideProjects);
 
   const renderItem = id => {
     switch (id) {

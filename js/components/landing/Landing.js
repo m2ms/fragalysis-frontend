@@ -15,6 +15,7 @@ import { resetProjectsReducer } from '../projects/redux/actions';
 
 const useStyles = makeStyles(theme => ({
   root: {
+    height: '100%',
     gap: theme.spacing(2),
     flexWrap: 'nowrap',
     padding: theme.spacing()

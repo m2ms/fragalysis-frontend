@@ -24,6 +24,7 @@ import { JobVariablesDialog } from './JobVariablesDialog';
 import { setSelectedRows } from './redux/actions';
 import { refreshJobsData } from '../../projects/redux/actions';
 import { loadDatasetsAndCompounds } from '../../datasets/redux/dispatchActions';
+import { JobDeleteDialog } from './JobDeleteDialog';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -86,6 +87,8 @@ export const JobTable = ({ expanded, onExpanded, onTabChange }) => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobInputsDialogOpen, setJobInputsDialogOpen] = useState(false);
   const [jobOutputsDialogOpen, setJobOutputsDialogOpen] = useState(false);
+
+  const [jobDeleteDialogOpen, setJobDeleteDialogOpen] = useState(false);
 
   const [columnSelectorAnchor, setColumnSelectorAnchor] = useState(null);
 
@@ -208,137 +211,148 @@ export const JobTable = ({ expanded, onExpanded, onTabChange }) => {
   }, [dispatch, selectedFlatRows]);
 
   return (
-    <div className={classes.root}>
-      <Panel
-        hasHeader
-        title="Job Table"
-        headerActions={[
-          <Button
-            color="inherit"
-            variant="text"
-            size="small"
-            onClick={() => dispatch(refreshJobsData())}
-            startIcon={<Refresh />}
-          >
-            Refresh
-          </Button>,
-          <Button
-            color="inherit"
-            variant="text"
-            size="small"
-            onClick={event => setColumnSelectorAnchor(event.currentTarget)}
-            startIcon={<ViewColumn />}
-          >
-            Visible columns
-          </Button>,
-          <Button
-            color="inherit"
-            variant="text"
-            size="small"
-            onClick={() => onTabChange('projectHistory')}
-            startIcon={<DynamicFeed />}
-          >
-            Project History
-          </Button>
-        ]}
-        hasExpansion
-        defaultExpanded={expanded}
-        onExpandChange={expanded => onExpanded(expanded)}
-      >
-        <div className={classes.containerExpanded}>
-          <Table className={classes.table} {...getTableProps()}>
-            <TableHead>
-              {headerGroups.map(headerGroup => (
-                <TableRow {...headerGroup.getHeaderGroupProps()} className={classes.row}>
-                  {headerGroup.headers.map(column => {
-                    if (column.canSort) {
-                      // Title is unused
-                      const { title, ...rest } = column.getSortByToggleProps();
+    <>
+      <div className={classes.root}>
+        <Panel
+          hasHeader
+          title="Job Table"
+          headerActions={[
+            <Button
+              color="inherit"
+              variant="text"
+              size="small"
+              onClick={() => dispatch(refreshJobsData())}
+              startIcon={<Refresh />}
+            >
+              Refresh
+            </Button>,
+            <Button
+              color="inherit"
+              variant="text"
+              size="small"
+              onClick={event => setColumnSelectorAnchor(event.currentTarget)}
+              startIcon={<ViewColumn />}
+            >
+              Visible columns
+            </Button>,
+            <Button
+              color="inherit"
+              variant="text"
+              size="small"
+              onClick={() => onTabChange('projectHistory')}
+              startIcon={<DynamicFeed />}
+            >
+              Project History
+            </Button>
+          ]}
+          hasExpansion
+          defaultExpanded={expanded}
+          onExpandChange={expanded => onExpanded(expanded)}
+        >
+          <div className={classes.containerExpanded}>
+            <Table className={classes.table} {...getTableProps()}>
+              <TableHead>
+                {headerGroups.map(headerGroup => (
+                  <TableRow {...headerGroup.getHeaderGroupProps()} className={classes.row}>
+                    {headerGroup.headers.map(column => {
+                      if (column.canSort) {
+                        // Title is unused
+                        const { title, ...rest } = column.getSortByToggleProps();
 
-                      return (
-                        <Tooltip title={`Sort by ${column.displayName}`} {...column.getHeaderProps()}>
-                          <TableCell {...rest}>
-                            <div className={classes.flexCell}>
-                              {column.render('Header')}
-                              <TableSortLabel
-                                className={!column.isSorted ? classes.sortIconInactive : undefined}
-                                active={true}
-                                direction={column.isSortedDesc ? 'desc' : 'asc'}
-                              />
-                            </div>
-                          </TableCell>
-                        </Tooltip>
-                      );
-                    }
-                    return <TableCell {...column.getHeaderProps()}>{column.render('Header')}</TableCell>;
-                  })}
-                </TableRow>
-              ))}
-            </TableHead>
-            <TableBody {...getTableBodyProps()}>
-              {rows.map(row => {
-                prepareRow(row);
-
-                return (
-                  <TableRow {...row.getRowProps()} className={classes.row}>
-                    {row.cells.map(cell => (
-                      <TableCell {...cell.getCellProps()}>{cell.render('Cell')}</TableCell>
-                    ))}
+                        return (
+                          <Tooltip title={`Sort by ${column.displayName}`} {...column.getHeaderProps()}>
+                            <TableCell {...rest}>
+                              <div className={classes.flexCell}>
+                                {column.render('Header')}
+                                <TableSortLabel
+                                  className={!column.isSorted ? classes.sortIconInactive : undefined}
+                                  active={true}
+                                  direction={column.isSortedDesc ? 'desc' : 'asc'}
+                                />
+                              </div>
+                            </TableCell>
+                          </Tooltip>
+                        );
+                      }
+                      return <TableCell {...column.getHeaderProps()}>{column.render('Header')}</TableCell>;
+                    })}
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableHead>
+              <TableBody {...getTableBodyProps()}>
+                {rows.map(row => {
+                  prepareRow(row);
 
-          <div className={classes.buttonRow}>
-            <MUIButton variant="contained" color="primary" disabled={!selectedFlatRows.length}>
-              Remove selected
-            </MUIButton>
-            <MUIButton variant="contained" color="primary" disabled={selectedFlatRows.length < 2}>
-              Combine to new job
-            </MUIButton>
+                  return (
+                    <TableRow {...row.getRowProps()} className={classes.row}>
+                      {row.cells.map(cell => (
+                        <TableCell {...cell.getCellProps()}>{cell.render('Cell')}</TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            <div className={classes.buttonRow}>
+              <MUIButton
+                variant="contained"
+                color="primary"
+                disabled={!selectedFlatRows.length}
+                onClick={() => setJobDeleteDialogOpen(true)}
+              >
+                Remove selected
+              </MUIButton>
+              <MUIButton variant="contained" color="primary" disabled={selectedFlatRows.length < 2}>
+                Combine to new job
+              </MUIButton>
+            </div>
           </div>
+        </Panel>
+      </div>
 
-          <JobVariablesDialog
-            open={jobInputsDialogOpen}
-            onClose={() => setJobInputsDialogOpen(false)}
-            title="Job Inputs"
-            variableType="inputs"
-            jobInfo={selectedJob}
-          />
-          <JobVariablesDialog
-            open={jobOutputsDialogOpen}
-            onClose={() => setJobOutputsDialogOpen(false)}
-            title="Job Outputs"
-            variableType="outputs"
-            jobInfo={selectedJob}
-          />
-          <Popover
-            open={!!columnSelectorAnchor}
-            anchorEl={columnSelectorAnchor}
-            onClose={() => setColumnSelectorAnchor(null)}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left'
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left'
-            }}
-          >
-            <FormGroup className={classes.columnSelector}>
-              {allColumns.map(column => (
-                <FormControlLabel
-                  key={column.id}
-                  className={classes.label}
-                  control={<Checkbox className={classes.checkbox} {...column.getToggleHiddenProps()} />}
-                  label={column.displayName}
-                />
-              ))}
-            </FormGroup>
-          </Popover>
-        </div>
-      </Panel>
-    </div>
+      <JobVariablesDialog
+        open={jobInputsDialogOpen}
+        onClose={() => setJobInputsDialogOpen(false)}
+        title="Job Inputs"
+        variableType="inputs"
+        jobInfo={selectedJob}
+      />
+
+      <JobVariablesDialog
+        open={jobOutputsDialogOpen}
+        onClose={() => setJobOutputsDialogOpen(false)}
+        title="Job Outputs"
+        variableType="outputs"
+        jobInfo={selectedJob}
+      />
+
+      <Popover
+        open={!!columnSelectorAnchor}
+        anchorEl={columnSelectorAnchor}
+        onClose={() => setColumnSelectorAnchor(null)}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left'
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left'
+        }}
+      >
+        <FormGroup className={classes.columnSelector}>
+          {allColumns.map(column => (
+            <FormControlLabel
+              key={column.id}
+              className={classes.label}
+              control={<Checkbox className={classes.checkbox} {...column.getToggleHiddenProps()} />}
+              label={column.displayName}
+            />
+          ))}
+        </FormGroup>
+      </Popover>
+
+      <JobDeleteDialog open={jobDeleteDialogOpen} onClose={() => setJobDeleteDialogOpen(false)} />
+    </>
   );
 };

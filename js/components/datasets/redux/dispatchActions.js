@@ -32,7 +32,8 @@ import {
   dragDropFinished,
   disableDatasetMoleculeNglControlButton,
   enableDatasetMoleculeNglControlButton,
-  setArrowUpDown
+  setArrowUpDown,
+  removeMoleculeFromCompoundsOfDatasetToBuy
 } from './actions';
 import { base_url } from '../../routes/constants';
 import {
@@ -1040,5 +1041,38 @@ export const withDisabledDatasetMoleculesNglControlButtons = (
     moleculeIds.forEach(moleculeId => {
       dispatch(enableDatasetMoleculeNglControlButton(datasetId, moleculeId, type));
     });
+  });
+};
+
+const removeTypeCompound = {
+  ligand: removeDatasetLigand,
+  protein: removeDatasetHitProtein,
+  complex: removeDatasetComplex,
+  surface: removeDatasetSurface
+};
+
+export const removeObjectsFromDeletedDataset = (datasetID, type, stage) => (dispatch, getState) => {
+  const state = getState();
+
+  const datasetMolecules = state.datasetsReducers.moleculeLists[datasetID];
+  const list = state.datasetsReducers[`${type}Lists`][datasetID];
+
+  list.forEach(targetID => {
+    const data = datasetMolecules.find(molecule => molecule.id === targetID);
+
+    dispatch(removeTypeCompound[type](stage, data, colourList[data.id % colourList.length], datasetID, true));
+  });
+};
+
+export const unselectMoleculesFromDeletedDataset = datasetID => (dispatch, getState) => {
+  const state = getState();
+
+  const datasetMolecules = state.datasetsReducers.moleculeLists[datasetID];
+  const compoundsToBuy = state.datasetsReducers.compoundsToBuyDatasetMap[datasetID];
+
+  compoundsToBuy.forEach(moleculeID => {
+    const data = datasetMolecules.find(molecule => molecule.id === moleculeID);
+
+    dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, data.id, data.name, true));
   });
 };

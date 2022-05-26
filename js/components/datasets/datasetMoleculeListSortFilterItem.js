@@ -99,11 +99,11 @@ export const DatasetMoleculeListSortFilter = memo(
     // Because Slider works only with Integers we convert Float to Int by multiplying with 100
     const MULT = 100;
 
-    let normMin = isBoolean ? min : (isFloat ? min * MULT : min);
-    let normMax = isBoolean ? max : (isFloat ? max * MULT : max);
+    let normMin = isBoolean ? min : isFloat ? min * MULT : min;
+    let normMax = isBoolean ? max : isFloat ? max * MULT : max;
 
-    let normMinValue = isBoolean ? minValue : (isFloat ? minValue * MULT : minValue);
-    let normMaxValue = isBoolean ? maxValue : (isFloat ? maxValue * MULT : maxValue);
+    let normMinValue = isBoolean ? minValue : isFloat ? minValue * MULT : minValue;
+    let normMaxValue = isBoolean ? maxValue : isFloat ? maxValue * MULT : maxValue;
 
     let classes = useStyles();
     //const [sliderValue, setSliderValue] = useState([0, 100]); //useState([normMinValue, normMaxValue]); // Internal state of slider

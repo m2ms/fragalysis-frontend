@@ -15,6 +15,11 @@ export const setDataset = datasetList => ({
   }))
 });
 
+export const removeDataset = datasetID => ({
+  type: constants.REMOVE_DATASET,
+  payload: datasetID
+});
+
 export const addMoleculeList = (datasetID, moleculeList) => ({
   type: constants.ADD_MOLECULELIST,
   payload: { datasetID, moleculeList }

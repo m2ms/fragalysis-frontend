@@ -1057,7 +1057,7 @@ export const removeObjectsFromDeletedDataset = (datasetID, type, stage) => (disp
   const datasetMolecules = state.datasetsReducers.moleculeLists[datasetID];
   const list = state.datasetsReducers[`${type}Lists`][datasetID];
 
-  list.forEach(targetID => {
+  list?.forEach(targetID => {
     const data = datasetMolecules.find(molecule => molecule.id === targetID);
 
     dispatch(removeTypeCompound[type](stage, data, colourList[data.id % colourList.length], datasetID, true));

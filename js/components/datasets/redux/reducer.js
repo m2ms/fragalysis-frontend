@@ -151,6 +151,16 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
     case constants.SET_DATASET:
       return Object.assign({}, state, { datasets: action.payload });
 
+    case constants.REMOVE_DATASET: {
+      const datasets = [...state.datasets];
+      const index = datasets.findIndex(dataset => dataset.id === action.payload);
+      if (index > -1) {
+        datasets.splice(index, 1);
+        return { ...state, datasets };
+      }
+      return state;
+    }
+
     case constants.REPLACE_ALL_MOLECULELISTS:
       return { ...state, moleculeLists: action.payload };
 

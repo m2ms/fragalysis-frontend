@@ -100,10 +100,10 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const tabValue = useSelector(state => state.datasetsReducers.tabValue);
 
   /*
-     Loading datasets
-   */
+    Loading datasets
+  */
   useEffect(() => {
-    if (customDatasets.length === 0 && isTrackingRestoring === false) {
+    if (!isTrackingRestoring) {
       dispatch(setMoleculeListIsLoading(true));
       dispatch(loadDataSets(target_on))
         .then(results => {
@@ -120,7 +120,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
           dispatch(setMoleculeListIsLoading(false));
         });
     }
-  }, [customDatasets.length, dispatch, target_on, isTrackingRestoring]);
+  }, [dispatch, target_on, isTrackingRestoring]);
 
   useEffect(() => {
     const moleculeListsCount = Object.keys(moleculeLists || {}).length;

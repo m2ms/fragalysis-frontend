@@ -3,7 +3,7 @@ import React, { useContext, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { VIEWS } from '../../../constants/constants';
 import { Button } from '../../common/Inputs/Button';
-import { setTabValue } from '../../datasets/redux/actions';
+import { removeDataset, removeMoleculeList, setTabValue } from '../../datasets/redux/actions';
 import {
   clearDatasetSettings,
   removeObjectsFromDeletedDataset,
@@ -40,7 +40,8 @@ export const JobDeleteDialog = ({ open, onClose }) => {
               setLoading(true);
 
               selectedJobs.forEach(job => {
-                const datasetID = job.dataset_id; // TODO replace with real field
+                //const datasetID = job.dataset_id; // TODO replace with real field
+                const datasetID = 'AlessandroContini-NwatMM-GBSAcovalentrun1GdwBdDg';
 
                 dispatch(clearDatasetSettings(datasetID));
 
@@ -56,6 +57,10 @@ export const JobDeleteDialog = ({ open, onClose }) => {
                 if (selectedDatasetIndex === datasets.findIndex(dataset => dataset.id === datasetID)) {
                   dispatch(setTabValue(0, 0, '', '', true));
                 }
+
+                // Remove dataset and its molecules
+                dispatch(removeDataset(datasetID));
+                dispatch(removeMoleculeList(datasetID));
               });
 
               // TODO API calls

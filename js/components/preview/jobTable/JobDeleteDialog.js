@@ -3,6 +3,7 @@ import React, { useContext, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { VIEWS } from '../../../constants/constants';
 import { Button } from '../../common/Inputs/Button';
+import { setTabValue } from '../../datasets/redux/actions';
 import {
   clearDatasetSettings,
   removeObjectsFromDeletedDataset,
@@ -14,6 +15,9 @@ import { getSelectedJobs } from './redux/selectors';
 export const JobDeleteDialog = ({ open, onClose }) => {
   const dispatch = useDispatch();
   const selectedJobs = useSelector(getSelectedJobs);
+
+  const datasets = useSelector(state => state.datasetsReducers.datasets);
+  const selectedDatasetIndex = useSelector(state => state.datasetsReducers.selectedDatasetIndex);
 
   const { getNglView } = useContext(NglContext);
   const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
@@ -35,13 +39,9 @@ export const JobDeleteDialog = ({ open, onClose }) => {
             try {
               setLoading(true);
 
-              // TODO API calls
-              const promises = [];
-
-              await Promise.all(promises);
-
               selectedJobs.forEach(job => {
                 const datasetID = job.dataset_id; // TODO replace with real field
+
                 dispatch(clearDatasetSettings(datasetID));
 
                 // Removes all objects from NGL
@@ -51,7 +51,17 @@ export const JobDeleteDialog = ({ open, onClose }) => {
                 dispatch(removeObjectsFromDeletedDataset(datasetID, 'surface', stage));
                 // Unselects selected molecules
                 dispatch(unselectMoleculesFromDeletedDataset(datasetID));
+
+                // If the dataset is selected switch to the first RHS tab
+                if (selectedDatasetIndex === datasets.findIndex(dataset => dataset.id === datasetID)) {
+                  dispatch(setTabValue(0, 0, '', '', true));
+                }
               });
+
+              // TODO API calls
+              const promises = [];
+
+              await Promise.all(promises);
             } catch (err) {
               console.error(err);
             } finally {

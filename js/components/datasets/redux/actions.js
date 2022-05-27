@@ -32,9 +32,10 @@ export const setSelectedDatasetIndex = (oldValue, tabValue, tabName, oldName, sk
   skipTracking: skipTracking
 });
 
-export const setTabValue = (oldValue, tabValue, tabName, oldName) => ({
+export const setTabValue = (oldValue, tabValue, tabName, oldName, skipTracking = false) => ({
   type: constants.SET_TAB_VALUE,
-  payload: { oldValue: oldValue, value: tabValue, name: tabName, oldName: oldName }
+  payload: { oldValue: oldValue, value: tabValue, name: tabName, oldName: oldName },
+  skipTracking
 });
 
 export const replaceAllMoleculeLists = allMoleculeLists => ({

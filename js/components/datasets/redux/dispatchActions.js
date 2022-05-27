@@ -1070,7 +1070,7 @@ export const unselectMoleculesFromDeletedDataset = datasetID => (dispatch, getSt
   const datasetMolecules = state.datasetsReducers.moleculeLists[datasetID];
   const compoundsToBuy = state.datasetsReducers.compoundsToBuyDatasetMap[datasetID];
 
-  compoundsToBuy.forEach(moleculeID => {
+  compoundsToBuy?.forEach(moleculeID => {
     const data = datasetMolecules.find(molecule => molecule.id === moleculeID);
 
     dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, data.id, data.name, true));

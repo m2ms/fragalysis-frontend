@@ -3,9 +3,7 @@ import {
   appendSelectedTagList,
   removeFromSelectedTagList,
   appendToDisplayAllNGLList,
-  removeFromDisplayAllNGLList,
-  appendToListAllForTagList,
-  removeFromListAllForTagList
+  removeFromDisplayAllNGLList
 } from '../../../../reducers/selection/actions';
 import { CATEGORY_TYPE } from '../../../../constants/constants';
 import { addLigand, removeLigand } from '../../molecule/redux/dispatchActions';
@@ -147,14 +145,6 @@ export const hideAllMolsInNGL = (stage, tag) => (dispatch, getState) => {
     dispatch(removeLigand(stage, mol, true));
   });
   dispatch(removeFromDisplayAllNGLList(tag));
-};
-
-export const displayInListForTag = tag => dispatch => {
-  dispatch(appendToListAllForTagList(tag));
-};
-
-export const hideInListForTag = tag => dispatch => {
-  dispatch(removeFromListAllForTagList(tag));
 };
 
 export const updateTagProp = (tag, value, prop) => (dispatch, getState) => {

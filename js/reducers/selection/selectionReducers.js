@@ -29,7 +29,6 @@ export const INITIAL_STATE = {
   selectedTagList: [],
   isGlobalEdit: false,
 
-  listAllList: [],
   displayAllInNGLList: [],
 
   compoundsOfVectors: null, // list of all vector's compounds to pick
@@ -224,21 +223,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       let diminishedQualityList = new Set(state.qualityList);
       diminishedQualityList.delete(action.item.id);
       return Object.assign({}, state, { qualityList: [...diminishedQualityList] });
-
-    case constants.SET_LIST_ALL_FOR_TAG_LIST:
-      let newListAllForTag = new Set();
-      action.listAll.forEach(f => {
-        newListAllForTag.add(f);
-      });
-      return Object.assign({}, state, { listAllList: [...newListAllForTag] });
-
-    case constants.APPEND_TO_LIST_ALL_FOR_TAG_LIST:
-      return Object.assign({}, state, { listAllList: [...new Set([...state.listAllList, action.item.id])] });
-
-    case constants.REMOVE_FROM_LIST_ALL_FOR_TAG_LIST:
-      let diminishedListAllList = new Set(state.listAllList);
-      diminishedListAllList.delete(action.item.id);
-      return Object.assign({}, state, { listAllList: [...diminishedListAllList] });
 
     case constants.SET_DISPLAY_ALL_NGL_LIST:
       let newDisplayAllInNGLList = new Set();

@@ -214,30 +214,6 @@ export const removeFromDensityListCustom = function(item, skipTracking = false) 
   };
 };
 
-export const setListAllForTagList = (listAll, skipTracking = false) => {
-  return {
-    type: constants.SET_LIST_ALL_FOR_TAG_LIST,
-    listAll: listAll,
-    skipTracking
-  };
-};
-
-export const appendToListAllForTagList = (item, skipTracking = false) => {
-  return {
-    type: constants.APPEND_TO_LIST_ALL_FOR_TAG_LIST,
-    item: item,
-    skipTracking
-  };
-};
-
-export const removeFromListAllForTagList = (item, skipTracking = false) => {
-  return {
-    type: constants.REMOVE_FROM_LIST_ALL_FOR_TAG_LIST,
-    item: item,
-    skipTracking
-  };
-};
-
 export const setDisplayAllNGLList = (displayAllInNGLList, skipTracking = false) => {
   return {
     type: constants.SET_DISPLAY_ALL_NGL_LIST,

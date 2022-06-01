@@ -410,11 +410,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_NEXT_X_MOLECULES:
       return { ...state, nextXMolecules: action.nextXMolecules };
 
-    case constants.RESET_SELECTION_STATE_ON_SNAPSHOT_CHANGE: {
-      const { categoryList } = state;
-      return { ...INITIAL_STATE, categoryList };
-    }
-
     // Cases like: @@redux/INIT
     default:
       return state;

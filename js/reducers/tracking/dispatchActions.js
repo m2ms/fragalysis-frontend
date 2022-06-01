@@ -13,7 +13,7 @@ import {
   appendToMolListToEdit,
   removeFromMolListToEdit,
   setNextXMolecules,
-  resetSelectionStateOnSnapshotChange
+  resetSelectionState
 } from '../selection/actions';
 import {
   resetReducersForRestoringActions,
@@ -3589,7 +3589,7 @@ export const changeSnapshot = (projectID, snapshotID, nglViewList, stage) => asy
   let snapshotActions = [...listToSet];
   dispatch(setCurrentActionsList(snapshotActions));
 
-  dispatch(resetSelectionStateOnSnapshotChange());
+  dispatch(resetSelectionState());
   dispatch(resetDatasetsStateOnSnapshotChange());
   dispatch(resetViewerControlsState());
   dispatch(resetNglTrackingState());

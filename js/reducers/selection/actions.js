@@ -469,13 +469,6 @@ export const setDisplayUntaggedMolecules = displayUntaggedMolecules => {
   };
 };
 
-export const setAssociatedDownloadTagName = tagName => {
-  return {
-    type: constants.SET_ASSOCIATED_DOWNLOAD_TAG_NAME,
-    tagName: tagName
-  };
-};
-
 //this is dummy action because we just need to record given action by tracking reducer
 //so we can undo, redo it and also restore from snapshot
 export const setSelectAllMolecules = listOfNames => {

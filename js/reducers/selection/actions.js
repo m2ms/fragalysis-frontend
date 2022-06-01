@@ -288,17 +288,6 @@ export const resetSelectionState = function() {
     type: constants.RESET_SELECTION_STATE
   };
 };
-export const incrementCountOfPendingVectorLoadRequests = () => {
-  return {
-    type: constants.INCREMENT_COUNT_OF_PENDING_VECTOR_LOAD_REQUESTS
-  };
-};
-
-export const decrementCountOfPendingVectorLoadRequests = () => {
-  return {
-    type: constants.DECREMENT_COUNT_OF_PENDING_VECTOR_LOAD_REQUESTS
-  };
-};
 
 export const setMolGroupSelection = mol_group_selection => ({
   type: constants.SET_MOL_GROUP_SELECTION,

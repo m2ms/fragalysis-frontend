@@ -9,8 +9,6 @@ import {
   appendQualityList,
   appendVectorOnList,
   appendInformationList,
-  decrementCountOfPendingVectorLoadRequests,
-  incrementCountOfPendingVectorLoadRequests,
   removeFromProteinList,
   removeFromComplexList,
   removeFromSurfaceList,
@@ -145,7 +143,6 @@ const handleVector = (json, stage, data) => (dispatch, getState) => {
 export const addVector = (stage, data, skipTracking = false) => async (dispatch, getState) => {
   const currentVector = getState().selectionReducers.currentVector;
 
-  dispatch(incrementCountOfPendingVectorLoadRequests());
   dispatch(appendVectorOnList(generateMoleculeId(data), skipTracking));
   dispatch(selectVectorAndResetCompounds(currentVector));
 
@@ -174,7 +171,6 @@ export const addVector = (stage, data, skipTracking = false) => async (dispatch,
     .then(() => api({ url: getViewUrl('vector', data) }))
     .then(response => dispatch(handleVector(response.data.vectors, stage, data)))
     .finally(() => {
-      dispatch(decrementCountOfPendingVectorLoadRequests());
       const currentOrientation = stage.viewerControls.getOrientation();
       dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
     });

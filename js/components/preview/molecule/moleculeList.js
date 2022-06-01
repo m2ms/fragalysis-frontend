@@ -24,7 +24,6 @@ import { ComputeSize } from '../../../utils/computeSize';
 import { moleculeProperty } from './helperConstants';
 import { VIEWS } from '../../../constants/constants';
 import { NglContext } from '../../nglView/nglProvider';
-// import { useDisableUserInteraction } from '../../helpers/useEnableUserInteracion';
 import classNames from 'classnames';
 import {
   addVector,
@@ -276,8 +275,6 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   const filterRef = useRef();
   const tagEditorRef = useRef();
   const [tagEditorAnchorEl, setTagEditorAnchorEl] = useState(null);
-
-  // const disableUserInteraction = useDisableUserInteraction();
 
   if (directDisplay && directDisplay.target) {
     target = directDisplay.target;

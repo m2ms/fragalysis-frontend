@@ -310,7 +310,6 @@ const MoleculeView = memo(
       useSelector(state => state.previewReducers.molecule.disableNglControlButtons[currentID]) || {};
 
     let tagEditIconVisible = true;
-    // const disableUserInteraction = useDisableUserInteraction();
 
     const oldUrl = useRef('');
     const setOldUrl = url => {

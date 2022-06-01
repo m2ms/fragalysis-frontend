@@ -16,7 +16,6 @@ export const INITIAL_STATE = {
   qualityList: [],
   informationList: [],
   vectorOnList: [],
-  countOfPendingVectorLoadRequests: 0,
   mol_group_selection: [],
   object_selection: undefined,
   filter: undefined,
@@ -294,17 +293,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.RESET_SELECTION_STATE:
       return INITIAL_STATE;
-
-    case constants.INCREMENT_COUNT_OF_PENDING_VECTOR_LOAD_REQUESTS: {
-      return Object.assign({}, state, {
-        countOfPendingVectorLoadRequests: state.countOfPendingVectorLoadRequests + 1
-      });
-    }
-    case constants.DECREMENT_COUNT_OF_PENDING_VECTOR_LOAD_REQUESTS: {
-      return Object.assign({}, state, {
-        countOfPendingVectorLoadRequests: state.countOfPendingVectorLoadRequests - 1
-      });
-    }
 
     case constants.SET_MOL_GROUP_SELECTION:
       return Object.assign({}, state, {

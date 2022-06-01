@@ -320,3 +320,11 @@ export const removeFromTagList = function(item, skipTracking = false) {
     skipTracking
   };
 };
+
+export const setCategoryList = function(categoryList, skipTracking = false) {
+  return {
+    type: constants.SET_CATEGORY_LIST,
+    categoryList: categoryList,
+    skipTracking
+  };
+};

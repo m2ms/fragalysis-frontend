@@ -18,7 +18,7 @@ const useStyles = makeStyles(theme => ({
 const TagCategory = memo(({ headerPadding = 0, tagClickCallback, disabled = false }) => {
   const classes = useStyles();
 
-  const categoryList = useSelector(state => state.selectionReducers.categoryList);
+  const categoryList = useSelector(state => state.apiReducers.categoryList);
   let tagList = useSelector(state => state.apiReducers.tagList);
   tagList = tagList.sort(compareTagsAsc);
 

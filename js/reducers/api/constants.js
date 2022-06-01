@@ -45,5 +45,7 @@ export const constants = {
   SET_TAG_LIST: prefix + 'SET_TAG_LIST',
   UPDATE_TAG: prefix + 'UPDATE_TAG',
   APPEND_TAG_LIST: prefix + 'APPEND_TAG_LIST',
-  REMOVE_FROM_TAG_LIST: prefix + 'REMOVE_FROM_TAG_LIST'
+  REMOVE_FROM_TAG_LIST: prefix + 'REMOVE_FROM_TAG_LIST',
+
+  SET_CATEGORY_LIST: prefix + 'SET_CATEGORY_LIST'
 };

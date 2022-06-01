@@ -26,7 +26,6 @@ export const INITIAL_STATE = {
   molForTagEdit: null,
   tagFilteringMode: false,
 
-  categoryList: [],
   selectedTagList: [],
   isGlobalEdit: false,
 
@@ -414,21 +413,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_HIDE_ALL:
       return state;
-
-    case constants.SET_CATEGORY_LIST:
-      let newCategoryList = new Set();
-      action.categoryList.forEach(f => {
-        newCategoryList.add(f);
-      });
-      return Object.assign({}, state, { categoryList: [...newCategoryList] });
-
-    case constants.APPEND_CATEGORY_LIST:
-      return Object.assign({}, state, { categoryList: [...new Set([...state.categoryList, action.item])] });
-
-    case constants.REMOVE_FROM_CATEGORY_LIST:
-      let diminishedCategoryList = new Set(state.categoryList);
-      diminishedCategoryList.delete(action.item);
-      return Object.assign({}, state, { categoryList: [...diminishedCategoryList] });
 
     case constants.SET_SELECTED_TAG_LIST:
       let newSelectedTagList = new Set();

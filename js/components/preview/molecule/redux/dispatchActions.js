@@ -655,7 +655,7 @@ export const getFirstMolecule = () => (dispatch, getState) => {
 
 export const getSiteCategoryId = () => (dispatch, getState) => {
   const state = getState();
-  const categoriesList = state.selectionReducers.categoryList;
+  const categoriesList = state.apiReducers.categoryList;
   const foundCategories = categoriesList.filter(c => c.category === CATEGORY_TYPE.SITE);
   if (foundCategories && foundCategories.length > 0) {
     return foundCategories[0].id;

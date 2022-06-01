@@ -2,7 +2,6 @@ import {
   setSelectedTagList,
   appendSelectedTagList,
   removeFromSelectedTagList,
-  setCategoryList,
   appendToDisplayAllNGLList,
   removeFromDisplayAllNGLList,
   appendToListAllForTagList,
@@ -32,7 +31,8 @@ import {
   setNoTagsReceived,
   updateTag,
   setTagList,
-  appendTagList
+  appendTagList,
+  setCategoryList
 } from '../../../../reducers/api/actions';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
 import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';

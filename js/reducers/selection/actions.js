@@ -447,14 +447,6 @@ export const removeFromSelectedTagList = function(item, skipTracking = false) {
   };
 };
 
-export const setCategoryList = function(categoryList, skipTracking = false) {
-  return {
-    type: constants.SET_CATEGORY_LIST,
-    categoryList: categoryList,
-    skipTracking
-  };
-};
-
 export const setTagEditorOpen = isOpen => {
   return {
     type: constants.SET_TAG_EDITOR_OPEN,

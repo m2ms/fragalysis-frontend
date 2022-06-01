@@ -46,7 +46,8 @@ export const INITIAL_STATE = {
   downloadTags: [],
   directDownloadInProgress: false,
   snapshotDownloadUrl: null,
-  tagList: []
+  tagList: [],
+  categoryList: []
 };
 
 export const RESET_TARGET_STATE = {
@@ -338,6 +339,13 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
       let diminishedTagList = new Set(state.tagList);
       diminishedTagList.delete(action.item);
       return Object.assign({}, state, { tagList: [...diminishedTagList] });
+
+    case constants.SET_CATEGORY_LIST:
+      let newCategoryList = new Set();
+      action.categoryList.forEach(f => {
+        newCategoryList.add(f);
+      });
+      return Object.assign({}, state, { categoryList: [...newCategoryList] });
 
     case constants.RESET_TARGET_STATE:
       return Object.assign({}, state, RESET_TARGET_STATE);

@@ -3,8 +3,6 @@ import {
   appendSelectedTagList,
   removeFromSelectedTagList,
   setCategoryList,
-  setTagList,
-  appendTagList,
   appendToDisplayAllNGLList,
   removeFromDisplayAllNGLList,
   appendToListAllForTagList,
@@ -23,8 +21,7 @@ import {
   setFragmentDisplayList,
   setMolGroupSelection,
   setVectorList,
-  setVectorOnList,
-  updateTag
+  setVectorOnList
 } from '../../../../reducers/selection/actions';
 import {
   setMolGroupOn,
@@ -32,7 +29,10 @@ import {
   setAllMolLists,
   setMoleculeTags,
   setDownloadTags,
-  setNoTagsReceived
+  setNoTagsReceived,
+  updateTag,
+  setTagList,
+  appendTagList
 } from '../../../../reducers/api/actions';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
 import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
@@ -63,13 +63,13 @@ export const removeSelectedTag = tagItem => dispatch => {
 
 export const selectAllTags = () => (dispatch, getState) => {
   const state = getState();
-  let tagList = state.selectionReducers.tagList;
+  let tagList = state.apiReducers.tagList;
   tagList.forEach(t => dispatch(appendSelectedTagList(t)));
 };
 
 export const clearAllTags = () => (dispatch, getState) => {
   const state = getState();
-  let tagList = state.selectionReducers.tagList;
+  let tagList = state.apiReducers.tagList;
   tagList.forEach(t => dispatch(removeFromSelectedTagList(t)));
 };
 

@@ -19,7 +19,7 @@ const TagCategory = memo(({ headerPadding = 0, tagClickCallback, disabled = fals
   const classes = useStyles();
 
   const categoryList = useSelector(state => state.selectionReducers.categoryList);
-  let tagList = useSelector(state => state.selectionReducers.tagList);
+  let tagList = useSelector(state => state.apiReducers.tagList);
   tagList = tagList.sort(compareTagsAsc);
 
   const siteCategory = categoryList.find(c => c.category === CATEGORY_TYPE.SITE);

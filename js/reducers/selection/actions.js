@@ -455,30 +455,6 @@ export const setCategoryList = function(categoryList, skipTracking = false) {
   };
 };
 
-export const setTagList = function(tagList, skipTracking = false) {
-  return {
-    type: constants.SET_TAG_LIST,
-    tagList: tagList,
-    skipTracking
-  };
-};
-
-export const appendTagList = function(item, skipTracking = false) {
-  return {
-    type: constants.APPEND_TAG_LIST,
-    item: item,
-    skipTracking
-  };
-};
-
-export const removeFromTagList = function(item, skipTracking = false) {
-  return {
-    type: constants.REMOVE_FROM_TAG_LIST,
-    item: item,
-    skipTracking
-  };
-};
-
 export const setTagEditorOpen = isOpen => {
   return {
     type: constants.SET_TAG_EDITOR_OPEN,
@@ -497,14 +473,6 @@ export const setTagFilteringMode = isExclusive => {
   return {
     type: constants.SWITCH_TAG_FILTERING_MODE,
     mode: isExclusive
-  };
-};
-
-export const updateTag = (item, skipTracking = false) => {
-  return {
-    type: constants.UPDATE_TAG,
-    item: item,
-    skipTracking
   };
 };
 
@@ -599,4 +567,4 @@ export const setNextXMolecules = nextXMolecules => {
 
 export const resetSelectionStateOnSnapshotChange = () => ({
   type: constants.RESET_SELECTION_STATE_ON_SNAPSHOT_CHANGE
-})
+});

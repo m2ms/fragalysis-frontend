@@ -279,7 +279,7 @@ const MoleculeView = memo(
     const [img_data, setImg_data] = useState(img_data_init);
 
     const viewParams = useSelector(state => state.nglReducers.viewParams);
-    const tagList = useSelector(state => state.selectionReducers.tagList);
+    const tagList = useSelector(state => state.apiReducers.tagList);
 
     const { getNglView } = useContext(NglContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;

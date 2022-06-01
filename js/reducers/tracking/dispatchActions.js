@@ -1831,7 +1831,7 @@ const getMolGroup = (molGroupName, state) => {
 };
 
 const getTag = (tagId, state) => {
-  const tagList = state.selectionReducers.tagList;
+  const tagList = state.apiReducers.tagList;
   const tag = tagList.find(t => t.id === tagId);
   return tag;
 };

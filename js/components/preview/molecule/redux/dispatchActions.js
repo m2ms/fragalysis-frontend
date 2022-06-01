@@ -621,7 +621,7 @@ export const getFirstTag = () => (dispatch, getState) => {
   const siteCategoryId = dispatch(getSiteCategoryId());
   if (siteCategoryId) {
     const state = getState();
-    const tagsList = state.selectionReducers.tagList;
+    const tagsList = state.apiReducers.tagList;
     const foundTags = tagsList.filter(t => t.category_id === siteCategoryId);
     return foundTags && foundTags.length > 0 ? foundTags[0] : null;
   } else {

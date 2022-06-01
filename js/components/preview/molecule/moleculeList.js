@@ -264,7 +264,7 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   const all_mol_lists = useSelector(state => state.apiReducers.all_mol_lists);
   const directDisplay = useSelector(state => state.apiReducers.direct_access);
   const directAccessProcessed = useSelector(state => state.apiReducers.direct_access_processed);
-  const tags = useSelector(state => state.selectionReducers.tagList);
+  const tags = useSelector(state => state.apiReducers.tagList);
   const noTagsReceived = useSelector(state => state.apiReducers.noTagsReceived);
   const categories = useSelector(state => state.selectionReducers.categoryList);
 

@@ -27,7 +27,6 @@ export const INITIAL_STATE = {
   tagFilteringMode: false,
 
   categoryList: [],
-  tagList: [],
   selectedTagList: [],
   isGlobalEdit: false,
 
@@ -431,36 +430,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       diminishedCategoryList.delete(action.item);
       return Object.assign({}, state, { categoryList: [...diminishedCategoryList] });
 
-    case constants.SET_TAG_LIST:
-      let newTagList = new Set();
-      action.tagList.forEach(f => {
-        newTagList.add(f);
-      });
-      return Object.assign({}, state, { tagList: [...newTagList] });
-
-    case constants.UPDATE_TAG:
-      let listWithUpdatedTag = [...state.tagList];
-      let foundTags = listWithUpdatedTag.filter(t => t.id === action.item.id);
-      if (foundTags && foundTags.length > 0) {
-        let foundTag = foundTags[0];
-        foundTag.tag = action.item.tag;
-        foundTag.colour = action.item.colour;
-        foundTag.category_id = action.item.category_id;
-        foundTag.discourse_url = action.item.discourse_url;
-
-        return { ...state, tagList: [...listWithUpdatedTag] };
-      } else {
-        return state;
-      }
-
-    case constants.APPEND_TAG_LIST:
-      return Object.assign({}, state, { tagList: [...new Set([...state.tagList, action.item])] });
-
-    case constants.REMOVE_FROM_TAG_LIST:
-      let diminishedTagList = new Set(state.tagList);
-      diminishedTagList.delete(action.item);
-      return Object.assign({}, state, { tagList: [...diminishedTagList] });
-
     case constants.SET_SELECTED_TAG_LIST:
       let newSelectedTagList = new Set();
       action.selectedTagList.forEach(f => {
@@ -513,8 +482,8 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return { ...state, nextXMolecules: action.nextXMolecules };
 
     case constants.RESET_SELECTION_STATE_ON_SNAPSHOT_CHANGE: {
-      const { categoryList, tagList } = state;
-      return { ...INITIAL_STATE, categoryList, tagList };
+      const { categoryList } = state;
+      return { ...INITIAL_STATE, categoryList };
     }
 
     // Cases like: @@redux/INIT

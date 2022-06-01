@@ -38,7 +38,6 @@ export const INITIAL_STATE = {
   //   [vectorID] :{}  // based on currentVector  (smile)
   // }
   currentVector: null, // selected vector smile (ID) of compoundsOfVectors
-  displayedMoleculesInHitNav: [],
   moleculesToEdit: [],
 
   // tags
@@ -393,9 +392,6 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       let diminishedSelectedTagList = new Set(state.selectedTagList);
       diminishedSelectedTagList.delete(action.item);
       return Object.assign({}, state, { selectedTagList: [...diminishedSelectedTagList] });
-
-    case constants.SET_DISPLAYED_MOLECULES_HIT_NAV:
-      return { ...state, displayedMoleculesInHitNav: [...action.list] };
 
     case constants.SET_IS_TAG_GLOBAL_EDIT:
       return { ...state, isGlobalEdit: action.isGlobalEdit };

@@ -420,14 +420,6 @@ export const setTagFilteringMode = isExclusive => {
   };
 };
 
-export const setDisplayedMoleculesInHitNav = (list, skipTracking = true) => {
-  return {
-    type: constants.SET_DISPLAYED_MOLECULES_HIT_NAV,
-    list: list,
-    skipTracking
-  };
-};
-
 export const setIsTagGlobalEdit = isGlobalEdit => {
   return {
     type: constants.SET_IS_TAG_GLOBAL_EDIT,

@@ -9,9 +9,6 @@ import {
   CircularProgress,
   Divider,
   Typography,
-  FormControl,
-  Select,
-  MenuItem,
   IconButton,
   ButtonGroup
 } from '@material-ui/core';
@@ -64,7 +61,6 @@ import {
   setSelectedAllByType,
   setDeselectedAllByType,
   setTagEditorOpen,
-  setDisplayedMoleculesInHitNav,
   setIsTagGlobalEdit
 } from '../../../reducers/selection/actions';
 import { TagEditor } from '../tags/modal/tagEditor';
@@ -509,7 +505,6 @@ export const MoleculeList = memo(({ height, setFilterItemsHeight, filterItemsHei
   );
 
   let currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
-  dispatch(setDisplayedMoleculesInHitNav(currentMolecules));
 
   const newMolsToEdit = [];
   currentMolecules.forEach(cm => {

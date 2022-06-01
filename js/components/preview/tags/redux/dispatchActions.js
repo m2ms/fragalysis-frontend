@@ -1,12 +1,8 @@
 import {
   setSelectedTagList,
   appendSelectedTagList,
-  removeFromSelectedTagList,
-  appendToDisplayAllNGLList,
-  removeFromDisplayAllNGLList
+  removeFromSelectedTagList
 } from '../../../../reducers/selection/actions';
-import { CATEGORY_TYPE } from '../../../../constants/constants';
-import { addLigand, removeLigand } from '../../molecule/redux/dispatchActions';
 import {
   setProteinList,
   setDensityList,
@@ -24,8 +20,6 @@ import {
   setMolGroupOn,
   updateMoleculeTag,
   setAllMolLists,
-  setMoleculeTags,
-  setDownloadTags,
   setNoTagsReceived,
   updateTag,
   setTagList,
@@ -34,7 +28,6 @@ import {
 } from '../../../../reducers/api/actions';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
 import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
-import { getRandomColor } from '../../molecule/utils/color';
 import { updateExistingTag, getAllData } from '../api/tagsApi';
 import {
   getMoleculeTagForTag,
@@ -44,7 +37,6 @@ import {
   getCategoryIds
 } from '../utils/tagUtils';
 import { DJANGO_CONTEXT } from '../../../../utils/djangoContext';
-import { diffBetweenDatesInDays } from '../../../../utils/common';
 
 export const setTagSelectorData = (categories, tags) => dispatch => {
   dispatch(setCategoryList(categories));
@@ -124,27 +116,6 @@ export const storeData = data => (dispatch, getState) => {
 
   let allMolecules = [];
   data.molecules.forEach(mol => {});
-};
-
-export const displayAllMolsInNGL = (stage, tag) => (dispatch, getState) => {
-  const state = getState();
-  const allMolecules = state.apiReducers.all_mol_lists;
-  const taggedMolecules = allMolecules.filter(mol => mol.tags_set.some(id => id === tag.id));
-  taggedMolecules.forEach(mol => {
-    const color = getRandomColor(mol);
-    dispatch(addLigand(stage, mol, color, false, true, true));
-  });
-  dispatch(appendToDisplayAllNGLList(tag));
-};
-
-export const hideAllMolsInNGL = (stage, tag) => (dispatch, getState) => {
-  const state = getState();
-  const allMolecules = state.apiReducers.all_mol_lists;
-  const taggedMolecules = allMolecules.filter(mol => mol.tags_set.some(id => id === tag.id));
-  taggedMolecules.forEach(mol => {
-    dispatch(removeLigand(stage, mol, true));
-  });
-  dispatch(removeFromDisplayAllNGLList(tag));
 };
 
 export const updateTagProp = (tag, value, prop) => (dispatch, getState) => {

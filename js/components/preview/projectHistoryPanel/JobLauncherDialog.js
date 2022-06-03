@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { setJobLauncherDialogOpen } from '../../projects/redux/actions';
 import { MuiForm as JSONForm } from '@rjsf/material-ui';
-import { useGetJobsDefinitions } from '../../../hooks/useGetJobsDefinitions';
+import { useJobSchema } from './useJobSchema';
 import { jobRequest } from '../../projects/redux/dispatchActions';
 import { setJobLauncherSquonkUrl, refreshJobsData } from '../../projects/redux/actions';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
@@ -97,7 +97,7 @@ const JobLauncherDialog = () => {
   const currentProjectID = currentProject && currentProject.projectID;
   const { nglViewList } = useContext(NglContext);
 
-  const { schema, uiSchema } = useGetJobsDefinitions(jobLauncherData);
+  const { schema, uiSchema } = useJobSchema(jobLauncherData);
 
   // Used to preserve data when clicking the submit button, without it the form resets on submit
   const [formData, setFormData] = useState({});

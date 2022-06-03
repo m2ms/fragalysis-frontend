@@ -13,37 +13,38 @@
           "type": "array",
           "uniqueItems": true,
           "format": "chemical/x-mdl-molfile",
-          "as": "{job_dir}/{file_name}",
-          "display": "readOnly"
+          "as": "{job_dir}/{file_name}"
         },
         "protein": {
           "from": "lhs-protein-apo-desolv",
           "type": "string",
           "format": "chemical/x-pdb",
-          "as": "{job_dir}/{file_name}",
-          "display": "readOnly"
+          "as": "{job_dir}/{file_name}"
         }
       },
       "options": {
         "outfile": {
           "value": "{job_dir}/merged.sdf",
-          "display": "hidden"
+          "ui:widget": "hidden"
         },
         "count": {
-          "default": 5
+          "default": 5,
+          "readOnly": true
         },
         "smiles": {
+          "type": "string",
           "default": "original SMILES",
-          "display": "hidden"
+          "ui:widget": "hidden"
         },
         "fragIdField": {
           "default": "_Name",
-          "display": "hidden"
+          "ui:widget": "hidden"
         }
       },
-      "results": [
-        "Merged molecules"
-      ]
+      "outputs": {
+        "outputs": { "type": "string" }
+      },
+      "results": ["Merged molecules"]
     }
   ]
 }

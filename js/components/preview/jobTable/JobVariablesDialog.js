@@ -1,7 +1,7 @@
 import React, { Fragment } from 'react';
 import { Dialog, DialogContent, DialogTitle, Typography } from '@material-ui/core';
 // eslint-disable-next-line import/extensions
-import jobconfig from '../../../../jobconfigs/fragalysis-job-spec.json';
+import fragmensteinSpec from '../../../../jobconfigs/fragmenstein-combine.json';
 
 const renderListItem = item => <li key={item}>{item}</li>;
 
@@ -18,7 +18,9 @@ export const JobVariablesDialog = ({ open, onClose, title, variableType, jobInfo
   const jobSpec = !!jobInfo ? JSON.parse(jobInfo.squonk_job_spec) : null;
   const jobVariables = jobSpec?.variables || {};
 
-  const variable = jobconfig.variables[variableType] ? JSON.parse(jobconfig.variables[variableType]) : null;
+  const variable = fragmensteinSpec.variables[variableType]
+    ? JSON.parse(fragmensteinSpec.variables[variableType])
+    : null;
   const variableProperties = variable?.properties || {};
 
   return (

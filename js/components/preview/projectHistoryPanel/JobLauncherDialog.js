@@ -6,8 +6,7 @@ import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { setJobLauncherDialogOpen } from '../../projects/redux/actions';
 import { MuiForm as JSONForm } from '@rjsf/material-ui';
-// eslint-disable-next-line import/extensions
-import jobconfig from '../../../../jobconfigs/fragalysis-job-spec.json';
+import { useGetJobsDefinitions } from '../../../hooks/useGetJobsDefinitions';
 import { jobRequest } from '../../projects/redux/dispatchActions';
 import { setJobLauncherSquonkUrl, refreshJobsData } from '../../projects/redux/actions';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
@@ -98,45 +97,7 @@ const JobLauncherDialog = () => {
   const currentProjectID = currentProject && currentProject.projectID;
   const { nglViewList } = useContext(NglContext);
 
-  // Merges job definitions with fragalysis-jobs definitions
-  const getDefinition = (configDefinitions, overrideDefinitions) => {
-    const mergedDefinitions = { ...configDefinitions };
-
-    Object.entries(overrideDefinitions).forEach(([key, overrideDefinition]) => {
-      let mergedDefinition = mergedDefinitions[key] || {};
-
-      const { from, ...rest } = overrideDefinition;
-
-      // If fragalysis-jobs definitions contain from, expand it from the provided data
-      if (!!from) {
-        const items = jobLauncherData?.data?.[from] || {};
-        if (rest.type === 'array') {
-          mergedDefinition = { ...mergedDefinition, items };
-        } else {
-          mergedDefinition = { ...mergedDefinition, ...items };
-        }
-      }
-
-      mergedDefinitions[key] = { ...mergedDefinition, ...rest };
-    });
-
-    return mergedDefinitions;
-  };
-
-  const inputs = JSON.parse(jobconfig.variables.inputs);
-  const options = JSON.parse(jobconfig.variables.options);
-  const outputs = JSON.parse(jobconfig.variables.outputs);
-
-  // Prepare schema for FORM
-  const schema = {
-    type: options.type,
-    required: [...(inputs.required || []), ...(options.required || []), ...(outputs.required || [])],
-    properties: {
-      ...getDefinition(inputs.properties || {}, jobconfig['fragalysis-jobs'].inputs || {}),
-      ...getDefinition(options.properties || {}, jobconfig['fragalysis-jobs'].options || {}),
-      ...getDefinition(outputs.properties || {}, jobconfig['fragalysis-jobs'].outputs || {})
-    }
-  };
+  const { schema, uiSchema } = useGetJobsDefinitions(jobLauncherData);
 
   // Used to preserve data when clicking the submit button, without it the form resets on submit
   const [formData, setFormData] = useState({});
@@ -204,6 +165,7 @@ const JobLauncherDialog = () => {
         <div className={classes.bodyPopup}>
           <JSONForm
             schema={schema}
+            uiSchema={uiSchema}
             onSubmit={onSubmitForm}
             formData={formData}
             onChange={event => {

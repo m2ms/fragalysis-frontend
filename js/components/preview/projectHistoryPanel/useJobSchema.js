@@ -1,25 +1,108 @@
+import { useMemo } from 'react';
 import { useGetJobDefinition } from '../../../hooks/useGetJobDefinition';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
+// eslint-disable-next-line import/extensions
+import jobsSpec from '../../../../jobconfigs/fragalysis-job-spec-1.1.json';
+import { useSelector } from 'react-redux';
+
+const variableRegex = /{(.*?)}/;
+
+const expandVars = (string, data) => {
+  let resultingString = string;
+  let result;
+
+  while ((result = variableRegex.exec(resultingString)) !== null) {
+    resultingString = resultingString.replace(result[0], data[result[1]]);
+  }
+
+  return resultingString;
+};
+
+const getCompileData = (target, djangoContext, jobLauncherData, fragalysisJobsVars = {}) => ({
+  target,
+  username: djangoContext?.username,
+  job_name: jobLauncherData?.job?.slug,
+  timestamp: new Date().getTime(),
+  ...(jobLauncherData?.data || {}),
+  ...fragalysisJobsVars
+});
+
+const compileProperty = (property, data) => {
+  const copy = { ...property };
+  const { from, items, value, default: dflt } = copy;
+  const dataObject = data || {};
+
+  if (from) {
+    const itemsData = dataObject[from] || [];
+
+    copy.enum = itemsData.map(item => {
+      const localData = { ...dataObject, item };
+      return expandVars(copy.enum, localData);
+    });
+    copy.enumNames = itemsData.map(item => {
+      const localData = { ...dataObject, item };
+      return expandVars(copy.enumNames, localData);
+    });
+  }
+
+  if (items) {
+    const itemsData = dataObject[items.from] || [];
+
+    copy.items = {
+      enum: itemsData.map(item => {
+        const localData = { ...dataObject, item };
+        return expandVars(items.enum, localData);
+      }),
+      enumNames: itemsData.map(item => {
+        const localData = { ...dataObject, item };
+        return expandVars(items.enumNames, localData);
+      })
+    };
+  }
+
+  if (value) {
+    copy.value = expandVars(value, dataObject);
+  }
+
+  if (dflt) {
+    copy.default = expandVars(dflt, dataObject);
+  }
+
+  return copy;
+};
 
 export const useJobSchema = jobLauncherData => {
-  const { inputs, options, outputs } = useGetJobDefinition();
+  const jobDefinition = useGetJobDefinition();
 
-  // Prepare schema
-  const schema = {
-    type: options.type,
-    required: [...(inputs.required || []), ...(options.required || []), ...(outputs.required || [])],
-    properties: {
+  const targetName = useSelector(state => state.apiReducers.target_on_name);
+
+  return useMemo(() => {
+    const { inputs, options, outputs } = jobDefinition;
+
+    const data = getCompileData(targetName, DJANGO_CONTEXT, jobLauncherData, jobsSpec?.global);
+
+    // Prepare schema
+    const schema = {
+      type: options.type,
+      required: [...(inputs.required || []), ...(options.required || []), ...(outputs.required || [])],
+      properties: Object.fromEntries(
+        Object.entries({
+          ...inputs.properties,
+          ...options.properties,
+          ...outputs.properties
+        }).map(([key, property]) => {
+          return [key, compileProperty(property, data)];
+        })
+      )
+    };
+
+    // Prepare UI schema
+    const uiSchema = {
       ...inputs.properties,
       ...options.properties,
       ...outputs.properties
-    }
-  };
+    };
 
-  // Prepare UI schema
-  const uiSchema = {
-    ...inputs.properties,
-    ...options.properties,
-    ...outputs.properties
-  };
-
-  return { schema, uiSchema };
+    return { schema, uiSchema };
+  }, [jobDefinition, jobLauncherData, targetName]);
 };

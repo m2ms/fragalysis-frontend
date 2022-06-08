@@ -14,21 +14,24 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 const useStyles = makeStyles(theme => ({
   root: {
     backgroundColor: theme.palette.background.paper,
-    height: '100%'
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column'
   },
   body: {
-    padding: theme.spacing(1)
+    padding: theme.spacing(1),
+    overflow: 'auto'
   },
   bodyOverflowHeader: {
     padding: theme.spacing(1),
     // 100% - header
     height: `calc( 100% - ${theme.spacing(5)}px )`,
-    overflowY: 'auto'
+    overflow: 'auto'
   },
   bodyOverflow: {
     padding: theme.spacing(1),
     height: `100%`,
-    overflowY: 'auto'
+    overflow: 'auto'
   },
   header: {
     color: theme.palette.white,
@@ -48,7 +51,8 @@ const useStyles = makeStyles(theme => ({
     paddingLeft: theme.spacing(1)
   },
   headerGrid: {
-    height: 'inherit'
+    height: 'inherit',
+    flexWrap: 'nowrap'
   },
   hidden: {
     height: 0,
@@ -56,6 +60,10 @@ const useStyles = makeStyles(theme => ({
   },
   loading: {
     paddingTop: theme.spacing(2)
+  },
+  actionsContainer: {
+    flexWrap: 'nowrap',
+    justifyContent: 'flex-end'
   }
 }));
 
@@ -128,7 +136,7 @@ export const Panel = memo(
                 )}
                 {(headerActions || hasExpansion) && (
                   <Grid item>
-                    <Grid container direction="row" justify="flex-end">
+                    <Grid container direction="row" className={classes.actionsContainer}>
                       {headerActions &&
                         headerActions.map((action, index) => (
                           <Grid item key={index}>

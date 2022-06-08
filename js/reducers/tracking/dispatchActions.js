@@ -902,12 +902,9 @@ const restoreMoleculeSelectionActions = orderedActionList => (dispatch, getState
 };
 
 export const restoreNglViewSettings = stages => (dispatch, getState) => {
-  const state = getState();
   const majorViewStage = stages.find(view => view.id === VIEWS.MAJOR_VIEW).stage;
 
-  const currentActionList = state.trackingReducers.track_actions_list;
-  const orderedActionList = currentActionList.reverse((a, b) => a.timestamp - b.timestamp);
-  dispatch(restoreNglSettingsAction(orderedActionList, majorViewStage));
+  dispatch(restoreNglSettingsAction([], majorViewStage));
 };
 
 const restoreNglSettingsAction = (orderedActionList, majorViewStage) => (dispatch, getState) => {
@@ -1715,6 +1712,8 @@ const addNewType = (moleculesAction, actionType, type, stage, state, skipTrackin
       if (data) {
         if (type === 'ligand') {
           await dispatch(addType[type](stage, data, colourList[data.id % colourList.length], true, true, skipTracking));
+        } else if (type === 'protein') {
+          await dispatch(addType[type](stage, data, colourList[data.id % colourList.length], true, skipTracking));
         } else if (type === 'vector') {
           await dispatch(addType[type](stage, data, true));
         } else if (type === 'density' || type === 'densityCustom') {

@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useEffect, useState } from 'react';
+import React, { forwardRef, Fragment, memo, useEffect, useState } from 'react';
 import {
   Paper as MaterialPaper,
   makeStyles,
@@ -25,7 +25,7 @@ const useStyles = makeStyles(theme => ({
   bodyOverflowHeader: {
     padding: theme.spacing(1),
     // 100% - header
-    height: `calc( 100% - ${theme.spacing(5)}px )`,
+    height: `calc( 100% - ${theme.spacing(3)}px )`,
     overflow: 'auto'
   },
   bodyOverflow: {
@@ -36,14 +36,14 @@ const useStyles = makeStyles(theme => ({
   header: {
     color: theme.palette.white,
     backgroundColor: theme.palette.primary.main,
-    height: theme.spacing(5),
+    height: theme.spacing(3),
     borderTopLeftRadius: theme.spacing(1) / 2,
     borderTopRightRadius: theme.spacing(1) / 2
   },
   headerSecondary: {
     color: theme.palette.white,
     backgroundColor: theme.palette.secondary.main,
-    height: theme.spacing(5),
+    height: theme.spacing(3),
     borderTopLeftRadius: theme.spacing(1) / 2,
     borderTopRightRadius: theme.spacing(1) / 2
   },
@@ -62,8 +62,16 @@ const useStyles = makeStyles(theme => ({
     paddingTop: theme.spacing(2)
   },
   actionsContainer: {
+    display: 'flex',
     flexWrap: 'nowrap',
-    justifyContent: 'flex-end'
+    justifyContent: 'flex-end',
+    alignItems: 'center'
+  },
+  title: {
+    fontSize: theme.typography.pxToRem(13)
+  },
+  button: {
+    padding: 1
   }
 }));
 
@@ -123,12 +131,12 @@ export const Panel = memo(
                   <Grid item className={classes.headerTitle}>
                     {withTooltip ? (
                       <Tooltip title={title}>
-                        <Typography variant="h6" color="inherit" noWrap>
+                        <Typography className={classes.title} variant="h6" color="inherit" noWrap>
                           {title}
                         </Typography>
                       </Tooltip>
                     ) : (
-                      <Typography variant="h6" color="inherit" noWrap>
+                      <Typography className={classes.title} variant="h6" color="inherit" noWrap>
                         {title}
                       </Typography>
                     )}
@@ -137,14 +145,9 @@ export const Panel = memo(
                 {(headerActions || hasExpansion) && (
                   <Grid item>
                     <Grid container direction="row" className={classes.actionsContainer}>
-                      {headerActions &&
-                        headerActions.map((action, index) => (
-                          <Grid item key={index}>
-                            {action}
-                          </Grid>
-                        ))}
+                      {headerActions && headerActions.map((action, index) => <Fragment key={index}>{action}</Fragment>)}
                       {hasExpansion && (
-                        <IconButton onClick={handleTitleButtonClick} color="inherit">
+                        <IconButton className={classes.button} onClick={handleTitleButtonClick} color="inherit">
                           {expanded ? <ExpandLess /> : <ExpandMore />}
                         </IconButton>
                       )}

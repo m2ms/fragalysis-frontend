@@ -68,6 +68,9 @@ const useStyles = makeStyles(theme => ({
   },
   search: {
     width: 140
+  },
+  columnTitle: {
+    fontSize: theme.typography.pxToRem(13)
   }
 }));
 
@@ -209,7 +212,9 @@ const TagDetails = memo(() => {
         <div className={classes.container}>
           {/* tag name */}
           <div className={classes.columnLabel}>
-            <Typography variant="subtitle1">Tag name</Typography>
+            <Typography className={classes.columnTitle} variant="subtitle1">
+              Tag name
+            </Typography>
             <IconButton size="small" onClick={() => handleHeaderSort('name')}>
               <Tooltip title="Sort" className={classes.sortButton}>
                 {[1, 2].includes(sortSwitch - offsetName) ? (
@@ -227,7 +232,9 @@ const TagDetails = memo(() => {
 
           {/* category */}
           <div className={classNames(classes.columnLabel, classes.categoryLabel)}>
-            <Typography variant="subtitle1">Category</Typography>
+            <Typography className={classes.columnTitle} variant="subtitle1">
+              Category
+            </Typography>
             <IconButton size="small" onClick={() => handleHeaderSort('category')}>
               <Tooltip title="Sort" className={classes.sortButton}>
                 {[1, 2].includes(sortSwitch - offsetCategory) ? (
@@ -245,7 +252,9 @@ const TagDetails = memo(() => {
 
           {/* creator */}
           <div className={classNames(classes.columnLabel, classes.creatorLabel)}>
-            <Typography variant="subtitle1">Creator</Typography>
+            <Typography className={classes.columnTitle} variant="subtitle1">
+              Creator
+            </Typography>
             <IconButton size="small" onClick={() => handleHeaderSort('creator')}>
               <Tooltip title="Sort" className={classes.sortButton}>
                 {[1, 2].includes(sortSwitch - offsetCreator) ? (
@@ -263,7 +272,9 @@ const TagDetails = memo(() => {
 
           {/* date */}
           <div className={classNames(classes.columnLabel, classes.dateLabel)}>
-            <Typography variant="subtitle1">Date</Typography>
+            <Typography className={classes.columnTitle} variant="subtitle1">
+              Date
+            </Typography>
             <IconButton size="small" onClick={() => handleHeaderSort('date')}>
               <Tooltip title="Sort" className={classes.sortButton}>
                 {[1, 2].includes(sortSwitch - offsetDate) ? (

@@ -22,8 +22,8 @@ const useStyles = makeStyles(theme => ({
   containerExpanded: {
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'auto',
-    width: '100%'
+    width: '100%',
+    marginTop: -theme.spacing()
   },
   containerCollapsed: {
     height: 0
@@ -39,6 +39,9 @@ const useStyles = makeStyles(theme => ({
     // justify: 'flex-end',
     marginRight: '0px',
     marginLeft: '1px'
+  },
+  tagLabel: {
+    fontSize: theme.typography.pxToRem(13)
   },
   headerContainer: {
     marginRight: '0px',
@@ -166,7 +169,15 @@ const TagSelector = memo(() => {
             >
               <FormControlLabel
                 className={classes.tagModeSwitch}
-                control={<TagModeSwitch checked={tagMode} onChange={filteringModeSwitched} name="tag-filtering-mode" />}
+                classes={{ label: classes.tagLabel }}
+                control={
+                  <TagModeSwitch
+                    checked={tagMode}
+                    onChange={filteringModeSwitched}
+                    name="tag-filtering-mode"
+                    size="small"
+                  />
+                }
                 label={tagMode ? 'Intersection' : 'Union'}
               />
             </Tooltip>

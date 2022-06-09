@@ -8,10 +8,6 @@ import { compareTagsAsc } from './utils/tagUtils';
 const useStyles = makeStyles(theme => ({
   category: {
     display: 'flex'
-  },
-  categoryScrollable: {
-    display: 'flex',
-    overflow: 'auto'
   }
 }));
 
@@ -43,7 +39,7 @@ const TagCategory = memo(({ tagClickCallback, disabled = false }) => {
         <TagCategoryView name={CATEGORY_TYPE.OTHER} disabled={disabled} />
       </Grid>
 
-      <Grid className={classes.categoryScrollable}>
+      <Grid>
         <TagCategoryView tags={siteTags} clickCallback={tagClickCallback} disabled={disabled} />
         <TagCategoryView tags={seriesTags} clickCallback={tagClickCallback} disabled={disabled} />
         <TagCategoryView tags={forumTags} clickCallback={tagClickCallback} disabled={disabled} />

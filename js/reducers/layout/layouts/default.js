@@ -21,8 +21,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
           y: 0,
           w: nglWidth,
           h: nglHeight,
-          minW: baseColumnSize,
-          minH: collapsedPanelSize,
           static: layoutLocked
         },
         {
@@ -31,8 +29,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
           y: nglHeight,
           w: nglWidth,
           h: collapsedPanelSize,
-          minW: baseColumnSize,
-          minH: collapsedPanelSize,
           static: layoutLocked
         }
       ];
@@ -46,8 +42,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: 0,
             w: baseColumnSize,
             h: tagDetailsRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           },
           {
@@ -56,8 +50,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: tagDetailsRows,
             w: baseColumnSize,
             h: hitListFilterRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           },
           {
@@ -66,8 +58,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: tagDetailsRows + hitListFilterRows,
             w: baseColumnSize,
             h: hitNavigatorRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           }
         ];
@@ -82,8 +72,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: 0,
             w: baseColumnSize,
             h: maxRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           }
         ];
@@ -98,8 +86,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: nglHeight + collapsedPanelSize,
             w: nglWidth,
             h: projectHistoryHeight,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           }
         ];

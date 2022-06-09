@@ -25,8 +25,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
           y: 0,
           w: nglWidth,
           h: showLHS ? maxRows - tagDetailsRows : maxRows,
-          minW: baseColumnSize,
-          minH: collapsedPanelSize,
           static: layoutLocked
         },
         {
@@ -35,8 +33,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
           y: 0,
           w: baseColumnSize,
           h: maxRows - showLHS * hitListFilterRows - !hideProjects * projectHistoryHeight,
-          minW: baseColumnSize,
-          minH: collapsedPanelSize,
           static: layoutLocked
         }
       ];
@@ -50,8 +46,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: maxRows - tagDetailsRows,
             w: nglWidth,
             h: tagDetailsRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           },
           {
@@ -60,8 +54,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: maxRows - hitListFilterRows,
             w: baseColumnSize,
             h: hitListFilterRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           },
           {
@@ -70,8 +62,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: showRHS * halfRows,
             w: baseColumnSize,
             h: hitNavigatorRows,
-            minW: baseColumnSize,
-            minH: collapsedPanelSize,
             static: layoutLocked
           }
         ];
@@ -86,7 +76,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
             y: 0,
             w: baseColumnSize,
             h: rhsHeight,
-            minW: baseColumnSize,
             minH: collapsedPanelSize,
             static: layoutLocked
           }
@@ -104,7 +93,6 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
               : maxRows - showLHS * hitListFilterRows - collapsedPanelSize,
             w: nglWidth,
             h: projectHistoryHeight,
-            minW: baseColumnSize,
             minH: collapsedPanelSize,
             static: layoutLocked
           }

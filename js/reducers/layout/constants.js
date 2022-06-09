@@ -1,5 +1,8 @@
 const prefix = 'REDUCERS_LAYOUT_';
 
+export const layoutBreakpoints = { lg: 2560, md: 1920 };
+export const layoutCols = { lg: 256, md: 192 };
+
 export const baseColumnSize = 64;
 export const collapsedPanelSize = 5;
 

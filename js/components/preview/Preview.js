@@ -42,12 +42,12 @@ import { ViewerControls } from './viewerControls';
 
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import RGL, { WidthProvider } from 'react-grid-layout';
+import { WidthProvider, Responsive as ResponsiveGridLayout } from 'react-grid-layout';
 import { setCurrentLayout } from '../../reducers/layout/actions';
-import { layoutItemNames } from '../../reducers/layout/constants';
+import { layoutBreakpoints, layoutItemNames } from '../../reducers/layout/constants';
 import { useUpdateGridLayout } from './useUpdateGridLayout';
 
-const ReactGridLayout = WidthProvider(RGL);
+const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -212,8 +212,8 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const anchorRefDatasetDropdown = useRef(null);
   const [openDatasetDropdown, setOpenDatasetDropdown] = useState(false);
 
-  const onLayoutChange = updatedLayout => {
-    dispatch(setCurrentLayout(updatedLayout));
+  const onLayoutChange = (updatedLayout, layouts) => {
+    dispatch(setCurrentLayout(layouts));
   };
 
   const ref = useUpdateGridLayout(hideProjects);
@@ -350,21 +350,24 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
     }
   };
 
+  console.log(currentLayout);
+
   return (
     <>
       <div ref={ref} className={classes.root}>
         <ReactGridLayout
           // cols={4}
           autoSize
-          cols={192}
-          layout={currentLayout}
+          breakpoints={layoutBreakpoints}
+          cols={{ lg: 256, md: 192 }}
+          layouts={currentLayout}
           rowHeight={1}
           onLayoutChange={onLayoutChange}
           useCSSTransforms={false}
           className={classes.rgl}
           margin={[theme.spacing(), theme.spacing()]}
         >
-          {currentLayout.map(item => renderItem(item.i))}
+          {currentLayout?.lg?.map(item => renderItem(item.i))}
         </ReactGridLayout>
       </div>
       <NewSnapshotModal />

@@ -1,6 +1,6 @@
 import { constants, layoutItemNames } from './constants';
 
-const initialLayout = [];
+const initialLayout = {};
 
 export const INITIAL_STATE = {
   layoutEnabled: false, // Used to display the three control buttons in the header

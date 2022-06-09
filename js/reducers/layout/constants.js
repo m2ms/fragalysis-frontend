@@ -1,6 +1,9 @@
 const prefix = 'REDUCERS_LAYOUT_';
 
-export const layoutBreakpoints = { lg: 2560, md: 1920 };
+export const layoutBreakpoints = {
+  lg: 1920, // Uncapped
+  md: 0 // Max 1920px width
+};
 export const layoutCols = { lg: 256, md: 192 };
 
 export const baseColumnSize = 64;

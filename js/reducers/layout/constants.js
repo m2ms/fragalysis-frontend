@@ -1,6 +1,6 @@
 const prefix = 'REDUCERS_LAYOUT_';
 
-export const baseColumnSize = 60;
+export const baseColumnSize = 64;
 export const collapsedPanelSize = 5;
 
 export const layoutItemNames = {

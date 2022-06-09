@@ -1,9 +1,6 @@
 import { constants, layoutItemNames } from './constants';
 
-const initialLayout = {
-  name: 'initialLayout',
-  layout: []
-};
+const initialLayout = [];
 
 export const INITIAL_STATE = {
   layoutEnabled: false, // Used to display the three control buttons in the header
@@ -37,13 +34,13 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       return { ...state, selectedLayoutName };
     }
     case constants.SET_CURRENT_LAYOUT: {
-      return { ...state, currentLayout: { ...action.payload } };
+      return { ...state, currentLayout: action.payload };
     }
     case constants.SET_DEFAULT_LAYOUT: {
-      return { ...state, defaultLayout: { ...action.payload } };
+      return { ...state, defaultLayout: action.payload };
     }
     case constants.RESET_CURRENT_LAYOUT: {
-      return { ...state, currentLayout: { ...state.defaultLayout } };
+      return { ...state, currentLayout: state.defaultLayout };
     }
     case constants.UPDATE_CURRENT_LAYOUT: {
       let newLayout = { ...state.currentLayout };
@@ -51,7 +48,7 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       if (indexOfItem >= 0) {
         const item = { ...newLayout.layout[indexOfItem] };
         newLayout.layout[indexOfItem] = { ...item, ...action.payload.props };
-        return { ...state, currentLayout: { ...newLayout } };
+        return { ...state, currentLayout: newLayout };
       } else {
         return state;
       }
@@ -63,8 +60,8 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       return {
         ...state,
         layoutLocked: locked,
-        currentLayout: { ...currentLayout, layout: currentLayout.layout.map(item => ({ ...item, static: locked })) },
-        defaultLayout: { ...defaultLayout, layout: defaultLayout.layout.map(item => ({ ...item, static: locked })) }
+        currentLayout: currentLayout.map(item => ({ ...item, static: locked })),
+        defaultLayout: defaultLayout.map(item => ({ ...item, static: locked }))
       };
     }
     case constants.SET_PANEL_EXPANDED: {

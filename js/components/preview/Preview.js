@@ -213,8 +213,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const [openDatasetDropdown, setOpenDatasetDropdown] = useState(false);
 
   const onLayoutChange = updatedLayout => {
-    let newLayout = { name: currentLayout.name, layout: [...updatedLayout] };
-    dispatch(setCurrentLayout(newLayout));
+    dispatch(setCurrentLayout(updatedLayout));
   };
 
   const ref = useUpdateGridLayout(hideProjects);
@@ -357,15 +356,15 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
         <ReactGridLayout
           // cols={4}
           autoSize
-          cols={180}
-          layout={currentLayout.layout}
+          cols={192}
+          layout={currentLayout}
           rowHeight={1}
           onLayoutChange={onLayoutChange}
           useCSSTransforms={false}
           className={classes.rgl}
           margin={[theme.spacing(), theme.spacing()]}
         >
-          {currentLayout.layout.map(item => renderItem(item.i))}
+          {currentLayout.map(item => renderItem(item.i))}
         </ReactGridLayout>
       </div>
       <NewSnapshotModal />

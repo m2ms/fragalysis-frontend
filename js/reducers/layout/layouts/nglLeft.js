@@ -102,7 +102,7 @@ const createLayout = (showLHS, showRHS, hideProjects, height, margin, layoutLock
     ];
   }
 
-  return { name: 'NGL left', layout };
+  return layout;
 };
 
 export default createLayout;

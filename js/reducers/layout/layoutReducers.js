@@ -42,17 +42,6 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
     case constants.RESET_CURRENT_LAYOUT: {
       return { ...state, currentLayout: state.defaultLayout };
     }
-    case constants.UPDATE_CURRENT_LAYOUT: {
-      let newLayout = { ...state.currentLayout };
-      const indexOfItem = newLayout.layout.findIndex(i => i.i === action.payload.i);
-      if (indexOfItem >= 0) {
-        const item = { ...newLayout.layout[indexOfItem] };
-        newLayout.layout[indexOfItem] = { ...item, ...action.payload.props };
-        return { ...state, currentLayout: newLayout };
-      } else {
-        return state;
-      }
-    }
     case constants.LOCK_LAYOUT: {
       const locked = action.payload;
       const { currentLayout, defaultLayout } = state;
@@ -60,8 +49,12 @@ export const layoutReducers = (state = INITIAL_STATE, action = {}) => {
       return {
         ...state,
         layoutLocked: locked,
-        currentLayout: currentLayout.map(item => ({ ...item, static: locked })),
-        defaultLayout: defaultLayout.map(item => ({ ...item, static: locked }))
+        currentLayout: Object.fromEntries(
+          Object.entries(currentLayout).map(([key, layout]) => [key, layout.map(item => ({ ...item, static: locked }))])
+        ),
+        defaultLayout: Object.fromEntries(
+          Object.entries(defaultLayout).map(([key, layout]) => [key, layout.map(item => ({ ...item, static: locked }))])
+        )
       };
     }
     case constants.SET_PANEL_EXPANDED: {

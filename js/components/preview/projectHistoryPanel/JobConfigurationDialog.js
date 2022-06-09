@@ -325,6 +325,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
         snapshot: chosenSnapshot.id,
         target: targetId,
         // squonk_project: dispatch(getSquonkProject()),
+        // need to switch to squonk project id associated with the target in the (near?) future
         squonk_project: 'project-e1ce441e-c4d1-4ad1-9057-1a11dbdccebe',
         proteins: chosenLHSCompounds.join()
       });

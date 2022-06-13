@@ -17,3 +17,4 @@ export const URLS = {
 };
 
 export const base_url = window.location.protocol + '//' + window.location.host;
+// export const base_url = 'https://fragalysis-tibor-default.xchem-dev.diamond.ac.uk';

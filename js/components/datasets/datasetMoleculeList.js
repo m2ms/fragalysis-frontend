@@ -369,12 +369,13 @@ export const DatasetMoleculeList = memo(({ title, datasetID, url }) => {
       }}
       disabled={isLoadingMoleculeList}
     />,
-    <IconButton color={'inherit'} onClick={() => window.open(url, '_blank')}>
+    <IconButton className={classes.panelButton} color={'inherit'} onClick={() => window.open(url, '_blank')}>
       <Tooltip title="Link to dataset">
         <Link />
       </Tooltip>
     </IconButton>,
     <IconButton
+      className={classes.panelButton}
       onClick={event => {
         if (sortDialogOpen === false) {
           setSortDialogAnchorEl(filterRef.current);

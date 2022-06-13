@@ -216,9 +216,6 @@ const useStyles = makeStyles(theme => ({
     ...theme.typography.button,
     color: theme.palette.primary.main,
     fontStyle: 'italic'
-  },
-  panelButton: {
-    padding: 1
   }
 }));
 
@@ -759,7 +756,6 @@ export const MoleculeList = memo(({ hideProjects }) => {
     />,
 
     <IconButton
-      className={classes.panelButton}
       color={'inherit'}
       disabled={!joinedMoleculeListsCopy.length || noTagsReceived}
       onClick={event => {
@@ -779,7 +775,6 @@ export const MoleculeList = memo(({ hideProjects }) => {
       </Tooltip>
     </IconButton>,
     <IconButton
-      className={classes.panelButton}
       onClick={event => {
         if (sortDialogOpen === false) {
           setSortDialogAnchorEl(event.currentTarget);

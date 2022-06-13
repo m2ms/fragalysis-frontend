@@ -213,8 +213,6 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
   const [openDatasetDropdown, setOpenDatasetDropdown] = useState(false);
 
   const onLayoutChange = (updatedLayout, layouts) => {
-    console.log(updatedLayout);
-
     dispatch(setCurrentLayout(layouts));
   };
 

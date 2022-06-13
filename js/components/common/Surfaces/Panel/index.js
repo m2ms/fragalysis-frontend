@@ -20,18 +20,22 @@ const useStyles = makeStyles(theme => ({
   },
   body: {
     padding: theme.spacing(1),
-    overflow: 'auto'
+    overflow: 'auto',
+    height: '100%',
+    flex: 1
   },
   bodyOverflowHeader: {
     padding: theme.spacing(1),
     // 100% - header
     height: `calc( 100% - ${theme.spacing(3)}px )`,
-    overflow: 'auto'
+    overflow: 'auto',
+    flex: 1
   },
   bodyOverflow: {
     padding: theme.spacing(1),
     height: `100%`,
-    overflow: 'auto'
+    overflow: 'auto',
+    flex: 1
   },
   header: {
     color: theme.palette.white,
@@ -48,7 +52,8 @@ const useStyles = makeStyles(theme => ({
     borderTopRightRadius: theme.spacing(1) / 2
   },
   headerTitle: {
-    paddingLeft: theme.spacing(1)
+    paddingLeft: theme.spacing(1),
+    minWidth: 0
   },
   headerGrid: {
     height: 'inherit',
@@ -65,7 +70,10 @@ const useStyles = makeStyles(theme => ({
     display: 'flex',
     flexWrap: 'nowrap',
     justifyContent: 'flex-end',
-    alignItems: 'center'
+    alignItems: 'center',
+    '& > button': {
+      padding: 1
+    }
   },
   title: {
     fontSize: theme.typography.pxToRem(13)

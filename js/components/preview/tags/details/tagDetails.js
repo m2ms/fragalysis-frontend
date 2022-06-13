@@ -28,7 +28,8 @@ const useStyles = makeStyles(theme => ({
   containerExpanded: {
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
+    overflow: 'auto',
+    height: '100%',
     width: '100%',
     marginTop: -theme.spacing(),
     justifyContent: 'space-between'
@@ -49,8 +50,7 @@ const useStyles = makeStyles(theme => ({
     display: 'grid',
     gridTemplateColumns: '1fr 35px 75px min-content 20px min-content auto',
     alignItems: 'center',
-    gap: 1,
-    overflow: 'auto'
+    gap: 1
   },
   columnLabel: {
     display: 'flex',

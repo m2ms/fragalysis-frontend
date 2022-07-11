@@ -2,6 +2,7 @@
   "global": {
     "job_dir": "fragalysis-jobs/{username}/{job_name}-{timestamp}"
   },
+  "precompilation_ignore": ["job_dir"],
   "fragalysis-jobs": [
     {
       "job_collection": "fragmenstein",

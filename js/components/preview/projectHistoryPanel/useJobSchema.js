@@ -5,20 +5,25 @@ import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import jobsSpec from '../../../../jobconfigs/fragalysis-job-spec-1.1.json';
 import { useSelector } from 'react-redux';
 
-const variableRegex = /{(.*?)}/;
+const ignoreFirstRound = jobsSpec?.precompilation_ignore || [];
 
-const expandVars = (string, data) => {
+const firstRoundRegex = new RegExp(`{(${ignoreFirstRound.length ? `(?!${ignoreFirstRound.join('|')})` : ''}.*?)}`);
+const secondRoundRegex = /{(.*?)}/;
+
+export const expandVars = (string, data, firstRound = true) => {
   let resultingString = string;
   let result;
 
-  while ((result = variableRegex.exec(resultingString)) !== null) {
+  const regex = firstRound ? firstRoundRegex : secondRoundRegex;
+
+  while ((result = regex.exec(resultingString)) !== null) {
     resultingString = resultingString.replace(result[0], data[result[1]]);
   }
 
   return resultingString;
 };
 
-const getCompileData = (target, djangoContext, jobLauncherData, fragalysisJobsVars = {}) => ({
+export const getCompileData = (target, djangoContext, jobLauncherData, fragalysisJobsVars = {}) => ({
   target,
   username: djangoContext?.username,
   job_name: jobLauncherData?.job?.slug,
@@ -76,7 +81,25 @@ export const useJobSchema = jobLauncherData => {
 
   const targetName = useSelector(state => state.apiReducers.target_on_name);
 
-  return useMemo(() => {
+  const recompileSchemaResult = result => {
+    const data = getCompileData(targetName, DJANGO_CONTEXT, jobLauncherData, jobsSpec?.global);
+
+    return Object.fromEntries(
+      Object.entries(result).map(([key, value]) => {
+        if (typeof value === 'string') {
+          return [key, expandVars(value, data, false)];
+        }
+
+        if (Array.isArray(value)) {
+          return [key, value.map(val => expandVars(val, data, false))];
+        }
+
+        return [key, value];
+      })
+    );
+  };
+
+  const schemas = useMemo(() => {
     const { inputs, options, outputs } = jobDefinition;
 
     const data = getCompileData(targetName, DJANGO_CONTEXT, jobLauncherData, jobsSpec?.global);
@@ -105,4 +128,6 @@ export const useJobSchema = jobLauncherData => {
 
     return { schema, uiSchema };
   }, [jobDefinition, jobLauncherData, targetName]);
+
+  return { schemas, recompileSchemaResult };
 };

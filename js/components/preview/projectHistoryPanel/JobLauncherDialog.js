@@ -97,7 +97,10 @@ const JobLauncherDialog = () => {
   const currentProjectID = currentProject && currentProject.projectID;
   const { nglViewList } = useContext(NglContext);
 
-  const { schema, uiSchema } = useJobSchema(jobLauncherData);
+  const {
+    schemas: { schema, uiSchema },
+    recompileSchemaResult
+  } = useJobSchema(jobLauncherData);
 
   // Used to preserve data when clicking the submit button, without it the form resets on submit
   const [formData, setFormData] = useState({});
@@ -110,6 +113,8 @@ const JobLauncherDialog = () => {
     setIsError(false);
     dispatch(setJobLauncherSquonkUrl(null));
 
+    const variables = recompileSchemaResult(event.formData);
+
     jobRequest({
       squonk_job_name: 'fragmenstein-combine',
       snapshot: jobLauncherData?.snapshot.id,
@@ -120,7 +125,7 @@ const JobLauncherDialog = () => {
         collection: 'fragmenstein',
         job: 'fragmenstein-combine',
         version: '1.0.0',
-        variables: event.formData
+        variables
       })
     })
       .then(resp => {

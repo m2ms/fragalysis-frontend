@@ -50,6 +50,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import SearchField from '../common/Components/SearchField';
 import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
 import GroupDatasetNglControlButtonsContext from './groupDatasetNglControlButtonsContext';
+import { useScrollToSelected } from './useScrollToSelected';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -222,10 +223,10 @@ export const DatasetMoleculeList = memo(
 
     // TODO Reset Infinity scroll
 
-    const loadNextMolecules = async () => {
+    const loadNextMolecules = useCallback(async () => {
       await setNextXMolecules(0);
-      setCurrentPage(currentPage + 1);
-    };
+      setCurrentPage(prevPage => prevPage + 1);
+    }, []);
     const listItemOffset = (currentPage + 1) * moleculesPerPage + nextXMolecules;
 
     const currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
@@ -240,6 +241,8 @@ export const DatasetMoleculeList = memo(
     const selectedAll = useRef(false);
 
     const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
+
+    const addMoleculeViewRef = useScrollToSelected(datasetID, moleculesPerPage, setCurrentPage);
 
     const ligandList = useSelector(state => state.datasetsReducers.ligandLists[datasetID]);
     const proteinList = useSelector(state => state.datasetsReducers.proteinLists[datasetID]);
@@ -623,6 +626,7 @@ export const DatasetMoleculeList = memo(
 
                             return (
                               <DatasetMoleculeView
+                                ref={addMoleculeViewRef}
                                 key={data.id}
                                 index={index}
                                 imageHeight={imgHeight}

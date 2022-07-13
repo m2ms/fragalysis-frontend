@@ -1,6 +1,6 @@
 {
   "name": "fragalysis-frontend",
-  "version": "0.10.105",
+  "version": "0.10.107",
   "description": "Frontend for fragalysis",
   "main": "webpack.config.js",
   "scripts": {
@@ -38,6 +38,8 @@
     "@material-ui/core": "^4.9.1",
     "@material-ui/icons": "^4.5.1",
     "@material-ui/lab": "^4.0.0-alpha.39",
+    "@rjsf/core": "^3",
+    "@rjsf/material-ui": "^3",
     "@sentry/browser": "^5.7.1",
     "axios": "^0.19.0",
     "classnames": "^2.2.6",
@@ -72,7 +74,9 @@
     "react-resizable": "^3.0.4",
     "react-router-dom": "^5.1.2",
     "react-svg-inline": "^2.1.0",
+    "react-table": "^7.8.0",
     "react-undo": "^1.2.1",
+    "react-use-clipboard": "^1.0.8",
     "redux": "^4.0.5",
     "redux-devtools-extension": "^2.13.8",
     "redux-logger": "^3.0.6",

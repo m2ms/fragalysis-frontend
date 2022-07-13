@@ -16,7 +16,7 @@ import { VIEWS } from '../../constants/constants';
 import { withLoadingProtein } from './withLoadingProtein';
 import { withSnapshotManagement } from '../snapshot/withSnapshotManagement';
 import { useDispatch, useSelector } from 'react-redux';
-import { ProjectHistory } from './projectHistory';
+import { ProjectHistoryPanel } from './projectHistoryPanel';
 import { ProjectDetailDrawer } from '../projects/projectDetailDrawer';
 import { NewSnapshotModal } from '../snapshot/modals/newSnapshotModal';
 import { unmountPreviewComponent } from './redux/dispatchActions';
@@ -60,41 +60,15 @@ const useStyles = makeStyles(theme => ({
   nglColumn: {
     // Since the LHS and RHS columns require flex-grow to be 1 in case they are wrapped, this is needed to make NGL take
     // all of the space in case they are not wrapped
-    flex: '9999 1 0'
+    flex: '9999 1 0',
+    minWidth: 0
+  },
+  controls: {
+    width: '100%'
   },
   tabButtonGroup: {
-    height: 48
-  },
-  rhs: {
-    flexWrap: 'nowrap',
-    overflow: 'auto'
-  },
-  rhsWrapper: {
-    display: 'flex',
-    height: '100%'
-  },
-  rhsContainer: {
-    height: '100%',
-    flexWrap: 'nowrap',
-    gap: theme.spacing()
-  },
-  summaryView: {
-    flexGrow: 1
-  },
-  tabPanel: {
-    flexGrow: 1
-  },
-  rgl: {
-    minWidth: '100%',
-    '& .react-resizable-handle': {
-      zIndex: 2000
-    }
-  },
-  disableNgl: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    zIndex: 1000
+    height: 48,
+    width: '100%'
   }
 }));
 
@@ -343,7 +317,7 @@ const Preview = memo(({ isStateLoaded, hideProjects }) => {
       case layoutItemNames.PROJECT_HISTORY: {
         return (
           <div key="projectHistory">
-            <ProjectHistory showFullHistory={() => setShowHistory(!showHistory)} />
+            <ProjectHistoryPanel showFullHistory={() => setShowHistory(!showHistory)} />
           </div>
         );
       }

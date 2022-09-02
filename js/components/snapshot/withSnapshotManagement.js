@@ -41,6 +41,8 @@ export const withSnapshotManagement = WrappedComponent => {
       target = directDisplay.target;
     }
 
+    const enableNewProjectButton = DJANGO_CONTEXT['pk'] && target;
+
     const enableSaveButton =
       (projectId && currentProject.projectID !== null && currentProject.authorID !== null && DJANGO_CONTEXT['pk']) ||
       target !== undefined;
@@ -55,6 +57,15 @@ export const withSnapshotManagement = WrappedComponent => {
         setHeaderNavbarTitle(targetName);
       }
       setHeaderButtons([
+        <Button
+          key="newProject"
+          color="primary"
+          onClick={() => dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']))}
+          startIcon={<Save />}
+          disabled={!enableNewProjectButton || false}
+        >
+          New Project
+        </Button>,
         <Button
           key="saveSnapshot"
           color="primary"
@@ -114,7 +125,8 @@ export const withSnapshotManagement = WrappedComponent => {
       target,
       nglViewList,
       currentSnapshot.id,
-      history
+      history,
+      enableNewProjectButton
     ]);
 
     return (

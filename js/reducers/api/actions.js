@@ -342,3 +342,33 @@ export const setCategoryList = function(categoryList, skipTracking = false) {
     skipTracking
   };
 };
+
+export const setSnapshotCache = snapshotCache => {
+  return {
+    type: constants.SET_SNAPSHOTS_CACHE,
+    snapshotCache: snapshotCache
+  };
+};
+
+export const updateSnapshotCache = (snapshotId, snapshotData) => {
+  return {
+    type: constants.UPDATE_SNAPSHOTS_CACHE,
+    snapshotId: snapshotId,
+    snapshotData: snapshotData
+  };
+};
+
+export const setActionsCache = actionsCache => {
+  return {
+    type: constants.SET_ACTIONS_CACHE,
+    actionsCache: actionsCache
+  };
+};
+
+export const appendToActionsCache = (snapshotId, actions) => {
+  return {
+    type: constants.APPEND_TO_ACTIONS_CACHE,
+    actions: actions,
+    snapshotId: snapshotId
+  };
+};

@@ -166,6 +166,7 @@ import {
 import { resetViewerControlsState, turnSide } from '../../components/preview/viewerControls/redux/actions';
 import { NetworkCheckSharp } from '@material-ui/icons';
 import { resetNglTrackingState } from '../nglTracking/dispatchActions';
+import { getSnapshot, getActions } from '../api/dispatchActions';
 
 export const addCurrentActionsListToSnapshot = (snapshot, project, nglViewList) => async (dispatch, getState) => {
   let projectID = project && project.projectID;
@@ -3574,33 +3575,24 @@ export const changeSnapshot = (projectID, snapshotID, nglViewList, stage) => asy
   window.history.replaceState(null, null, `${URLS.projects}${projectID}/${snapshotID}`);
 
   // Load the needed data
-  const snapshotResponse = await api({ url: `${base_url}/api/snapshots/${snapshotID}` });
-  const actionsResponse = await api({
-    url: `${base_url}/api/snapshot-actions/?snapshot=${snapshotID}`
-  });
+  const snapshotResponse = dispatch(getSnapshot(snapshotID));
+  const actionsResponse = dispatch(getActions(snapshotID));
 
   dispatch(
     setCurrentSnapshot({
-      id: snapshotResponse.data.id,
-      type: snapshotResponse.data.type,
-      title: snapshotResponse.data.title,
-      author: snapshotResponse.data.author,
-      description: snapshotResponse.data.description,
-      created: snapshotResponse.data.created,
-      children: snapshotResponse.data.children,
-      parent: snapshotResponse.data.parent,
-      data: snapshotResponse.data.data
+      id: snapshotResponse.id,
+      type: snapshotResponse.type,
+      title: snapshotResponse.title,
+      author: snapshotResponse.author,
+      description: snapshotResponse.description,
+      created: snapshotResponse.created,
+      children: snapshotResponse.children,
+      parent: snapshotResponse.parent,
+      data: snapshotResponse.data
     })
   );
 
-  let results = actionsResponse.data.results;
-  let listToSet = [];
-  results.forEach(r => {
-    let resultActions = JSON.parse(r.actions);
-    listToSet.push(...resultActions);
-  });
-  let snapshotActions = [...listToSet];
-  dispatch(setCurrentActionsList(snapshotActions));
+  dispatch(setCurrentActionsList(actionsResponse));
 
   dispatch(resetSelectionState());
   dispatch(resetDatasetsStateOnSnapshotChange());

@@ -20,7 +20,6 @@ import { getUrl, loadFromServer } from '../../../../utils/genericList';
 import { OBJECT_TYPE } from '../../../nglView/constants';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
 import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
-import { reloadSession } from '../../../snapshot/redux/dispatchActions';
 import { resetRestoringState } from '../../../../reducers/tracking/dispatchActions';
 import { URLS } from '../../../routes/constants';
 
@@ -171,11 +170,6 @@ export const clearMoleculeGroupSelection = ({ getNglView }) => (dispatch, getSta
 
   // reset compounds
   dispatch(resetCurrentCompoundsSettings(true));
-};
-
-export const restoreFromCurrentSnapshot = ({ nglViewList }) => (dispatch, getState) => {
-  const snapshot = getState().projectReducers.currentSnapshot.data;
-  dispatch(reloadSession(snapshot, nglViewList));
 };
 
 export const restoreSnapshotActions = ({ nglViewList, projectId, snapshotId, history }) => (dispatch, getState) => {

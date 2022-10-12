@@ -49,7 +49,9 @@ export const INITIAL_STATE = {
   tagList: [],
   categoryList: [],
   target_data_loading_in_progress: false,
-  all_data_loaded: false
+  all_data_loaded: false,
+  snapshots_cache: {}, // structure {snapshot_id: {snapshot_data: {}, isDirty: false}} - isDirty is true if snapshot data has been changed
+  actions_cache: {} //structure {snapshot_id: actions_cache: {}}
 };
 
 export const RESET_TARGET_STATE = {
@@ -89,7 +91,9 @@ export const RESET_TARGET_STATE = {
   snapshotDownloadUrl: null,
   tagList: [],
   target_data_loading_in_progress: false,
-  all_data_loaded: false
+  all_data_loaded: false,
+  snapshots_cache: {},
+  actions_cache: {}
 };
 
 export default function apiReducers(state = INITIAL_STATE, action = {}) {
@@ -356,6 +360,28 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
         newCategoryList.add(f);
       });
       return Object.assign({}, state, { categoryList: [...newCategoryList] });
+
+    case constants.SET_SNAPSHOTS_CACHE:
+      return { ...state, snapshots_cache: action.snapshotCache };
+
+    case constants.UPDATE_SNAPSHOTS_CACHE:
+      let newSnapshotsCache = [...state.snapshots_cache];
+      if (newSnapshotsCache.hasOwnProperty(action.snapshot_id)) {
+        newSnapshotsCache[action.snapshot_id] = { snapshot_data: action.snapshotData };
+      } else {
+        newSnapshotsCache = {
+          ...newSnapshotsCache,
+          [action.snapshot_id]: { snapshot_data: action.snapshotData }
+        };
+      }
+
+      return { ...state, snapshots_cache: newSnapshotsCache };
+
+    case constants.SET_ACTIONS_CACHE:
+      return { ...state, actions_cache: { ...action.actionsCache } };
+
+    case constants.APPEND_TO_ACTIONS_CACHE:
+      return { ...state, actions_cache: { ...state.actions_cache, [action.snapshotId]: [...action.actions] } };
 
     case constants.RESET_TARGET_STATE:
       return Object.assign({}, state, RESET_TARGET_STATE);

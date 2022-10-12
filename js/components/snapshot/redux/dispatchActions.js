@@ -42,8 +42,11 @@ import {
 import { captureScreenOfSnapshot } from '../../userFeedback/browserApi';
 import { setCurrentProject } from '../../projects/redux/actions';
 import { createProjectPost } from '../../../utils/discourse';
+import { getSnapshot, getActions } from '../../../reducers/api/dispatchActions';
+import { updateSnapshotCache, appendToActionsCache } from '../../../reducers/api/actions';
 
 export const getListOfSnapshots = () => (dispatch, getState) => {
+  //TODO: why do we need this? Might be the reason why it takes ages to load projects list
   const userID = DJANGO_CONTEXT['pk'] || null;
   if (userID !== null) {
     dispatch(setIsLoadingListOfSnapshots(true));
@@ -59,30 +62,6 @@ export const getListOfSnapshots = () => (dispatch, getState) => {
   } else {
     return Promise.resolve();
   }
-};
-
-export const reloadSession = (snapshotData, nglViewList) => (dispatch, getState) => {
-  const state = getState();
-  const snapshotTitle = state.projectReducers.currentSnapshot.title;
-
-  dispatch(reloadApiState(snapshotData.apiReducers));
-  // dispatch(setSessionId(myJson.id));
-  dispatch(setSessionTitle(snapshotTitle));
-
-  if (nglViewList.length > 0) {
-    dispatch(reloadSelectionReducer(snapshotData.selectionReducers));
-    dispatch(reloadDatasetsReducer(snapshotData.datasetsReducers));
-
-    nglViewList.forEach(nglView => {
-      dispatch(reloadNglViewFromSnapshot(nglView.stage, nglView.id, snapshotData.nglReducers));
-    });
-
-    if (snapshotData.selectionReducers.vectorOnList.length !== 0) {
-      dispatch(reloadPreviewReducer(snapshotData.previewReducers));
-    }
-  }
-
-  dispatch(setProteinLoadingState(true));
 };
 
 export const saveCurrentSnapshot = ({
@@ -102,7 +81,8 @@ export const saveCurrentSnapshot = ({
     data: { type, title, author, description, created, parent, data: '[]', children, session_project },
     method: METHOD.POST
   })
-    .then(response =>
+    .then(response => {
+      dispatch(updateSnapshotCache(response.data.id, response.data));
       dispatch(
         setCurrentSnapshot({
           id: response.data.id,
@@ -115,8 +95,8 @@ export const saveCurrentSnapshot = ({
           children: response.data.children,
           data
         })
-      )
-    )
+      );
+    })
 
     .catch(error => {
       throw new Error(error);
@@ -248,9 +228,11 @@ export const createNewSnapshot = ({
   }
 
   if (overwriteSnapshot === true && currentSnapshotId) {
+    const cachedSnapshot = state.apiReducers.snapshots_cache[currentSnapshotId];
     dispatch(setIsLoadingSnapshotDialog(true));
     let project = { projectID: session_project, authorID: author };
 
+    const additionalInfo = getAdditionalInfo(state);
     await api({
       url: `${base_url}/api/snapshots/${currentSnapshotId}`,
       data: {
@@ -262,10 +244,20 @@ export const createNewSnapshot = ({
         session_project,
         children: currentSnapshot.children,
         data: '[]',
-        additional_info: getAdditionalInfo(state)
+        additional_info: additionalInfo
       },
       method: METHOD.PUT
     });
+
+    const newChacheSnapshot = {
+      ...cachedSnapshot,
+      title: title,
+      description: description,
+      children: currentSnapshot.children,
+      additional_info: additionalInfo
+    };
+
+    dispatch(updateSnapshotCache(currentSnapshotId, newChacheSnapshot));
 
     return Promise.resolve(dispatch(addCurrentActionsListToSnapshot(currentSnapshot, project, nglViewList))).then(
       () => {
@@ -306,6 +298,7 @@ export const createNewSnapshot = ({
         }).then(res => {
           // redirect to project with newest created snapshot /:projectID/:snapshotID
           if (res.data.id && session_project) {
+            dispatch(updateSnapshotCache(res.data.id, res.data));
             let snapshot = { id: res.data.id, title: title };
             let project = { projectID: session_project, authorID: author };
             console.log('created snapshot id: ' + res.data.id);
@@ -493,6 +486,7 @@ export const createNewSnapshotWithoutStateModification = ({
       method: METHOD.POST
     }).then(res => {
       if (res.data.id && session_project) {
+        // dispatch(updateSnapshotCache(res.data.id, res.data)); - do I need to cache this snapshot?
         dispatch(
           setSharedSnapshot({
             title,

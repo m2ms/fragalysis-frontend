@@ -28,6 +28,8 @@ import { setOpenDiscourseErrorModal } from '../../../reducers/api/actions';
 
 import moment from 'moment';
 import { resetNglTrackingState } from '../../../reducers/nglTracking/dispatchActions';
+import { getSnapshot, getActions } from '../../../reducers/api/dispatchActions';
+import { setSnapshotCache } from '../../../reducers/api/actions';
 
 export const assignSnapshotToProject = ({ projectID, snapshotID, ...rest }) => (dispatch, getState) => {
   dispatch(resetCurrentSnapshot());
@@ -148,6 +150,11 @@ export const loadSnapshotByProjectID = projectID => (dispatch, getState) => {
         } else if (response.data.results[0] !== undefined) {
           console.log(`Snapshot from server: ${JSON.stringify(response.data.results[0])}`);
           dispatch(
+            setSnapshotCache({
+              [response.data.results[0].id]: { snapshot_data: response.data.results[0] }
+            })
+          );
+          dispatch(
             setCurrentSnapshot({
               id: response.data.results[0].id,
               type: response.data.results[0].type,
@@ -178,26 +185,26 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
   const isLoadingCurrentSnapshot = state.projectReducers.isLoadingCurrentSnapshot;
   if (isLoadingCurrentSnapshot === false) {
     dispatch(setIsLoadingCurrentSnapshot(true));
-    return api({ url: `${base_url}/api/snapshots/${snapshotID}` })
+    return dispatch(getSnapshot(snapshotID))
       .then(response => {
-        if (response.data.id === undefined) {
+        if (response.id === undefined) {
           dispatch(resetCurrentSnapshot());
           return Promise.resolve(null);
         } else {
           dispatch(
             setCurrentSnapshot({
-              id: response.data.id,
-              type: response.data.type,
-              title: response.data.title,
-              author: response.data.author,
-              description: response.data.description,
-              created: response.data.created,
-              children: response.data.children,
-              parent: response.data.parent,
-              data: response.data.data
+              id: response.id,
+              type: response.type,
+              title: response.title,
+              author: response.author,
+              description: response.description,
+              created: response.created,
+              children: response.children,
+              parent: response.parent,
+              data: response.data
             })
           );
-          return Promise.resolve(response.data);
+          return Promise.resolve(response);
         }
       })
       .catch(error => {

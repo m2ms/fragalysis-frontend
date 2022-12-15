@@ -60,3 +60,8 @@ export const setDownloadStructuresDialogOpen = show => ({
   type: constants.SET_DOWNLOAD_STRUCTURES_DIALOG_OPEN,
   payload: show
 });
+
+export const setSaveButtonRef = ref => ({
+  type: constants.SET_SAVE_BUTTON_REF,
+  ref: ref
+});

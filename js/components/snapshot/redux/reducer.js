@@ -24,7 +24,8 @@ export const INITIAL_STATE = {
   disableRedirect: false,
   snapshotJustSaved: false,
   dontShowShareSnapshot: false,
-  downloadStructuresDialogOpen: false
+  downloadStructuresDialogOpen: false,
+  saveButtonRef: null
 };
 
 export const snapshotReducers = (state = INITIAL_STATE, action = {}) => {
@@ -98,6 +99,9 @@ export const snapshotReducers = (state = INITIAL_STATE, action = {}) => {
       return Object.assign({}, state, {
         dontShowShareSnapshot: action.payload
       });
+
+    case constants.SET_SAVE_BUTTON_REF:
+      return { ...state, saveButtonRef: { ...action.ref } };
 
     case constants.SET_SNAPSHOT_JUST_SAVED: {
       return Object.assign({}, state, {

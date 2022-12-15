@@ -16,7 +16,7 @@ import { withSnapshotManagement } from '../snapshot/withSnapshotManagement';
 import { useDispatch, useSelector } from 'react-redux';
 import { ProjectHistoryPanel } from './projectHistoryPanel';
 import { ProjectDetailDrawer } from '../projects/projectDetailDrawer';
-import { NewSnapshotModal } from '../snapshot/modals/newSnapshotModal';
+import { NewSnapshotPopoverModal } from '../snapshot/modals/newSnapshotPopoverModal';
 import { SaveSnapshotBeforeExit } from '../snapshot/modals/saveSnapshotBeforeExit';
 import { ModalShareSnapshot } from '../snapshot/modals/modalShareSnapshot';
 import { DownloadStructureDialog } from '../snapshot/modals/downloadStructuresDialog';
@@ -269,7 +269,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
       <InPortal node={nglPortal}>
         <NGLView div_id={VIEWS.MAJOR_VIEW} />
       </InPortal>
-      <NewSnapshotModal />
+      <NewSnapshotPopoverModal />
       <ModalShareSnapshot />
       <SaveSnapshotBeforeExit />
       <DownloadStructureDialog />

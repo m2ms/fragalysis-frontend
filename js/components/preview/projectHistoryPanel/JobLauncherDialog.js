@@ -56,7 +56,10 @@ const useStyles = makeStyles(theme => ({
   bodyPopup: {
     padding: '10px',
     backgroundColor: '#ffffff',
-    borderRadius: '0 0 5px 5px'
+    borderRadius: '0 0 5px 5px',
+    '& .MuiInputBase-inputMultiline': {
+      height: '1.9em'
+    }
   },
 
   successMsg: {
@@ -186,7 +189,7 @@ const JobLauncherDialog = () => {
         <div className={classes.bodyPopup}>
           <JSONForm
             schema={schema}
-            uiSchema={uiSchema}
+            uiSchema={{ ...uiSchema, classNames: { 'ui:rootFieldClasses': 'job-launcher-form' } }}
             onSubmit={onSubmitForm}
             formData={formData}
             onChange={event => {

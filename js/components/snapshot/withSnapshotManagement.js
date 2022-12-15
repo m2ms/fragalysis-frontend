@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect } from 'react';
+import React, { memo, useContext, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@material-ui/core';
 import { Save, Restore, Share } from '@material-ui/icons';
@@ -9,6 +9,7 @@ import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { activateSnapshotDialog, saveAndShareSnapshot } from './redux/dispatchActions';
 import { NglContext } from '../nglView/nglProvider';
 import { restoreSnapshotActions } from '../preview/moleculeGroups/redux/dispatchActions';
+import { setSaveButtonRef } from './redux/actions';
 
 /**
  * Created by ricgillams on 13/06/2018.
@@ -22,6 +23,8 @@ export const withSnapshotManagement = WrappedComponent => {
     const { nglViewList } = useContext(NglContext);
     const dispatch = useDispatch();
     const sessionTitle = useSelector(state => state.apiReducers.sessionTitle);
+
+    const saveButtonRef = useRef();
 
     const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
 
@@ -58,9 +61,17 @@ export const withSnapshotManagement = WrappedComponent => {
         <Button
           key="saveSnapshot"
           color="primary"
-          onClick={() => dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']))}
+          onClick={() => {
+            dispatch(setSaveButtonRef(saveButtonRef.current));
+            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
+          }}
           startIcon={<Save />}
           disabled={!enableSaveButton || false}
+          ref={saveButtonRef}
+          onMouseOver={() => {
+            dispatch(setSaveButtonRef(saveButtonRef.current));
+            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
+          }}
         >
           Save
         </Button>,

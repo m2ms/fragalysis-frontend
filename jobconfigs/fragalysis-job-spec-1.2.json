@@ -163,7 +163,6 @@
         },
         "smiles": {
           "items": {
-            "type": "string",
             "ui:widget": "textarea"
           }
         },

@@ -10,6 +10,7 @@ import { activateSnapshotDialog, saveAndShareSnapshot } from './redux/dispatchAc
 import { NglContext } from '../nglView/nglProvider';
 import { restoreSnapshotActions } from '../preview/moleculeGroups/redux/dispatchActions';
 import { setSaveButtonRef } from './redux/actions';
+import { useEffectDebugger } from '../../utils/effects';
 
 /**
  * Created by ricgillams on 13/06/2018.
@@ -52,81 +53,108 @@ export const withSnapshotManagement = WrappedComponent => {
       (projectId !== undefined && currentProject.projectID === null && currentSnapshotID === null && !target) ||
       (!target && !projectId);
 
-    // Function for set Header buttons, target title and snackBar information about session
     useEffect(() => {
-      if (targetName !== undefined) {
-        setHeaderNavbarTitle(targetName);
-      }
-      setHeaderButtons([
-        <Button
-          key="saveSnapshot"
-          color="primary"
-          onClick={() => {
-            dispatch(setSaveButtonRef(saveButtonRef.current));
-            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
-          }}
-          startIcon={<Save />}
-          disabled={!enableSaveButton || false}
-          ref={saveButtonRef}
-          onMouseOver={() => {
-            dispatch(setSaveButtonRef(saveButtonRef.current));
-            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
-          }}
-        >
-          Save
-        </Button>,
-        !target && currentSnapshotID && (
-          <Button
-            key="restoreSnapshot"
-            color="primary"
-            onClick={() =>
-              dispatch(restoreSnapshotActions({ nglViewList, projectId, snapshotId: currentSnapshot.id, history }))
-            }
-            startIcon={<Restore />}
-            disabled={disableShareButton || false}
-          >
-            Restore
-          </Button>
-        ),
-        <Button
-          key="shareSnapshot"
-          color="primary"
-          size="small"
-          startIcon={<Share />}
-          disabled={disableShareButton || false}
-          onClick={() => {
-            dispatch(saveAndShareSnapshot(nglViewList, true, {}));
-          }}
-        >
-          Share
-        </Button>,
-        <DownloadPdb key="download" />
-      ]);
+      console.count(`withSnapshotManagement useEffect`);
+    }, []);
 
-      return () => {
-        setHeaderButtons(null);
-        setSnackBarTitle(null);
-        setHeaderNavbarTitle('');
-      };
-    }, [
-      enableSaveButton,
-      dispatch,
-      sessionTitle,
-      setHeaderNavbarTitle,
-      setHeaderButtons,
-      setSnackBarTitle,
-      targetIdList,
-      targetName,
-      setSnackBarColor,
-      projectId,
-      currentSnapshotID,
-      currentProject,
-      disableShareButton,
-      target,
-      nglViewList,
-      currentSnapshot.id,
-      history
-    ]);
+    // Function for set Header buttons, target title and snackBar information about session
+    useEffectDebugger(
+      () => {
+        if (targetName !== undefined) {
+          setHeaderNavbarTitle(targetName);
+        }
+        setHeaderButtons([
+          <Button
+            key="saveSnapshot"
+            color="primary"
+            onClick={() => {
+              dispatch(setSaveButtonRef(saveButtonRef.current));
+              dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
+            }}
+            startIcon={<Save />}
+            disabled={!enableSaveButton || false}
+            ref={saveButtonRef}
+            onMouseOver={() => {
+              dispatch(setSaveButtonRef(saveButtonRef.current));
+              dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
+            }}
+          >
+            Save
+          </Button>,
+          !target && currentSnapshotID && (
+            <Button
+              key="restoreSnapshot"
+              color="primary"
+              onClick={() =>
+                dispatch(restoreSnapshotActions({ nglViewList, projectId, snapshotId: currentSnapshot.id, history }))
+              }
+              startIcon={<Restore />}
+              disabled={disableShareButton || false}
+            >
+              Restore
+            </Button>
+          ),
+          <Button
+            key="shareSnapshot"
+            color="primary"
+            size="small"
+            startIcon={<Share />}
+            disabled={disableShareButton || false}
+            onClick={() => {
+              dispatch(saveAndShareSnapshot(nglViewList, true, {}));
+            }}
+          >
+            Share
+          </Button>,
+          <DownloadPdb key="download" />
+        ]);
+
+        return () => {
+          setHeaderButtons(null);
+          setSnackBarTitle(null);
+          setHeaderNavbarTitle('');
+        };
+      },
+      [
+        enableSaveButton,
+        dispatch,
+        sessionTitle,
+        setHeaderNavbarTitle,
+        setHeaderButtons,
+        setSnackBarTitle,
+        targetIdList,
+        targetName,
+        setSnackBarColor,
+        projectId,
+        currentSnapshotID,
+        currentProject,
+        disableShareButton,
+        target,
+        nglViewList,
+        currentSnapshot.id,
+        history
+      ],
+      [
+        'enableSaveButton',
+        'dispatch',
+        'sessionTitle',
+        'setHeaderNavbarTitle',
+        'setHeaderButtons',
+        'setSnackBarTitle',
+        'targetIdList',
+        'targetName',
+        'setSnackBarColor',
+        'projectId',
+        'currentSnapshotID',
+        'currentProject',
+        'disableShareButton',
+        'target',
+        'nglViewList',
+        'currentSnapshot.id',
+        'history'
+      ],
+      'withSnapshotManagement'
+    );
 
     return (
       <WrappedComponent

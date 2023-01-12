@@ -40,6 +40,7 @@ import { loadMoleculesAndTags } from './tags/redux/dispatchActions';
 import { getTagMolecules } from './tags/api/tagsApi';
 import { compareTagsAsc } from './tags/utils/tagUtils';
 import { setMoleculeTags } from '../../reducers/api/actions';
+import { useEffectDebugger } from '../../utils/effects';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
@@ -89,66 +90,86 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
 
   const nglPortal = useMemo(() => createHtmlPortalNode({ attributes: { style: 'height: 100%' } }), []);
 
-  useEffect(() => {
-    if (target_on && !isSnapshot) {
-      dispatch(loadMoleculesAndTags(target_on));
-    }
-  }, [dispatch, target_on, isSnapshot]);
+  useEffectDebugger(
+    () => {
+      if (target_on && !isSnapshot) {
+        dispatch(loadMoleculesAndTags(target_on));
+      }
+    },
+    [dispatch, target_on, isSnapshot],
+    ['dispatch', 'target_on', 'isSnapshot'],
+    'Preview - loadMoleculesAndTags'
+  );
 
-  useEffect(() => {
-    if (target_on) {
-      getTagMolecules(target_on).then(data => {
-        const sorted = data.results.sort(compareTagsAsc);
-        dispatch(setMoleculeTags(sorted));
-      });
-    }
-  }, [dispatch, target_on]);
+  useEffectDebugger(
+    () => {
+      if (target_on) {
+        getTagMolecules(target_on).then(data => {
+          const sorted = data.results.sort(compareTagsAsc);
+          dispatch(setMoleculeTags(sorted));
+        });
+      }
+    },
+    [dispatch, target_on],
+    ['dispatch', 'target_on'],
+    'Preview - getTagMolecules'
+  );
 
   /*
      Loading datasets
    */
-  useEffect(() => {
-    if (customDatasets.length === 0 && isTrackingRestoring === false) {
-      dispatch(setMoleculeListIsLoading(true));
-      dispatch(loadDataSets(target_on))
-        .then(results => {
-          if (Array.isArray(results) && results.length > 0) {
-            let defaultDataset = results[0]?.unique_name;
-            dispatch(setSelectedDatasetIndex(0, 0, defaultDataset, defaultDataset, true));
-          }
-          return dispatch(loadDatasetCompoundsWithScores());
-        })
-        .catch(error => {
-          throw new Error(error);
-        })
-        .finally(() => {
-          dispatch(setMoleculeListIsLoading(false));
-        });
-    }
-  }, [customDatasets.length, dispatch, target_on, isTrackingRestoring]);
-
-  useEffect(() => {
-    const moleculeListsCount = Object.keys(moleculeLists || {}).length;
-    if (moleculeListsCount > 0 && !isLoadingMoleculeList) {
-      const allDatasets = {};
-      const allMolsMap = linearizeMoleculesLists();
-      const keys = Object.keys(moleculeLists);
-      keys.forEach(key => {
-        let dataset = moleculeLists[key];
-        let mols = {};
-        dataset.forEach(dsMol => {
-          let inspirations = [];
-          dsMol.computed_inspirations.forEach(id => {
-            let lhsMol = allMolsMap[id];
-            inspirations.push(lhsMol);
+  useEffectDebugger(
+    () => {
+      if (customDatasets.length === 0 && isTrackingRestoring === false) {
+        dispatch(setMoleculeListIsLoading(true));
+        dispatch(loadDataSets(target_on))
+          .then(results => {
+            if (Array.isArray(results) && results.length > 0) {
+              let defaultDataset = results[0]?.unique_name;
+              dispatch(setSelectedDatasetIndex(0, 0, defaultDataset, defaultDataset, true));
+            }
+            return dispatch(loadDatasetCompoundsWithScores());
+          })
+          .catch(error => {
+            throw new Error(error);
+          })
+          .finally(() => {
+            dispatch(setMoleculeListIsLoading(false));
           });
-          mols[dsMol.id] = inspirations;
+      }
+    },
+    [customDatasets.length, dispatch, target_on, isTrackingRestoring],
+    ['customDatasets.length', 'dispatch', 'target_on', 'isTrackingRestoring'],
+    'Preview - loadDataSets'
+  );
+
+  useEffectDebugger(
+    () => {
+      const moleculeListsCount = Object.keys(moleculeLists || {}).length;
+      if (moleculeListsCount > 0 && !isLoadingMoleculeList) {
+        const allDatasets = {};
+        const allMolsMap = linearizeMoleculesLists();
+        const keys = Object.keys(moleculeLists);
+        keys.forEach(key => {
+          let dataset = moleculeLists[key];
+          let mols = {};
+          dataset.forEach(dsMol => {
+            let inspirations = [];
+            dsMol.computed_inspirations.forEach(id => {
+              let lhsMol = allMolsMap[id];
+              inspirations.push(lhsMol);
+            });
+            mols[dsMol.id] = inspirations;
+          });
+          allDatasets[key] = mols;
         });
-        allDatasets[key] = mols;
-      });
-      dispatch(setAllInspirations(allDatasets));
-    }
-  }, [all_mol_lists, moleculeLists, isLoadingMoleculeList, linearizeMoleculesLists, dispatch]);
+        dispatch(setAllInspirations(allDatasets));
+      }
+    },
+    [all_mol_lists, moleculeLists, isLoadingMoleculeList, linearizeMoleculesLists, dispatch],
+    ['all_mol_lists', 'moleculeLists', 'isLoadingMoleculeList', 'linearizeMoleculesLists', 'dispatch'],
+    'Preview - setAllInspirations'
+  );
 
   const linearizeMoleculesLists = useCallback(() => {
     const allMolsMap = {};

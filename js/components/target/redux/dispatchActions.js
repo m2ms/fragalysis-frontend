@@ -8,7 +8,7 @@ import {
   setUuid
 } from '../../../reducers/api/actions';
 import { setIsTargetLoading, setOldUrl } from './actions';
-import { api } from '../../../utils/api';
+import { api, METHOD } from '../../../utils/api';
 import { resetSelectionState } from '../../../reducers/selection/actions';
 import { base_url } from '../../routes/constants';
 import { setCurrentProject } from '../../projects/redux/actions';
@@ -28,6 +28,12 @@ export const loadTargetList = onCancel => (dispatch, getState) => {
     list_type,
     cancel: onCancel
   });
+};
+
+export const loadProjectsList = () => async (dispatch, getState) => {
+  const url = `${base_url}/api/projects/`;
+  const resp = await api({ url, method: METHOD.GET });
+  return resp.data.results;
 };
 
 export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) => (dispatch, getState) => {
@@ -103,4 +109,22 @@ export const resetTargetAndSelection = resetSelection => dispatch => {
     dispatch(resetTargetState());
     dispatch(resetSelectionState());
   }
+};
+
+export const getTargetProjectCombinations = (targets, projects) => {
+  const result = [];
+
+  const targetItems = Object.entries(targets);
+
+  if (targetItems.length > 0 && projects?.length > 0) {
+    targetItems.forEach(([targetId, target]) => {
+      target.project_id.forEach(projectId => {
+        const project = projects.find(project => project.id === projectId);
+        // const project = projects[projectId];
+        result.push({ target, project });
+      });
+    });
+  }
+
+  return result;
 };

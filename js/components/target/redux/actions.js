@@ -10,3 +10,7 @@ export const setTargetDiscourseLinks = links => ({
 });
 
 export const setCurrentTargetLink = link => ({ type: constants.SET_CURRENT_TARGET_LINK, payload: link });
+
+export const setProjects = projects => ({ type: constants.SET_PROJECTS, payload: projects });
+
+export const setCurrentProject = project => ({ type: constants.SET_CURRENT_PROJECT, payload: project });

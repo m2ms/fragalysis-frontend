@@ -174,7 +174,11 @@ const JobConfigurationDialog = ({ snapshots }) => {
   const selectedDatasetCompounds = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap);
   const datasetVisibleDatasetCompoundsList = useSelector(state => state.datasetsReducers.ligandLists);
 
-  const currentProject = useSelector(state => state.projectReducers.currentProject);
+  const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
+  const currentProject = useSelector(state => state.targetReducers.currentProject);
+  if (!currentProject) {
+    setErrorMsg('No project selected, please navigate to landing page and select a target.');
+  }
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
   const currentSnapshot = snapshots?.[currentSnapshotID];
   const targetId = useSelector(state => state.apiReducers.target_on);
@@ -208,7 +212,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
     const type = SnapshotType.MANUAL;
     const author = DJANGO_CONTEXT['pk'] || null;
     const parent = currentSnapshot.id;
-    const session_project = currentProject.projectID;
+    const session_project = currentSessionProject.projectID;
 
     // Prevents redirect and displaying of share snapshot dialog
     dispatch(setDisableRedirect(true));
@@ -378,6 +382,8 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
         const repsonse = await jobFileTransfer({
           snapshot: chosenSnapshot.id,
+          access: currentProject.id,
+          session_project: currentSessionProject.projectID,
           target: targetId,
           squonk_project: dispatch(getSquonkProject()),
           proteins: chosenLHSCompounds.join(),

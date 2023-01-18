@@ -93,9 +93,9 @@ const JobLauncherDialog = () => {
   const targetName = useSelector(state => state.apiReducers.target_on_name);
   const currentProject = useSelector(state => state.targetReducers.currentProject);
 
-  if (!currentProject) {
-    setErrorMsg('No project selected, please navigate to landing page and select a target.');
-  }
+  // if (!currentProject) {
+  //   setErrorMsg('No project selected, please navigate to landing page and select a target.');
+  // }
 
   // Get data from previous window
   const jobLauncherData = useSelector(state => state.projectReducers.jobLauncherData);

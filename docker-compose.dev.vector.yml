@@ -63,6 +63,7 @@ services:
       SQUONK2_UNIT_BILLING_DAY: 3
       OIDC_AS_CLIENT_ID: 'account-server-api-dev'
       OIDC_DM_CLIENT_ID: 'data-manager-api-dev'
+      OIDC_KEYCLOAK_REALM: 'https://keycloak.xchem-dev.diamond.ac.uk/auth/realms/xchem'
     depends_on:
       - database
       - graph

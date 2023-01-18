@@ -176,9 +176,9 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
   const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
   const currentProject = useSelector(state => state.targetReducers.currentProject);
-  if (!currentProject) {
-    setErrorMsg('No project selected, please navigate to landing page and select a target.');
-  }
+  // if (!currentProject) {
+  //   setErrorMsg('No project selected, please navigate to landing page and select a target.');
+  // }
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
   const currentSnapshot = snapshots?.[currentSnapshotID];
   const targetId = useSelector(state => state.apiReducers.target_on);

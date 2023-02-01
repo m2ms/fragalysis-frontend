@@ -8,7 +8,9 @@ export const INITIAL_STATE = {
   //these are not session projects i.e. projects created within fragalysis UI these
   //are projects defined at the diamond (?) level
   projects: [],
-  currentProject: null
+  currentProject: null,
+  openPickProjectModal: false,
+  projectsLoaded: false
 };
 
 export const targetReducers = (state = INITIAL_STATE, action = {}) => {
@@ -34,6 +36,12 @@ export const targetReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.SET_CURRENT_PROJECT:
       return { ...state, currentProject: action.payload };
+
+    case constants.SET_OPEN_PICK_PROJECT_MODAL:
+      return { ...state, openPickProjectModal: action.payload };
+
+    case constants.SET_PROJECTS_LOADED:
+      return { ...state, projectsLoaded: action.payload };
 
     default:
       return state;

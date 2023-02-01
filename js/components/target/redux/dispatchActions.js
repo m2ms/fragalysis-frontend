@@ -12,6 +12,7 @@ import { api, METHOD } from '../../../utils/api';
 import { resetSelectionState } from '../../../reducers/selection/actions';
 import { base_url } from '../../routes/constants';
 import { setCurrentProject } from '../../projects/redux/actions';
+import { setCurrentProject as setProject } from './actions';
 
 export const loadTargetList = onCancel => (dispatch, getState) => {
   const oldUrl = getState().targetReducers.oldUrl;
@@ -41,7 +42,8 @@ export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) 
 
   // Get from the REST API
   let targetUnrecognisedFlag = true;
-  if (target !== undefined) {
+  // if (target !== undefined) {
+  if (target) {
     if (targetIdList && targetIdList.length > 0) {
       targetIdList.forEach(targetId => {
         if (target === targetId.title) {
@@ -86,6 +88,7 @@ export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) 
                 })
               )
             );
+            promises.push(dispatch(setProject(response.data.project)));
           }
 
           return Promise.all(promises);

@@ -22,6 +22,7 @@ import {
   loadProteinOfRestoringActions
 } from '../../components/preview/redux/dispatchActions';
 import { setCurrentProject } from '../../components/projects/redux/actions';
+import { setCurrentProject as setProject } from '../../components/target/redux/actions';
 import { loadMoleculeGroupsOfTarget } from '../../components/preview/moleculeGroups/redux/dispatchActions';
 import { loadTargetList } from '../../components/target/redux/dispatchActions';
 import { resetTargetState, setTargetOn } from '../api/actions';
@@ -1696,6 +1697,8 @@ const restoreProject = projectId => (dispatch, getState) => {
           })
         )
       );
+      promises.push(dispatch(setProject(response.data.project)));
+
       return Promise.all(promises);
     });
   }

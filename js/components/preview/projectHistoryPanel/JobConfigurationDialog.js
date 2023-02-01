@@ -382,7 +382,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
         const repsonse = await jobFileTransfer({
           snapshot: chosenSnapshot.id,
-          access: currentProject.id,
+          access: currentProject.target_access_string,
           session_project: currentSessionProject.projectID,
           target: targetId,
           squonk_project: dispatch(getSquonkProject()),

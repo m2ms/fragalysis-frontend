@@ -142,7 +142,7 @@ const JobLauncherDialog = () => {
 
     jobRequest({
       squonk_job_name: jobLauncherData.job.slug,
-      access: currentProject.id,
+      access: currentProject.target_access_string,
       session_project: currentSessionProjectID,
       snapshot: jobLauncherData?.snapshot.id,
       target: targetId,

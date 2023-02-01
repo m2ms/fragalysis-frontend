@@ -19,7 +19,7 @@ export const ProjectPreview = memo(({}) => {
   const projectId = match && match.params && match.params.projectId;
   const snapshotId = match && match.params && match.params.snapshotId;
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
-  const currentProject = useSelector(state => state.projectReducers.currentProject);
+  const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
   const isActionRestoring = useSelector(state => state.trackingReducers.isActionRestoring);
   const isActionRestored = useSelector(state => state.trackingReducers.isActionRestored);
 
@@ -88,7 +88,8 @@ export const ProjectPreview = memo(({}) => {
       isStateLoaded={isSnapshotLoaded.current !== null}
       hideProjects={
         DJANGO_CONTEXT['pk'] === undefined ||
-        (DJANGO_CONTEXT['pk'] !== undefined && (currentProject.projectID === null || currentProject.authorID === null))
+        (DJANGO_CONTEXT['pk'] !== undefined &&
+          (currentSessionProject.projectID === null || currentSessionProject.authorID === null))
       }
     />
   ) : null;

@@ -13,6 +13,7 @@ import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
 import { Chat } from '@material-ui/icons';
 import { getTargetProjectCombinations } from './redux/dispatchActions';
 import { setCurrentProject } from './redux/actions';
+import { URL_TOKENS } from '../direct/constants';
 
 export const TargetList = memo(() => {
   const dispatch = useDispatch();
@@ -21,7 +22,7 @@ export const TargetList = memo(() => {
   const projectsList = useSelector(state => state.targetReducers.projects);
 
   const render_item_method = (target, project) => {
-    const preview = URLS.target + target.title;
+    const preview = `${URLS.target}${target.title}/${URL_TOKENS.target_access_string}/${project.target_access_string}`;
     const sgcUrl = 'https://thesgc.org/sites/default/files/XChem/' + target.title + '/html/index.html';
     const sgcUploaded = ['BRD1A', 'DCLRE1AA', 'FALZA', 'FAM83BA', 'HAO1A', 'NUDT4A', 'NUDT5A', 'NUDT7A', 'PARP14A'];
     const discourseAvailable = isDiscourseAvailable();
@@ -34,7 +35,7 @@ export const TargetList = memo(() => {
             <Link
               to={preview}
               onClick={() => {
-                dispatch(setCurrentProject(project));
+                // dispatch(setCurrentProject(project));
               }}
             >
               <ListItemText primary={target.title} />

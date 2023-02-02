@@ -80,7 +80,7 @@ export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) 
               dispatch(
                 setCurrentProject({
                   projectID: response.data.id,
-                  authorID: (response.data.author && response.data.author.id) || null,
+                  authorID: response.data.author || null,
                   title: response.data.title,
                   description: response.data.description,
                   targetID: response.data.target.id,

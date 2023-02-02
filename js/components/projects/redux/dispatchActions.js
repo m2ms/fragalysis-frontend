@@ -412,9 +412,8 @@ export const createProjectFromScratch = ({ title, description, target, author, t
       const description = response.data.description;
       const targetID = response.data.target;
       const tags = response.data.tags;
-      const project = response.data.project;
 
-      dispatch(setCurrentProject({ projectID, authorID, title, description, targetID, tags, project }));
+      dispatch(setCurrentProject({ projectID, authorID, title, description, targetID, tags }));
 
       let promises = [];
       promises.push(dispatch(createInitSnapshotToProjectWitActions(projectID, authorID, null, targetID)));

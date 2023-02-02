@@ -1,5 +1,5 @@
 import React, { memo, useContext, useEffect, useState } from 'react';
-import { connect } from 'react-redux';
+import { connect, useSelector } from 'react-redux';
 import { HeaderContext } from '../header/headerContext';
 import HandleUnrecognisedTarget from './handleUnrecognisedTarget';
 import { updateTarget, setTargetUUIDs, resetTargetAndSelection } from './redux/dispatchActions';
@@ -18,6 +18,8 @@ export const withUpdatingTarget = WrappedContainer => {
       const snapshotId = match && match.params && match.params.snapshotId;
       const projectId = match && match.params && match.params.projectId;
 
+      const isActionRestoring = useSelector(state => state.trackingReducers.isActionRestoring);
+
       const { isLoading, setIsLoading } = useContext(HeaderContext);
       const [state, setState] = useState();
 
@@ -35,7 +37,7 @@ export const withUpdatingTarget = WrappedContainer => {
             throw error;
           });
         });
-      }, [setIsLoading, target, updateTarget, targetIdList, projectId, snapshotId]);
+      }, [setIsLoading, target, updateTarget, targetIdList, projectId, snapshotId, isActionRestoring]);
 
       if (isLoading === true) {
         return null;

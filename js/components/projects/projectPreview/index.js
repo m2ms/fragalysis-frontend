@@ -82,6 +82,10 @@ export const ProjectPreview = memo(({}) => {
     setSnackBarTitle('Not valid snapshot!');
   }
 
+  console.log(
+    `Logged in user: ${DJANGO_CONTEXT['pk']} and project author: ${currentSessionProject.authorID} and project id: ${currentSessionProject.projectID}`
+  );
+
   return canShow === true && isSnapshotLoaded.current !== undefined ? (
     <Preview
       isSnapshot={true}

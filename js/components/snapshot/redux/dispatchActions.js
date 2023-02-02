@@ -362,7 +362,7 @@ export const createNewSnapshot = ({
                           await dispatch(
                             setCurrentProject({
                               projectID: projectResponse.data.id,
-                              authorID: (projectResponse.data.author && projectResponse.data.author.id) || null,
+                              authorID: projectResponse.data.author || null,
                               title: projectResponse.data.title,
                               description: projectResponse.data.description,
                               targetID: projectResponse.data.target.id,

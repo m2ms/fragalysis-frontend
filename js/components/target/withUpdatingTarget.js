@@ -18,7 +18,7 @@ export const withUpdatingTarget = WrappedContainer => {
       const snapshotId = match && match.params && match.params.snapshotId;
       const projectId = match && match.params && match.params.projectId;
 
-      const isActionRestoring = useSelector(state => state.trackingReducers.isActionRestoring);
+      // const isActionRestoring = useSelector(state => state.trackingReducers.isActionRestoring);
 
       const { isLoading, setIsLoading } = useContext(HeaderContext);
       const [state, setState] = useState();
@@ -37,7 +37,7 @@ export const withUpdatingTarget = WrappedContainer => {
             throw error;
           });
         });
-      }, [setIsLoading, target, updateTarget, targetIdList, projectId, snapshotId, isActionRestoring]);
+      }, [setIsLoading, target, updateTarget, targetIdList, projectId, snapshotId /*, isActionRestoring*/]);
 
       if (isLoading === true) {
         return null;

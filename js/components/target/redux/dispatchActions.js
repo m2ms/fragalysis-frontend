@@ -38,7 +38,11 @@ export const loadProjectsList = () => async (dispatch, getState) => {
 };
 
 export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) => (dispatch, getState) => {
-  const isActionRestoring = getState().trackingReducers.isActionRestoring;
+  const state = getState();
+  const isActionRestoring = state.trackingReducers.isActionRestoring;
+  const currentSessionProject = state.projectReducers.currentProject;
+  const targetOn = state.apiReducers.target_on;
+  const currentProject = state.targetReducers.currentProject;
 
   // Get from the REST API
   let targetUnrecognisedFlag = true;
@@ -75,20 +79,26 @@ export const updateTarget = ({ target, setIsLoading, targetIdList, projectId }) 
         .then(response => {
           let promises = [];
           if (!isActionRestoring || isActionRestoring === false) {
-            promises.push(dispatch(setTargetOn(response.data.target.id, true)));
-            promises.push(
-              dispatch(
-                setCurrentProject({
-                  projectID: response.data.id,
-                  authorID: response.data.author || null,
-                  title: response.data.title,
-                  description: response.data.description,
-                  targetID: response.data.target.id,
-                  tags: JSON.parse(response.data.tags)
-                })
-              )
-            );
-            promises.push(dispatch(setProject(response.data.project)));
+            if (!targetOn) {
+              promises.push(dispatch(setTargetOn(response.data.target.id, true)));
+            }
+            if (!currentSessionProject) {
+              promises.push(
+                dispatch(
+                  setCurrentProject({
+                    projectID: response.data.id,
+                    authorID: response.data.author || null,
+                    title: response.data.title,
+                    description: response.data.description,
+                    targetID: response.data.target.id,
+                    tags: JSON.parse(response.data.tags)
+                  })
+                )
+              );
+            }
+            if (!currentProject) {
+              promises.push(dispatch(setProject(response.data.project)));
+            }
           }
 
           return Promise.all(promises);

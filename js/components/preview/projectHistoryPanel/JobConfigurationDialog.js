@@ -374,7 +374,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
       if (chosenLHSCompounds.length > 0) {
         // Close the actual pop up window
-        dispatch(setJobConfigurationDialogOpen(false));
+        // dispatch(setJobConfigurationDialogOpen(false));
 
         const getFilteredJob = job => {
           return jobList.find(jobFiltered => job === jobFiltered.id);
@@ -412,6 +412,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
         setErrorMsg(null);
         setIsError(false);
+        dispatch(setJobConfigurationDialogOpen(false));
         dispatch(setJobLauncherDialogOpen(true));
       } else {
         setErrorMsg("There's no selected inputs to run the job.");

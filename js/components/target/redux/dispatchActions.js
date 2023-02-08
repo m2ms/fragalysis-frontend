@@ -134,7 +134,11 @@ export const getTargetProjectCombinations = (targets, projects) => {
       target.project_id.forEach(projectId => {
         const project = projects.find(project => project.id === projectId);
         // const project = projects[projectId];
-        result.push({ target, project });
+        if (project) {
+          result.push({ target, project });
+        } else {
+          console.log(`User don't have access to project ${projectId} which is associated with target ${target.title}`);
+        }
       });
     });
   }

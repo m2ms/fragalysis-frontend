@@ -3,9 +3,16 @@ import { URL_TOKENS } from '../direct/constants';
 export const extractFromUrlParam = (param, token) => {
   let result = null;
   if (param) {
-    const regex = new RegExp(`${token}\/(\\w+)\/?(?!.*${token}\/)`);
-    const match = param.match(regex);
-    result = match ? match[1] : null;
+    // const regex = new RegExp(`${token}\/(\\w+)\/?(?!.*${token}\/)`);
+    // const match = param.match(regex);
+    // result = match ? match[1] : null;
+    const paramsWithoutToken = param.split(token);
+    if (paramsWithoutToken && paramsWithoutToken.length > 1) {
+      const splitParams = paramsWithoutToken[1].split('/');
+      if (splitParams && splitParams.length > 1) {
+        result = splitParams[1];
+      }
+    }
   }
   return result;
 };

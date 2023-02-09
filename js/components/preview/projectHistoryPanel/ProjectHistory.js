@@ -259,7 +259,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
               size="small"
               onClick={() => dispatch(refreshJobsData())}
               startIcon={<Refresh />}
-              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject}
+              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject || !currentSessionProject}
             >
               Refresh
             </Button>
@@ -271,7 +271,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
               size="small"
               onClick={handleClickJobLauncher}
               startIcon={<PlayArrow />}
-              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject}
+              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject || !currentSessionProject}
             >
               Job Launcher
             </Button>

@@ -540,7 +540,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
                   </Box>
                   {isError && (
                     <Paper variant="elevation" rounded="true" className={classes.errorMsg}>
-                      {errorMsg}
+                      {errorMsg?.message ?? errorMsg}
                     </Paper>
                   )}
                   <Button color="primary" size="large" type="submit">

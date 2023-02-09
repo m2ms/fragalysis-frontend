@@ -210,7 +210,7 @@ const JobLauncherDialog = () => {
             )}
             {isError && (
               <Paper variant="elevation" rounded="true" className={classes.errorMsg}>
-                {errorMsg}
+                {errorMsg?.message ?? errorMsg}
               </Paper>
             )}
             <Button disabled={isSubmitting} type="submit" color="primary" size="large">

@@ -32,7 +32,7 @@ import { resetNglTrackingState } from '../../../reducers/nglTracking/dispatchAct
 // eslint-disable-next-line import/extensions
 import fragmentsteinSpec from '../../../../jobconfigs/fragmenstein-combine.json';
 // eslint-disable-next-line import/extensions
-import fragmentsteinMultiSpec from '../../../../jobconfigs/fragmenstein-combine-multi.json';
+import fragmentsteinMultiSpec from '../../../../jobconfigs/fragmenstein-combine-multi-scoring.json';
 // eslint-disable-next-line import/extensions
 import fragmentsteinStringSpec from '../../../../jobconfigs/fragmenstein-place-string.json';
 // eslint-disable-next-line import/extensions

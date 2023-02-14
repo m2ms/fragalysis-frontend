@@ -197,6 +197,15 @@ export const getProjectsForSelectedTarget = () => (dispatch, getState) => {
   return getProjectsForTarget(currentTarget, projects);
 };
 
+export const getProjectsForTargetDisp = targetName => (dispatch, getState) => {
+  const state = getState();
+  const projects = state.targetReducers.projects;
+  const targets = state.apiReducers.target_id_list;
+  const target = targets?.find(t => t.title === targetName);
+
+  return getProjectsForTarget(target, projects);
+};
+
 export const getProjectForProjectName = projectName => (dispatch, getState) => {
   const state = getState();
 

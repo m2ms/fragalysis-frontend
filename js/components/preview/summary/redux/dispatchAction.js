@@ -99,7 +99,7 @@ export const updateSummaryView = ({ duck_yank_data, to_buy_list }) => dispatch =
 };
 
 const convert_data_to_list = input_list => (dispatch, getState) => {
-  const compoundClasses = getState().previewReducers.compounds.compoundClasses;
+  const compoundClasses = getState().previewReducers.vectorCompounds.compoundClasses;
   const classColors = {
     1: 'blue',
     2: 'red',
@@ -119,7 +119,7 @@ const convert_data_to_list = input_list => (dispatch, getState) => {
     newArray.push(item.smiles);
     newArray.push(item.mol);
     newArray.push(item.vector.replace(reg_ex, '*'));
-    newArray.push(getState().previewReducers.compounds[item.class]);
+    newArray.push(getState().previewReducers.vectorCompounds[item.class]);
     newArray.push(item.class);
     // newArray.push(compoundClasses[item.class]);
     // newArray.push(classColors[item.class]);

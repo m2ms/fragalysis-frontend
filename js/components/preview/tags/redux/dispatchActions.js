@@ -29,7 +29,7 @@ import {
   setAllDataLoaded
 } from '../../../../reducers/api/actions';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
-import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
+import { resetCurrentVectorCompoundsSettings } from '../../vectorCompounds/redux/actions';
 import { updateExistingTag, getAllData } from '../api/tagsApi';
 import {
   getMoleculeTagForTag,
@@ -107,7 +107,7 @@ const clearSelectionState = () => (dispatch, getState) => {
 
   dispatch(setFilter(undefined));
   dispatch(setSortDialogOpen(false));
-  dispatch(resetCurrentCompoundsSettings(true));
+  dispatch(resetCurrentVectorCompoundsSettings(true));
 };
 
 export const storeData = data => (dispatch, getState) => {

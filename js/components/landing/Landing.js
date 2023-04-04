@@ -10,7 +10,7 @@ import * as selectionActions from '../../reducers/selection/actions';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { Projects } from '../projects';
 import { HeaderContext } from '../header/headerContext';
-import { resetCurrentCompoundsSettings } from '../preview/compounds/redux/actions';
+import { resetCurrentVectorCompoundsSettings } from '../preview/vectorCompounds/redux/actions';
 import { resetProjectsReducer } from '../projects/redux/actions';
 import { withLoadingProjects } from '../target/withLoadingProjects';
 
@@ -47,7 +47,7 @@ const Landing = memo(
       resetTargetState();
       resetSelectionState();
       setSnackBarTitle(loginText);
-      resetCurrentCompoundsSettings(true);
+      resetCurrentVectorCompoundsSettings(true);
       resetProjectsReducer();
     }, [
       resetTargetState,
@@ -77,7 +77,7 @@ function mapStateToProps(state) {
 const mapDispatchToProps = {
   resetSelectionState: selectionActions.resetSelectionState,
   resetTargetState: apiActions.resetTargetState,
-  resetCurrentCompoundsSettings,
+  resetCurrentVectorCompoundsSettings,
   resetProjectsReducer
 };
 

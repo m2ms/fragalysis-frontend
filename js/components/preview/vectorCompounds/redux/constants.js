@@ -1,4 +1,4 @@
-const prefix = 'PREVIEW_COMPOUNDS_';
+const prefix = 'PREVIEW_VECTOR_COMPOUNDS_';
 
 export const constants = {
   SET_CURRENT_COMPOUNDS: prefix + 'SET_CURRENT_COMPOUNDS',
@@ -33,7 +33,7 @@ const colors = {
   apricot: 'apricot'
 };
 
-export const compoundsColors = {
+export const vectorCompoundsColors = {
   [colors.blue]: { key: colors.blue, text: 'Blue', color: '#b3cde3' },
   [colors.red]: { key: colors.red, text: 'Red', color: '#fbb4ae' },
   [colors.green]: { key: colors.green, text: 'Green', color: '#ccebc5' },
@@ -42,4 +42,3 @@ export const compoundsColors = {
 };
 
 export const AUX_VECTOR_SELECTOR_DATASET_ID = 'vector_selector';
-

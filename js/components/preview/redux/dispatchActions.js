@@ -2,7 +2,7 @@ import { generateProteinObject } from '../../nglView/generatingObjects';
 import { SUFFIX, VIEWS } from '../../../constants/constants';
 import { loadObject, setOrientation } from '../../../reducers/ngl/dispatchActions';
 import { reloadSummaryReducer } from '../summary/redux/actions';
-import { reloadCompoundsReducer, resetCurrentCompoundsSettings } from '../compounds/redux/actions';
+import { reloadVectorCompoundsReducer, resetCurrentVectorCompoundsSettings } from '../vectorCompounds/redux/actions';
 import { removeAllNglComponents, setProteinLoadingState } from '../../../reducers/ngl/actions';
 import { createInitialSnapshot } from '../../snapshot/redux/dispatchActions';
 import { resetLoadedSnapshots, resetProjectsReducer } from '../../projects/redux/actions';
@@ -116,7 +116,7 @@ export const loadProteinOfRestoringActions = ({ nglViewList }) => (dispatch, get
 
 export const reloadPreviewReducer = newState => dispatch => {
   dispatch(reloadSummaryReducer(newState.summary));
-  dispatch(reloadCompoundsReducer(newState.compounds));
+  dispatch(reloadVectorCompoundsReducer(newState.vectorCompounds));
 };
 
 export const unmountPreviewComponent = (stages = []) => dispatch => {
@@ -129,7 +129,7 @@ export const unmountPreviewComponent = (stages = []) => dispatch => {
   dispatch(resetTrackingState());
   dispatch(resetNglTrackingState());
 
-  dispatch(resetCurrentCompoundsSettings(true));
+  dispatch(resetCurrentVectorCompoundsSettings(true));
   dispatch(resetProjectsReducer());
 
   dispatch(resetSelectionState());

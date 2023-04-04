@@ -8,7 +8,7 @@ import {
 } from './constants';
 import { constants as apiConstants } from '../api/constants';
 import { CONSTANTS as nglConstants } from '../ngl/constants';
-import { constants as previewCompoundConstants } from '../../components/preview/compounds/redux/constants';
+import { constants as previewCompoundConstants } from '../../components/preview/vectorCompounds/redux/constants';
 import { constants as selectionConstants } from '../selection/constants';
 import { constants as customDatasetConstants } from '../../components/datasets/redux/constants';
 import { constants as viewerControlsConstants } from '../../components/preview/viewerControls/redux/constants';

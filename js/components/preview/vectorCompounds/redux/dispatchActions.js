@@ -6,19 +6,19 @@ import {
   removeFromToBuyListAll
 } from '../../../../reducers/selection/actions';
 import {
-  setCompoundClasses,
+  setVectorCompoundClasses,
   setCurrentPage,
-  setHighlightedCompoundId,
+  setHighlightedVectorCompoundId,
   setConfiguration,
-  addShowedCompoundToList,
-  removeShowedCompoundFromList,
-  removeSelectedCompoundClass,
-  addSelectedCompoundClass,
-  resetCompoundClasses,
-  resetSelectedCompoundClass,
+  addShownVectorCompoundToList,
+  removeShownVectorCompoundFromList,
+  removeSelectedVectorCompoundClass,
+  addSelectedVectorCompoundClass,
+  resetVectorCompoundClasses,
+  resetSelectedVectorCompoundClass,
   resetConfiguration,
-  setCurrentCompoundClass,
-  setSelectedCompounds
+  setCurrentVectorCompoundClass,
+  setSelectedVectorCompounds
 } from './actions';
 import { deleteObject, loadObject } from '../../../../reducers/ngl/dispatchActions';
 import { VIEWS } from '../../../../constants/constants';
@@ -26,7 +26,7 @@ import { generateCompoundMolObject } from '../../../nglView/generatingObjects';
 import { api, getCsrfToken, METHOD } from '../../../../utils/api';
 import { base_url } from '../../../routes/constants';
 import { loadFromServer } from '../../../../utils/genericView';
-import { compoundsColors, AUX_VECTOR_SELECTOR_DATASET_ID } from './constants';
+import { vectorCompoundsColors, AUX_VECTOR_SELECTOR_DATASET_ID } from './constants';
 import {
   getCurrentVectorCompoundsFiltered,
   getMoleculeOfCurrentVector
@@ -38,14 +38,14 @@ import {
 } from '../../../datasets/redux/actions';
 import { isRemoteDebugging } from '../../../routes/constants';
 
-export const selectAllCompounds = () => (dispatch, getState) => {
+export const selectAllVectorCompounds = () => (dispatch, getState) => {
   const state = getState();
   const currentVectorCompoundsFiltered = getCurrentVectorCompoundsFiltered(state);
 
   const moleculeOfVector = getMoleculeOfCurrentVector(state);
   const smiles = moleculeOfVector && moleculeOfVector.smiles;
-  const currentCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-  const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
+  const currentCompoundClass = state.previewReducers.vectorCompounds.currentCompoundClass;
+  const selectedCompounds = state.previewReducers.vectorCompounds.allSelectedCompounds;
 
   let items = [];
 
@@ -69,7 +69,7 @@ export const selectAllCompounds = () => (dispatch, getState) => {
           thisObj['compoundClass'] = currentCompoundClass;
           items.push(thisObj);
           dispatch(appendToBuyList(thisObj, compoundId, true));
-          dispatch(addSelectedCompoundClass(currentCompoundClass, compoundId));
+          dispatch(addSelectedVectorCompoundClass(currentCompoundClass, compoundId));
           dispatch(appendMoleculeToCompoundsOfDatasetToBuy(AUX_VECTOR_SELECTOR_DATASET_ID, thisObj.smiles, '', true));
           selectedCompoundsAux[thisObj.smiles] = thisObj;
         }
@@ -77,48 +77,50 @@ export const selectAllCompounds = () => (dispatch, getState) => {
     }
   }
 
-  dispatch(setSelectedCompounds(selectedCompoundsAux));
+  dispatch(setSelectedVectorCompounds(selectedCompoundsAux));
   dispatch(appendToBuyListAll(items));
 };
 
-export const onChangeCompoundClassValue = event => (dispatch, getState) => {
+export const onChangeVectorCompoundClassValue = event => (dispatch, getState) => {
   const state = getState();
   const compoundClasses = {};
-  Object.keys(compoundsColors).forEach(color => {
-    compoundClasses[color] = state.previewReducers.compounds[color];
+  Object.keys(vectorCompoundsColors).forEach(color => {
+    compoundClasses[color] = state.previewReducers.vectorCompounds[color];
   });
-  // const compoundClasses = state.previewReducers.compounds.compoundClasses;
+  // const compoundClasses = state.previewReducers.vectorCompounds.compoundClasses;
 
   let id = event.target.id;
   let value = event.target.value;
   let oldDescriptionToSet = Object.assign({}, compoundClasses);
-  const newClassDescription = { [id]: value };
+  const newClassDescription = {
+    [id]: value
+  };
   const descriptionToSet = Object.assign(compoundClasses, newClassDescription);
 
-  dispatch(setCompoundClasses(descriptionToSet, oldDescriptionToSet, value, id));
+  dispatch(setVectorCompoundClasses(descriptionToSet, oldDescriptionToSet, value, id));
 };
 
-export const onKeyDownCompoundClass = event => (dispatch, getState) => {
+export const onKeyDownVectorCompoundClass = event => (dispatch, getState) => {
   const state = getState();
 
   // on Enter
   if (event.keyCode === 13) {
-    let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-    dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+    let oldCompoundClass = state.previewReducers.vectorCompounds.currentCompoundClass;
+    dispatch(setCurrentVectorCompoundClass(event.target.id, oldCompoundClass));
   }
 };
 
-export const loadNextPageOfCompounds = () => (dispatch, getState) => {
-  const nextPage = getState().previewReducers.compounds.currentPage + 1;
+export const loadNextPageOfVectorCompounds = () => (dispatch, getState) => {
+  const nextPage = getState().previewReducers.vectorCompounds.currentPage + 1;
   dispatch(setCurrentPage(nextPage));
 };
 
-const showCompoundNglView = ({ majorViewStage, data, index }) => (dispatch, getState) => {
+const showVectorCompoundNglView = ({ majorViewStage, data, index }) => (dispatch, getState) => {
   const state = getState();
   const moleculeOfVector = getMoleculeOfCurrentVector(state);
   const sdf_info = moleculeOfVector && moleculeOfVector.sdf_info;
-  const configuration = state.previewReducers.compounds.configuration;
-  const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
+  const configuration = state.previewReducers.vectorCompounds.configuration;
+  const showedCompoundList = state.previewReducers.vectorCompounds.showedCompoundList;
 
   if (showedCompoundList.find(item => item === data.smiles) !== undefined) {
     dispatch(
@@ -178,17 +180,17 @@ const showCompoundNglView = ({ majorViewStage, data, index }) => (dispatch, getS
   }
 };
 
-export const clearAllSelectedCompounds = majorViewStage => (dispatch, getState) => {
+export const clearAllSelectedVectorCompounds = majorViewStage => (dispatch, getState) => {
   const state = getState();
 
   let to_buy_list = state.selectionReducers.to_buy_list;
-  dispatch(clearCompounds(to_buy_list, majorViewStage));
+  dispatch(clearVectorCompounds(to_buy_list, majorViewStage));
 };
 
-const clearCompounds = (items, majorViewStage) => (dispatch, getState) => {
+const clearVectorCompounds = (items, majorViewStage) => (dispatch, getState) => {
   const state = getState();
 
-  const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
+  const selectedCompounds = state.previewReducers.vectorCompounds.allSelectedCompounds;
 
   let selectedCompoundsAux = { ...selectedCompounds };
 
@@ -201,27 +203,29 @@ const clearCompounds = (items, majorViewStage) => (dispatch, getState) => {
     }
   });
 
-  dispatch(setSelectedCompounds(selectedCompoundsAux));
+  dispatch(setSelectedVectorCompounds(selectedCompoundsAux));
 
   // reset objects from nglView and showedCompoundList
-  const currentCompounds = state.previewReducers.compounds.currentCompounds;
-  const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
+  const currentCompounds = state.previewReducers.vectorCompounds.currentCompounds;
+  const showedCompoundList = state.previewReducers.vectorCompounds.showedCompoundList;
   showedCompoundList.forEach(smiles => {
     const data = currentCompounds.find(c => (c.smiles = smiles));
     const index = data.index;
-    dispatch(showCompoundNglView({ majorViewStage, data, index }));
-    dispatch(removeShowedCompoundFromList(index));
+    dispatch(showVectorCompoundNglView({ majorViewStage, data, index }));
+    dispatch(removeShownVectorCompoundFromList(index));
   });
   //  reset compoundsClasses
-  dispatch(resetCompoundClasses());
+  dispatch(resetVectorCompoundClasses());
   // reset selectedCompoundsClass
-  dispatch(resetSelectedCompoundClass());
+  dispatch(resetSelectedVectorCompoundClass());
   // reset highlightedCompoundId
-  dispatch(setHighlightedCompoundId(undefined));
+  dispatch(setHighlightedVectorCompoundId(undefined));
   // reset configuration
   dispatch(resetConfiguration());
   // reset current compound class
-  dispatch(dispatch(setCurrentCompoundClass(compoundsColors.blue.key, compoundsColors.blue.key, true)));
+  dispatch(
+    dispatch(setCurrentVectorCompoundClass(vectorCompoundsColors.blue.key, vectorCompoundsColors.blue.key, true))
+  );
 };
 
 export const prepareFakeFilterData = () => (dispatch, getState) => {
@@ -239,7 +243,7 @@ export const prepareFakeFilterData = () => (dispatch, getState) => {
   );
 };
 
-export const isCompoundFromVectorSelector = data => {
+export const isVectorCompoundFromVectorSelector = data => {
   if (data['index'] !== undefined) {
     return true;
   } else {
@@ -248,40 +252,40 @@ export const isCompoundFromVectorSelector = data => {
 };
 
 export const deselectVectorCompound = data => (dispatch, getState) => {
-  if (isCompoundFromVectorSelector(data)) {
+  if (isVectorCompoundFromVectorSelector(data)) {
     const index = data['index'];
 
     const state = getState();
-    const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
+    const selectedCompounds = state.previewReducers.vectorCompounds.allSelectedCompounds;
 
-    dispatch(removeSelectedCompoundClass(index));
+    dispatch(removeSelectedVectorCompoundClass(index));
     dispatch(removeFromToBuyList(data, index));
     const selectedCompoundsCopy = { ...selectedCompounds };
     delete selectedCompoundsCopy[data.smiles];
-    dispatch(setSelectedCompounds(selectedCompoundsCopy));
+    dispatch(setSelectedVectorCompounds(selectedCompoundsCopy));
   }
 };
 
 export const showHideLigand = (data, majorViewStage) => async (dispatch, getState) => {
   const state = getState();
-  const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
+  const showedCompoundList = state.previewReducers.vectorCompounds.showedCompoundList;
 
   const index = data.index;
-  await dispatch(showCompoundNglView({ majorViewStage, data, index }));
+  await dispatch(showVectorCompoundNglView({ majorViewStage, data, index }));
   if (showedCompoundList.find(item => item === data.smiles) !== undefined) {
-    dispatch(removeShowedCompoundFromList(index, data));
+    dispatch(removeShownVectorCompoundFromList(index, data));
   } else {
-    dispatch(addShowedCompoundToList(index, data));
+    dispatch(addShownVectorCompoundToList(index, data));
   }
 };
 
-export const handleClickOnCompound = ({ event, data, majorViewStage, index }) => async (dispatch, getState) => {
+export const handleClickOnVectorCompound = ({ event, data, majorViewStage, index }) => async (dispatch, getState) => {
   const state = getState();
-  const currentCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-  const selectedCompoundsClass = state.previewReducers.compounds.selectedCompoundsClass;
-  const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
+  const currentCompoundClass = state.previewReducers.vectorCompounds.currentCompoundClass;
+  const selectedCompoundsClass = state.previewReducers.vectorCompounds.selectedCompoundsClass;
+  const selectedCompounds = state.previewReducers.vectorCompounds.allSelectedCompounds;
 
-  dispatch(setHighlightedCompoundId(index));
+  dispatch(setHighlightedVectorCompoundId(index));
 
   if (event.shiftKey) {
     dispatch(showHideLigand(data, majorViewStage));
@@ -296,68 +300,68 @@ export const handleClickOnCompound = ({ event, data, majorViewStage, index }) =>
     }
 
     if (isSelectedID !== undefined) {
-      dispatch(removeSelectedCompoundClass(index));
+      dispatch(removeSelectedVectorCompoundClass(index));
       dispatch(removeFromToBuyList(data, index));
       dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(AUX_VECTOR_SELECTOR_DATASET_ID, data.smiles, '', true));
       const selectedCompoundsCopy = { ...selectedCompounds };
       delete selectedCompoundsCopy[data.smiles];
-      dispatch(setSelectedCompounds(selectedCompoundsCopy));
+      dispatch(setSelectedVectorCompounds(selectedCompoundsCopy));
     } else {
       data['index'] = index;
       data['compoundClass'] = currentCompoundClass;
-      dispatch(addSelectedCompoundClass(currentCompoundClass, index));
+      dispatch(addSelectedVectorCompoundClass(currentCompoundClass, index));
       dispatch(appendToBuyList(Object.assign({}, data, { class: currentCompoundClass, compoundId: index }), index));
       dispatch(appendMoleculeToCompoundsOfDatasetToBuy(AUX_VECTOR_SELECTOR_DATASET_ID, data.smiles, '', true));
       const selectedCompoundsCopy = { ...selectedCompounds };
       selectedCompoundsCopy[data.smiles] = data;
-      dispatch(setSelectedCompounds(selectedCompoundsCopy));
+      dispatch(setSelectedVectorCompounds(selectedCompoundsCopy));
     }
   }
 };
 
 export const handleBuyList = ({ isSelected, data, skipTracking }) => (dispatch, getState) => {
   const state = getState();
-  const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
+  const selectedCompounds = state.previewReducers.vectorCompounds.allSelectedCompounds;
 
   let compoundId = data.compoundId;
-  dispatch(setHighlightedCompoundId(compoundId));
+  dispatch(setHighlightedVectorCompoundId(compoundId));
 
   if (isSelected === false) {
-    dispatch(removeSelectedCompoundClass(compoundId));
+    dispatch(removeSelectedVectorCompoundClass(compoundId));
     dispatch(removeFromToBuyList(data, compoundId, skipTracking));
     dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(AUX_VECTOR_SELECTOR_DATASET_ID, data.smiles, '', true));
     const selectedCompoundsCopy = { ...selectedCompounds };
     delete selectedCompoundsCopy[data.smiles];
-    dispatch(setSelectedCompounds(selectedCompoundsCopy));
+    dispatch(setSelectedVectorCompounds(selectedCompoundsCopy));
   } else {
-    dispatch(addSelectedCompoundClass(data.class, compoundId));
+    dispatch(addSelectedVectorCompoundClass(data.class, compoundId));
     dispatch(appendToBuyList(Object.assign({}, data), compoundId, skipTracking));
     dispatch(appendMoleculeToCompoundsOfDatasetToBuy(AUX_VECTOR_SELECTOR_DATASET_ID, data.smiles, '', true));
     const selectedCompoundsCopy = { ...selectedCompounds };
     selectedCompoundsCopy[data.smiles] = data;
-    dispatch(setSelectedCompounds(selectedCompoundsCopy));
+    dispatch(setSelectedVectorCompounds(selectedCompoundsCopy));
   }
 };
 
 export const handleBuyListAll = ({ isSelected, items, majorViewStage }) => (dispatch, getState) => {
   if (isSelected === false) {
-    dispatch(clearCompounds(items, majorViewStage));
+    dispatch(clearVectorCompounds(items, majorViewStage));
   } else {
-    dispatch(selectAllCompounds());
+    dispatch(selectAllVectorCompounds());
   }
 };
 
 export const handleShowVectorCompound = ({ isSelected, data, majorViewStage }) => async (dispatch, getState) => {
   const index = data.index;
-  await dispatch(showCompoundNglView({ majorViewStage, data, index }));
+  await dispatch(showVectorCompoundNglView({ majorViewStage, data, index }));
   if (isSelected === false) {
-    dispatch(removeShowedCompoundFromList(index, data));
+    dispatch(removeShownVectorCompoundFromList(index, data));
   } else {
-    dispatch(addShowedCompoundToList(index, data));
+    dispatch(addShownVectorCompoundToList(index, data));
   }
 };
 
-export const loadCompoundImageData = ({ width, height, onCancel, data, setImage }) => {
+export const loadVectorCompoundImageData = ({ width, height, onCancel, data, setImage }) => {
   let url = undefined;
   let key = undefined;
 

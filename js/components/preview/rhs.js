@@ -7,7 +7,7 @@ import { CustomDatasetList } from '../datasets/customDatasetList';
 import { DatasetSelectorMenuButton } from '../datasets/datasetSelectorMenuButton';
 import { setSelectedDatasetIndex, setTabValue } from '../datasets/redux/actions';
 import { SelectedCompoundList } from '../datasets/selectedCompoundsList';
-import { CompoundList } from './compounds/compoundList';
+import { VectorCompoundList } from './vectorCompounds/vectorCompoundList';
 import { SummaryView } from './summary/summaryView';
 
 const useStyles = makeStyles(theme => ({
@@ -125,7 +125,7 @@ export const RHS = ({ hideProjects }) => {
               <SummaryView />
             </Grid>
             <Grid item>
-              <CompoundList />
+              <VectorCompoundList />
             </Grid>
           </Grid>
         </TabPanel>

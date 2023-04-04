@@ -24,7 +24,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export const CompoundDataView = memo(({ currentCompoundIds, isTooltip, index }) => {
+export const VectorCompoundDataView = memo(({ currentCompoundIds, isTooltip, index }) => {
   const classes = useStyles();
 
   return (

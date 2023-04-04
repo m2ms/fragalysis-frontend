@@ -53,8 +53,11 @@ import {
   handleBuyList,
   handleBuyListAll,
   handleShowVectorCompound
-} from '../../components/preview/compounds/redux/dispatchActions';
-import { setCurrentCompoundClass, setCompoundClasses } from '../../components/preview/compounds/redux/actions';
+} from '../../components/preview/vectorCompounds/redux/dispatchActions';
+import {
+  setCurrentVectorCompoundClass,
+  setVectorCompoundClasses
+} from '../../components/preview/vectorCompounds/redux/actions';
 import { colourList } from '../../components/preview/molecule/utils/color';
 import {
   addDatasetComplex,
@@ -208,7 +211,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
     const currentDatasetSurfaces = state.datasetsReducers.surfaceLists;
     const currentDatasetSelectionAll = state.datasetsReducers.moleculeAllSelection;
 
-    const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
+    const showedCompoundList = state.previewReducers.vectorCompounds.showedCompoundList;
     const currentDatasetBuyList = state.datasetsReducers.compoundsToBuyDatasetMap;
     const currentobjectsInView = state.nglReducers.objectsInView;
 
@@ -1390,7 +1393,7 @@ export const restoreCartActions = (orderedActionList, majorViewStage) => async (
 
   let classSelectedAction = orderedActionList.find(action => action.type === actionType.CLASS_SELECTED);
   if (classSelectedAction) {
-    dispatch(setCurrentCompoundClass(classSelectedAction.value, classSelectedAction.oldValue));
+    dispatch(setCurrentVectorCompoundClass(classSelectedAction.value, classSelectedAction.oldValue));
   }
 
   let classUpdatedAction = orderedActionList.find(action => action.type === actionType.CLASS_UPDATED);
@@ -1400,7 +1403,7 @@ export const restoreCartActions = (orderedActionList, majorViewStage) => async (
     let oldValue = classUpdatedAction.oldCompoundClasses;
     let value = classUpdatedAction.object_name;
     value = value !== undefined ? value : '';
-    dispatch(setCompoundClasses(newValue, oldValue, value, id));
+    dispatch(setVectorCompoundClasses(newValue, oldValue, value, id));
   }
 
   let vectorCompoundActions = orderedActionList.filter(action => action.type === actionType.VECTOR_COUMPOUND_ADDED);
@@ -2697,7 +2700,7 @@ const handleClassSelectedAction = (action, isAdd) => (dispatch, getState) => {
   if (action) {
     let value = isAdd ? action.value : action.oldValue;
     let oldValue = isAdd ? action.oldValue : action.value;
-    dispatch(setCurrentCompoundClass(value, oldValue));
+    dispatch(setCurrentVectorCompoundClass(value, oldValue));
   }
 };
 
@@ -2708,7 +2711,7 @@ const handleClassUpdatedAction = (action, isAdd) => (dispatch, getState) => {
     let oldValue = isAdd ? action.oldCompoundClasses : action.newCompoundClasses;
     let value = isAdd ? action.object_name : action.oldCompoundClasses[id];
     value = value !== undefined ? value : '';
-    dispatch(setCompoundClasses(newValue, oldValue, value, id));
+    dispatch(setVectorCompoundClasses(newValue, oldValue, value, id));
   }
 };
 

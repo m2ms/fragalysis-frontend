@@ -1,7 +1,7 @@
 import { createSelector } from 'reselect';
 import { getAllMoleculeList } from '../api/selectors';
 
-const getCurrentCompoundClass = state => state.previewReducers.compounds.currentCompoundClass;
+const getCurrentCompoundClass = state => state.previewReducers.vectorCompounds.currentCompoundClass;
 const getVectorList = state => state.selectionReducers.vector_list;
 const getCurrentVector = state => state.selectionReducers.currentVector;
 const getBondColorMapOfVectors = state => state.selectionReducers.bondColorMapOfVectors;

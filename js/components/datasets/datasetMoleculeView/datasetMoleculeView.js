@@ -43,9 +43,9 @@ import { getMolImage } from '../../preview/molecule/redux/dispatchActions';
 import { MOL_TYPE } from '../../preview/molecule/redux/constants';
 import {
   deselectVectorCompound,
-  isCompoundFromVectorSelector,
+  isVectorCompoundFromVectorSelector,
   showHideLigand
-} from '../../preview/compounds/redux/dispatchActions';
+} from '../../preview/vectorCompounds/redux/dispatchActions';
 import { colourList } from '../../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from '../useDragDropMoleculeView';
 import DatasetMoleculeSelectCheckbox from './datasetMoleculeSelectCheckbox';
@@ -289,7 +289,7 @@ const DatasetMoleculeView = memo(
 
       const selectedAll = useRef(false);
       const currentID = (data && data.id) || (data && data.smiles) || undefined;
-      const isFromVectorSelector = isCompoundFromVectorSelector(data);
+      const isFromVectorSelector = isVectorCompoundFromVectorSelector(data);
       const classes = useStyles();
       const dispatch = useDispatch();
 
@@ -670,7 +670,7 @@ const DatasetMoleculeView = memo(
                         onClick={() => {
                           dispatch(centerOnLigandByMoleculeID(stage, getDatasetMoleculeID(datasetID, currentID)));
                         }}
-                        disabled={false || !isLigandOn || isCompoundFromVectorSelector(data)}
+                        disabled={false || !isLigandOn || isVectorCompoundFromVectorSelector(data)}
                       >
                         <MyLocation className={classes.myLocation} />
                       </Button>

@@ -1,19 +1,19 @@
-import { compoundsColors, constants } from './constants';
+import { vectorCompoundsColors, constants } from './constants';
 
 const defaultSelectedCmpdsClass = {
-  [compoundsColors.blue.key]: [],
-  [compoundsColors.red.key]: [],
-  [compoundsColors.green.key]: [],
-  [compoundsColors.purple.key]: [],
-  [compoundsColors.apricot.key]: []
+  [vectorCompoundsColors.blue.key]: [],
+  [vectorCompoundsColors.red.key]: [],
+  [vectorCompoundsColors.green.key]: [],
+  [vectorCompoundsColors.purple.key]: [],
+  [vectorCompoundsColors.apricot.key]: []
 };
 
 const defaultCompoundsClasses = {
-  [compoundsColors.blue.key]: undefined,
-  [compoundsColors.red.key]: undefined,
-  [compoundsColors.green.key]: undefined,
-  [compoundsColors.purple.key]: undefined,
-  [compoundsColors.apricot.key]: undefined
+  [vectorCompoundsColors.blue.key]: undefined,
+  [vectorCompoundsColors.red.key]: undefined,
+  [vectorCompoundsColors.green.key]: undefined,
+  [vectorCompoundsColors.purple.key]: undefined,
+  [vectorCompoundsColors.apricot.key]: undefined
 };
 
 export const INITIAL_STATE = {
@@ -26,7 +26,7 @@ export const INITIAL_STATE = {
       mol:"CCNC(=O)Nc1cc(C)on1",
    }] */
   currentCompounds: [],
-  currentCompoundClass: compoundsColors.blue.key,
+  currentCompoundClass: vectorCompoundsColors.blue.key,
   ...defaultCompoundsClasses,
   selectedCompoundsClass: defaultSelectedCmpdsClass,
   highlightedCompoundId: null,
@@ -49,7 +49,7 @@ export const RESET_STATE = {
       mol:"CCNC(=O)Nc1cc(C)on1",
    }] */
   currentCompounds: [],
-  currentCompoundClass: compoundsColors.blue.key,
+  currentCompoundClass: vectorCompoundsColors.blue.key,
   ...defaultCompoundsClasses,
   selectedCompoundsClass: defaultSelectedCmpdsClass,
   highlightedCompoundId: null,
@@ -61,7 +61,7 @@ export const RESET_STATE = {
   configuration: {}
 };
 
-export const compounds = (state = INITIAL_STATE, action = {}) => {
+export const vectorCompounds = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
     case constants.SET_CURRENT_COMPOUNDS:
       return Object.assign({}, state, { currentCompounds: action.payload });
@@ -155,9 +155,9 @@ export const compounds = (state = INITIAL_STATE, action = {}) => {
       return Object.assign({}, state, {
         selectedCompoundsClass: defaultSelectedCmpdsClass
       });
-    
-      case constants.SET_SELECTED_COMPOUNDS:
-        return {...state, allSelectedCompounds: action.payload};
+
+    case constants.SET_SELECTED_COMPOUNDS:
+      return { ...state, allSelectedCompounds: action.payload };
 
     case constants.RELOAD_REDUCER:
       return Object.assign({}, state, { ...action.payload });

@@ -19,7 +19,7 @@ import { setMolGroupList, setMolGroupOn, setMolGroupOff } from '../../../../redu
 import { getUrl, loadFromServer } from '../../../../utils/genericList';
 import { OBJECT_TYPE } from '../../../nglView/constants';
 import { setSortDialogOpen } from '../../molecule/redux/actions';
-import { resetCurrentCompoundsSettings } from '../../compounds/redux/actions';
+import { resetCurrentVectorCompoundsSettings } from '../../vectorCompounds/redux/actions';
 import { reloadSession } from '../../../snapshot/redux/dispatchActions';
 import { resetRestoringState } from '../../../../reducers/tracking/dispatchActions';
 import { URLS } from '../../../routes/constants';
@@ -170,7 +170,7 @@ export const clearMoleculeGroupSelection = ({ getNglView }) => (dispatch, getSta
   dispatch(setSortDialogOpen(false));
 
   // reset compounds
-  dispatch(resetCurrentCompoundsSettings(true));
+  dispatch(resetCurrentVectorCompoundsSettings(true));
 };
 
 export const restoreFromCurrentSnapshot = ({ nglViewList }) => (dispatch, getState) => {

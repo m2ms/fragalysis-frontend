@@ -19,7 +19,7 @@ const densityList = state => state.selectionReducers.densityList;
 const vectorOnList = state => state.selectionReducers.vectorOnList;
 const filteredScoreProperties = state => state.datasetsReducers.filteredScoreProperties;
 
-const selectedVectorCompounds = state => state.previewReducers.compounds.allSelectedCompounds;
+const selectedVectorCompounds = state => state.previewReducers.vectorCompounds.allSelectedCompounds;
 
 export const getInitialDatasetFilterSettings = createSelector(
   (_, datasetID) => datasetID,

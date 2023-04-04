@@ -19,7 +19,7 @@ import { autoHideDatasetDialogsOnScroll, resetCrossReferenceDialog } from './red
 import { NglContext } from '../nglView/nglProvider';
 import FileSaver from 'file-saver';
 import JSZip from 'jszip';
-import { isCompoundFromVectorSelector } from '../preview/compounds/redux/dispatchActions';
+import { isVectorCompoundFromVectorSelector } from '../preview/vectorCompounds/redux/dispatchActions';
 import { saveAndShareSnapshot } from '../snapshot/redux/dispatchActions';
 import { setDontShowShareSnapshot, setSharedSnapshot } from '../snapshot/redux/actions';
 import { initSharedSnapshot } from '../snapshot/redux/reducer';
@@ -80,7 +80,7 @@ export const SelectedCompoundList = memo(() => {
   const complexList = useSelector(state => getListOfSelectedComplexOfAllDatasets(state));
   const surfaceList = useSelector(state => getListOfSelectedSurfaceOfAllDatasets(state));
 
-  const showedCompoundList = useSelector(state => state.previewReducers.compounds.showedCompoundList);
+  const showedCompoundList = useSelector(state => state.previewReducers.vectorCompounds.showedCompoundList);
   const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
 
   useEffect(() => {
@@ -352,7 +352,7 @@ export const SelectedCompoundList = memo(() => {
             >
               <DndProvider backend={HTML5Backend}>
                 {currentMolecules.map((data, index, array) => {
-                  const isFromVectorSelector = isCompoundFromVectorSelector(data.molecule);
+                  const isFromVectorSelector = isVectorCompoundFromVectorSelector(data.molecule);
                   let isLigandOn = false;
                   if (isFromVectorSelector) {
                     if (showedCompoundList.find(item => item === data.molecule.smiles) !== undefined) {

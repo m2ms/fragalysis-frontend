@@ -23,7 +23,7 @@ import { DownloadStructureDialog } from '../snapshot/modals/downloadStructuresDi
 //import HotspotList from '../hotspot/hotspotList';
 import { loadDatasetCompoundsWithScores, loadDataSets } from '../datasets/redux/dispatchActions';
 import { setMoleculeListIsLoading, setSelectedDatasetIndex, setAllInspirations } from '../datasets/redux/actions';
-import { prepareFakeFilterData } from './compounds/redux/dispatchActions';
+import { prepareFakeFilterData } from './vectorCompounds/redux/dispatchActions';
 import { withLoadingMolecules } from './tags/withLoadingMolecules';
 import { ViewerControls } from './viewerControls';
 

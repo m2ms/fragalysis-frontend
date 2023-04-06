@@ -189,7 +189,7 @@ export const JobTable = ({ expanded, onExpanded, onTabChange }) => {
           <MUIButton
             variant="contained"
             color="primary"
-            disabled={false}
+            disabled={!row.original?.squonk_url_ext}
             onClick={() => {
               isSquonkProjectAccessible(row.original.id).then(resp => {
                 console.log(`OpenInSquonkFromTable resp: ${resp}`);
@@ -202,9 +202,12 @@ export const JobTable = ({ expanded, onExpanded, onTabChange }) => {
                   if (jobLauncherSquonkUrl) {
                     window.open(jobLauncherSquonkUrl, '_blank');
                   } else {
-                    console.log('Access to squonk job denied');
-                    alert('Access to squonk job denied');
+                    console.log('Could not open job in Squonk - can not create squonk job url');
+                    alert('Could not open job in Squonk - can not create squonk job url');
                   }
+                } else {
+                  console.log('Access to squonk job denied');
+                  alert('Access to squonk job denied');
                 }
               });
             }}

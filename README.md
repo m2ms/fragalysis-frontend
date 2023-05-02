@@ -82,7 +82,6 @@ mkdir -p data/postgre/data
 ### Modify `fragalysis-frontend/docker-compose.dev.vector.yml` file to look at right data folders
 
 - `../data` folders
-- `DATA_ORIGIN: EXAMPLE` -> will look for `EXAMPLE` folder in ../data/input/django_data/EXAMPLE
 
 ```
 cd fragalysis-frontend/

@@ -147,7 +147,6 @@ ES-lint https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-esli
 # Environments
 
 Ask for .env file from repo maintainer
-```
 
 # When backend and/or loader are updated
 

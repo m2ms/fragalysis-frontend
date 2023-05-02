@@ -85,7 +85,7 @@ mkdir -p data/postgre/data
 
 ```
 cd fragalysis-frontend/
-yarn
+yarn install
 ```
 
 Start webpack dev server

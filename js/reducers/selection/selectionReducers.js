@@ -44,7 +44,9 @@ export const INITIAL_STATE = {
   //display all molecules in hit navigator regardless of the tag selection
   displayAllMolecules: false,
   displayUntaggedMolecules: false,
-  nextXMolecules: 0
+  nextXMolecules: 0,
+  isObservationsDialogOpen: false,
+  compoundForObservations: null
 };
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
@@ -436,6 +438,12 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_NEXT_X_MOLECULES:
       return { ...state, nextXMolecules: action.nextXMolecules };
+
+    case constants.SET_IS_OBSERVATIONS_DIALOG_OPEN:
+      return { ...state, isObservationsDialogOpen: action.isOpen };
+
+    case constants.SET_COMPOUND_FOR_OBSERVATIONS:
+      return { ...state, compoundForObservations: action.compound };
 
     // Cases like: @@redux/INIT
     default:

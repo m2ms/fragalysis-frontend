@@ -68,6 +68,7 @@ import SearchField from '../../common/Components/SearchField';
 import useDisableNglControlButtons from './useDisableNglControlButtons';
 import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import { extractTargetFromURLParam } from '../utils';
+import { ObservationDialog } from './observation/observationDialog';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -215,7 +216,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export const MoleculeList = memo(({ hideProjects }) => {
+export const MoleculeList = memo(({ hideProjects, showMoleculeProperties = false }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   let match = useRouteMatch();
@@ -252,6 +253,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
   const informationList = useSelector(state => state.selectionReducers.informationList);
   const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
+  const isObservationsDialogOpen = useSelector(state => state.selectionReducers.isObservationsDialogOpen);
   const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
   const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
@@ -276,6 +278,8 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
   const filterRef = useRef();
   const tagEditorRef = useRef();
+  const observationsRef = useRef();
+  const [observationsAnchorEl, setObservationsAnchorEl] = useState(null);
   const [tagEditorAnchorEl, setTagEditorAnchorEl] = useState(null);
 
   if (directDisplay && directDisplay.target) {
@@ -796,7 +800,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
   const anyControlButtonDisabled = Object.values(groupNglControlButtonsDisabledState).some(buttonState => buttonState);
 
   return (
-    <Panel hasHeader title="Hit navigator" headerActions={actions}>
+    <Panel hasHeader title="Compound navigator" headerActions={actions}>
       <AlertModal
         title="Are you sure?"
         description={`Loading of ${joinedMoleculeLists?.length} may take a long time`}
@@ -841,6 +845,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
           joinedMoleculeLists={joinedMoleculeListsCopy}
         />
       )}
+      {isObservationsDialogOpen && <ObservationDialog open anchorEl={tagEditorAnchorEl} ref={tagEditorRef} />}
       <div ref={filterRef}>
         {isActiveFilter && (
           <>
@@ -878,11 +883,12 @@ export const MoleculeList = memo(({ hideProjects }) => {
           {/* Header */}
           <Grid container justify="flex-start" direction="row" className={classes.molHeader} wrap="nowrap">
             <Grid item container justify="flex-start" direction="row">
-              {Object.keys(moleculeProperty).map(key => (
-                <Grid item key={key} className={classes.rightBorder}>
-                  {moleculeProperty[key]}
-                </Grid>
-              ))}
+              {showMoleculeProperties &&
+                Object.keys(moleculeProperty).map(key => (
+                  <Grid item key={key} className={classes.rightBorder}>
+                    {moleculeProperty[key]}
+                  </Grid>
+                ))}
               <Grid item>
                 <Grid
                   container
@@ -1028,6 +1034,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
                         disableL={selected && groupNglControlButtonsDisabledState.ligand}
                         disableP={selected && groupNglControlButtonsDisabledState.protein}
                         disableC={selected && groupNglControlButtonsDisabledState.complex}
+                        showMoleculeProperties={showMoleculeProperties}
                       />
                     );
                   })}

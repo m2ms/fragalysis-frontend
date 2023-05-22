@@ -482,3 +482,17 @@ export const setNextXMolecules = nextXMolecules => {
     nextXMolecules: nextXMolecules
   };
 };
+
+export const setIsObservationsDialogOpen = isOpen => {
+  return {
+    type: constants.SET_IS_OBSERVATIONS_DIALOG_OPEN,
+    isOpen: isOpen
+  };
+};
+
+export const setCompoundForObservations = compound => {
+  return {
+    type: constants.SET_COMPOUND_FOR_OBSERVATIONS,
+    compound: compound
+  };
+};

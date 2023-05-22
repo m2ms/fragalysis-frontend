@@ -1168,3 +1168,39 @@ export const selectAllHits = (allFilteredMolecules, setNextXMolecules, unselect)
     dispatch(setUnselectAllMolecules(allFilteredMolecules));
   }
 };
+
+export const getObservationsForCompound = cmp => (dispatch, getState) => {
+  //examples X0017_0A
+  //X0301_0A:Z1273312153
+
+  const state = getState();
+  const allObservations = state.apiReducers.all_mol_lists;
+  const cmpProteinCode = cmp.protein_code.split(':')[0].split('_')[0];
+  const cmpObservations = [];
+
+  allObservations.forEach(observation => {
+    const obsProteinCode = observation.protein_code.split(':')[0].split('_')[0];
+    if (obsProteinCode === cmpProteinCode) {
+      cmpObservations.push(observation);
+    }
+  });
+
+  cmpObservations.sort((a, b) => {
+    if (a.protein_code < b.protein_code) {
+      return -1;
+    }
+    if (a.protein_code > b.protein_code) {
+      return 1;
+    }
+    return 0;
+  });
+
+  return cmpObservations;
+};
+
+export const getObservationIdsForCompound = cmp => (dispatch, getState) => {
+  const observations = dispatch(getObservationsForCompound(cmp));
+  const observationIds = observations.map(observation => observation.id);
+
+  return observationIds;
+};

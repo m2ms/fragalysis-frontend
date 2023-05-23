@@ -187,7 +187,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
   const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
 
   // get ids of selected/visible inputs
-  const currentSnapshotSelectedCompoundsIDs = useSelector(state => state.selectionReducers.moleculesToEdit);
+  const currentSnapshotSelectedCompoundsIDs = useSelector(state => state.selectionReducers.selectedObservations);
   const currentSnapshotVisibleCompoundsIDs = useSelector(state => state.selectionReducers.fragmentDisplayList);
 
   const target_on_name = useSelector(state => state.apiReducers.target_on_name);

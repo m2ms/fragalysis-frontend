@@ -39,7 +39,9 @@ import {
   setMoleculeForTagEdit,
   setTagEditorOpen,
   appendToMolListToEdit,
-  removeFromMolListToEdit
+  removeFromMolListToEdit,
+  appendToSelectedObservations,
+  removeFromSelectedObservations
 } from '../../../../reducers/selection/actions';
 import { moleculeProperty } from '../helperConstants';
 import { centerOnLigandByMoleculeID } from '../../../../reducers/ngl/dispatchActions';
@@ -255,7 +257,6 @@ const ObservationView = memo(
     Q,
     V,
     I,
-    isTagEditorInvokedByMolecule,
     isTagEditorOpen,
     selected,
     disableL,
@@ -663,9 +664,9 @@ const ObservationView = memo(
                 onChange={e => {
                   const result = e.target.checked;
                   if (result) {
-                    dispatch(appendToMolListToEdit(currentID));
+                    dispatch(appendToSelectedObservations(currentID));
                   } else {
-                    dispatch(removeFromMolListToEdit(currentID));
+                    dispatch(removeFromSelectedObservations(currentID));
                   }
                 }}
               />

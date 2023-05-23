@@ -138,8 +138,8 @@ export const ObservationDialog = memo(
     const qualityList = useSelector(state => state.selectionReducers.qualityList);
     const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
     const informationList = useSelector(state => state.selectionReducers.informationList);
-    const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
-    const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
+    // const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
+    const selectedObservations = useSelector(state => state.selectionReducers.selectedObservations);
     const compound = useSelector(state => state.selectionReducers.compoundForObservations);
 
     const observationsDataList = dispatch(getObservationsForCompound(compound));
@@ -153,9 +153,7 @@ export const ObservationDialog = memo(
       return observationsDataList;
     }, [observationsDataList, searchString]);
 
-    const allSelectedObservations = observationsDataList.filter(
-      molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId
-    );
+    const allSelectedObservations = observationsDataList.filter(molecule => selectedObservations.includes(molecule.id));
 
     // TODO: refactor from this line (duplicity in datasetMoleculeList.js)
     const isLigandOn = changeButtonClassname(
@@ -423,7 +421,6 @@ export const ObservationDialog = memo(
                           V={vectorOnList.includes(molecule.id)}
                           I={informationList.includes(data.id)}
                           selected={selected}
-                          isTagEditorInvokedByMolecule={data.id === molForTagEditId}
                           disableL={selected && groupNglControlButtonsDisabledState.ligand}
                           disableP={selected && groupNglControlButtonsDisabledState.protein}
                           disableC={selected && groupNglControlButtonsDisabledState.complex}

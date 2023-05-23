@@ -14,7 +14,9 @@ import {
   setArrowUpDown,
   appendToMolListToEdit,
   removeFromMolListToEdit,
-  setNextXMolecules
+  setNextXMolecules,
+  appendToSelectedObservations,
+  removeFromSelectedObservations
 } from '../selection/actions';
 import {
   resetReducersForRestoringActions,
@@ -204,6 +206,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
     const currentVector = state.selectionReducers.currentVector;
     const currentSelectionAll = state.selectionReducers.moleculeAllSelection;
     const selectedMolecules = state.selectionReducers.moleculesToEdit;
+    const selectedObservations = state.selectionReducers.selectedObservations;
 
     const currentDatasetLigands = state.datasetsReducers.ligandLists;
     const currentDatasetProteins = state.datasetsReducers.proteinLists;
@@ -338,6 +341,12 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
       orderedActionList,
       actionType.MOLECULE_SELECTED,
       getCollection(selectedMolecules),
+      currentActions
+    );
+    getCurrentActionList(
+      orderedActionList,
+      actionType.OBSERVATION_SELECTED,
+      getCollection(selectedObservations),
       currentActions
     );
     getCurrentActionList(orderedActionList, actionType.DENSITY_TYPE_ON, currentDensitiesType, currentActions);
@@ -889,6 +898,7 @@ export const restoreAfterTargetActions = (stages, projectId) => async (dispatch,
     await dispatch(restoreRepresentationActions(orderedActionList, stages));
     await dispatch(restoreProject(projectId));
     dispatch(restoreMoleculeSelectionActions(orderedActionList));
+    dispatch(restoreObservationsSelectionActions(orderedActionList));
     dispatch(restoreTabActions(orderedActionList));
     await dispatch(restoreCartActions(orderedActionList, majorView.stage));
     dispatch(restoreSnapshotImageActions(projectId));
@@ -908,6 +918,17 @@ export const restoreMoleculeSelectionActions = orderedActionList => (dispatch, g
     actions.forEach(a => {
       const mol = getMolecule(a.object_name, state);
       dispatch(appendToMolListToEdit(mol.id));
+    });
+  }
+};
+
+export const restoreObservationsSelectionActions = orderedActionList => (dispatch, getState) => {
+  const state = getState();
+  let actions = orderedActionList.filter(action => action.type === actionType.OBSERVATION_SELECTED);
+  if (actions) {
+    actions.forEach(a => {
+      const obs = getObservation(a.object_name, state);
+      dispatch(appendToSelectedObservations(obs.id));
     });
   }
 };
@@ -1876,6 +1897,11 @@ export const getMolecule = (moleculeName, state) => {
   return molecule;
 };
 
+export const getObservation = (observationName, state) => {
+  //TODO: implement this when we have the observation list
+  return getMolecule(observationName, state);
+};
+
 export const getCompound = (action, state) => {
   let moleculeList = state.datasetsReducers.moleculeLists;
   let molecule = null;
@@ -2122,6 +2148,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.MOLECULE_UNSELECTED:
         dispatch(handleSelectMoleculeAction(action, true));
+        break;
+      case actionType.OBSERVATION_SELECTED:
+        dispatch(handleSelectObservationAction(action, false));
+        break;
+      case actionType.OBSERVATION_UNSELECTED:
+        dispatch(handleSelectObservationAction(action, true));
         break;
       case actionType.ALL_MOLECULES_SELECTED:
         dispatch(handleSelectAllMolecules(action, false));
@@ -2373,6 +2405,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.MOLECULE_UNSELECTED:
         dispatch(handleSelectMoleculeAction(action, false));
+        break;
+      case actionType.OBSERVATION_SELECTED:
+        dispatch(handleSelectObservationAction(action, true));
+        break;
+      case actionType.OBSERVATION_UNSELECTED:
+        dispatch(handleSelectObservationAction(action, false));
         break;
       case actionType.ALL_MOLECULES_SELECTED:
         dispatch(handleSelectAllMolecules(action, true));
@@ -2800,7 +2838,27 @@ const handleCompoundAction = (action, isSelected) => (dispatch, getState) => {
 
 const handleSelectMoleculeAction = (action, isSelected) => (dispatch, getState) => {
   if (action) {
-    dispatch(handleSelectMoleculeByName(action.object_name));
+    dispatch(handleSelectMoleculeByName(action.object_name, isSelected));
+  }
+};
+
+const handleSelectObservationAction = (action, isSelected) => (dispatch, getState) => {
+  if (action) {
+    dispatch(handleSelectObservationByName(action.object_name, isSelected));
+  }
+};
+
+const handleSelectObservationByName = (obsName, isSelected) => (dispatch, getState) => {
+  const state = getState();
+  if (obsName) {
+    let obs = getObservation(obsName, state);
+    if (obs) {
+      if (isSelected) {
+        dispatch(appendToSelectedObservations(obs.id));
+      } else {
+        dispatch(removeFromSelectedObservations(obs.id));
+      }
+    }
   }
 };
 

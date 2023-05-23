@@ -195,9 +195,9 @@ export const createInitSnapshotFromCopy = ({
 
 const getAdditionalInfo = state => {
   const allMolecules = state.apiReducers.all_mol_lists;
-  const { moleculesToEdit, fragmentDisplayList } = state.selectionReducers;
+  const { selectedObservations, fragmentDisplayList } = state.selectionReducers;
   const currentSnapshotSelectedCompounds = allMolecules
-    .filter(molecule => moleculesToEdit.includes(molecule.id))
+    .filter(molecule => selectedObservations.includes(molecule.id))
     .map(molecule => molecule.protein_code);
   const currentSnapshotVisibleCompounds = allMolecules
     .filter(molecule => fragmentDisplayList.includes(molecule.id))

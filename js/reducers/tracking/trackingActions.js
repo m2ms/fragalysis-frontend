@@ -14,7 +14,7 @@ import { constants as customDatasetConstants } from '../../components/datasets/r
 import { constants as viewerControlsConstants } from '../../components/preview/viewerControls/redux/constants';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { BACKGROUND_COLOR } from '../../components/nglView/constants/index';
-import { getMoleculeForId } from '../../components/preview/tags/redux/dispatchActions';
+import { getMoleculeForId, getObservationForId } from '../../components/preview/tags/redux/dispatchActions';
 
 export const findTrackAction = (action, state) => (dispatch, getState) => {
   const username = DJANGO_CONTEXT['username'];
@@ -812,6 +812,42 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
           object_type: objectType,
           object_name: objectName,
           object_id: molId,
+          text: `${objectType} ${objectName} ${actionDescription.DESELECTED}`
+        };
+      }
+    } else if (action.type === selectionConstants.APPEND_TO_SELECTED_OBSERVATIONS) {
+      if (action.observationId) {
+        let objectType = actionObjectType.OBSERVATION;
+        let obsId = action.observationId;
+        let obs = dispatch(getObservationForId(obsId));
+        let objectName = obs.protein_code;
+
+        trackAction = {
+          type: actionType.OBSERVATION_SELECTED,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: obsId,
+          text: `${objectType} ${objectName} ${actionDescription.SELECTED}`
+        };
+      }
+    } else if (action.type === selectionConstants.REMOVE_FROM_SELECTED_OBSERVATIONS) {
+      if (action.observationId) {
+        let objectType = actionObjectType.OBSERVATION;
+        let obsId = action.observationId;
+        let obs = dispatch(getObservationForId(obsId));
+        let objectName = obs.protein_code;
+
+        trackAction = {
+          type: actionType.OBSERVATION_UNSELECTED,
+          annotation: actionAnnotation.CLEAR,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: objectName,
+          object_id: obsId,
           text: `${objectType} ${objectName} ${actionDescription.DESELECTED}`
         };
       }

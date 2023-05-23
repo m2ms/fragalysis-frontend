@@ -153,6 +153,11 @@ export const getMoleculeForId = molId => (dispatch, getState) => {
   return molList.find(m => m.id === molId);
 };
 
+export const getObservationForId = obsId => (dispatch, getState) => {
+  //TODO: implement when we have observations
+  return dispatch(getMoleculeForId(obsId));
+};
+
 export const selectTag = tag => (dispatch, getState) => {
   const state = getState();
   const selectedTagList = state.selectionReducers.selectedTagList;

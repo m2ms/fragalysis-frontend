@@ -46,7 +46,8 @@ export const INITIAL_STATE = {
   displayUntaggedMolecules: false,
   nextXMolecules: 0,
   isObservationsDialogOpen: false,
-  compoundForObservations: null
+  compoundForObservations: null,
+  selectedObservations: []
 };
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
@@ -421,6 +422,16 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
     case constants.REMOVE_FROM_MOL_LIST_TO_EDIT:
       let reducedMolListToEdit = state.moleculesToEdit.filter(mid => mid !== action.molId);
       return { ...state, moleculesToEdit: [...reducedMolListToEdit] };
+
+    case constants.SET_SELECTED_OBSERVATIONS:
+      return { ...state, selectedObservations: [...action.selectedObservations] };
+
+    case constants.APPEND_TO_SELECTED_OBSERVATIONS:
+      return { ...state, selectedObservations: [...state.selectedObservations, action.observationId] };
+
+    case constants.REMOVE_FROM_SELECTED_OBSERVATIONS:
+      let reducedSelectedObservations = state.selectedObservations.filter(obsId => obsId !== action.observationId);
+      return { ...state, selectedObservations: [...reducedSelectedObservations] };
 
     case constants.SET_TAG_TO_EDIT: {
       return Object.assign({}, state, {

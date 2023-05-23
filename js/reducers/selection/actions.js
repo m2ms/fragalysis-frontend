@@ -496,3 +496,24 @@ export const setCompoundForObservations = compound => {
     compound: compound
   };
 };
+
+export const setSelectedObservations = selectedObservations => {
+  return {
+    type: constants.SET_SELECTED_OBSERVATIONS,
+    selectedObservations: selectedObservations
+  };
+};
+
+export const appendToSelectedObservations = observationId => {
+  return {
+    type: constants.APPEND_TO_SELECTED_OBSERVATIONS,
+    observationId: observationId
+  };
+};
+
+export const removeFromSelectedObservations = observationId => {
+  return {
+    type: constants.REMOVE_FROM_SELECTED_OBSERVATIONS,
+    observationId: observationId
+  };
+};

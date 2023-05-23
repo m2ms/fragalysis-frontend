@@ -1,8 +1,10 @@
-import React, { memo, useLayoutEffect, useState } from 'react';
+import React, { memo, useLayoutEffect, useMemo, useState } from 'react';
 import Modal from '../../../common/Modal';
 import { useDispatch } from 'react-redux';
 import { Grid, makeStyles, Checkbox, Typography, FormControlLabel } from '@material-ui/core';
 import { Button } from '../../../common/Inputs/Button';
+import { getObservationIdsForCompound, getObservationsForCompound } from '../redux/dispatchActions';
+import { setDiffVisible, setEventVisible, setSigmaaVisible } from '../../../../reducers/api/actions';
 
 const useStyles = makeStyles(theme => ({
   body: {
@@ -18,146 +20,211 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export const DensityMapsModal = memo(({ openDialog, setOpenDialog, data, setDensity, isQualityOn }) => {
-  const dispatch = useDispatch();
-  const classes = useStyles();
-  const [valueSigmaa, setValueSigmaa] = useState(false);
-  const [valueDiff, setValueDiff] = useState(false);
-  const [valueEvent, setValueEvent] = useState(false);
-  const [valueAtomQuality, setValueAtomQuality] = useState(isQualityOn);
-  const proteinData = data.proteinData;
+export const DensityMapsModal = memo(
+  ({ openDialog, setOpenDialog, data, setDensity, isQualityOn, isCompound = false }) => {
+    const dispatch = useDispatch();
+    const classes = useStyles();
+    // const [valueSigmaa, setValueSigmaa] = useState(false);
+    // const [valueDiff, setValueDiff] = useState(false);
+    // const [valueEvent, setValueEvent] = useState(false);
+    const [valueAtomQuality, setValueAtomQuality] = useState(isQualityOn);
+    // const proteinData = data.proteinData;
 
-  // In case quality gets turned on from elsewhere
-  useLayoutEffect(() => {
-    setValueAtomQuality(isQualityOn);
-  }, [isQualityOn]);
+    const observationsDataList = useMemo(() => {
+      if (isCompound) {
+        return dispatch(getObservationsForCompound(data));
+      } else {
+        return [data];
+      }
+    }, [data, dispatch, isCompound]);
+    const observationIdsDataList = useMemo(() => {
+      if (isCompound) {
+        return dispatch(getObservationIdsForCompound(data));
+      } else {
+        return [data.id];
+      }
+    }, [data, dispatch, isCompound]);
+    let firstObservation = null;
+    if (observationIdsDataList?.length > 0) {
+      firstObservation = observationsDataList[0];
+    }
 
-  const toggleRenderSigmaaMap = () => {
-    proteinData.render_sigmaa = !proteinData.render_sigmaa;
-    setValueSigmaa(!valueSigmaa);
-  };
+    let valueSigmaa = observationsDataList.reduce((result, obs) => {
+      return result || !!obs?.proteinData?.sigmaa_visible;
+    }, false);
 
-  const toggleRenderDiffMap = () => {
-    proteinData.render_diff = !proteinData.render_diff;
-    setValueDiff(!valueDiff);
-  };
+    let valueDiff = observationsDataList.reduce((result, obs) => {
+      return result || !!obs?.proteinData?.diff_visible;
+    }, false);
 
-  const toggleRenderEventMap = () => {
-    proteinData.render_event = !proteinData.render_event;
-    setValueEvent(!valueEvent);
-  };
+    let valueEvent = observationsDataList.reduce((result, obs) => {
+      return result || !!obs?.proteinData?.event_visible;
+    }, false);
 
-  const toggleRenderAtomQuality = () => {
-    const nextValue = !valueAtomQuality;
-    proteinData.render_quality = nextValue;
-    setValueAtomQuality(nextValue);
-  };
+    // In case quality gets turned on from elsewhere
+    useLayoutEffect(() => {
+      setValueAtomQuality(isQualityOn);
+      // setValueSigmaa(isSigmaaOn);
+      // setValueDiff(isDiffOn);
+      // setValueEvent(isEventOn);
+    }, [isQualityOn]);
 
-  const handleCloseModal = () => {
-    dispatch(setOpenDialog(false));
-  };
+    const toggleRenderSigmaaMap = () => {
+      if (!valueSigmaa) {
+        firstObservation.proteinData.render_sigmaa = true;
+      } else {
+        observationsDataList.forEach(obs => {
+          obs.proteinData.render_sigmaa = false;
+        });
+      }
+      dispatch(setSigmaaVisible(!valueSigmaa));
+    };
 
-  const handleSaveButton = () => {
-    dispatch(setOpenDialog(false));
-    setDensity();
-  };
+    const toggleRenderDiffMap = () => {
+      if (!valueDiff) {
+        firstObservation.proteinData.render_diff = true;
+      } else {
+        observationsDataList.forEach(obs => {
+          obs.proteinData.render_diff = false;
+        });
+      }
+      dispatch(setDiffVisible(!valueDiff));
+    };
 
-  return (
-    <Modal open={openDialog}>
-      <>
-        <Typography variant="h4">Density rendering maps selection</Typography>
-        <Typography variant="subtitle1" gutterBottom className={classes.margin}>
-          {data.protein_code}
-        </Typography>
-        <Grid container direction="column" className={classes.body}>
-          <Grid item>
-            {proteinData && proteinData.event_info && (
+    const toggleRenderEventMap = () => {
+      if (!valueEvent) {
+        firstObservation.proteinData.render_event = true;
+      } else {
+        observationsDataList.forEach(obs => {
+          obs.proteinData.render_event = false;
+        });
+      }
+      dispatch(setEventVisible(!valueEvent));
+    };
+
+    const toggleRenderAtomQuality = () => {
+      if (!valueAtomQuality) {
+        firstObservation.proteinData.render_quality = true;
+      } else {
+        observationsDataList.forEach(obs => {
+          obs.proteinData.render_quality = false;
+        });
+      }
+      setValueAtomQuality(!valueAtomQuality);
+    };
+
+    const handleCloseModal = () => {
+      dispatch(setOpenDialog(false));
+    };
+
+    const handleSaveButton = () => {
+      dispatch(setOpenDialog(false));
+      setDensity(observationsDataList);
+    };
+
+    return (
+      <Modal open={openDialog}>
+        <>
+          <Typography variant="h4">Density rendering maps selection</Typography>
+          <Typography variant="subtitle1" gutterBottom className={classes.margin}>
+            {data.protein_code}
+          </Typography>
+          <Grid container direction="column" className={classes.body}>
+            <Grid item>
+              {observationsDataList.reduce((result, obs) => {
+                return result && obs.proteinData?.event_info;
+              }, true) && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={valueEvent}
+                      name="event"
+                      color="primary"
+                      onChange={() => {
+                        toggleRenderEventMap();
+                      }}
+                    />
+                  }
+                  label="Render map event"
+                  labelPlacement="end"
+                  className={classes.checkbox}
+                />
+              )}
+            </Grid>
+            <Grid item>
+              {observationsDataList.reduce((result, obs) => {
+                return result && obs.proteinData?.sigmaa_info;
+              }, true) && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={valueSigmaa}
+                      name="sigma"
+                      color="primary"
+                      onChange={() => {
+                        toggleRenderSigmaaMap();
+                      }}
+                    />
+                  }
+                  label="Render map sigmaa"
+                  labelPlacement="end"
+                  className={classes.checkbox}
+                />
+              )}
+            </Grid>
+            <Grid item>
+              {observationsDataList.reduce((result, obs) => {
+                return result && obs.proteinData?.diff_info;
+              }, true) && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={valueDiff}
+                      name="diff"
+                      color="primary"
+                      onChange={() => {
+                        toggleRenderDiffMap();
+                      }}
+                    />
+                  }
+                  label="Render map diff"
+                  labelPlacement="end"
+                  className={classes.checkbox}
+                />
+              )}
+            </Grid>
+            <Grid item>
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={valueEvent}
-                    name="event"
-                    color="primary"
-                    onChange={() => {
-                      toggleRenderEventMap();
-                    }}
-                  />
-                }
-                label="Render map event"
-                labelPlacement="end"
-                className={classes.checkbox}
-              />
-            )}
-          </Grid>
-          <Grid item>
-            {proteinData && proteinData.sigmaa_info && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={valueSigmaa}
-                    name="sigma"
-                    color="primary"
-                    onChange={() => {
-                      toggleRenderSigmaaMap();
-                    }}
-                  />
-                }
-                label="Render map sigmaa"
-                labelPlacement="end"
-                className={classes.checkbox}
-              />
-            )}
-          </Grid>
-          <Grid item>
-            {proteinData && proteinData.diff_info && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={valueDiff}
+                    checked={valueAtomQuality}
                     name="diff"
                     color="primary"
                     onChange={() => {
-                      toggleRenderDiffMap();
+                      toggleRenderAtomQuality();
                     }}
                   />
                 }
-                label="Render map diff"
+                label="Render atom quality"
                 labelPlacement="end"
                 className={classes.checkbox}
               />
-            )}
+            </Grid>
           </Grid>
-          <Grid item>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={valueAtomQuality}
-                  name="diff"
-                  color="primary"
-                  onChange={() => {
-                    toggleRenderAtomQuality();
-                  }}
-                />
-              }
-              label="Render atom quality"
-              labelPlacement="end"
-              className={classes.checkbox}
-            />
+          <Grid container justify="flex-end" direction="row">
+            <Grid item>
+              <Button color="secondary" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button color="primary" onClick={handleSaveButton}>
+                Save
+              </Button>
+            </Grid>
           </Grid>
-        </Grid>
-        <Grid container justify="flex-end" direction="row">
-          <Grid item>
-            <Button color="secondary" onClick={handleCloseModal}>
-              Cancel
-            </Button>
-          </Grid>
-          <Grid item>
-            <Button color="primary" onClick={handleSaveButton}>
-              Save
-            </Button>
-          </Grid>
-        </Grid>
-      </>
-    </Modal>
-  );
-});
+        </>
+      </Modal>
+    );
+  }
+);

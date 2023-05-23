@@ -403,6 +403,26 @@ const MoleculeView = memo(
         }
       }, [data, dispatch, proteinData]);
 
+      // currently doesn't work?
+      // useEffect(() => {
+      //   if (!proteinData) {
+      //     for (const obs in observationsDataList) {
+      //       dispatch(getProteinData(obs)).then(i => {
+      //         if (i && i.length > 0) {
+      //           const proteinData = i[0];
+      //           obs.proteinData = proteinData;
+      //           if (obs.id === data.id) {
+      //             const result =
+      //               obs.proteinData &&
+      //               (obs.proteinData.diff_info || obs.proteinData.event_info || obs.proteinData.sigmaa_info);
+      //             setHasMap(result);
+      //           }
+      //         }
+      //       });
+      //     }
+      //   }
+      // }, [data, dispatch, observationsDataList, proteinData]);
+
       // componentDidMount
       useEffect(() => {
         dispatch(getMolImage(data.id, MOL_TYPE.HIT, imageWidth, imageHeight)).then(i => {
@@ -595,27 +615,43 @@ const MoleculeView = memo(
       };
 
       const removeSelectedDensity = () => {
-        dispatch(removeDensity(stage, data, colourToggle, false));
+        const densitiesToRemove = getObservationsWithAspectOn(
+          densityList,
+          observationIdsDataList,
+          observationsDataList
+        );
+        densitiesToRemove.forEach(obs => {
+          dispatch(removeDensity(stage, obs, colourToggle, false));
+        });
       };
 
-      const addNewDensityCustom = async () => {
+      const addNewDensityCustom = async obsId => {
         dispatch(
-          withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
-            await dispatch(addDensityCustomView(stage, data, colourToggle, isWireframeStyle));
+          withDisabledMoleculeNglControlButton(obsId, 'density', async () => {
+            const obs = getObservationForId(obsId, observationsDataList);
+            await dispatch(addDensityCustomView(stage, obs, colourToggle, isWireframeStyle));
           })
         );
       };
 
-      const addNewDensity = async () => {
+      const addNewDensity = async obsId => {
         dispatch(
-          withDisabledMoleculeNglControlButton(currentID, 'ligand', async () => {
+          withDisabledMoleculeNglControlButton(obsId, 'ligand', async () => {
             await dispatch(
-              withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
-                await dispatch(addDensity(stage, data, colourToggle, isWireframeStyle));
+              withDisabledMoleculeNglControlButton(obsId, 'density', async () => {
+                const obs = getObservationForId(obsId, observationsDataList);
+                await dispatch(addDensity(stage, obs, colourToggle, isWireframeStyle));
               })
             );
           })
         );
+      };
+
+      const addNewDensityForObservations = async observations => {
+        const obsIds = observations.map(obs => obs.id);
+        for (const obsId of obsIds) {
+          await addNewDensity(obsId);
+        }
       };
 
       const onDensity = () => {
@@ -624,7 +660,7 @@ const MoleculeView = memo(
             if (r) {
               dispatch(setDensityModalOpen(true));
             } else {
-              addNewDensity();
+              addNewDensity(firstObservationId);
             }
           });
         } else if (isDensityCustomOn === false) {
@@ -1036,8 +1072,9 @@ const MoleculeView = memo(
             openDialog={densityModalOpen}
             setOpenDialog={setDensityModalOpen}
             data={data}
-            setDensity={addNewDensity}
+            setDensity={addNewDensityForObservations}
             isQualityOn={isQualityOn}
+            isCompound={true}
           />
         </>
       );

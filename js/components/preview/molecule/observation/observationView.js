@@ -856,75 +856,14 @@ const ObservationView = memo(
             </Grid>
           </Grid>
           {/* Image */}
-          <div
-            style={{
-              ...current_style,
-              width: imageWidth
-            }}
-            className={classes.image}
-            onMouseEnter={() => setMoleculeTooltipOpen(true)}
-            onMouseLeave={() => setMoleculeTooltipOpen(false)}
-            ref={moleculeImgRef}
-          >
-            {svg_image}
-            <div className={classes.imageActions}>
-              {(moleculeTooltipOpen || isTagEditorInvokedByMolecule) && (
-                <Tooltip
-                  title={generateTooltip()}
-                  /* show tooltip even when this molecule prompted edit in tag editor */
-                  open={tagEditorTooltipOpen || isTagEditorInvokedByMolecule}
-                  onOpen={() => {
-                    setTagEditorTooltipOpen(true);
-                  }}
-                  onClose={() => {
-                    setTagEditorTooltipOpen(false);
-                  }}
-                  placement={'left'}
-                >
-                  <MoleculeSelectCheckbox
-                    color="primary"
-                    className={classes.tagIcon}
-                    onClick={() => {
-                      // setTagAddModalOpen(!tagAddModalOpen);
-                      if (isTagEditorInvokedByMolecule) {
-                        dispatch(setTagEditorOpen(!isTagEditorOpen));
-                        dispatch(setMoleculeForTagEdit(null));
-                        dispatch(setTagEditorOpen(false));
-                      } else {
-                        dispatch(setMoleculeForTagEdit(data.id));
-                        dispatch(setTagEditorOpen(true));
-                        if (setRef) {
-                          setRef(ref.current);
-                        }
-                      }
-                    }}
-                  />
-                </Tooltip>
-              )}
-              {moleculeTooltipOpen && (
-                <Tooltip title={!isCopied ? 'Copy smiles' : 'Copied'}>
-                  <IconButton className={classes.copyIcon} onClick={setCopied}>
-                    {!isCopied ? <Assignment /> : <AssignmentTurnedIn />}
-                  </IconButton>
-                </Tooltip>
-              )}
-              {warningIconVisible && (
-                <Tooltip title="Warning">
-                  <IconButton className={classes.warningIcon} onClick={() => onQuality()}>
-                    <Warning />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </div>
-          </div>
         </Grid>
-        <SvgTooltip
+        {/* <SvgTooltip
           open={moleculeTooltipOpen}
           anchorEl={moleculeImgRef.current}
           imgData={img_data}
           width={imageWidth}
           height={imageHeight}
-        />
+        /> */}
         <DensityMapsModal
           openDialog={densityModalOpen}
           setOpenDialog={setDensityModalOpen}

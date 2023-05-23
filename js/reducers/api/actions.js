@@ -342,3 +342,27 @@ export const setCategoryList = function(categoryList, skipTracking = false) {
     skipTracking
   };
 };
+
+export const setSigmaaVisible = (isVisible, observationId) => {
+  return {
+    type: constants.SET_SIGMAA_VISIBLE,
+    isVisible: isVisible,
+    observationId: observationId
+  };
+};
+
+export const setDiffVisible = (isVisible, observationId) => {
+  return {
+    type: constants.SET_DIFF_VISIBLE,
+    isVisible: isVisible,
+    observationId: observationId
+  };
+};
+
+export const setEventVisible = (isVisible, observationId) => {
+  return {
+    type: constants.SET_EVENT_VISIBLE,
+    isVisible: isVisible,
+    observationId: observationId
+  };
+};

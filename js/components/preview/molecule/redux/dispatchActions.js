@@ -327,9 +327,9 @@ const setDensity = (
           const proteinData = i[0];
           data.proteinData = proteinData;
 
-          molDataId['render_event'] = data.proteinData.render_event;
-          molDataId['render_sigmaa'] = data.proteinData.render_sigmaa;
-          molDataId['render_diff'] = data.proteinData.render_diff;
+          molDataId['render_event'] = data.proteinData.event_visible;
+          molDataId['render_sigmaa'] = data.proteinData.sigmaa_visible;
+          molDataId['render_diff'] = data.proteinData.diff_visible;
           molDataId['render_quality'] = data.proteinData.render_quality;
 
           dispatch(appendDensityList(generateMoleculeId(data), skipTracking));
@@ -340,9 +340,9 @@ const setDensity = (
         }
       });
     } else {
-      molDataId['render_event'] = data.proteinData.render_event;
-      molDataId['render_sigmaa'] = data.proteinData.render_sigmaa;
-      molDataId['render_diff'] = data.proteinData.render_diff;
+      molDataId['render_event'] = data.proteinData.event_visible;
+      molDataId['render_sigmaa'] = data.proteinData.sigmaa_visible;
+      molDataId['render_diff'] = data.proteinData.diff_visible;
       molDataId['render_quality'] = data.proteinData.render_quality;
 
       dispatch(appendDensityList(generateMoleculeId(data), skipTracking));

@@ -360,7 +360,7 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_SIGMAA_VISIBLE:
       let obsSigmaa = state.all_mol_lists.find(m => m.id === action.observationId);
       if (obsSigmaa) {
-        obsSigmaa.sigmaa_visible = action.isVisible;
+        obsSigmaa.proteinData.sigmaa_visible = action.isVisible;
         return { ...state, all_mol_lists: [...state.all_mol_lists] };
       } else {
         return state;
@@ -369,7 +369,7 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_DIFF_VISIBLE:
       let obsDiff = state.all_mol_lists.find(m => m.id === action.observationId);
       if (obsDiff) {
-        obsDiff.diff_visible = action.isVisible;
+        obsDiff.proteinData.diff_visible = action.isVisible;
         return { ...state, all_mol_lists: [...state.all_mol_lists] };
       } else {
         return state;
@@ -378,7 +378,7 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_EVENT_VISIBLE:
       let obsEvent = state.all_mol_lists.find(m => m.id === action.observationId);
       if (obsEvent) {
-        obsEvent.event_visible = action.isVisible;
+        obsEvent.proteinData.event_visible = action.isVisible;
         return { ...state, all_mol_lists: [...state.all_mol_lists] };
       } else {
         return state;

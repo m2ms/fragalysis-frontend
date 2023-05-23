@@ -1,6 +1,6 @@
 import React, { memo, useLayoutEffect, useMemo, useState } from 'react';
 import Modal from '../../../common/Modal';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Grid, makeStyles, Checkbox, Typography, FormControlLabel } from '@material-ui/core';
 import { Button } from '../../../common/Inputs/Button';
 import { getObservationIdsForCompound, getObservationsForCompound } from '../redux/dispatchActions';
@@ -29,6 +29,7 @@ export const DensityMapsModal = memo(
     // const [valueEvent, setValueEvent] = useState(false);
     const [valueAtomQuality, setValueAtomQuality] = useState(isQualityOn);
     // const proteinData = data.proteinData;
+    const allMolecules = useSelector(state => state.apiReducers.all_mol_lists);
 
     const observationsDataList = useMemo(() => {
       if (isCompound) {
@@ -36,14 +37,16 @@ export const DensityMapsModal = memo(
       } else {
         return [data];
       }
-    }, [data, dispatch, isCompound]);
+      //there is a warning but we need to keep allMolecules as a dependency to update the list of observations
+    }, [data, dispatch, isCompound, allMolecules]);
     const observationIdsDataList = useMemo(() => {
       if (isCompound) {
         return dispatch(getObservationIdsForCompound(data));
       } else {
         return [data.id];
       }
-    }, [data, dispatch, isCompound]);
+      //there is a warning but we need to keep allMolecules as a dependency to update the list of observations
+    }, [data, dispatch, isCompound, allMolecules]);
     let firstObservation = null;
     if (observationIdsDataList?.length > 0) {
       firstObservation = observationsDataList[0];
@@ -70,47 +73,36 @@ export const DensityMapsModal = memo(
     }, [isQualityOn]);
 
     const toggleRenderSigmaaMap = () => {
-      if (!valueSigmaa) {
-        firstObservation.proteinData.render_sigmaa = true;
-      } else {
-        observationsDataList.forEach(obs => {
-          obs.proteinData.render_sigmaa = false;
-        });
-      }
-      dispatch(setSigmaaVisible(!valueSigmaa));
+      const newValue = !valueSigmaa;
+      observationsDataList.forEach(obs => {
+        obs.proteinData.render_sigmaa = newValue;
+        dispatch(setSigmaaVisible(newValue, obs.id));
+      });
     };
 
     const toggleRenderDiffMap = () => {
-      if (!valueDiff) {
-        firstObservation.proteinData.render_diff = true;
-      } else {
-        observationsDataList.forEach(obs => {
-          obs.proteinData.render_diff = false;
-        });
-      }
-      dispatch(setDiffVisible(!valueDiff));
+      const newValue = !valueDiff;
+      observationsDataList.forEach(obs => {
+        obs.proteinData.render_diff = newValue;
+        dispatch(setDiffVisible(newValue, obs.id));
+      });
     };
 
     const toggleRenderEventMap = () => {
-      if (!valueEvent) {
-        firstObservation.proteinData.render_event = true;
-      } else {
-        observationsDataList.forEach(obs => {
-          obs.proteinData.render_event = false;
-        });
-      }
-      dispatch(setEventVisible(!valueEvent));
+      const newValue = !valueEvent;
+      observationsDataList.forEach(obs => {
+        obs.proteinData.render_event = newValue;
+        dispatch(setEventVisible(newValue, obs.id));
+      });
     };
 
+    //TODO: fix this - quality was set in different way
     const toggleRenderAtomQuality = () => {
-      if (!valueAtomQuality) {
-        firstObservation.proteinData.render_quality = true;
-      } else {
-        observationsDataList.forEach(obs => {
-          obs.proteinData.render_quality = false;
-        });
-      }
-      setValueAtomQuality(!valueAtomQuality);
+      const newValue = !valueAtomQuality;
+      observationsDataList.forEach(obs => {
+        // obs.proteinData.render_quality = false;
+        dispatch(setValueAtomQuality(newValue, obs.id));
+      });
     };
 
     const handleCloseModal = () => {

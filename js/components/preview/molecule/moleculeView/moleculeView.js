@@ -963,7 +963,7 @@ const MoleculeView = memo(
                           }
                         }}
                       >
-                        M
+                        O
                       </Button>
                     </Grid>
                   </Tooltip>

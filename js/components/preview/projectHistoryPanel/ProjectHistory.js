@@ -1,4 +1,4 @@
-import React, { memo, useRef, useState } from 'react';
+import React, { memo, useRef, useState, useContext, useEffect, useCallback } from 'react';
 import { Panel } from '../../common/Surfaces/Panel';
 import { templateExtend, TemplateName, Orientation, Gitgraph } from '@gitgraph/react';
 import { DynamicFeed, MergeType, PlayArrow, Refresh } from '@material-ui/icons';
@@ -14,6 +14,10 @@ import JobLauncherDialog from './JobLauncherDialog';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import { SQUONK_NOT_AVAILABLE } from './constants';
 import { PROJECTS_JOBS_PANEL_HEIGHT } from '../constants';
+import { changeSnapshot } from '../../../reducers/tracking/dispatchActionsSwitchSnapshot';
+import { NglContext } from '../../nglView/nglProvider';
+import { VIEWS } from '../../../constants/constants';
+import { useRouteMatch } from 'react-router-dom';
 
 export const heightOfProjectHistory = PROJECTS_JOBS_PANEL_HEIGHT;
 
@@ -73,6 +77,10 @@ const options = {
 
 export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExpanded, onTabChange }) => {
   const classes = useStyles();
+  const { nglViewList, getNglView } = useContext(NglContext);
+  const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
+  let match = useRouteMatch();
+  const paramsProjectID = match && match.params && match.params.projectId;
   const ref = useRef(null);
   const dispatch = useDispatch();
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
@@ -80,6 +88,15 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
   const currentSnapshotJobList = useSelector(state => state.projectReducers.currentSnapshotJobList);
   const currentSnapshotTree = useSelector(state => state.projectReducers.currentSnapshotTree);
   const jobPopUpAnchorEl = useSelector(state => state.projectReducers.jobPopUpAnchorEl);
+  const isSnapshotDirty = useSelector(state => state.trackingReducers.isSnapshotDirty);
+  const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
+  const currentSessionProjectID = currentSessionProject && currentSessionProject.projectID;
+  const sessionProjectID = paramsProjectID && paramsProjectID != null ? paramsProjectID : currentSessionProjectID;
+
+  const currentProject = useSelector(state => state.targetReducers.currentProject);
+
+  const [tryToOpen, setTryToOpen] = useState(false);
+  const [transitionToSnapshot, setTransitionToSnapshot] = useState(null);
 
   const [jobPopupInfo, setJobPopupInfo] = useState({
     hash: null,
@@ -90,19 +107,35 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
     dispatch(setJobConfigurationDialogOpen(true));
   };
 
-  const handleClickOnCommit = commit => {
-    dispatch(setSelectedSnapshotToSwitch(commit.hash));
-    dispatch(setIsOpenModalBeforeExit(true));
-  };
+  const handleClickOnCommit = useCallback(commit => {
+    setTryToOpen(true);
+    setTransitionToSnapshot(commit);
+  }, []);
 
-  const commitFunction = ({ title, hash, isSelected = false }) => ({
-    hash: `${hash}`,
-    subject: `${title}`,
-    onMessageClick: handleClickOnCommit,
-    onClick: handleClickOnCommit,
-    style:
-      (isSelected === true && { dot: { size: 10, color: 'red', strokeColor: 'blue', strokeWidth: 2 } }) || undefined
-  });
+  useEffect(() => {
+    if (isSnapshotDirty && tryToOpen && transitionToSnapshot) {
+      dispatch(setSelectedSnapshotToSwitch(transitionToSnapshot.hash));
+      dispatch(setIsOpenModalBeforeExit(true));
+      setTryToOpen(false);
+    } else if (!isSnapshotDirty && tryToOpen && transitionToSnapshot) {
+      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, nglViewList, stage));
+      setTryToOpen(false);
+    }
+  }, [dispatch, isSnapshotDirty, nglViewList, sessionProjectID, stage, transitionToSnapshot, tryToOpen]);
+
+  const commitFunction = useCallback(
+    ({ title, hash, isSelected = false }) => {
+      return {
+        hash: `${hash}`,
+        subject: `${title}`,
+        onMessageClick: handleClickOnCommit,
+        onClick: handleClickOnCommit,
+        style:
+          (isSelected === true && { dot: { size: 15, color: 'red', strokeColor: 'blue', strokeWidth: 2 } }) || undefined
+      };
+    },
+    [handleClickOnCommit]
+  );
 
   const handleClickTriangle = (event, hash, jobInfo) => {
     dispatch(setJobPopUpAnchorEl(event.currentTarget));
@@ -143,30 +176,34 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
     );
   };
 
-  const getJobColorCode = status => {
+  const getJobColorCode = (jobStatus, uploadStatus) => {
     let hexColor;
-    switch (status) {
-      case 'STARTED':
-        hexColor = '#FFF2CC';
-        break;
-      case 'SUCCESS':
-        hexColor = '#D5E8D4';
-        break;
-      case 'FAILURE':
-        hexColor = '#F9D5D3';
-        break;
-      case 'PENDING':
-        hexColor = '#8c8c8c';
-        break;
-      case 'RETRY':
-        hexColor = '#d2a5ff';
-        break;
-      case 'REVOKED':
-        hexColor = '#88f7e2';
-        break;
-      default:
-        hexColor = '#F9D5D3';
-        break;
+    if (uploadStatus && uploadStatus === 'FAILURE') {
+      hexColor = '#F51B0F';
+    } else {
+      switch (jobStatus) {
+        case 'STARTED':
+          hexColor = '#FFF2CC';
+          break;
+        case 'SUCCESS':
+          hexColor = '#D5E8D4';
+          break;
+        case 'FAILURE':
+          hexColor = '#F51B0F';
+          break;
+        case 'PENDING':
+          hexColor = '#8c8c8c';
+          break;
+        case 'RETRY':
+          hexColor = '#d2a5ff';
+          break;
+        case 'REVOKED':
+          hexColor = '#88f7e2';
+          break;
+        default:
+          hexColor = '#F9D5D3';
+          break;
+      }
     }
 
     return hexColor;
@@ -197,7 +234,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
           commitJobFunction({
             title: job.id,
             hash: `#${job.id}`,
-            customDot: renderTriangle(getJobColorCode(job.job_status), node.id, job)
+            customDot: renderTriangle(getJobColorCode(job.job_status, job.upload_status), node.id, job)
           })
         );
       });
@@ -222,7 +259,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
               size="small"
               onClick={() => dispatch(refreshJobsData())}
               startIcon={<Refresh />}
-              disabled={DJANGO_CONTEXT.squonk_available === false}
+              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject || !currentSessionProject}
             >
               Refresh
             </Button>
@@ -234,7 +271,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
               size="small"
               onClick={handleClickJobLauncher}
               startIcon={<PlayArrow />}
-              disabled={DJANGO_CONTEXT.squonk_available === false}
+              disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject || !currentSessionProject}
             >
               Job Launcher
             </Button>
@@ -248,6 +285,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
             size="small"
             onClick={() => onTabChange('jobTable')}
             startIcon={<DynamicFeed />}
+            disabled={DJANGO_CONTEXT.squonk_available === false || !currentProject || !currentSessionProject}
           >
             Job Table
           </Button>

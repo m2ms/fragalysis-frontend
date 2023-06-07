@@ -1,12 +1,9 @@
 ---
-name: build main
+name: build dev
 
-# Actions that take place after every commit the master/main branch.
-# Here every commit is built.
-#
-# Actions also run if the repository is tagged.
-#
-# Actions also run on a schedule.
+# Actions that take place after every commit to a developer branch
+# (any branch that is not 'staging' or 'production'). What takes
+# place here is controlled by a number of repository secrets/variables.
 
 # ---------------
 # Control secrets
@@ -16,9 +13,9 @@ name: build main
 # have the following GitHub 'Repository Secrets' defined
 # (i.e. via 'Settings -> Secrets'): -
 #
-# BE_IMAGE_TAG            optional - default latest
+# BE_IMAGE_TAG            optional - default stable
 # BE_NAMESPACE            optional - default xchem
-# FE_BRANCH               optional - default master
+# FE_BRANCH               optional - default staging
 # FE_NAMESPACE            optional - default xchem
 # STACK_BRANCH            optional - default master
 # STACK_GITHUB_NAMESPACE  optional - default xchem
@@ -38,9 +35,10 @@ name: build main
 
 on:
   push:
-    branches:
-    - '**'
-    tags:
+    branches-ignore:
+    - 'staging'
+    - 'production'
+    tags-ignore:
     - '**'
 
 env:
@@ -51,9 +49,9 @@ env:
   #
   #   For Jobs conditional on the presence of a secret see this Gist...
   #   https://gist.github.com/jonico/24ffebee6d2fa2e679389fac8aef50a3
-  BE_IMAGE_TAG: latest
+  BE_IMAGE_TAG: stable
   BE_NAMESPACE: xchem
-  FE_BRANCH: master
+  FE_BRANCH: staging
   FE_NAMESPACE: xchem
   STACK_BRANCH: master
   STACK_GITHUB_NAMESPACE: xchem
@@ -127,6 +125,8 @@ jobs:
     - name: Build
       run: yarn run build
 
+    # Trigger the stack for this build,
+    # identifying the 'stable' backend (or whatever BE_IMAGE_TAG has been set)
     - name: Trigger stack
       if: steps.vars.outputs.trigger == 'true'
       uses: informaticsmatters/trigger-ci-action@v1

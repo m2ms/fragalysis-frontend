@@ -730,6 +730,28 @@ const moveSelectedDatasetMoleculeInspirationsSettings = (data, newItemData, stag
   );
 };
 
+export const isDatasetCompoundLocked = (datasetID, compoundID) => (dispatch, getState) => {
+  const state = getState();
+
+  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID];
+  const isLocked = lockedCompounds && lockedCompounds.includes(compoundID);
+
+  return isLocked;
+};
+
+export const getFirstUnlockedCompoundAfter = (datasetID, compoundID) => (dispatch, getState) => {
+  const state = getState();
+
+  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID];
+  const compounds = state.datasetsReducers.moleculeLists[datasetID];
+
+  const firstUnlockedCompound = compounds.find(compound => {
+    return !lockedCompounds.includes(compound.id) && compound.id > compoundID;
+  });
+
+  return firstUnlockedCompound;
+};
+
 /**
  * Performance optimization for datasetMoleculeView. Gets objectsInView and passes it to further dispatch requests.
  * It wouldnt do anything else in moleculeView. Also this chains the above 3 methods which were before passed to

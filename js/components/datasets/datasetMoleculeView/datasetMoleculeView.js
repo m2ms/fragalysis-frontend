@@ -28,12 +28,12 @@ import {
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from '../redux/selectors';
 import {
-  appendMoleculeToCompoundsOfDatasetToBuy,
-  removeMoleculeFromCompoundsOfDatasetToBuy,
   setCrossReferenceCompoundName,
   setIsOpenCrossReferenceDialog,
   setSelectedAll,
-  setDeselectedAll
+  setDeselectedAll,
+  appendCompoundToSelectedCompoundsByDataset,
+  removeCompoundFromSelectedCompoundsByDataset
 } from '../redux/actions';
 import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
 import { ArrowDownward, ArrowUpward, MyLocation } from '@material-ui/icons';
@@ -300,6 +300,8 @@ const DatasetMoleculeView = memo(
         isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
       );
 
+      const compoundsList = useSelector(state => state.datasetsReducers.moleculeLists[datasetID]);
+
       const disableMoleculeNglControlButtons =
         useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
 
@@ -523,6 +525,11 @@ const DatasetMoleculeView = memo(
         });
       };
 
+      // const getNextRefForUnlockedCompound = (datasetID, currentID, currentRef) => {
+      //   const nextRef = null;
+      //   compoundsList.forEach(cmp => {});
+      // };
+
       const handleClickOnDownArrow = async () => {
         const refNext = ref.current.nextSibling;
         scrollToElement(refNext);
@@ -606,9 +613,9 @@ const DatasetMoleculeView = memo(
                   onChange={e => {
                     const result = e.target.checked;
                     if (result) {
-                      dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+                      dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
                     } else {
-                      dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+                      dispatch(removeCompoundFromSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
                       dispatch(deselectVectorCompound(data));
                     }
                   }}

@@ -39,6 +39,7 @@ import {
 import { isRemoteDebugging } from '../../../routes/constants';
 
 export const selectAllCompounds = () => (dispatch, getState) => {
+  //this one is for the vector compounds
   const state = getState();
   const currentVectorCompoundsFiltered = getCurrentVectorCompoundsFiltered(state);
 
@@ -276,6 +277,7 @@ export const showHideLigand = (data, majorViewStage) => async (dispatch, getStat
 };
 
 export const handleClickOnCompound = ({ event, data, majorViewStage, index }) => async (dispatch, getState) => {
+  // This is for the vector compounds
   const state = getState();
   const currentCompoundClass = state.previewReducers.compounds.currentCompoundClass;
   const selectedCompoundsClass = state.previewReducers.compounds.selectedCompoundsClass;
@@ -316,6 +318,7 @@ export const handleClickOnCompound = ({ event, data, majorViewStage, index }) =>
 };
 
 export const handleBuyList = ({ isSelected, data, skipTracking }) => (dispatch, getState) => {
+  // this is for vector compounds - used in saved state actions
   const state = getState();
   const selectedCompounds = state.previewReducers.compounds.allSelectedCompounds;
 

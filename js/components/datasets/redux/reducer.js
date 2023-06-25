@@ -46,6 +46,7 @@ export const INITIAL_STATE = {
 
   // shopping cart
   compoundsToBuyDatasetMap: {}, // map of $datasetID and its list of moleculeID
+  selectedCompoundsByDataset: {}, // map of $datasetID and its list of moleculeID
 
   // drag and drop state
   dragDropMap: {},
@@ -405,6 +406,28 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.SET_ALL_INSPIRATIONS:
       return { ...state, allInspirations: action.payload };
+
+    case constants.APPEND_COMPOUND_TO_SELECTED_COMPOUNDS_BY_DATASET:
+      const setOfcompounds = new Set(state.selectedCompoundsByDataset[action.payload.datasetID]);
+      setOfcompounds.add(action.payload.compoundID);
+      return {
+        ...state,
+        selectedCompoundsByDataset: {
+          ...state.selectedCompoundsByDataset,
+          [action.payload.datasetID]: [...setOfcompounds]
+        }
+      };
+
+    case constants.REMOVE_COMPOUND_FROM_SELECTED_COMPOUNDS_BY_DATASET:
+      const listOfcompounds = new Set(state.selectedCompoundsByDataset[action.payload.datasetID]);
+      listOfcompounds.delete(action.payload.compoundID);
+      return {
+        ...state,
+        selectedCompoundsByDataset: {
+          ...state.selectedCompoundsByDataset,
+          [action.payload.datasetID]: [...listOfcompounds]
+        }
+      };
 
     case constants.APPEND_MOLECULE_TO_COMPOUNDS_TO_BUY_OF_DATASET:
       const setOfMolecules = new Set(state.compoundsToBuyDatasetMap[action.payload.datasetID]);

@@ -325,6 +325,28 @@ export const setFilterWithInspirations = isChecked => ({
   payload: isChecked
 });
 
+export const appendCompoundToSelectedCompoundsByDataset = (
+  datasetID,
+  compoundID,
+  compoundTitle,
+  skipTracking = false
+) => ({
+  type: constants.APPEND_COMPOUND_TO_SELECTED_COMPOUNDS_BY_DATASET,
+  payload: { datasetID, compoundID, compoundTitle },
+  skipTracking: skipTracking
+});
+
+export const removeCompoundFromSelectedCompoundsByDataset = (
+  datasetID,
+  compoundID,
+  compoundTitle,
+  skipTracking = false
+) => ({
+  type: constants.REMOVE_COMPOUND_FROM_SELECTED_COMPOUNDS_BY_DATASET,
+  payload: { datasetID, compoundID, compoundTitle },
+  skipTracking: skipTracking
+});
+
 export const appendMoleculeToCompoundsOfDatasetToBuy = (
   datasetID,
   moleculeID,

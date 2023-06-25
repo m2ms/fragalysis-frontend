@@ -86,7 +86,9 @@ import {
   updateFilterShowedScoreProperties,
   setFilterShowedScoreProperties,
   setDragDropState,
-  resetDatasetScrolledMap
+  resetDatasetScrolledMap,
+  appendCompoundToSelectedCompoundsByDataset,
+  removeCompoundFromSelectedCompoundsByDataset
 } from '../../components/datasets/redux/actions';
 import {
   removeComponentRepresentation,
@@ -210,6 +212,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
     const currentDatasetBuyList = state.datasetsReducers.compoundsToBuyDatasetMap;
+    const currentLockedCompounds = state.datasetsReducers.selectedCompoundsByDataset;
     const currentobjectsInView = state.nglReducers.objectsInView;
 
     const currentTargets = (currentTargetOn && [currentTargetOn]) || [];
@@ -417,6 +420,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
       orderedActionList,
       actionType.REPRESENTATION_ADDED,
       getCollectionOfDatasetOfRepresentation(currentobjectsInView),
+      currentActions
+    );
+
+    getCurrentActionList(
+      orderedActionList,
+      actionType.COMPOUND_LOCKED,
+      getCollectionOfDataset(currentLockedCompounds),
       currentActions
     );
 
@@ -1719,12 +1729,21 @@ export const restoreCompoundsActions = (orderedActionList, stage) => (dispatch, 
     dispatch(addNewTypeCompound(compoundsAction, actionType.SURFACE_TURNED_ON, 'surface', stage, state));
   }
 
-  let compoundsSelectedAction = compoundsAction.filter(action => action.type === actionType.COMPOUND_SELECTED);
+  let compoundsSelectedAction = compoundsAction?.filter(action => action.type === actionType.COMPOUND_SELECTED);
 
   compoundsSelectedAction.forEach(action => {
     let data = getCompound(action, state);
     if (data) {
       dispatch(appendMoleculeToCompoundsOfDatasetToBuy(action.dataset_id, data.id, data.name));
+    }
+  });
+
+  let compoundsLockedAction = compoundsAction?.filter(action => action.type === actionType.COMPOUND_LOCKED);
+
+  compoundsLockedAction.forEach(action => {
+    let data = getCompound(action, state);
+    if (data) {
+      dispatch(appendCompoundToSelectedCompoundsByDataset(action.dataset_id, data.id, data.name));
     }
   });
 
@@ -2114,6 +2133,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.COMPOUND_DESELECTED:
         dispatch(handleCompoundAction(action, true));
         break;
+      case actionType.COMPOUND_LOCKED:
+        dispatch(handleCompoundLockAction(action, false));
+        break;
+      case actionType.COMPOUND_UNLOCKED:
+        dispatch(handleCompoundLockAction(action, true));
+        break;
       case actionType.MOLECULE_SELECTED:
         dispatch(handleSelectMoleculeAction(action, false));
         break;
@@ -2364,6 +2389,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.COMPOUND_DESELECTED:
         dispatch(handleCompoundAction(action, false));
+        break;
+      case actionType.COMPOUND_LOCKED:
+        dispatch(handleCompoundLockAction(action, true));
+        break;
+      case actionType.COMPOUND_UNLOCKED:
+        dispatch(handleCompoundLockAction(action, false));
         break;
       case actionType.MOLECULE_SELECTED:
         dispatch(handleSelectMoleculeAction(action, true));
@@ -2790,6 +2821,20 @@ const handleCompoundAction = (action, isSelected) => (dispatch, getState) => {
         dispatch(appendMoleculeToCompoundsOfDatasetToBuy(action.dataset_id, data.id, data.name));
       } else {
         dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(action.dataset_id, data.id, data.name));
+      }
+    }
+  }
+};
+
+const handleCompoundLockAction = (action, isLocked) => (dispatch, getState) => {
+  const state = getState();
+  if (action) {
+    let data = getCompound(action, state);
+    if (data) {
+      if (isLocked) {
+        dispatch(appendCompoundToSelectedCompoundsByDataset(action.dataset_id, data.id, data.name));
+      } else {
+        dispatch(removeCompoundFromSelectedCompoundsByDataset(action.dataset_id, data.id, data.name));
       }
     }
   }

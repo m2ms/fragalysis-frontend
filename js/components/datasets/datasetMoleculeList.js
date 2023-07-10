@@ -15,12 +15,12 @@ import {
 import React, { useState, useEffect, memo, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import DatasetMoleculeView from './datasetMoleculeView';
-import { colourList } from '../preview/molecule/utils/color';
+import { colourList, getRandomColor } from '../preview/molecule/utils/color';
 import InfiniteScroll from 'react-infinite-scroller';
 import { Button } from '../common/Inputs/Button';
 import { Panel } from '../common/Surfaces/Panel';
 import { ComputeSize } from '../../utils/computeSize';
-import { VIEWS } from '../../constants/constants';
+import { ARROW_TYPE, VIEWS } from '../../constants/constants';
 import { NglContext } from '../nglView/nglProvider';
 import classNames from 'classnames';
 import {
@@ -35,11 +35,17 @@ import {
   autoHideDatasetDialogsOnScroll,
   withDisabledDatasetMoleculesNglControlButtons,
   moveDatasetMolecule,
-  deleteDataset
+  deleteDataset,
+  moveDatasetMoleculeUpDown
 } from './redux/dispatchActions';
-import { setDragDropState, setFilterDialogOpen, setSearchStringOfCompoundSet } from './redux/actions';
+import {
+  setCrossReferenceCompoundName,
+  setDragDropState,
+  setFilterDialogOpen,
+  setSearchStringOfCompoundSet
+} from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
-import { FilterList, Link, DeleteForever } from '@material-ui/icons';
+import { FilterList, Link, DeleteForever, ArrowUpward, ArrowDownward } from '@material-ui/icons';
 import { getJoinedMoleculeLists } from './redux/selectors';
 import { InspirationDialog } from './inspirationDialog';
 import { CrossReferenceDialog } from './crossReferenceDialog';
@@ -187,6 +193,21 @@ const useStyles = makeStyles(theme => ({
     ...theme.typography.button,
     color: theme.palette.primary.main,
     fontStyle: 'italic'
+  },
+  arrow: {
+    width: 12,
+    height: 15
+  },
+  invisArrow: {
+    width: 12,
+    height: 15,
+    visibility: 'hidden'
+  },
+  arrows: {
+    height: '100%',
+    border: 'solid 1px',
+    borderColor: theme.palette.background.divider,
+    borderStyle: 'solid solid solid solid'
   }
 }));
 
@@ -245,7 +266,11 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
 
-  const addMoleculeViewRef = useScrollToSelected(datasetID, moleculesPerPage, setCurrentPage);
+  const { addMoleculeViewRef, setScrollToMoleculeId } = useScrollToSelected(
+    datasetID,
+    moleculesPerPage,
+    setCurrentPage
+  );
 
   const ligandList = useSelector(state => state.datasetsReducers.ligandLists[datasetID]);
   const proteinList = useSelector(state => state.datasetsReducers.proteinLists[datasetID]);
@@ -253,17 +278,25 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const surfaceList = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
 
   const selectedMolecules = (moleculeLists[datasetID] || []).filter(mol => compoundsToBuyList?.includes(mol.id));
+  const lockedMolecules = useSelector(state => state.datasetsReducers.selectedCompoundsByDataset[datasetID]) ?? [];
 
-  const isTypeOn = typeList => {
+  const isSelectedTypeOn = typeList => {
     if (typeList && compoundsToBuyList) {
       return typeList.some(molId => selectedMolecules.some(mol => mol.id === molId));
     }
     return false;
   };
 
-  const isLigandOn = isTypeOn(ligandList);
-  const isProteinOn = isTypeOn(proteinList);
-  const isComplexOn = isTypeOn(complexList);
+  const isTypeOn = typeList => {
+    return typeList && typeList.length > 0;
+  };
+
+  let isLigandOn = isSelectedTypeOn(ligandList);
+  let isProteinOn = isSelectedTypeOn(proteinList);
+  let isComplexOn = isSelectedTypeOn(complexList);
+
+  let areArrowsVisible =
+    isTypeOn(ligandList) || isTypeOn(proteinList) || isTypeOn(complexList) || isTypeOn(surfaceList);
 
   const addType = {
     ligand: addDatasetLigand,
@@ -284,7 +317,8 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   // TODO: maybe change "currentMolecules.forEach" to "{type}List.forEach"
 
   const removeSelectedType = (type, skipTracking) => {
-    selectedMolecules.forEach(molecule => {
+    lockedMolecules.forEach(cid => {
+      let molecule = getCompoundForId(cid);
       dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking));
     });
     selectedAll.current = false;
@@ -292,24 +326,20 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const addNewType = (type, skipTracking) => {
     dispatch(
-      withDisabledDatasetMoleculesNglControlButtons(
-        [datasetID],
-        selectedMolecules.map(molecule => molecule.id),
-        type,
-        async () => {
-          const promises = [];
+      withDisabledDatasetMoleculesNglControlButtons([datasetID], lockedMolecules, type, async () => {
+        const promises = [];
 
-          selectedMolecules.forEach(molecule => {
-            promises.push(
-              dispatch(
-                addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
-              )
-            );
-          });
+        lockedMolecules.forEach(cid => {
+          let molecule = getCompoundForId(cid);
+          promises.push(
+            dispatch(
+              addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
+            )
+          );
+        });
 
-          await Promise.all(promises);
-        }
-      )
+        await Promise.all(promises);
+      })
     );
   };
 
@@ -351,18 +381,22 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
     }
   };
 
+  const getCompoundForId = id => {
+    return joinedMoleculeLists?.find(m => m.id === id);
+  };
+
   const getMoleculesToSelect = list => {
-    let molecules = selectedMolecules.filter(m => !list.includes(m.id));
-    let data = molecules.map(m => {
-      return { datasetID, molecule: m };
+    let molecules = lockedMolecules.filter(cid => !list.includes(cid));
+    let data = molecules.map(cid => {
+      return { datasetID, molecule: getCompoundForId(cid) };
     });
     return data;
   };
 
   const getMoleculesToDeselect = list => {
-    let molecules = selectedMolecules.filter(m => list.includes(m.id));
-    let data = molecules.map(m => {
-      return { datasetID, molecule: m };
+    let molecules = lockedMolecules.filter(cid => list.includes(cid));
+    let data = molecules.map(cid => {
+      return { datasetID, molecule: getCompoundForId(cid) };
     });
     return data;
   };
@@ -444,7 +478,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   );
 
   const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(
-    selectedMolecules.map(molecule => ({ datasetID, molecule }))
+    lockedMolecules.map(cid => ({ datasetID, molecule: getCompoundForId(cid) }))
   );
 
   // useEffectDebugger(
@@ -512,6 +546,101 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   //   ],
   //   'DatasetMoleculeList'
   // );
+
+  const getFirstItemForIterationStart = () => {
+    const firstItem = joinedMoleculeLists.find(
+      mol =>
+        (ligandList.includes(mol.id) ||
+          proteinList.includes(mol.id) ||
+          complexList.includes(mol.id) ||
+          surfaceList.includes(mol.id)) &&
+        !lockedMolecules.includes(mol.id)
+    );
+
+    return firstItem;
+  };
+
+  const getNextItemForIteration = currentItemId => {
+    const nextItem = joinedMoleculeLists.find(mol => !lockedMolecules.includes(mol.id) && mol.id > currentItemId);
+    return nextItem;
+  };
+
+  const getPrevItemForIteration = currentItemId => {
+    const reversedCompounds = [...joinedMoleculeLists].reverse();
+    const firstUnlockedCompound = reversedCompounds.find(compound => {
+      return !lockedMolecules.includes(compound.id) && compound.id < currentItemId;
+    });
+
+    return firstUnlockedCompound;
+  };
+
+  const handleClickOnDownArrow = async () => {
+    // const refNext = ref.current.nextSibling;
+    // scrollToElement(refNext);
+
+    const firstItem = getFirstItemForIterationStart();
+    const nextItem = getNextItemForIteration(firstItem.id);
+
+    if (firstItem && nextItem) {
+      // let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
+      // const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
+      // if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
+      //   nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
+      // }
+      const moleculeTitleNext = nextItem && nextItem.name;
+
+      setScrollToMoleculeId(nextItem.id);
+
+      let dataValue = {
+        colourToggle: getRandomColor(firstItem),
+        isLigandOn: ligandList.includes(firstItem.id),
+        isProteinOn: proteinList.includes(firstItem.id),
+        isComplexOn: complexList.includes(firstItem.id),
+        isSurfaceOn: surfaceList.includes(firstItem.id)
+      };
+
+      dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+      // if (setRef && ref.current) {
+      //   setRef(refNext);
+      // }
+
+      dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, nextItem, dataValue, ARROW_TYPE.DOWN));
+    }
+  };
+
+  const handleClickOnUpArrow = async () => {
+    // const refPrevious = ref.current.previousSibling;
+    // scrollToElement(refPrevious);
+
+    const firstItem = getFirstItemForIterationStart();
+    const prevItem = getPrevItemForIteration(firstItem.id);
+
+    if (firstItem && prevItem) {
+      // let previousItem = (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
+      // const previousDatasetID = (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
+      // if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
+      //   previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
+      // }
+      const moleculeTitlePrev = prevItem && prevItem.name;
+
+      setScrollToMoleculeId(prevItem.id);
+
+      let dataValue = {
+        colourToggle: getRandomColor(firstItem),
+        isLigandOn: ligandList.includes(firstItem.id),
+        isProteinOn: proteinList.includes(firstItem.id),
+        isComplexOn: complexList.includes(firstItem.id),
+        isSurfaceOn: surfaceList.includes(firstItem.id)
+      };
+
+      dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
+      // if (setRef && ref.current) {
+      //   setRef(refPrevious);
+      // }
+
+      dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, prevItem, dataValue, ARROW_TYPE.UP));
+    }
+  };
 
   return (
     <Panel hasHeader title={title} withTooltip headerActions={actions}>
@@ -610,7 +739,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                       </Grid>
                     </Tooltip>
                   ))}
-                {selectedMolecules.length > 0 && (
+                {lockedMolecules && lockedMolecules.length > 0 && (
                   <Grid item>
                     <Grid
                       container
@@ -666,6 +795,32 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                     </Grid>
                   </Grid>
                 )}
+                <Grid item>
+                  <Grid container direction="row" /*className={classes.arrows}*/>
+                    <Grid item>
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        // disabled={false || !previousItemData || !areArrowsVisible}
+                        disabled={false}
+                        onClick={handleClickOnUpArrow}
+                      >
+                        <ArrowUpward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+                      </IconButton>
+                    </Grid>
+                    <Grid item>
+                      <IconButton
+                        color="primary"
+                        size="small"
+                        // disabled={false || !nextItemData || !areArrowsVisible}
+                        disabled={false}
+                        onClick={handleClickOnDownArrow}
+                      >
+                        <ArrowDownward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                </Grid>
               </Grid>
             </Grid>
           )}
@@ -712,7 +867,8 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                   <GroupDatasetNglControlButtonsContext.Provider value={groupDatasetsNglControlButtonsDisabledState}>
                     <DndProvider backend={HTML5Backend}>
                       {currentMolecules.map((data, index, array) => {
-                        const isCheckedToBuy = selectedMolecules.some(molecule => molecule.id === data.id);
+                        //const isCheckedToBuy = selectedMolecules.some(molecule => molecule.id === data.id);
+                        const locked = lockedMolecules?.includes(data.id);
 
                         return (
                           <DatasetMoleculeView
@@ -733,10 +889,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             S={surfaceList?.includes(data.id)}
                             V={false}
                             moveMolecule={moveMolecule}
-                            isCheckedToBuy={isCheckedToBuy}
-                            disableL={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.ligand}
-                            disableP={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.protein}
-                            disableC={isCheckedToBuy && groupDatasetsNglControlButtonsDisabledState.complex}
+                            isCheckedToBuy={locked}
+                            disableL={locked && groupDatasetsNglControlButtonsDisabledState.ligand}
+                            disableP={locked && groupDatasetsNglControlButtonsDisabledState.protein}
+                            disableC={locked && groupDatasetsNglControlButtonsDisabledState.complex}
                             dragDropEnabled
                           />
                         );

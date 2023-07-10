@@ -23,7 +23,10 @@ import {
   getDatasetMoleculeID,
   getInspirationsForMol,
   withDisabledDatasetMoleculeNglControlButton,
-  moveDatasetMoleculeUpDown
+  moveDatasetMoleculeUpDown,
+  isDatasetCompoundLocked,
+  getFirstUnlockedCompoundAfter,
+  getFirstUnlockedCompoundBefore
 } from '../redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from '../redux/selectors';
@@ -46,7 +49,7 @@ import {
   isCompoundFromVectorSelector,
   showHideLigand
 } from '../../preview/compounds/redux/dispatchActions';
-import { colourList } from '../../preview/molecule/utils/color';
+import { colourList, getRandomColor } from '../../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from '../useDragDropMoleculeView';
 import DatasetMoleculeSelectCheckbox from './datasetMoleculeSelectCheckbox';
 import useCopyClipboard from 'react-use-clipboard';
@@ -322,15 +325,14 @@ const DatasetMoleculeView = memo(
       const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
       const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
 
-      let areArrowsVisible = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn;
+      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isCheckedToBuy;
 
       if (arrowsHidden) {
         areArrowsVisible = false;
       }
 
       const refOnCancelImage = useRef();
-      const getRandomColor = () => colourList[currentID % colourList.length];
-      const colourToggle = getRandomColor();
+      const colourToggle = getRandomColor(data);
 
       const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
       const moleculeImgRef = useRef(null);
@@ -534,8 +536,11 @@ const DatasetMoleculeView = memo(
         const refNext = ref.current.nextSibling;
         scrollToElement(refNext);
 
-        const nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
+        let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
         const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
+        if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
+          nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
+        }
         const moleculeTitleNext = nextItem && nextItem.name;
 
         let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
@@ -554,10 +559,13 @@ const DatasetMoleculeView = memo(
         const refPrevious = ref.current.previousSibling;
         scrollToElement(refPrevious);
 
-        const previousItem =
+        let previousItem =
           (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
         const previousDatasetID =
           (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
+        if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
+          previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
+        }
         const moleculeTitlePrev = previousItem && previousItem.name;
 
         let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };

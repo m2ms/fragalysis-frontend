@@ -578,7 +578,7 @@ export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecule
       const surfaceList = state.datasetsReducers.surfaceLists[datasetID];
 
       const molecules = currentMolecules[datasetID].filter(molecule => {
-        return !skipMolecules[datasetID]?.includes(molecule);
+        return !skipMolecules[datasetID]?.includes(molecule.id);
       });
 
       ligandList?.forEach(moleculeID => {
@@ -752,6 +752,21 @@ export const getFirstUnlockedCompoundAfter = (datasetID, compoundID) => (dispatc
   return firstUnlockedCompound;
 };
 
+export const getFirstUnlockedCompoundBefore = (datasetID, compoundID) => (dispatch, getState) => {
+  const state = getState();
+
+  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID];
+  const compounds = state.datasetsReducers.moleculeLists[datasetID];
+
+  const reversedCompounds = [...compounds].reverse();
+
+  const firstUnlockedCompound = reversedCompounds.find(compound => {
+    return !lockedCompounds.includes(compound.id) && compound.id < compoundID;
+  });
+
+  return firstUnlockedCompound;
+};
+
 /**
  * Performance optimization for datasetMoleculeView. Gets objectsInView and passes it to further dispatch requests.
  * It wouldnt do anything else in moleculeView. Also this chains the above 3 methods which were before passed to
@@ -764,7 +779,8 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
 ) => {
   const state = getState();
   const allInspirations = state.datasetsReducers.allInspirations;
-  const objectsInView = getState().nglReducers.objectsInView;
+  const objectsInView = state.nglReducers.objectsInView;
+  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID] ?? [];
 
   const dataValue = { ...data, objectsInView };
 
@@ -777,7 +793,7 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
     dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
   ]);
 
-  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem] }));
+  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
   dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
 };
 

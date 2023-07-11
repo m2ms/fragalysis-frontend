@@ -1,6 +1,6 @@
 import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../common/Surfaces/Panel';
-import { CircularProgress, Grid, makeStyles, Typography, Button } from '@material-ui/core';
+import { CircularProgress, Grid, makeStyles, Typography, Button, TextField } from '@material-ui/core';
 import { CloudDownload } from '@material-ui/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -19,7 +19,12 @@ import { autoHideDatasetDialogsOnScroll, resetCrossReferenceDialog } from './red
 import { NglContext } from '../nglView/nglProvider';
 import FileSaver from 'file-saver';
 import JSZip from 'jszip';
-import { isCompoundFromVectorSelector } from '../preview/compounds/redux/dispatchActions';
+import {
+  isCompoundFromVectorSelector,
+  onChangeCompoundClassValue,
+  onClickFilterClass,
+  onKeyDownFilterClass
+} from '../preview/compounds/redux/dispatchActions';
 import { saveAndShareSnapshot } from '../snapshot/redux/dispatchActions';
 import { setDontShowShareSnapshot, setSharedSnapshot } from '../snapshot/redux/actions';
 import { initSharedSnapshot } from '../snapshot/redux/reducer';
@@ -27,6 +32,8 @@ import { base_url } from '../routes/constants';
 import { api, METHOD } from '../../utils/api';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { compoundsColors } from '../preview/compounds/redux/constants';
+import classNames from 'classnames';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -46,6 +53,32 @@ const useStyles = makeStyles(theme => ({
   },
   sdfButton: {
     marginRight: theme.spacing(1)
+  },
+  [compoundsColors.blue.key]: {
+    backgroundColor: compoundsColors.blue.color
+  },
+  [compoundsColors.red.key]: {
+    backgroundColor: compoundsColors.red.color
+  },
+  [compoundsColors.green.key]: {
+    backgroundColor: compoundsColors.green.color
+  },
+  [compoundsColors.purple.key]: {
+    backgroundColor: compoundsColors.purple.color
+  },
+  [compoundsColors.apricot.key]: {
+    backgroundColor: compoundsColors.apricot.color
+  },
+  textField: {
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
+    width: 76,
+    '& .MuiFormLabel-root': {
+      paddingLeft: theme.spacing(1)
+    }
+  },
+  selectedInput: {
+    border: `2px groove ${theme.palette.primary.main}`
   }
 }));
 
@@ -82,6 +115,35 @@ export const SelectedCompoundList = memo(() => {
 
   const showedCompoundList = useSelector(state => state.previewReducers.compounds.showedCompoundList);
   const filteredScoreProperties = useSelector(state => state.datasetsReducers.filteredScoreProperties);
+
+  const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
+  const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap);
+  let selectedMolecules = [];
+  Object.keys(compoundsToBuyList).forEach(datasetId => {
+    const datasetCmpsToBuy = compoundsToBuyList[datasetId] || [];
+    const molsOfDataset = moleculeLists[datasetId] || [];
+    selectedMolecules = [...selectedMolecules, ...molsOfDataset.filter(mol => datasetCmpsToBuy?.includes(mol.id))];
+  });
+
+  const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
+
+  const blueInput = useSelector(state => state.previewReducers.compounds[compoundsColors.blue.key]);
+  const redInput = useSelector(state => state.previewReducers.compounds[compoundsColors.red.key]);
+  const greenInput = useSelector(state => state.previewReducers.compounds[compoundsColors.green.key]);
+  const purpleInput = useSelector(state => state.previewReducers.compounds[compoundsColors.purple.key]);
+  const apricotInput = useSelector(state => state.previewReducers.compounds[compoundsColors.apricot.key]);
+
+  const inputs = {
+    [compoundsColors.blue.key]: blueInput,
+    [compoundsColors.red.key]: redInput,
+    [compoundsColors.green.key]: greenInput,
+    [compoundsColors.purple.key]: purpleInput,
+    [compoundsColors.apricot.key]: apricotInput
+  };
+
+  const compoundColors = useSelector(state => state.datasetsReducers.compoundColorByDataset);
+
+  const colorFilterSettings = useSelector(state => state.datasetsReducers.selectedColorsInFilter);
 
   useEffect(() => {
     return () => {
@@ -242,13 +304,24 @@ export const SelectedCompoundList = memo(() => {
       dispatch(setSharedSnapshot(initSharedSnapshot));
       dispatch(setDontShowShareSnapshot(false));
 
-      const usedDatasets = getUsedDatasets(moleculesObjectIDListOfCompoundsToBuy);
+      const filteredCompounds = moleculesObjectIDListOfCompoundsToBuy.filter(data => {
+        let isVisible = false;
+        const cmpColorsForDataset = compoundColors[data.datasetID];
+        if (cmpColorsForDataset && cmpColorsForDataset.hasOwnProperty(data.molecule.id)) {
+          const shoppingCartColor = cmpColorsForDataset[data.molecule.id];
+          isVisible = colorFilterSettings.hasOwnProperty(shoppingCartColor);
+        }
+
+        return isVisible;
+      });
+
+      const usedDatasets = getUsedDatasets(filteredCompounds);
       const props = getSetOfProps(usedDatasets);
-      const ids = getCompoundIds(moleculesObjectIDListOfCompoundsToBuy);
+      const ids = getCompoundIds(filteredCompounds);
 
       const listOfMols = [];
 
-      moleculesObjectIDListOfCompoundsToBuy.forEach(compound => {
+      filteredCompounds.forEach(compound => {
         let molObj = getEmptyMolObject(props, ids);
         molObj = populateMolObject(molObj, compound, props, ids);
         listOfMols.push(molObj);
@@ -323,7 +396,32 @@ export const SelectedCompoundList = memo(() => {
       {isOpenCrossReferenceDialog && (
         <CrossReferenceDialog open anchorEl={selectedMoleculeRef} ref={crossReferenceDialogRef} />
       )}
-      <Grid container direction="column" justify="flex-start" className={classes.container}>
+      <Grid container direction="row" justify="flex-start" className={classes.container}>
+        <Grid item>
+          {/* Selection */}
+          <Grid container direction="row" justify="space-between" alignItems="center">
+            {Object.keys(compoundsColors).map(item => (
+              <Grid item key={item}>
+                <TextField
+                  autoComplete="off"
+                  id={`${item}`}
+                  key={`CLASS_${item}`}
+                  variant="standard"
+                  className={classNames(
+                    classes.textField,
+                    classes[item],
+                    colorFilterSettings.hasOwnProperty(item) && classes.selectedInput
+                  )}
+                  label={compoundsColors[item].text}
+                  onChange={e => dispatch(onChangeCompoundClassValue(e))}
+                  onKeyDown={e => dispatch(onKeyDownFilterClass(e))}
+                  onClick={e => dispatch(onClickFilterClass(e))}
+                  value={inputs[item] || ''}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
         {currentMolecules.length > 0 && (
           <Grid item className={classes.gridItemList} ref={scrollBarRef}>
             <InfiniteScroll
@@ -361,26 +459,40 @@ export const SelectedCompoundList = memo(() => {
                   } else {
                     isLigandOn = ligandList.includes(data.molecule.id);
                   }
+                  const isAddedToShoppingCart = selectedMolecules.some(molecule => molecule.id === data.molecule.id);
+                  let shoppingCartColor = null;
+                  let isVisible = false;
+                  if (isAddedToShoppingCart) {
+                    const cmpColorsForDataset = compoundColors[data.datasetID];
+                    if (cmpColorsForDataset && cmpColorsForDataset.hasOwnProperty(data.molecule.id)) {
+                      shoppingCartColor = cmpColorsForDataset[data.molecule.id];
+                      isVisible = colorFilterSettings.hasOwnProperty(shoppingCartColor);
+                    }
+                  }
                   return (
-                    <DatasetMoleculeView
-                      key={index}
-                      index={index}
-                      imageHeight={imgHeight}
-                      imageWidth={imgWidth}
-                      data={data.molecule}
-                      datasetID={data.datasetID}
-                      setRef={setSelectedMoleculeRef}
-                      showCrossReferenceModal
-                      previousItemData={index > 0 && array[index - 1]}
-                      nextItemData={index < array?.length && array[index + 1]}
-                      L={isLigandOn}
-                      P={proteinList.includes(data.molecule.id)}
-                      C={complexList.includes(data.molecule.id)}
-                      S={surfaceList.includes(data.molecule.id)}
-                      V={false}
-                      arrowsHidden
-                      dragDropEnabled
-                    />
+                    isVisible && (
+                      <DatasetMoleculeView
+                        key={index}
+                        index={index}
+                        imageHeight={imgHeight}
+                        imageWidth={imgWidth}
+                        data={data.molecule}
+                        datasetID={data.datasetID}
+                        setRef={setSelectedMoleculeRef}
+                        showCrossReferenceModal
+                        previousItemData={index > 0 && array[index - 1]}
+                        nextItemData={index < array?.length && array[index + 1]}
+                        L={isLigandOn}
+                        P={proteinList.includes(data.molecule.id)}
+                        C={complexList.includes(data.molecule.id)}
+                        S={surfaceList.includes(data.molecule.id)}
+                        V={false}
+                        arrowsHidden
+                        dragDropEnabled
+                        shoppingCartColor={shoppingCartColor}
+                        isAddedToShoppingCart={isAddedToShoppingCart}
+                      />
+                    )
                   );
                 })}
               </DndProvider>

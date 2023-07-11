@@ -36,7 +36,11 @@ import {
   setSelectedAll,
   setDeselectedAll,
   appendCompoundToSelectedCompoundsByDataset,
-  removeCompoundFromSelectedCompoundsByDataset
+  removeCompoundFromSelectedCompoundsByDataset,
+  appendMoleculeToCompoundsOfDatasetToBuy,
+  removeMoleculeFromCompoundsOfDatasetToBuy,
+  appendCompoundColorOfDataset,
+  removeCompoundColorOfDataset
 } from '../redux/actions';
 import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
 import { ArrowDownward, ArrowUpward, MyLocation } from '@material-ui/icons';
@@ -53,6 +57,9 @@ import { colourList, getRandomColor } from '../../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from '../useDragDropMoleculeView';
 import DatasetMoleculeSelectCheckbox from './datasetMoleculeSelectCheckbox';
 import useCopyClipboard from 'react-use-clipboard';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
+import { compoundsColors } from '../../preview/compounds/redux/constants';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -243,10 +250,39 @@ const useStyles = makeStyles(theme => ({
       color: theme.palette.success.dark
     }
   },
+  addToShoppingCartIcon: {
+    padding: 0,
+    color: theme.palette.error.main,
+    '&:hover': {
+      color: theme.palette.success.dark
+    }
+  },
+  removeFromShoppingCartIcon: {
+    padding: 0,
+    color: theme.palette.error.main,
+    '&:hover': {
+      color: theme.palette.error.dark
+    }
+  },
   imageActions: {
     position: 'absolute',
     top: 0,
     right: 0
+  },
+  [compoundsColors.blue.key]: {
+    backgroundColor: compoundsColors.blue.color
+  },
+  [compoundsColors.red.key]: {
+    backgroundColor: compoundsColors.red.color
+  },
+  [compoundsColors.green.key]: {
+    backgroundColor: compoundsColors.green.color
+  },
+  [compoundsColors.purple.key]: {
+    backgroundColor: compoundsColors.purple.color
+  },
+  [compoundsColors.apricot.key]: {
+    backgroundColor: compoundsColors.apricot.color
   }
 }));
 
@@ -278,7 +314,9 @@ const DatasetMoleculeView = memo(
         arrowsHidden = false,
         dragDropEnabled = false,
         moveMolecule,
-        isCheckedToBuy,
+        isDatasetCompoundLocked,
+        isAddedToShoppingCart,
+        shoppingCartColor = null,
         disableL,
         disableP,
         disableC
@@ -304,6 +342,7 @@ const DatasetMoleculeView = memo(
       );
 
       const compoundsList = useSelector(state => state.datasetsReducers.moleculeLists[datasetID]);
+      const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
       const disableMoleculeNglControlButtons =
         useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
@@ -325,7 +364,7 @@ const DatasetMoleculeView = memo(
       const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
       const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
 
-      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isCheckedToBuy;
+      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isDatasetCompoundLocked;
 
       if (arrowsHidden) {
         areArrowsVisible = false;
@@ -527,6 +566,17 @@ const DatasetMoleculeView = memo(
         });
       };
 
+      const handleShoppingCartClick = () => {
+        if (!isAddedToShoppingCart) {
+          dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+          dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+        } else {
+          dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+          dispatch(removeCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+          dispatch(deselectVectorCompound(data));
+        }
+      };
+
       // const getNextRefForUnlockedCompound = (datasetID, currentID, currentRef) => {
       //   const nextRef = null;
       //   compoundsList.forEach(cmp => {});
@@ -597,7 +647,11 @@ const DatasetMoleculeView = memo(
             container
             justify="space-between"
             direction="row"
-            className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
+            className={classNames(
+              classes.container,
+              dragDropEnabled ? classes.dragDropCursor : undefined,
+              shoppingCartColor ? classes[shoppingCartColor] : undefined
+            )}
             wrap="nowrap"
             ref={node => {
               if (dragDropEnabled) {
@@ -614,7 +668,7 @@ const DatasetMoleculeView = memo(
             <Grid item container justify="space-between" direction="column" className={classes.site}>
               <Grid item>
                 <DatasetMoleculeSelectCheckbox
-                  checked={isCheckedToBuy}
+                  checked={isDatasetCompoundLocked}
                   className={classes.checkbox}
                   size="small"
                   color="primary"
@@ -644,7 +698,12 @@ const DatasetMoleculeView = memo(
               >
                 <Grid item className={classes.inheritWidth}>
                   <Tooltip title={moleculeTitle} placement="bottom-start">
-                    <div className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}>
+                    <div
+                      className={classNames(
+                        classes.moleculeTitleLabel,
+                        isDatasetCompoundLocked && classes.selectedMolecule
+                      )}
+                    >
                       {moleculeTitle}
                     </div>
                   </Tooltip>
@@ -925,6 +984,18 @@ const DatasetMoleculeView = memo(
                   <Tooltip title={!isCopied ? 'Copy smiles' : 'Copied'}>
                     <IconButton className={classes.copyIcon} onClick={setCopied}>
                       {!isCopied ? <Assignment /> : <AssignmentTurnedIn />}
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {moleculeTooltipOpen && (
+                  <Tooltip>
+                    <IconButton
+                      className={
+                        !isAddedToShoppingCart ? classes.addToShoppingCartIcon : classes.removeFromShoppingCartIcon
+                      }
+                      onClick={handleShoppingCartClick}
+                    >
+                      {!isAddedToShoppingCart ? <AddShoppingCartIcon /> : <RemoveShoppingCartIcon />}
                     </IconButton>
                   </Tooltip>
                 )}

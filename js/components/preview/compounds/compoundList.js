@@ -12,6 +12,7 @@ import {
   clearAllSelectedCompounds,
   loadNextPageOfCompounds,
   onChangeCompoundClassValue,
+  onClickCompoundClass,
   onKeyDownCompoundClass,
   selectAllCompounds
 } from './redux/dispatchActions';
@@ -107,6 +108,7 @@ export const CompoundList = memo(() => {
             {Object.keys(compoundsColors).map(item => (
               <Grid item key={item}>
                 <TextField
+                  autoComplete="off"
                   id={`${item}`}
                   key={`CLASS_${item}`}
                   variant="standard"
@@ -118,6 +120,7 @@ export const CompoundList = memo(() => {
                   label={compoundsColors[item].text}
                   onChange={e => dispatch(onChangeCompoundClassValue(e))}
                   onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
+                  onClick={e => dispatch(onClickCompoundClass(e))}
                   value={inputs[item] || ''}
                 />
               </Grid>

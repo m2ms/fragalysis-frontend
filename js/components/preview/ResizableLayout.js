@@ -32,7 +32,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const sideWidth = 500;
-const panelHeight = 160;
+const panelHeight = 300;
 const resizerSize = 20;
 
 export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHistoryChange, nglPortal }) => {
@@ -158,10 +158,14 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
               <TagDetails />
             </div>
             <Resizer orientation="horizontal" onResize={onTagDetailsResize} />
+            {
+            /* hide section Hit List Filter(LHS) - task #576 
             <div style={{ height: `calc(100% - ${tagDetailsHeight + hitNavigatorHeight + 2 * resizerSize}px)` }}>
               <TagSelector />
-            </div>
-            <Resizer orientation="horizontal" onResize={onHitListResize} />
+             </div> 
+            <Resizer orientation="horizontal" onResize={onHitListResize} /> 
+            */
+           }
             <div style={{ height: hitNavigatorHeight }}>
               <HitNavigator hideProjects={hideProjects} />
             </div>

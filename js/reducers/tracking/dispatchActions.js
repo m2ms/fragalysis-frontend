@@ -48,7 +48,7 @@ import {
   getProteinData,
   selectAllHits
 } from '../../components/preview/molecule/redux/dispatchActions';
-import { setSortDialogOpen } from '../../components/preview/molecule/redux/actions';
+import { setSortDialogOpen, setSearchStringOfHitNavigator } from '../../components/preview/molecule/redux/actions';
 import {
   handleBuyList,
   handleBuyListAll,
@@ -86,7 +86,8 @@ import {
   updateFilterShowedScoreProperties,
   setFilterShowedScoreProperties,
   setDragDropState,
-  resetDatasetScrolledMap
+  resetDatasetScrolledMap,
+  setSearchStringOfCompoundSet
 } from '../../components/datasets/redux/actions';
 import {
   removeComponentRepresentation,
@@ -455,6 +456,8 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
     getCommonLastActionByType(orderedActionList, actionType.CLIP_DIST, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.FOG_NEAR, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.FOG_FAR, currentActions);
+    getCommonLastActionByType(orderedActionList, actionType.SEARCH_STRING, currentActions);
+    getCommonLastActionByType(orderedActionList, actionType.SEARCH_STRING_HIT_NAVIGATOR, currentActions);
 
     // Since drag and drop state can be influenced by filter as well, determine its state by the last influential action
     const action = orderedActionList.find(action =>
@@ -895,6 +898,8 @@ export const restoreAfterTargetActions = (stages, projectId) => async (dispatch,
     dispatch(restoreViewerControlActions(orderedActionList));
     dispatch(resetDatasetScrolledMap()); // Have a look at useScrollToSelected.js
     dispatch(setIsSnapshotDirty(false));
+    dispatch(restoreSearchString(orderedActionList));
+    dispatch(restoreSearchStringHitNavigator(orderedActionList));
   }
 };
 
@@ -1663,6 +1668,20 @@ export const restoreViewerControlActions = moleculesAction => dispatch => {
     dispatch(turnSide(side, open, true));
   });
 };
+const restoreSearchString = moleculesAction => dispatch => {
+  let filterSearchString = moleculesAction.find(action => action.type === actionType.SEARCH_STRING);
+  if (filterSearchString) {
+    let datasetID = filterSearchString.dataset_id;
+    dispatch(setSearchStringOfCompoundSet(datasetID, filterSearchString.searchString))
+  }
+};
+
+const restoreSearchStringHitNavigator = moleculesAction => (dispatch, getState) => {
+  let filterSearchString = moleculesAction.find(action => action.type === actionType.SEARCH_STRING_HIT_NAVIGATOR);
+  if (filterSearchString) {   
+   dispatch(setSearchStringOfHitNavigator(filterSearchString.searchStringHitNavigator))
+  }
+};
 
 export const restoreSnapshotImageActions = projectID => async (dispatch, getState) => {
   const state = getState();
@@ -1697,8 +1716,6 @@ const restoreProject = projectId => (dispatch, getState) => {
           })
         )
       );
-      promises.push(dispatch(setProject(response.data.project)));
-
       return Promise.all(promises);
     });
   }

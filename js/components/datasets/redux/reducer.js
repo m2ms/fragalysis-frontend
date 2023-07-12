@@ -463,7 +463,13 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
 
     case constants.APPEND_COMPOUND_COLOR_OF_DATASET:
       const setOfCompoundColors = { ...state.compoundColorByDataset[action.payload.datasetID] };
-      setOfCompoundColors[action.payload.compoundID] = action.payload.colorClass;
+      if (setOfCompoundColors.hasOwnProperty(action.payload.compoundID)) {
+        if (!setOfCompoundColors[action.payload.compoundID].includes(action.payload.colorClass)) {
+          setOfCompoundColors[action.payload.compoundID].push(action.payload.colorClass);
+        }
+      } else {
+        setOfCompoundColors[action.payload.compoundID] = [action.payload.colorClass];
+      }
       return {
         ...state,
         compoundColorByDataset: {
@@ -475,7 +481,12 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
     case constants.REMOVE_COMPOUND_COLOR_OF_DATASET:
       const listOfCompoundColors = { ...state.compoundColorByDataset[action.payload.datasetID] };
       if (listOfCompoundColors.hasOwnProperty(action.payload.compoundID)) {
-        delete listOfCompoundColors[action.payload.compoundID];
+        const colors = listOfCompoundColors[action.payload.compoundID].filter(c => c !== action.payload.colorClass);
+        if (colors.length > 0) {
+          listOfCompoundColors[action.payload.compoundID] = [...colors];
+        } else {
+          delete listOfCompoundColors[action.payload.compoundID];
+        }
       }
       return {
         ...state,

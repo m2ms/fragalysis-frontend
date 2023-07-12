@@ -252,7 +252,7 @@ const useStyles = makeStyles(theme => ({
   },
   addToShoppingCartIcon: {
     padding: 0,
-    color: theme.palette.error.main,
+    color: theme.palette.success.main,
     '&:hover': {
       color: theme.palette.success.dark
     }
@@ -316,7 +316,7 @@ const DatasetMoleculeView = memo(
         moveMolecule,
         isDatasetCompoundLocked,
         isAddedToShoppingCart,
-        shoppingCartColor = null,
+        shoppingCartColors = [],
         disableL,
         disableP,
         disableC
@@ -341,7 +341,6 @@ const DatasetMoleculeView = memo(
         isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
       );
 
-      const compoundsList = useSelector(state => state.datasetsReducers.moleculeLists[datasetID]);
       const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
       const disableMoleculeNglControlButtons =
@@ -370,7 +369,6 @@ const DatasetMoleculeView = memo(
         areArrowsVisible = false;
       }
 
-      const refOnCancelImage = useRef();
       const colourToggle = getRandomColor(data);
 
       const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
@@ -569,12 +567,13 @@ const DatasetMoleculeView = memo(
       const handleShoppingCartClick = () => {
         if (!isAddedToShoppingCart) {
           dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
-          dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
-        } else {
-          dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
-          dispatch(removeCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
-          dispatch(deselectVectorCompound(data));
         }
+        dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+        // } else {
+        //   dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+        //   dispatch(removeCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+        //   dispatch(deselectVectorCompound(data));
+        // }
       };
 
       // const getNextRefForUnlockedCompound = (datasetID, currentID, currentRef) => {
@@ -647,11 +646,7 @@ const DatasetMoleculeView = memo(
             container
             justify="space-between"
             direction="row"
-            className={classNames(
-              classes.container,
-              dragDropEnabled ? classes.dragDropCursor : undefined,
-              shoppingCartColor ? classes[shoppingCartColor] : undefined
-            )}
+            className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
             wrap="nowrap"
             ref={node => {
               if (dragDropEnabled) {
@@ -989,13 +984,8 @@ const DatasetMoleculeView = memo(
                 )}
                 {moleculeTooltipOpen && (
                   <Tooltip>
-                    <IconButton
-                      className={
-                        !isAddedToShoppingCart ? classes.addToShoppingCartIcon : classes.removeFromShoppingCartIcon
-                      }
-                      onClick={handleShoppingCartClick}
-                    >
-                      {!isAddedToShoppingCart ? <AddShoppingCartIcon /> : <RemoveShoppingCartIcon />}
+                    <IconButton className={classes.addToShoppingCartIcon} onClick={handleShoppingCartClick}>
+                      <AddShoppingCartIcon />
                     </IconButton>
                   </Tooltip>
                 )}

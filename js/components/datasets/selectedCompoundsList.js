@@ -460,13 +460,19 @@ export const SelectedCompoundList = memo(() => {
                     isLigandOn = ligandList.includes(data.molecule.id);
                   }
                   const isAddedToShoppingCart = selectedMolecules.some(molecule => molecule.id === data.molecule.id);
-                  let shoppingCartColor = null;
+                  let shoppingCartColors = null;
                   let isVisible = false;
                   if (isAddedToShoppingCart) {
                     const cmpColorsForDataset = compoundColors[data.datasetID];
                     if (cmpColorsForDataset && cmpColorsForDataset.hasOwnProperty(data.molecule.id)) {
-                      shoppingCartColor = cmpColorsForDataset[data.molecule.id];
-                      isVisible = colorFilterSettings.hasOwnProperty(shoppingCartColor);
+                      shoppingCartColors = cmpColorsForDataset[data.molecule.id];
+                      for (let i = 0; i < shoppingCartColors.length; i++) {
+                        const color = shoppingCartColors[i];
+                        isVisible = colorFilterSettings.hasOwnProperty(color);
+                        if (isVisible) {
+                          break;
+                        }
+                      }
                     }
                   }
                   return (
@@ -489,7 +495,7 @@ export const SelectedCompoundList = memo(() => {
                         V={false}
                         arrowsHidden
                         dragDropEnabled
-                        shoppingCartColor={shoppingCartColor}
+                        shoppingCartColors={shoppingCartColors}
                         isAddedToShoppingCart={isAddedToShoppingCart}
                       />
                     )

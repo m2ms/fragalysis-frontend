@@ -945,10 +945,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                       {currentMolecules.map((data, index, array) => {
                         const isAddedToShoppingCart = selectedMolecules.some(molecule => molecule.id === data.id);
                         const locked = lockedMolecules?.includes(data.id);
-                        let shoppingCartColor = null;
+                        let shoppingCartColors = null;
                         if (isAddedToShoppingCart) {
                           if (compoundColors.hasOwnProperty(data.id)) {
-                            shoppingCartColor = compoundColors[data.id];
+                            shoppingCartColors = compoundColors[data.id];
                           }
                         }
 
@@ -973,7 +973,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             moveMolecule={moveMolecule}
                             isDatasetCompoundLocked={locked}
                             isAddedToShoppingCart={isAddedToShoppingCart}
-                            shoppingCartColor={shoppingCartColor}
+                            shoppingCartColors={shoppingCartColors}
                             disableL={locked && groupDatasetsNglControlButtonsDisabledState.ligand}
                             disableP={locked && groupDatasetsNglControlButtonsDisabledState.protein}
                             disableC={locked && groupDatasetsNglControlButtonsDisabledState.complex}

@@ -308,8 +308,14 @@ export const SelectedCompoundList = memo(() => {
         let isVisible = false;
         const cmpColorsForDataset = compoundColors[data.datasetID];
         if (cmpColorsForDataset && cmpColorsForDataset.hasOwnProperty(data.molecule.id)) {
-          const shoppingCartColor = cmpColorsForDataset[data.molecule.id];
-          isVisible = colorFilterSettings.hasOwnProperty(shoppingCartColor);
+          const shoppingCartColors = cmpColorsForDataset[data.molecule.id];
+          for (let i = 0; i < shoppingCartColors.length; i++) {
+            const color = shoppingCartColors[i];
+            isVisible = colorFilterSettings.hasOwnProperty(color);
+            if (isVisible) {
+              break;
+            }
+          }
         }
 
         return isVisible;
@@ -324,6 +330,16 @@ export const SelectedCompoundList = memo(() => {
       filteredCompounds.forEach(compound => {
         let molObj = getEmptyMolObject(props, ids);
         molObj = populateMolObject(molObj, compound, props, ids);
+
+        const cmpColorsForDataset = compoundColors[compound.datasetID];
+        const shoppingCartColors = cmpColorsForDataset[compound.molecule.id];
+        let colorTagsToDisplay = '';
+        shoppingCartColors.forEach(color => {
+          colorTagsToDisplay = colorTagsToDisplay + `${color}: ${inputs[color] || ''}|`;
+        });
+
+        molObj['color_groups'] = colorTagsToDisplay;
+
         listOfMols.push(molObj);
       });
 

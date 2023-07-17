@@ -971,7 +971,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             S={surfaceList?.includes(data.id)}
                             V={false}
                             moveMolecule={moveMolecule}
-                            isDatasetCompoundLocked={locked}
+                            isLocked={locked}
                             isAddedToShoppingCart={isAddedToShoppingCart}
                             shoppingCartColors={shoppingCartColors}
                             disableL={locked && groupDatasetsNglControlButtonsDisabledState.ligand}

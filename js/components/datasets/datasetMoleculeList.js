@@ -10,7 +10,8 @@ import {
   Divider,
   Typography,
   IconButton,
-  ButtonGroup
+  ButtonGroup,
+  TextField
 } from '@material-ui/core';
 import React, { useState, useEffect, memo, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
@@ -60,6 +61,12 @@ import GroupDatasetNglControlButtonsContext from './groupDatasetNglControlButton
 import { useScrollToSelected } from './useScrollToSelected';
 import { useEffectDebugger } from '../../utils/effects';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
+import { compoundsColors } from '../preview/compounds/redux/constants';
+import {
+  onChangeCompoundClassValue,
+  onClickCompoundClass,
+  onKeyDownCompoundClass
+} from '../preview/compounds/redux/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -208,6 +215,32 @@ const useStyles = makeStyles(theme => ({
     border: 'solid 1px',
     borderColor: theme.palette.background.divider,
     borderStyle: 'solid solid solid solid'
+  },
+  [compoundsColors.blue.key]: {
+    backgroundColor: compoundsColors.blue.color
+  },
+  [compoundsColors.red.key]: {
+    backgroundColor: compoundsColors.red.color
+  },
+  [compoundsColors.green.key]: {
+    backgroundColor: compoundsColors.green.color
+  },
+  [compoundsColors.purple.key]: {
+    backgroundColor: compoundsColors.purple.color
+  },
+  [compoundsColors.apricot.key]: {
+    backgroundColor: compoundsColors.apricot.color
+  },
+  textField: {
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
+    width: 76,
+    '& .MuiFormLabel-root': {
+      paddingLeft: theme.spacing(1)
+    }
+  },
+  selectedInput: {
+    border: `2px groove ${theme.palette.primary.main}`
   }
 }));
 
@@ -279,6 +312,24 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const selectedMolecules = (moleculeLists[datasetID] || []).filter(mol => compoundsToBuyList?.includes(mol.id));
   const lockedMolecules = useSelector(state => state.datasetsReducers.selectedCompoundsByDataset[datasetID]) ?? [];
+
+  const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
+
+  const blueInput = useSelector(state => state.previewReducers.compounds[compoundsColors.blue.key]);
+  const redInput = useSelector(state => state.previewReducers.compounds[compoundsColors.red.key]);
+  const greenInput = useSelector(state => state.previewReducers.compounds[compoundsColors.green.key]);
+  const purpleInput = useSelector(state => state.previewReducers.compounds[compoundsColors.purple.key]);
+  const apricotInput = useSelector(state => state.previewReducers.compounds[compoundsColors.apricot.key]);
+
+  const inputs = {
+    [compoundsColors.blue.key]: blueInput,
+    [compoundsColors.red.key]: redInput,
+    [compoundsColors.green.key]: greenInput,
+    [compoundsColors.purple.key]: purpleInput,
+    [compoundsColors.apricot.key]: apricotInput
+  };
+
+  const compoundColors = useSelector(state => state.datasetsReducers.compoundColorByDataset[datasetID]) ?? {};
 
   const isSelectedTypeOn = typeList => {
     if (typeList && compoundsToBuyList) {
@@ -718,7 +769,32 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
           </>
         )}
       </div>
-      <Grid container direction="column" justify="flex-start" className={classes.container}>
+      <Grid container direction="row" justify="flex-start" className={classes.container}>
+        <Grid item>
+          {/* Selection */}
+          <Grid container direction="row" justify="space-between" alignItems="center">
+            {Object.keys(compoundsColors).map(item => (
+              <Grid item key={item}>
+                <TextField
+                  autoComplete="off"
+                  id={`${item}`}
+                  key={`CLASS_${item}`}
+                  variant="standard"
+                  className={classNames(
+                    classes.textField,
+                    classes[item],
+                    currentCompoundClass === item && classes.selectedInput
+                  )}
+                  label={compoundsColors[item].text}
+                  onChange={e => dispatch(onChangeCompoundClassValue(e))}
+                  onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
+                  onClick={e => dispatch(onClickCompoundClass(e))}
+                  value={inputs[item] || ''}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
         <Grid item>
           {/* Header */}
           {isLoadingMoleculeList === false && (
@@ -867,8 +943,14 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                   <GroupDatasetNglControlButtonsContext.Provider value={groupDatasetsNglControlButtonsDisabledState}>
                     <DndProvider backend={HTML5Backend}>
                       {currentMolecules.map((data, index, array) => {
-                        //const isCheckedToBuy = selectedMolecules.some(molecule => molecule.id === data.id);
+                        const isAddedToShoppingCart = selectedMolecules.some(molecule => molecule.id === data.id);
                         const locked = lockedMolecules?.includes(data.id);
+                        let shoppingCartColors = null;
+                        if (isAddedToShoppingCart) {
+                          if (compoundColors.hasOwnProperty(data.id)) {
+                            shoppingCartColors = compoundColors[data.id];
+                          }
+                        }
 
                         return (
                           <DatasetMoleculeView
@@ -889,7 +971,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             S={surfaceList?.includes(data.id)}
                             V={false}
                             moveMolecule={moveMolecule}
-                            isCheckedToBuy={locked}
+                            isLocked={locked}
+                            isAddedToShoppingCart={isAddedToShoppingCart}
+                            shoppingCartColors={shoppingCartColors}
                             disableL={locked && groupDatasetsNglControlButtonsDisabledState.ligand}
                             disableP={locked && groupDatasetsNglControlButtonsDisabledState.protein}
                             disableC={locked && groupDatasetsNglControlButtonsDisabledState.complex}

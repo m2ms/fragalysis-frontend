@@ -32,7 +32,9 @@ import {
   getMoleculeOfCurrentVector
 } from '../../../../reducers/selection/selectors';
 import {
+  appendColorToSelectedColorFilter,
   appendMoleculeToCompoundsOfDatasetToBuy,
+  removeColorFromSelectedColorFilter,
   removeMoleculeFromCompoundsOfDatasetToBuy,
   updateFilterShowedScoreProperties
 } from '../../../datasets/redux/actions';
@@ -100,12 +102,37 @@ export const onChangeCompoundClassValue = event => (dispatch, getState) => {
 };
 
 export const onKeyDownCompoundClass = event => (dispatch, getState) => {
-  const state = getState();
-
   // on Enter
   if (event.keyCode === 13) {
+    const state = getState();
     let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
     dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+  }
+};
+
+export const onClickCompoundClass = event => (dispatch, getState) => {
+  const state = getState();
+  let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
+  dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+};
+
+const handleColorOfFilter = color => (dispatch, getState) => {
+  const state = getState();
+  const currentColorFilterSettings = state.datasetsReducers.selectedColorsInFilter;
+  if (currentColorFilterSettings.hasOwnProperty(color)) {
+    dispatch(removeColorFromSelectedColorFilter(color));
+  } else {
+    dispatch(appendColorToSelectedColorFilter(color));
+  }
+};
+
+export const onClickFilterClass = event => (dispatch, getState) => {
+  dispatch(handleColorOfFilter(event.target.id));
+};
+
+export const onKeyDownFilterClass = event => (dispatch, getState) => {
+  if (event.keyCode === 13) {
+    dispatch(handleColorOfFilter(event.target.id));
   }
 };
 

@@ -730,6 +730,25 @@ const moveSelectedDatasetMoleculeInspirationsSettings = (data, newItemData, stag
   );
 };
 
+export const isDatasetCompoundIterrable = (datasetID, compoundID) => (dispatch, getState) => {
+  let result = false;
+
+  if (dispatch(isDatasetCompoundLocked(datasetID, compoundID))) {
+    const state = getState();
+
+    const L = state.datasetsReducers.ligandLists[datasetID].includes(compoundID);
+    const P = state.datasetsReducers.proteinLists[datasetID].includes(compoundID);
+    const C = state.datasetsReducers.complexLists[datasetID].includes(compoundID);
+    const S = state.datasetsReducers.surfaceLists[datasetID].includes(compoundID);
+
+    result = !(L || P || C || S);
+  } else {
+    result = true;
+  }
+
+  return result;
+};
+
 export const isDatasetCompoundLocked = (datasetID, compoundID) => (dispatch, getState) => {
   const state = getState();
 

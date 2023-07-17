@@ -1,3 +1,4 @@
+import { compoundsColors } from '../../preview/compounds/redux/constants';
 import { constants } from './constants';
 
 export const INITIAL_STATE = {
@@ -47,6 +48,15 @@ export const INITIAL_STATE = {
   // shopping cart
   compoundsToBuyDatasetMap: {}, // map of $datasetID and its list of moleculeID
   selectedCompoundsByDataset: {}, // map of $datasetID and its list of moleculeID
+  compoundColorByDataset: {}, // map of $datasetID and its list of moleculeID
+
+  selectedColorsInFilter: {
+    [compoundsColors.blue.key]: compoundsColors.blue.key,
+    [compoundsColors.red.key]: compoundsColors.red.key,
+    [compoundsColors.green.key]: compoundsColors.green.key,
+    [compoundsColors.purple.key]: compoundsColors.purple.key,
+    [compoundsColors.apricot.key]: compoundsColors.apricot.key
+  },
 
   // drag and drop state
   dragDropMap: {},
@@ -450,6 +460,59 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
           [action.payload.datasetID]: [...listOfMolecules]
         }
       };
+
+    case constants.APPEND_COMPOUND_COLOR_OF_DATASET:
+      const setOfCompoundColors = { ...state.compoundColorByDataset[action.payload.datasetID] };
+      if (setOfCompoundColors.hasOwnProperty(action.payload.compoundID)) {
+        if (!setOfCompoundColors[action.payload.compoundID].includes(action.payload.colorClass)) {
+          setOfCompoundColors[action.payload.compoundID].push(action.payload.colorClass);
+        }
+      } else {
+        setOfCompoundColors[action.payload.compoundID] = [action.payload.colorClass];
+      }
+      return {
+        ...state,
+        compoundColorByDataset: {
+          ...state.compoundColorByDataset,
+          [action.payload.datasetID]: { ...setOfCompoundColors }
+        }
+      };
+
+    case constants.REMOVE_COMPOUND_COLOR_OF_DATASET:
+      const listOfCompoundColors = { ...state.compoundColorByDataset[action.payload.datasetID] };
+      if (listOfCompoundColors.hasOwnProperty(action.payload.compoundID)) {
+        const colors = listOfCompoundColors[action.payload.compoundID].filter(c => c !== action.payload.colorClass);
+        if (colors.length > 0) {
+          listOfCompoundColors[action.payload.compoundID] = [...colors];
+        } else {
+          delete listOfCompoundColors[action.payload.compoundID];
+        }
+      }
+      return {
+        ...state,
+        compoundColorByDataset: {
+          ...state.compoundColorByDataset,
+          [action.payload.datasetID]: { ...listOfCompoundColors }
+        }
+      };
+
+    case constants.APPEND_COLOR_TO_SELECTED_COLOR_FILTERS:
+      const newColorMap = { ...state.selectedColorsInFilter };
+      if (!newColorMap.hasOwnProperty(action.payload.colorClass)) {
+        newColorMap[action.payload.colorClass] = action.payload.colorClass;
+        return { ...state, selectedColorsInFilter: newColorMap };
+      } else {
+        return state;
+      }
+
+    case constants.REMOVE_COLOR_FROM_SELECTED_COLOR_FILTERS:
+      const newColorMap2 = { ...state.selectedColorsInFilter };
+      if (newColorMap2.hasOwnProperty(action.payload.colorClass)) {
+        delete newColorMap2[action.payload.colorClass];
+        return { ...state, selectedColorsInFilter: newColorMap2 };
+      } else {
+        return state;
+      }
 
     case constants.RELOAD_DATASETS_REDUCER:
       const lists = {

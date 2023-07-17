@@ -24,9 +24,10 @@ import {
   getInspirationsForMol,
   withDisabledDatasetMoleculeNglControlButton,
   moveDatasetMoleculeUpDown,
-  isDatasetCompoundLocked,
   getFirstUnlockedCompoundAfter,
-  getFirstUnlockedCompoundBefore
+  getFirstUnlockedCompoundBefore,
+  isDatasetCompoundIterrable,
+  isDatasetCompoundLocked
 } from '../redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from '../redux/selectors';
@@ -36,7 +37,11 @@ import {
   setSelectedAll,
   setDeselectedAll,
   appendCompoundToSelectedCompoundsByDataset,
-  removeCompoundFromSelectedCompoundsByDataset
+  removeCompoundFromSelectedCompoundsByDataset,
+  appendMoleculeToCompoundsOfDatasetToBuy,
+  removeMoleculeFromCompoundsOfDatasetToBuy,
+  appendCompoundColorOfDataset,
+  removeCompoundColorOfDataset
 } from '../redux/actions';
 import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
 import { ArrowDownward, ArrowUpward, MyLocation } from '@material-ui/icons';
@@ -53,6 +58,9 @@ import { colourList, getRandomColor } from '../../preview/molecule/utils/color';
 import { useDragDropMoleculeView } from '../useDragDropMoleculeView';
 import DatasetMoleculeSelectCheckbox from './datasetMoleculeSelectCheckbox';
 import useCopyClipboard from 'react-use-clipboard';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
+import { compoundsColors } from '../../preview/compounds/redux/constants';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -65,6 +73,10 @@ const useStyles = makeStyles(theme => ({
   },
   contButtonsMargin: {
     margin: theme.spacing(1) / 2
+  },
+  colorButton: {
+    minWidth: '15px',
+    maxWidth: '15px'
   },
   contColButton: {
     minWidth: 'fit-content',
@@ -243,10 +255,39 @@ const useStyles = makeStyles(theme => ({
       color: theme.palette.success.dark
     }
   },
+  addToShoppingCartIcon: {
+    padding: 0,
+    color: theme.palette.success.main,
+    '&:hover': {
+      color: theme.palette.success.dark
+    }
+  },
+  removeFromShoppingCartIcon: {
+    padding: 0,
+    color: theme.palette.error.main,
+    '&:hover': {
+      color: theme.palette.error.dark
+    }
+  },
   imageActions: {
     position: 'absolute',
     top: 0,
     right: 0
+  },
+  [compoundsColors.blue.key]: {
+    backgroundColor: compoundsColors.blue.color
+  },
+  [compoundsColors.red.key]: {
+    backgroundColor: compoundsColors.red.color
+  },
+  [compoundsColors.green.key]: {
+    backgroundColor: compoundsColors.green.color
+  },
+  [compoundsColors.purple.key]: {
+    backgroundColor: compoundsColors.purple.color
+  },
+  [compoundsColors.apricot.key]: {
+    backgroundColor: compoundsColors.apricot.color
   }
 }));
 
@@ -278,7 +319,9 @@ const DatasetMoleculeView = memo(
         arrowsHidden = false,
         dragDropEnabled = false,
         moveMolecule,
-        isCheckedToBuy,
+        isLocked,
+        isAddedToShoppingCart,
+        shoppingCartColors = [],
         disableL,
         disableP,
         disableC
@@ -303,7 +346,7 @@ const DatasetMoleculeView = memo(
         isAnyInspirationTurnedOn(state, (data && data.computed_inspirations) || [])
       );
 
-      const compoundsList = useSelector(state => state.datasetsReducers.moleculeLists[datasetID]);
+      const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
       const disableMoleculeNglControlButtons =
         useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
@@ -325,13 +368,12 @@ const DatasetMoleculeView = memo(
       const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
       const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
 
-      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isCheckedToBuy;
+      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isLocked;
 
       if (arrowsHidden) {
         areArrowsVisible = false;
       }
 
-      const refOnCancelImage = useRef();
       const colourToggle = getRandomColor(data);
 
       const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
@@ -527,6 +569,25 @@ const DatasetMoleculeView = memo(
         });
       };
 
+      const handleRemoveColorFromCompound = event => {
+        if (shoppingCartColors.length === 1) {
+          dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+        }
+        dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+      };
+
+      const handleShoppingCartClick = () => {
+        if (!isAddedToShoppingCart) {
+          dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+        }
+        dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+        // } else {
+        //   dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+        //   dispatch(removeCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+        //   dispatch(deselectVectorCompound(data));
+        // }
+      };
+
       // const getNextRefForUnlockedCompound = (datasetID, currentID, currentRef) => {
       //   const nextRef = null;
       //   compoundsList.forEach(cmp => {});
@@ -538,7 +599,7 @@ const DatasetMoleculeView = memo(
 
         let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
         const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
-        if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
+        if (!dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
           nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
         }
         const moleculeTitleNext = nextItem && nextItem.name;
@@ -563,7 +624,7 @@ const DatasetMoleculeView = memo(
           (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
         const previousDatasetID =
           (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
-        if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
+        if (!dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
           previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
         }
         const moleculeTitlePrev = previousItem && previousItem.name;
@@ -614,7 +675,7 @@ const DatasetMoleculeView = memo(
             <Grid item container justify="space-between" direction="column" className={classes.site}>
               <Grid item>
                 <DatasetMoleculeSelectCheckbox
-                  checked={isCheckedToBuy}
+                  checked={isLocked}
                   className={classes.checkbox}
                   size="small"
                   color="primary"
@@ -644,7 +705,7 @@ const DatasetMoleculeView = memo(
               >
                 <Grid item className={classes.inheritWidth}>
                   <Tooltip title={moleculeTitle} placement="bottom-start">
-                    <div className={classNames(classes.moleculeTitleLabel, isCheckedToBuy && classes.selectedMolecule)}>
+                    <div className={classNames(classes.moleculeTitleLabel, isLocked && classes.selectedMolecule)}>
                       {moleculeTitle}
                     </div>
                   </Tooltip>
@@ -657,16 +718,6 @@ const DatasetMoleculeView = memo(
                   </Grid>
                 )}
               </Grid>
-              {/* Status code - #208 Remove the status labels (for now - until they are in the back-end/loader properly)
-        <Grid item>
-          <Grid container direction="row" justify="space-between" alignItems="center">
-            {Object.values(molStatusTypes).map(type => (
-              <Grid item key={`molecule-status-${type}`} className={classes.qualityLabel}>
-                <MoleculeStatusView type={type} data={data} />
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>*/}
               {/* Control Buttons A, L, C, V */}
               <Grid item>
                 <Grid
@@ -880,6 +931,23 @@ const DatasetMoleculeView = memo(
                         </Tooltip>
                       );
                     })}
+                  {shoppingCartColors?.map(color => {
+                    return (
+                      <Tooltip title={color} key={`${color}-${classes[data.id]}`} placement="top">
+                        <Grid>
+                          <Button
+                            id={color}
+                            className={classNames(classes[color], classes.colorButton)}
+                            onClick={event => {
+                              handleRemoveColorFromCompound(event);
+                            }}
+                          >
+                            {' '}
+                          </Button>
+                        </Grid>
+                      </Tooltip>
+                    );
+                  })}
                 </Grid>
               </Grid>
             </Grid>
@@ -925,6 +993,13 @@ const DatasetMoleculeView = memo(
                   <Tooltip title={!isCopied ? 'Copy smiles' : 'Copied'}>
                     <IconButton className={classes.copyIcon} onClick={setCopied}>
                       {!isCopied ? <Assignment /> : <AssignmentTurnedIn />}
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {moleculeTooltipOpen && (
+                  <Tooltip>
+                    <IconButton className={classes.addToShoppingCartIcon} onClick={handleShoppingCartClick}>
+                      <AddShoppingCartIcon />
                     </IconButton>
                   </Tooltip>
                 )}

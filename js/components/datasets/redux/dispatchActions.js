@@ -566,6 +566,31 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
   }
 };
 
+export const clearCompoundView = (cmp, datasetID, stage, skipTracking) => (dispatch, getState) => {
+  const state = getState();
+
+  const ligandList = state.datasetsReducers.ligandLists[datasetID];
+  const proteinList = state.datasetsReducers.proteinLists[datasetID];
+  const complexList = state.datasetsReducers.complexLists[datasetID];
+  const surfaceList = state.datasetsReducers.surfaceLists[datasetID];
+
+  if (ligandList?.includes(cmp.id)) {
+    dispatch(removeDatasetLigand(stage, cmp, getRandomColor(cmp), datasetID, skipTracking));
+  }
+
+  if (proteinList?.includes(cmp.id)) {
+    dispatch(removeDatasetHitProtein(stage, cmp, getRandomColor(cmp), datasetID, skipTracking));
+  }
+
+  if (complexList?.includes(cmp.id)) {
+    dispatch(removeDatasetComplex(stage, cmp, getRandomColor(cmp), datasetID, skipTracking));
+  }
+
+  if (surfaceList?.includes(cmp.id)) {
+    dispatch(removeDatasetSurface(stage, cmp, getRandomColor(cmp), datasetID, skipTracking));
+  }
+};
+
 export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecules = {}) => (dispatch, getState) => {
   const state = getState();
   const datasets = state.datasetsReducers.datasets;
@@ -586,13 +611,7 @@ export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecule
         const foundedMolecule = molecules?.find(mol => mol.id === moleculeID);
         if (foundedMolecule) {
           dispatch(
-            removeDatasetLigand(
-              stage,
-              foundedMolecule,
-              colourList[foundedMolecule.id % colourList.length],
-              datasetID,
-              skipTracking
-            )
+            removeDatasetLigand(stage, foundedMolecule, getRandomColor(foundedMolecule), datasetID, skipTracking)
           );
         }
       });
@@ -600,13 +619,7 @@ export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecule
         const foundedMolecule = molecules?.find(mol => mol.id === moleculeID);
         if (foundedMolecule) {
           dispatch(
-            removeDatasetHitProtein(
-              stage,
-              foundedMolecule,
-              colourList[foundedMolecule.id % colourList.length],
-              datasetID,
-              skipTracking
-            )
+            removeDatasetHitProtein(stage, foundedMolecule, getRandomColor(foundedMolecule), datasetID, skipTracking)
           );
         }
       });
@@ -614,13 +627,7 @@ export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecule
         const foundedMolecule = molecules?.find(mol => mol.id === moleculeID);
         if (foundedMolecule) {
           dispatch(
-            removeDatasetComplex(
-              stage,
-              foundedMolecule,
-              colourList[foundedMolecule.id % colourList.length],
-              datasetID,
-              skipTracking
-            )
+            removeDatasetComplex(stage, foundedMolecule, getRandomColor(foundedMolecule), datasetID, skipTracking)
           );
         }
       });
@@ -628,13 +635,7 @@ export const removeSelectedDatasetMolecules = (stage, skipTracking, skipMolecule
         const foundedMolecule = molecules?.find(mol => mol.id === moleculeID);
         if (foundedMolecule) {
           dispatch(
-            removeDatasetSurface(
-              stage,
-              foundedMolecule,
-              colourList[foundedMolecule.id % colourList.length],
-              datasetID,
-              skipTracking
-            )
+            removeDatasetSurface(stage, foundedMolecule, getRandomColor(foundedMolecule), datasetID, skipTracking)
           );
         }
       });
@@ -856,6 +857,7 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
 
   const inspirations = getInspirationsForMol(allInspirations, datasetID, newItem.id);
   dispatch(setInspirationMoleculeDataList(inspirations));
+  dispatch(clearCompoundView(newItem, datasetID, stage, true));
   await Promise.all([
     dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
     dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))

@@ -70,7 +70,12 @@ export const INITIAL_STATE = {
   disableDatasetsNglControlButtons: {}, // datasetID.moleculeID.nglButtonDisableState
 
   // Used for initially scrolling to firstly selected molecule when loading up a project
-  datasetScrolledMap: {}
+  datasetScrolledMap: {},
+
+  isLockVisibleCompoundsDialogOpenGlobal: false,
+  isLockVisibleCompoundsDialogOpenLocal: false,
+  cmpForLocalLockVisibleCompoundsDialog: null,
+  askLockCompoundsQuestion: true
 };
 
 /**
@@ -615,6 +620,22 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
         ...state,
         disableDatasetsNglControlButtons
       };
+    }
+
+    case constants.SET_IS_OPEN_LOCK_VISIBLE_COMPOUNDS_DIALOG_GLOBAL: {
+      return { ...state, isLockVisibleCompoundsDialogOpenGlobal: action.isOpen };
+    }
+
+    case constants.SET_IS_OPEN_LOCK_VISIBLE_COMPOUNDS_DIALOG_LOCAL: {
+      return { ...state, isLockVisibleCompoundsDialogOpenLocal: action.isOpen };
+    }
+
+    case constants.SET_CMP_FOR_LOCAL_LOCK_VISIBLE_COMPOUNDS_DIALOG: {
+      return { ...state, cmpForLocalLockVisibleCompoundsDialog: action.cmp };
+    }
+
+    case constants.SET_ASK_LOCK_COMPOUNDS_QUESTION: {
+      return { ...state, askLockCompoundsQuestion: action.askLockCompoundsQuestion };
     }
 
     case constants.RESET_DATASETS_STATE_ON_SNAPSHOT_CHANGE: {

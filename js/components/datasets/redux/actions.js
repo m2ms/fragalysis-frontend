@@ -499,3 +499,23 @@ export const removeDataset = datasetId => {
     datasetId: datasetId
   };
 };
+
+export const setIsOpenLockVisibleCompoundsDialogGlobal = isOpen => ({
+  type: constants.SET_IS_OPEN_LOCK_VISIBLE_COMPOUNDS_DIALOG_GLOBAL,
+  isOpen: isOpen
+});
+
+export const setIsOpenLockVisibleCompoundsDialogLocal = isOpen => ({
+  type: constants.SET_IS_OPEN_LOCK_VISIBLE_COMPOUNDS_DIALOG_LOCAL,
+  isOpen: isOpen
+});
+
+export const setCmpForLocalLockVisibleCompoundsDialog = cmp => ({
+  type: constants.SET_CMP_FOR_LOCAL_LOCK_VISIBLE_COMPOUNDS_DIALOG,
+  cmp: cmp
+});
+
+export const setAskLockCompoundsQuestion = askLockCompoundsQuestion => ({
+  type: constants.SET_ASK_LOCK_COMPOUNDS_QUESTION,
+  askLockCompoundsQuestion: askLockCompoundsQuestion
+});

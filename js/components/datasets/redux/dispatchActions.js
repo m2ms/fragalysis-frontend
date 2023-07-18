@@ -34,7 +34,8 @@ import {
   disableDatasetMoleculeNglControlButton,
   enableDatasetMoleculeNglControlButton,
   setArrowUpDown,
-  removeDataset
+  removeDataset,
+  appendCompoundToSelectedCompoundsByDataset
 } from './actions';
 import { base_url } from '../../routes/constants';
 import {
@@ -728,6 +729,54 @@ const moveSelectedDatasetMoleculeInspirationsSettings = (data, newItemData, stag
       skipTracking
     )
   );
+};
+
+export const lockCompounds = (datasetID, compoundIds, skipCmpId = 0) => (dispatch, getState) => {
+  const state = getState();
+  const compounds = state.datasetsReducers.moleculeLists[datasetID];
+
+  let filteredCompounds = [];
+  if (skipCmpId) {
+    filteredCompounds = compoundIds.filter(item => item !== skipCmpId);
+  }
+
+  filteredCompounds?.forEach(compoundID => {
+    const filteredCIds = compounds.filter(cmp => cmp.id === compoundID);
+    let molName = '';
+    if (filteredCIds && filteredCIds.length > 0) {
+      molName = filteredCIds[0].name;
+    }
+    dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, compoundID, molName));
+  });
+};
+
+const mergeCompoundIdsList = (compoundIdsList, subList) => {
+  const result = [...compoundIdsList];
+  subList.forEach(item => {
+    if (!result.includes(item)) {
+      result.push(item);
+    }
+  });
+  return result;
+};
+
+export const getAllVisibleButNotLockedCompounds = (datasetID, skipCmpId = 0) => (dispatch, getState) => {
+  let result = [];
+
+  const state = getState();
+  const lockedCmps = state.datasetsReducers.selectedCompoundsByDataset[datasetID] || [];
+
+  result = mergeCompoundIdsList(result, state.datasetsReducers.ligandLists[datasetID]);
+  result = mergeCompoundIdsList(result, state.datasetsReducers.proteinLists[datasetID]);
+  result = mergeCompoundIdsList(result, state.datasetsReducers.complexLists[datasetID]);
+  result = mergeCompoundIdsList(result, state.datasetsReducers.surfaceLists[datasetID]);
+
+  result = result.filter(item => !lockedCmps.includes(item));
+  if (skipCmpId) {
+    result = result.filter(item => item !== skipCmpId);
+  }
+
+  return result;
 };
 
 export const isDatasetCompoundIterrable = (datasetID, compoundID) => (dispatch, getState) => {

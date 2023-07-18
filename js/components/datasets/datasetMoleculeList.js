@@ -37,12 +37,15 @@ import {
   withDisabledDatasetMoleculesNglControlButtons,
   moveDatasetMolecule,
   deleteDataset,
-  moveDatasetMoleculeUpDown
+  moveDatasetMoleculeUpDown,
+  getAllVisibleButNotLockedCompounds
 } from './redux/dispatchActions';
 import {
+  setAskLockCompoundsQuestion,
   setCrossReferenceCompoundName,
   setDragDropState,
   setFilterDialogOpen,
+  setIsOpenLockVisibleCompoundsDialogGlobal,
   setSearchStringOfCompoundSet
 } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
@@ -67,6 +70,7 @@ import {
   onClickCompoundClass,
   onKeyDownCompoundClass
 } from '../preview/compounds/redux/dispatchActions';
+import { LockVisibleCompoundsDialog } from './lockVisibleCompoundsDialog';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -257,6 +261,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const sortDialogOpen = useSelector(state => state.datasetsReducers.filterDialogOpen);
   const isOpenInspirationDialog = useSelector(state => state.datasetsReducers.isOpenInspirationDialog);
   const isOpenCrossReferenceDialog = useSelector(state => state.datasetsReducers.isOpenCrossReferenceDialog);
+  const isLockVisibleCompoundsDialogOpenGlobal = useSelector(
+    state => state.datasetsReducers.isLockVisibleCompoundsDialogOpenGlobal
+  );
 
   const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
@@ -278,6 +285,8 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const joinedMoleculeLists = useSelector(state => getJoinedMoleculeLists(datasetID, state), shallowEqual);
 
   const datasetObj = useSelector(state => state.datasetsReducers.datasets.find(d => d.id === datasetID));
+
+  const askLockCompoundsQuestion = useSelector(state => state.datasetsReducers.askLockCompoundsQuestion);
 
   // console.log('DatasetMoleculeList - update');
 
@@ -517,9 +526,11 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const crossReferenceDialogRef = useRef();
   const inspirationDialogRef = useRef();
   const scrollBarRef = useRef();
+  const lockVisibleCompoundsDialogRef = useRef();
 
   const [isOpenAlert, setIsOpenAlert] = useState(false);
   const [isDeleteDatasetAlertOpen, setIsDeleteDatasetAlertOpen] = useState(false);
+  const [lockCompoundsDialogAnchorE1, setLockCompoundsDialogAnchorE1] = useState(null);
 
   const moveMolecule = useCallback(
     (dragIndex, hoverIndex) => {
@@ -625,71 +636,62 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
     return firstUnlockedCompound;
   };
 
-  const handleClickOnDownArrow = async () => {
-    // const refNext = ref.current.nextSibling;
-    // scrollToElement(refNext);
+  const handleClickOnDownArrow = async event => {
+    const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID));
+    //one unlocked compound is what we want because it designate where the iteration will start
+    if (unlockedVisibleCompounds?.length > 1 && askLockCompoundsQuestion) {
+      setLockCompoundsDialogAnchorE1(event.currentTarget);
+      dispatch(setIsOpenLockVisibleCompoundsDialogGlobal(true));
+    } else {
+      const firstItem = getFirstItemForIterationStart();
+      const nextItem = getNextItemForIteration(firstItem.id);
 
-    const firstItem = getFirstItemForIterationStart();
-    const nextItem = getNextItemForIteration(firstItem.id);
+      if (firstItem && nextItem) {
+        const moleculeTitleNext = nextItem && nextItem.name;
+        setScrollToMoleculeId(nextItem.id);
 
-    if (firstItem && nextItem) {
-      // let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
-      // const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
-      // if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
-      //   nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
-      // }
-      const moleculeTitleNext = nextItem && nextItem.name;
+        let dataValue = {
+          colourToggle: getRandomColor(firstItem),
+          isLigandOn: ligandList.includes(firstItem.id),
+          isProteinOn: proteinList.includes(firstItem.id),
+          isComplexOn: complexList.includes(firstItem.id),
+          isSurfaceOn: surfaceList.includes(firstItem.id)
+        };
 
-      setScrollToMoleculeId(nextItem.id);
-
-      let dataValue = {
-        colourToggle: getRandomColor(firstItem),
-        isLigandOn: ligandList.includes(firstItem.id),
-        isProteinOn: proteinList.includes(firstItem.id),
-        isComplexOn: complexList.includes(firstItem.id),
-        isSurfaceOn: surfaceList.includes(firstItem.id)
-      };
-
-      dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
-      // if (setRef && ref.current) {
-      //   setRef(refNext);
-      // }
-
-      dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, nextItem, dataValue, ARROW_TYPE.DOWN));
+        dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+        dispatch(
+          moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, nextItem, dataValue, ARROW_TYPE.DOWN)
+        );
+      }
     }
   };
 
-  const handleClickOnUpArrow = async () => {
-    // const refPrevious = ref.current.previousSibling;
-    // scrollToElement(refPrevious);
+  const handleClickOnUpArrow = async event => {
+    const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID));
+    //one unlocked compound is what we want because it designate where the iteration will start
+    if (unlockedVisibleCompounds?.length > 1 && askLockCompoundsQuestion) {
+      setLockCompoundsDialogAnchorE1(event.currentTarget);
+      dispatch(setIsOpenLockVisibleCompoundsDialogGlobal(true));
+    } else {
+      const firstItem = getFirstItemForIterationStart();
+      const prevItem = getPrevItemForIteration(firstItem.id);
 
-    const firstItem = getFirstItemForIterationStart();
-    const prevItem = getPrevItemForIteration(firstItem.id);
+      if (firstItem && prevItem) {
+        const moleculeTitlePrev = prevItem && prevItem.name;
 
-    if (firstItem && prevItem) {
-      // let previousItem = (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
-      // const previousDatasetID = (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
-      // if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
-      //   previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
-      // }
-      const moleculeTitlePrev = prevItem && prevItem.name;
+        setScrollToMoleculeId(prevItem.id);
 
-      setScrollToMoleculeId(prevItem.id);
+        let dataValue = {
+          colourToggle: getRandomColor(firstItem),
+          isLigandOn: ligandList.includes(firstItem.id),
+          isProteinOn: proteinList.includes(firstItem.id),
+          isComplexOn: complexList.includes(firstItem.id),
+          isSurfaceOn: surfaceList.includes(firstItem.id)
+        };
 
-      let dataValue = {
-        colourToggle: getRandomColor(firstItem),
-        isLigandOn: ligandList.includes(firstItem.id),
-        isProteinOn: proteinList.includes(firstItem.id),
-        isComplexOn: complexList.includes(firstItem.id),
-        isSurfaceOn: surfaceList.includes(firstItem.id)
-      };
-
-      dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
-      // if (setRef && ref.current) {
-      //   setRef(refPrevious);
-      // }
-
-      dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, prevItem, dataValue, ARROW_TYPE.UP));
+        dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
+        dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, prevItem, dataValue, ARROW_TYPE.UP));
+      }
     }
   };
 
@@ -733,6 +735,14 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
       )}
       {isOpenInspirationDialog && (
         <InspirationDialog open anchorEl={selectedMoleculeRef} datasetID={datasetID} ref={inspirationDialogRef} />
+      )}
+      {askLockCompoundsQuestion && isLockVisibleCompoundsDialogOpenGlobal && (
+        <LockVisibleCompoundsDialog
+          open
+          ref={lockVisibleCompoundsDialogRef}
+          anchorEl={lockCompoundsDialogAnchorE1}
+          datasetId={datasetID}
+        />
       )}
       {isOpenCrossReferenceDialog && (
         <CrossReferenceDialog open anchorEl={selectedMoleculeRef} ref={crossReferenceDialogRef} />
@@ -832,7 +842,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             className={classNames(classes.contColButton, {
                               [classes.contColButtonSelected]: isLigandOn
                             })}
-                            onClick={() => onButtonToggle('ligand')}
+                            onClick={() => {
+                              dispatch(setAskLockCompoundsQuestion(true));
+                              onButtonToggle('ligand');
+                            }}
                             disabled={groupDatasetsNglControlButtonsDisabledState.ligand}
                           >
                             L
@@ -846,7 +859,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             className={classNames(classes.contColButton, {
                               [classes.contColButtonSelected]: isProteinOn
                             })}
-                            onClick={() => onButtonToggle('protein')}
+                            onClick={() => {
+                              dispatch(setAskLockCompoundsQuestion(true));
+                              onButtonToggle('protein');
+                            }}
                             disabled={groupDatasetsNglControlButtonsDisabledState.protein}
                           >
                             P
@@ -861,7 +877,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             className={classNames(classes.contColButton, {
                               [classes.contColButtonSelected]: isComplexOn
                             })}
-                            onClick={() => onButtonToggle('complex')}
+                            onClick={() => {
+                              dispatch(setAskLockCompoundsQuestion(true));
+                              onButtonToggle('complex');
+                            }}
                             disabled={groupDatasetsNglControlButtonsDisabledState.complex}
                           >
                             C

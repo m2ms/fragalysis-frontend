@@ -3,7 +3,7 @@
  */
 
 import React, { memo, useEffect, useState, useRef, useContext, forwardRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { Grid, Button, makeStyles, Tooltip, IconButton } from '@material-ui/core';
 import { ClearOutlined, CheckOutlined, Assignment, AssignmentTurnedIn } from '@material-ui/icons';
 import SVGInline from 'react-svg-inline';
@@ -293,6 +293,24 @@ const useStyles = makeStyles(theme => ({
   },
   [compoundsColors.apricot.key]: {
     backgroundColor: compoundsColors.apricot.color
+  },
+  [`border-${compoundsColors.blue.key}`]: {
+    border: `2px solid ${compoundsColors.blue.color}`
+  },
+  [`border-${compoundsColors.red.key}`]: {
+    border: `2px solid ${compoundsColors.red.color}`
+  },
+  [`border-${compoundsColors.green.key}`]: {
+    border: `2px solid ${compoundsColors.green.color}`
+  },
+  [`border-${compoundsColors.purple.key}`]: {
+    border: `2px solid ${compoundsColors.purple.color}`
+  },
+  [`border-${compoundsColors.apricot.key}`]: {
+    border: `2px solid ${compoundsColors.apricot.color}`
+  },
+  unselectedButton: {
+    backgroundColor: 'white'
   }
 }));
 
@@ -329,7 +347,8 @@ const DatasetMoleculeView = memo(
         shoppingCartColors = [],
         disableL,
         disableP,
-        disableC
+        disableC,
+        inSelectedCompoundsList = false
       },
       outsideRef
     ) => {
@@ -587,8 +606,20 @@ const DatasetMoleculeView = memo(
         });
       };
 
+      const handleColorGroupButtonClick = event => {
+        if (shoppingCartColors?.includes(event.target.id)) {
+          if (shoppingCartColors?.length === 1) {
+            dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+          }
+          dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+        } else {
+          dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+          dispatch(appendCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+        }
+      };
+
       const handleRemoveColorFromCompound = event => {
-        if (shoppingCartColors.length === 1) {
+        if (shoppingCartColors?.length === 1) {
           dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
         }
         dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
@@ -977,15 +1008,20 @@ const DatasetMoleculeView = memo(
                         </Tooltip>
                       );
                     })}
-                  {shoppingCartColors?.map(color => {
+                  {Object.keys(compoundsColors).map(color => {
+                    const colorIncluded = shoppingCartColors?.includes(color);
                     return (
                       <Tooltip title={color} key={`${color}-${classes[data.id]}`} placement="top">
                         <Grid>
                           <Button
                             id={color}
-                            className={classNames(classes[color], classes.colorButton)}
+                            className={classNames(
+                              colorIncluded ? classes[color] : classes.unselectedButton,
+                              classes[`border-${color}`],
+                              classes.colorButton
+                            )}
                             onClick={event => {
-                              handleRemoveColorFromCompound(event);
+                              handleColorGroupButtonClick(event);
                             }}
                           >
                             {' '}
@@ -1042,7 +1078,7 @@ const DatasetMoleculeView = memo(
                     </IconButton>
                   </Tooltip>
                 )}
-                {moleculeTooltipOpen && (
+                {moleculeTooltipOpen && !inSelectedCompoundsList && (
                   <Tooltip>
                     <IconButton className={classes.addToShoppingCartIcon} onClick={handleShoppingCartClick}>
                       <AddShoppingCartIcon />

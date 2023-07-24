@@ -1,6 +1,6 @@
 import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../common/Surfaces/Panel';
-import { CircularProgress, Grid, makeStyles, Typography, Button, TextField } from '@material-ui/core';
+import { CircularProgress, Grid, makeStyles, Typography, Button, TextField, Checkbox } from '@material-ui/core';
 import { CloudDownload } from '@material-ui/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -23,6 +23,7 @@ import {
   isCompoundFromVectorSelector,
   onChangeCompoundClassValue,
   onClickFilterClass,
+  onClickFilterClassCheckBox,
   onKeyDownFilterClass
 } from '../preview/compounds/redux/dispatchActions';
 import { saveAndShareSnapshot } from '../snapshot/redux/dispatchActions';
@@ -70,15 +71,18 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: compoundsColors.apricot.color
   },
   textField: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-    width: 76,
+    // marginLeft: theme.spacing(1),
+    // marginRight: theme.spacing(1),
+    width: 60,
     '& .MuiFormLabel-root': {
       paddingLeft: theme.spacing(1)
     }
   },
   selectedInput: {
     border: `2px groove ${theme.palette.primary.main}`
+  },
+  classCheckbox: {
+    padding: '0px'
   }
 }));
 
@@ -327,18 +331,44 @@ export const SelectedCompoundList = memo(() => {
 
       const listOfMols = [];
 
+      let colorsTemplate = {};
+      filteredCompounds.forEach(compound => {
+        const cmpColorsForDataset = compoundColors[compound.datasetID];
+        const shoppingCartColors = cmpColorsForDataset[compound.molecule.id];
+        shoppingCartColors.forEach(color => {
+          if (!colorsTemplate.hasOwnProperty(color)) {
+            colorsTemplate[color] = '';
+            if (inputs.hasOwnProperty(color)) {
+              colorsTemplate[`${color}-text`] = inputs[color];
+            }
+          }
+        });
+      });
+
       filteredCompounds.forEach(compound => {
         let molObj = getEmptyMolObject(props, ids);
         molObj = populateMolObject(molObj, compound, props, ids);
 
         const cmpColorsForDataset = compoundColors[compound.datasetID];
         const shoppingCartColors = cmpColorsForDataset[compound.molecule.id];
-        let colorTagsToDisplay = '';
+        // let colorTagsToDisplay = '';
+        let colorsTemplateCopy = { ...colorsTemplate };
         shoppingCartColors.forEach(color => {
-          colorTagsToDisplay = colorTagsToDisplay + `${color}: ${inputs[color] || ''}|`;
+          colorsTemplateCopy[color] = true;
+          // colorTagsToDisplay = colorTagsToDisplay + `${color}: ${inputs[color] || ''}|`;
         });
 
-        molObj['color_groups'] = colorTagsToDisplay;
+        Object.keys(colorsTemplateCopy)
+          .filter(key => key.includes('-text'))
+          .forEach(key => {
+            const color = key.split('-')[0];
+            if (colorsTemplateCopy.hasOwnProperty(color) && !colorsTemplateCopy[color]) {
+              colorsTemplateCopy[key] = '';
+            }
+          });
+
+        // molObj['color_groups'] = colorTagsToDisplay;
+        molObj = { ...molObj, ...colorsTemplateCopy };
 
         listOfMols.push(molObj);
       });
@@ -417,24 +447,35 @@ export const SelectedCompoundList = memo(() => {
           {/* Selection */}
           <Grid container direction="row" justify="space-between" alignItems="center">
             {Object.keys(compoundsColors).map(item => (
-              <Grid item key={item}>
-                <TextField
-                  autoComplete="off"
-                  id={`${item}`}
-                  key={`CLASS_${item}`}
-                  variant="standard"
-                  className={classNames(
-                    classes.textField,
-                    classes[item],
-                    colorFilterSettings.hasOwnProperty(item) && classes.selectedInput
-                  )}
-                  label={compoundsColors[item].text}
-                  onChange={e => dispatch(onChangeCompoundClassValue(e))}
-                  onKeyDown={e => dispatch(onKeyDownFilterClass(e))}
-                  onClick={e => dispatch(onClickFilterClass(e))}
-                  value={inputs[item] || ''}
-                />
-              </Grid>
+              <>
+                <Grid item key={`${item}-chckbox`}>
+                  <Checkbox
+                    className={classes.classCheckbox}
+                    key={`CHCK_${item}`}
+                    value={`${item}`}
+                    onChange={e => dispatch(onClickFilterClassCheckBox(e))}
+                    checked={colorFilterSettings.hasOwnProperty(item)}
+                  ></Checkbox>
+                </Grid>
+                <Grid item key={item}>
+                  <TextField
+                    autoComplete="off"
+                    id={`${item}`}
+                    key={`CLASS_${item}`}
+                    variant="standard"
+                    className={classNames(
+                      classes.textField,
+                      classes[item],
+                      colorFilterSettings.hasOwnProperty(item) && classes.selectedInput
+                    )}
+                    label={compoundsColors[item].text}
+                    onChange={e => dispatch(onChangeCompoundClassValue(e))}
+                    onKeyDown={e => dispatch(onKeyDownFilterClass(e))}
+                    onClick={e => dispatch(onClickFilterClass(e))}
+                    value={inputs[item] || ''}
+                  />
+                </Grid>
+              </>
             ))}
           </Grid>
         </Grid>
@@ -513,6 +554,7 @@ export const SelectedCompoundList = memo(() => {
                         dragDropEnabled
                         shoppingCartColors={shoppingCartColors}
                         isAddedToShoppingCart={isAddedToShoppingCart}
+                        inSelectedCompoundsList
                       />
                     )
                   );

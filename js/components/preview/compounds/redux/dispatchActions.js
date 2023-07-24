@@ -103,17 +103,27 @@ export const onChangeCompoundClassValue = event => (dispatch, getState) => {
 
 export const onKeyDownCompoundClass = event => (dispatch, getState) => {
   // on Enter
-  if (event.keyCode === 13) {
+  if (event.keyCode === 13 && event.target.id && event.target.id !== '') {
     const state = getState();
     let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
     dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
   }
 };
 
+export const onChangeCompoundClassCheckbox = event => (dispatch, getState) => {
+  if (event.target.value && event.target.value !== '') {
+    const state = getState();
+    let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
+    dispatch(setCurrentCompoundClass(event.target.value, oldCompoundClass));
+  }
+};
+
 export const onClickCompoundClass = event => (dispatch, getState) => {
-  const state = getState();
-  let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-  dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+  if (event.target.id && event.target.id !== '') {
+    const state = getState();
+    let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
+    dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+  }
 };
 
 const handleColorOfFilter = color => (dispatch, getState) => {
@@ -124,6 +134,10 @@ const handleColorOfFilter = color => (dispatch, getState) => {
   } else {
     dispatch(appendColorToSelectedColorFilter(color));
   }
+};
+
+export const onClickFilterClassCheckBox = event => (dispatch, getState) => {
+  dispatch(handleColorOfFilter(event.target.value));
 };
 
 export const onClickFilterClass = event => (dispatch, getState) => {

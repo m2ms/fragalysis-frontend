@@ -11,7 +11,8 @@ import {
   Typography,
   IconButton,
   ButtonGroup,
-  TextField
+  TextField,
+  Checkbox
 } from '@material-ui/core';
 import React, { useState, useEffect, memo, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
@@ -66,6 +67,7 @@ import { useEffectDebugger } from '../../utils/effects';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { compoundsColors } from '../preview/compounds/redux/constants';
 import {
+  onChangeCompoundClassCheckbox,
   onChangeCompoundClassValue,
   onClickCompoundClass,
   onKeyDownCompoundClass
@@ -236,15 +238,18 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: compoundsColors.apricot.color
   },
   textField: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-    width: 76,
+    // marginLeft: theme.spacing(1),
+    // marginRight: theme.spacing(1),
+    width: 60,
     '& .MuiFormLabel-root': {
       paddingLeft: theme.spacing(1)
     }
   },
   selectedInput: {
     border: `2px groove ${theme.palette.primary.main}`
+  },
+  classCheckbox: {
+    padding: '0px'
   }
 }));
 
@@ -318,6 +323,12 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const proteinList = useSelector(state => state.datasetsReducers.proteinLists[datasetID]);
   const complexList = useSelector(state => state.datasetsReducers.complexLists[datasetID]);
   const surfaceList = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
+
+  // const [selectedMolecules, setSelectedMolecules] = useState([]);
+
+  // useEffect(() => {
+  //   setSelectedMolecules((moleculeLists[datasetID] || []).filter(mol => compoundsToBuyList?.includes(mol.id)));
+  // }, [compoundsToBuyList, datasetID, moleculeLists]);
 
   const selectedMolecules = (moleculeLists[datasetID] || []).filter(mol => compoundsToBuyList?.includes(mol.id));
   const lockedMolecules = useSelector(state => state.datasetsReducers.selectedCompoundsByDataset[datasetID]) ?? [];
@@ -782,26 +793,37 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
       <Grid container direction="row" justify="flex-start" className={classes.container}>
         <Grid item>
           {/* Selection */}
-          <Grid container direction="row" justify="space-between" alignItems="center">
+          <Grid container direction="row" alignItems="center">
             {Object.keys(compoundsColors).map(item => (
-              <Grid item key={item}>
-                <TextField
-                  autoComplete="off"
-                  id={`${item}`}
-                  key={`CLASS_${item}`}
-                  variant="standard"
-                  className={classNames(
-                    classes.textField,
-                    classes[item],
-                    currentCompoundClass === item && classes.selectedInput
-                  )}
-                  label={compoundsColors[item].text}
-                  onChange={e => dispatch(onChangeCompoundClassValue(e))}
-                  onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
-                  onClick={e => dispatch(onClickCompoundClass(e))}
-                  value={inputs[item] || ''}
-                />
-              </Grid>
+              <>
+                <Grid item key={`${item}-chckbox`}>
+                  <Checkbox
+                    className={classes.classCheckbox}
+                    key={`CHCK_${item}`}
+                    value={`${item}`}
+                    onChange={e => dispatch(onChangeCompoundClassCheckbox(e))}
+                    checked={currentCompoundClass === item}
+                  ></Checkbox>
+                </Grid>
+                <Grid item key={`${item}-txtfield`}>
+                  <TextField
+                    autoComplete="off"
+                    id={`${item}`}
+                    key={`CLASS_${item}`}
+                    variant="standard"
+                    className={classNames(
+                      classes.textField,
+                      classes[item],
+                      currentCompoundClass === item && classes.selectedInput
+                    )}
+                    label={compoundsColors[item].text}
+                    onChange={e => dispatch(onChangeCompoundClassValue(e))}
+                    onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
+                    onClick={e => dispatch(onClickCompoundClass(e))}
+                    value={inputs[item] || ''}
+                  />
+                </Grid>
+              </>
             ))}
           </Grid>
         </Grid>

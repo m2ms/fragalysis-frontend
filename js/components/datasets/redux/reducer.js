@@ -470,7 +470,10 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
       const setOfCompoundColors = { ...state.compoundColorByDataset[action.payload.datasetID] };
       if (setOfCompoundColors.hasOwnProperty(action.payload.compoundID)) {
         if (!setOfCompoundColors[action.payload.compoundID].includes(action.payload.colorClass)) {
-          setOfCompoundColors[action.payload.compoundID].push(action.payload.colorClass);
+          setOfCompoundColors[action.payload.compoundID] = [
+            ...setOfCompoundColors[action.payload.compoundID],
+            action.payload.colorClass
+          ];
         }
       } else {
         setOfCompoundColors[action.payload.compoundID] = [action.payload.colorClass];

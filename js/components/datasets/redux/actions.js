@@ -369,14 +369,26 @@ export const removeMoleculeFromCompoundsOfDatasetToBuy = (
   skipTracking: skipTracking
 });
 
-export const appendCompoundColorOfDataset = (datasetID, compoundID, colorClass, skipTracking = false) => ({
+export const appendCompoundColorOfDataset = (
+  datasetID,
+  compoundID,
+  colorClass,
+  compoundTitle,
+  skipTracking = false
+) => ({
   type: constants.APPEND_COMPOUND_COLOR_OF_DATASET,
-  payload: { datasetID, compoundID, colorClass, skipTracking: skipTracking }
+  payload: { datasetID, compoundID, colorClass, compoundTitle, skipTracking: skipTracking }
 });
 
-export const removeCompoundColorOfDataset = (datasetID, compoundID, colorClass, skipTracking = false) => ({
+export const removeCompoundColorOfDataset = (
+  datasetID,
+  compoundID,
+  colorClass,
+  compoundTitle,
+  skipTracking = false
+) => ({
   type: constants.REMOVE_COMPOUND_COLOR_OF_DATASET,
-  payload: { datasetID, compoundID, colorClass, skipTracking: skipTracking }
+  payload: { datasetID, compoundID, colorClass, compoundTitle, skipTracking: skipTracking }
 });
 
 export const appendColorToSelectedColorFilter = colorClass => ({

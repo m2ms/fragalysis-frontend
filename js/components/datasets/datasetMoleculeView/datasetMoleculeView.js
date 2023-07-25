@@ -611,10 +611,10 @@ const DatasetMoleculeView = memo(
           if (shoppingCartColors?.length === 1) {
             dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
           }
-          dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+          dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, moleculeTitle, true));
         } else {
           dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
-          dispatch(appendCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+          dispatch(appendCompoundColorOfDataset(datasetID, currentID, event.target.id, moleculeTitle, true));
         }
       };
 
@@ -622,7 +622,7 @@ const DatasetMoleculeView = memo(
         if (shoppingCartColors?.length === 1) {
           dispatch(removeMoleculeFromCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
         }
-        dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, true));
+        dispatch(removeCompoundColorOfDataset(datasetID, currentID, event.target.id, moleculeTitle, true));
       };
 
       const handleShoppingCartClick = () => {
@@ -630,7 +630,7 @@ const DatasetMoleculeView = memo(
           if (!isAddedToShoppingCart) {
             dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
           }
-          dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
+          dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, moleculeTitle, true));
         }
       };
 

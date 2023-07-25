@@ -110,7 +110,9 @@ export const actionType = {
   ALL_MOLECULES_SELECTED: 'ALL_MOLECULES_SELECTED',
   ALL_MOLECULES_UNSELECTED: 'ALL_MOLECULES_UNSELECTED',
   COMPOUND_LOCKED: 'COMPOUND_LOCKED',
-  COMPOUND_UNLOCKED: 'COMPOUND_UNLOCKED'
+  COMPOUND_UNLOCKED: 'COMPOUND_UNLOCKED',
+  COMPOUND_ADDED_TO_COLOR_GROUP: 'COMPOUND_ADDED_TO_COLOR_GROUP',
+  COMPOUND_REMOVED_FROM_COLOR_GROUP: 'COMPOUND_REMOVED_FROM_COLOR_GROUP'
 };
 
 export const snapshotSwitchManualActions = [
@@ -135,6 +137,8 @@ export const actionDescription = {
   DESELECTED: 'was deselected',
   LOCKED: 'was locked',
   UNLOCKED: 'was unlocked',
+  ADDED_TO_COLOR_GROUP: 'was added to color group',
+  REMOVED_FROM_COLOR_GROUP: 'was removed from color group',
   HIDDEN: 'hidden',
   VISIBLE: 'visible',
   CANCELED: 'canceled',

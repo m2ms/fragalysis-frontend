@@ -88,7 +88,9 @@ import {
   setDragDropState,
   resetDatasetScrolledMap,
   appendCompoundToSelectedCompoundsByDataset,
-  removeCompoundFromSelectedCompoundsByDataset
+  removeCompoundFromSelectedCompoundsByDataset,
+  appendCompoundColorOfDataset,
+  removeCompoundColorOfDataset
 } from '../../components/datasets/redux/actions';
 import {
   removeComponentRepresentation,
@@ -213,6 +215,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
     const showedCompoundList = state.previewReducers.compounds.showedCompoundList;
     const currentDatasetBuyList = state.datasetsReducers.compoundsToBuyDatasetMap;
     const currentLockedCompounds = state.datasetsReducers.selectedCompoundsByDataset;
+    const currentColorsOfCompounds = state.datasetsReducers.compoundColorByDataset;
     const currentobjectsInView = state.nglReducers.objectsInView;
 
     const currentTargets = (currentTargetOn && [currentTargetOn]) || [];
@@ -432,6 +435,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
 
     getCurrentActionList(
       orderedActionList,
+      actionType.COMPOUND_ADDED_TO_COLOR_GROUP,
+      getCollectionOfDatasetColors(currentColorsOfCompounds),
+      currentActions
+    );
+
+    getCurrentActionList(
+      orderedActionList,
       actionType.REPRESENTATION_UPDATED,
       getCollectionOfDatasetOfRepresentation(currentobjectsInView),
       currentActions
@@ -582,7 +592,14 @@ const getCurrentActionList = (orderedActionList, type, collection, currentAction
 
   if (collection) {
     collection.forEach(data => {
-      let action = actionList.find(a => a.object_id === data.id && a.dataset_id === data.datasetId);
+      let action = null;
+      if (data.hasOwnProperty('color')) {
+        action = actionList.find(
+          a => a.object_id === data.id && a.dataset_id === data.datasetId && a.color_class === data.color
+        );
+      } else {
+        action = actionList.find(a => a.object_id === data.id && a.dataset_id === data.datasetId);
+      }
 
       if (action) {
         currentActions.push(Object.assign({ ...action }));
@@ -753,6 +770,23 @@ const getCollectionOfDataset = dataList => {
       if (values) {
         var result = values.map(value => ({ id: value, datasetId: datasetId }));
         list.push(...result);
+      }
+    }
+  }
+  return list;
+};
+
+const getCollectionOfDatasetColors = dataList => {
+  let list = [];
+  if (dataList) {
+    for (const datasetId in dataList) {
+      let values = dataList[datasetId];
+      if (values) {
+        for (const cmpId in values) {
+          const colors = values[cmpId];
+          var result = colors?.map(color => ({ id: Number(cmpId), datasetId: datasetId, color: color }));
+          list.push(...result);
+        }
       }
     }
   }
@@ -1747,6 +1781,17 @@ export const restoreCompoundsActions = (orderedActionList, stage) => (dispatch, 
     }
   });
 
+  let compoundsColorGroupActions = compoundsAction?.filter(
+    action => action.type === actionType.COMPOUND_ADDED_TO_COLOR_GROUP
+  );
+
+  compoundsColorGroupActions.forEach(action => {
+    let data = getCompound(action, state);
+    if (data) {
+      dispatch(appendCompoundColorOfDataset(action.dataset_id, data.id, action.color_class, data.name));
+    }
+  });
+
   dispatch(restoreAllSelectionActions(orderedActionList, stage, false));
   dispatch(restoreAllSelectionByTypeActions(orderedActionList, stage, false));
   dispatch(setIsTrackingCompoundsRestoring(false));
@@ -2139,6 +2184,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.COMPOUND_UNLOCKED:
         dispatch(handleCompoundLockAction(action, true));
         break;
+      case actionType.COMPOUND_ADDED_TO_COLOR_GROUP:
+        dispatch(handleCompoundColorAction(action, false));
+        break;
+      case actionType.COMPOUND_REMOVED_FROM_COLOR_GROUP:
+        dispatch(handleCompoundColorAction(action, true));
+        break;
       case actionType.MOLECULE_SELECTED:
         dispatch(handleSelectMoleculeAction(action, false));
         break;
@@ -2395,6 +2446,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.COMPOUND_UNLOCKED:
         dispatch(handleCompoundLockAction(action, false));
+        break;
+      case actionType.COMPOUND_ADDED_TO_COLOR_GROUP:
+        dispatch(handleCompoundColorAction(action, true));
+        break;
+      case actionType.COMPOUND_REMOVED_FROM_COLOR_GROUP:
+        dispatch(handleCompoundColorAction(action, false));
         break;
       case actionType.MOLECULE_SELECTED:
         dispatch(handleSelectMoleculeAction(action, true));
@@ -2835,6 +2892,20 @@ const handleCompoundLockAction = (action, isLocked) => (dispatch, getState) => {
         dispatch(appendCompoundToSelectedCompoundsByDataset(action.dataset_id, data.id, data.name));
       } else {
         dispatch(removeCompoundFromSelectedCompoundsByDataset(action.dataset_id, data.id, data.name));
+      }
+    }
+  }
+};
+
+const handleCompoundColorAction = (action, isAdded) => (dispatch, getState) => {
+  const state = getState();
+  if (action) {
+    let data = getCompound(action, state);
+    if (data) {
+      if (isAdded) {
+        dispatch(appendCompoundColorOfDataset(action.dataset_id, data.id, data.color_class, data.name));
+      } else {
+        dispatch(removeCompoundColorOfDataset(action.dataset_id, data.id, data.color_class, data.name));
       }
     }
   }

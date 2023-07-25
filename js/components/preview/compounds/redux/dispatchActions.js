@@ -36,6 +36,7 @@ import {
   appendMoleculeToCompoundsOfDatasetToBuy,
   removeColorFromSelectedColorFilter,
   removeMoleculeFromCompoundsOfDatasetToBuy,
+  setEditedColorGroup,
   updateFilterShowedScoreProperties
 } from '../../../datasets/redux/actions';
 import { isRemoteDebugging } from '../../../routes/constants';
@@ -104,9 +105,21 @@ export const onChangeCompoundClassValue = event => (dispatch, getState) => {
 export const onKeyDownCompoundClass = event => (dispatch, getState) => {
   // on Enter
   if (event.keyCode === 13 && event.target.id && event.target.id !== '') {
-    const state = getState();
-    let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-    dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+    // const state = getState();
+    // let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
+    // dispatch(setCurrentCompoundClass(event.target.id, oldCompoundClass));
+    dispatch(setEditedColorGroup(null));
+  }
+};
+
+export const onStartEditColorClassName = event => (dispatch, getState) => {
+  const state = getState();
+  const currentColorGroup = state.datasetsReducers.editedColorGroup;
+  const colorGroup = event.currentTarget.value;
+  if (colorGroup !== currentColorGroup) {
+    dispatch(setEditedColorGroup(colorGroup));
+  } else {
+    dispatch(setEditedColorGroup(null));
   }
 };
 
@@ -114,7 +127,11 @@ export const onChangeCompoundClassCheckbox = event => (dispatch, getState) => {
   if (event.target.value && event.target.value !== '') {
     const state = getState();
     let oldCompoundClass = state.previewReducers.compounds.currentCompoundClass;
-    dispatch(setCurrentCompoundClass(event.target.value, oldCompoundClass));
+    if (oldCompoundClass !== event.target.value) {
+      dispatch(setCurrentCompoundClass(event.target.value, oldCompoundClass));
+    } else {
+      dispatch(setCurrentCompoundClass(null, oldCompoundClass));
+    }
   }
 };
 

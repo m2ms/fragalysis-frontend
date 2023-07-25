@@ -1,7 +1,17 @@
 import React, { memo, useContext, useEffect, useRef, useState } from 'react';
 import { Panel } from '../common/Surfaces/Panel';
-import { CircularProgress, Grid, makeStyles, Typography, Button, TextField, Checkbox } from '@material-ui/core';
-import { CloudDownload } from '@material-ui/icons';
+import {
+  CircularProgress,
+  Grid,
+  makeStyles,
+  Typography,
+  Button,
+  TextField,
+  Checkbox,
+  InputAdornment,
+  IconButton
+} from '@material-ui/core';
+import { CloudDownload, Edit } from '@material-ui/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   getMoleculesObjectIDListOfCompoundsToBuy,
@@ -24,7 +34,8 @@ import {
   onChangeCompoundClassValue,
   onClickFilterClass,
   onClickFilterClassCheckBox,
-  onKeyDownFilterClass
+  onKeyDownFilterClass,
+  onStartEditColorClassName
 } from '../preview/compounds/redux/dispatchActions';
 import { saveAndShareSnapshot } from '../snapshot/redux/dispatchActions';
 import { setDontShowShareSnapshot, setSharedSnapshot } from '../snapshot/redux/actions';
@@ -73,7 +84,7 @@ const useStyles = makeStyles(theme => ({
   textField: {
     // marginLeft: theme.spacing(1),
     // marginRight: theme.spacing(1),
-    width: 60,
+    width: 70,
     '& .MuiFormLabel-root': {
       paddingLeft: theme.spacing(1)
     }
@@ -83,6 +94,14 @@ const useStyles = makeStyles(theme => ({
   },
   classCheckbox: {
     padding: '0px'
+  },
+  editClassNameIcon: {
+    padding: '0px',
+    color: 'inherit'
+  },
+  editClassNameIconSelected: {
+    padding: '0px',
+    color: theme.palette.primary.main
   }
 }));
 
@@ -101,6 +120,7 @@ export const SelectedCompoundList = memo(() => {
   const inspirationDialogRef = useRef();
   const crossReferenceDialogRef = useRef();
   const scrollBarRef = useRef();
+  const editedColorGroup = useSelector(state => state.datasetsReducers.editedColorGroup);
 
   const { nglViewList } = useContext(NglContext);
 
@@ -459,6 +479,23 @@ export const SelectedCompoundList = memo(() => {
                 </Grid>
                 <Grid item key={item}>
                   <TextField
+                    InputProps={{
+                      readOnly: editedColorGroup !== item,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <IconButton
+                            className={
+                              editedColorGroup !== item ? classes.editClassNameIcon : classes.editClassNameIconSelected
+                            }
+                            color={'inherit'}
+                            value={`${item}`}
+                            onClick={e => dispatch(onStartEditColorClassName(e))}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
                     autoComplete="off"
                     id={`${item}`}
                     key={`CLASS_${item}`}
@@ -471,7 +508,7 @@ export const SelectedCompoundList = memo(() => {
                     label={compoundsColors[item].text}
                     onChange={e => dispatch(onChangeCompoundClassValue(e))}
                     onKeyDown={e => dispatch(onKeyDownFilterClass(e))}
-                    onClick={e => dispatch(onClickFilterClass(e))}
+                    // onClick={e => dispatch(onClickFilterClass(e))}
                     value={inputs[item] || ''}
                   />
                 </Grid>

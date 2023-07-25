@@ -626,10 +626,12 @@ const DatasetMoleculeView = memo(
       };
 
       const handleShoppingCartClick = () => {
-        if (!isAddedToShoppingCart) {
-          dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+        if (currentCompoundClass) {
+          if (!isAddedToShoppingCart) {
+            dispatch(appendMoleculeToCompoundsOfDatasetToBuy(datasetID, currentID, moleculeTitle));
+          }
+          dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
         }
-        dispatch(appendCompoundColorOfDataset(datasetID, currentID, currentCompoundClass, true));
       };
 
       const handleClickOnDownArrow = async event => {

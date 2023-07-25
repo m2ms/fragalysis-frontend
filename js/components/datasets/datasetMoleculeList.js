@@ -12,7 +12,8 @@ import {
   IconButton,
   ButtonGroup,
   TextField,
-  Checkbox
+  Checkbox,
+  InputAdornment
 } from '@material-ui/core';
 import React, { useState, useEffect, memo, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
@@ -50,7 +51,7 @@ import {
   setSearchStringOfCompoundSet
 } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
-import { FilterList, Link, DeleteForever, ArrowUpward, ArrowDownward } from '@material-ui/icons';
+import { FilterList, Link, DeleteForever, ArrowUpward, ArrowDownward, Edit } from '@material-ui/icons';
 import { getJoinedMoleculeLists } from './redux/selectors';
 import { InspirationDialog } from './inspirationDialog';
 import { CrossReferenceDialog } from './crossReferenceDialog';
@@ -70,7 +71,8 @@ import {
   onChangeCompoundClassCheckbox,
   onChangeCompoundClassValue,
   onClickCompoundClass,
-  onKeyDownCompoundClass
+  onKeyDownCompoundClass,
+  onStartEditColorClassName
 } from '../preview/compounds/redux/dispatchActions';
 import { LockVisibleCompoundsDialog } from './lockVisibleCompoundsDialog';
 
@@ -240,7 +242,7 @@ const useStyles = makeStyles(theme => ({
   textField: {
     // marginLeft: theme.spacing(1),
     // marginRight: theme.spacing(1),
-    width: 60,
+    width: 70,
     '& .MuiFormLabel-root': {
       paddingLeft: theme.spacing(1)
     }
@@ -250,6 +252,14 @@ const useStyles = makeStyles(theme => ({
   },
   classCheckbox: {
     padding: '0px'
+  },
+  editClassNameIcon: {
+    padding: '0px',
+    color: 'inherit'
+  },
+  editClassNameIconSelected: {
+    padding: '0px',
+    color: theme.palette.primary.main
   }
 }));
 
@@ -332,6 +342,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const selectedMolecules = (moleculeLists[datasetID] || []).filter(mol => compoundsToBuyList?.includes(mol.id));
   const lockedMolecules = useSelector(state => state.datasetsReducers.selectedCompoundsByDataset[datasetID]) ?? [];
+  const editedColorGroup = useSelector(state => state.datasetsReducers.editedColorGroup);
 
   const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
@@ -807,6 +818,23 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                 </Grid>
                 <Grid item key={`${item}-txtfield`}>
                   <TextField
+                    InputProps={{
+                      readOnly: editedColorGroup !== item,
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <IconButton
+                            className={
+                              editedColorGroup !== item ? classes.editClassNameIcon : classes.editClassNameIconSelected
+                            }
+                            color={'inherit'}
+                            value={`${item}`}
+                            onClick={e => dispatch(onStartEditColorClassName(e))}
+                          >
+                            <Edit />
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
                     autoComplete="off"
                     id={`${item}`}
                     key={`CLASS_${item}`}
@@ -819,7 +847,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                     label={compoundsColors[item].text}
                     onChange={e => dispatch(onChangeCompoundClassValue(e))}
                     onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
-                    onClick={e => dispatch(onClickCompoundClass(e))}
+                    // onClick={e => dispatch(onClickCompoundClass(e))}
                     value={inputs[item] || ''}
                   />
                 </Grid>

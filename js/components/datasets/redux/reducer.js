@@ -75,7 +75,8 @@ export const INITIAL_STATE = {
   isLockVisibleCompoundsDialogOpenGlobal: false,
   isLockVisibleCompoundsDialogOpenLocal: false,
   cmpForLocalLockVisibleCompoundsDialog: null,
-  askLockCompoundsQuestion: true
+  askLockCompoundsQuestion: true,
+  editedColorGroup: null
 };
 
 /**
@@ -503,6 +504,9 @@ export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
           [action.payload.datasetID]: { ...listOfCompoundColors }
         }
       };
+
+    case constants.SET_EDITED_COLOR_GROUP:
+      return { ...state, editedColorGroup: action.colorGroup };
 
     case constants.APPEND_COLOR_TO_SELECTED_COLOR_FILTERS:
       const newColorMap = { ...state.selectedColorsInFilter };

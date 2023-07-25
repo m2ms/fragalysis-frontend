@@ -519,3 +519,8 @@ export const setAskLockCompoundsQuestion = askLockCompoundsQuestion => ({
   type: constants.SET_ASK_LOCK_COMPOUNDS_QUESTION,
   askLockCompoundsQuestion: askLockCompoundsQuestion
 });
+
+export const setEditedColorGroup = colorGroup => ({
+  type: constants.SET_EDITED_COLOR_GROUP,
+  colorGroup: colorGroup
+});

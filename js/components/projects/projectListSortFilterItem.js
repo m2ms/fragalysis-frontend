@@ -28,6 +28,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { compareCreatedAtDateDesc } from './sortProjects/sortProjects';
 import moment from 'moment';
+import { sortProjects } from './projectListSortFilterDialog';
 
 const useStyles = makeStyles(theme => ({
   centered: {
@@ -130,8 +131,9 @@ const ProjectListSortFilterItem = memo(props => {
   const [endDate, setEndDate] = useState();
   const [searchString, setSearchString] = useState('');
 
-  let listOfAllProjectsDefault = useSelector(state => state.projectReducers.listOfProjects);
-  const filteredListOfProjects = useSelector(state => state.projectReducers.listOfFilteredProjects);
+  let listOfAllProjectsDefaultWithOutSort = useSelector(state => state.projectReducers.listOfProjects);
+  let listOfAllProjectsDefault = [...listOfAllProjectsDefaultWithOutSort].sort(compareCreatedAtDateDesc);
+  let filteredListOfProjects = useSelector(state => state.projectReducers.listOfFilteredProjects);
 
   const searchName = useSelector(state => state.projectReducers.searchName);
   const searchTarget = useSelector(state => state.projectReducers.searchTarget);
@@ -141,6 +143,9 @@ const ProjectListSortFilterItem = memo(props => {
   const searchDateFrom = useSelector(state => state.projectReducers.searchDateFrom);
   const searchDateTo = useSelector(state => state.projectReducers.searchDateTo);
 
+  const filters = useSelector(state => state.selectionReducers.filter);
+
+  const isActiveFilter = !!(filters || {}).active;
   const filterClean = useSelector(state => state.projectReducers.filterClean);
 
   let listOfAllProjects = [...listOfAllProjectsDefault].sort(compareCreatedAtDateDesc);
@@ -152,7 +157,18 @@ const ProjectListSortFilterItem = memo(props => {
     if (resetFilter === true) {
       setSearchString(' ');
     }
-  }, [filteredProjectListByName, startDate, endDate, searchString, resetFilter, searchNameString]);
+  }, [filteredProjectListByName, startDate, endDate, searchString, resetFilter]);
+
+  useEffect(() => {
+    if (isActiveFilter) {
+      listOfAllProjectsDefault = sortProjects(listOfAllProjectsDefault, filters);
+      dispatch(setListOfProjects(listOfAllProjectsDefault));
+      if (filteredListOfProjects !== undefined) {
+        filteredListOfProjects = sortProjects(filteredListOfProjects, filters);
+        dispatch(setListOfFilteredProjects(filteredListOfProjects.sort(compareCreatedAtDateDesc)));
+      }
+    }
+  }, [filter]);
 
   useEffect(() => {
     // remove filter data
@@ -428,10 +444,9 @@ const ProjectListSortFilterItem = memo(props => {
       searchTargetAccessString === '' &&
       searchAuthorityString === ''
     ) {
-      const filteredData1 = listOfAllProjects.filter(item =>
-        item.project?.authority.toLowerCase().includes(value.toLowerCase())
-      );
+      const filteredData1 = sortProjects(listOfAllProjects, filters);
       dispatch(setListOfFilteredProjects(filteredData1));
+      dispatch(setListOfProjects(filteredData1));
     }
   };
 

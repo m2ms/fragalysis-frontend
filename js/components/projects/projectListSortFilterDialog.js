@@ -128,7 +128,8 @@ export const ProjectListSortFilterDialog = memo(
     }, []);
 
     const [initState, setInitState] = useState(initialize());
-    const defaultListOfProjects = useSelector(state => state.projectReducers.listOfProjects);
+    let defaultListOfProjectsWithoutSort = useSelector(state => state.projectReducers.listOfProjects);
+    let defaultListOfProjects = [...defaultListOfProjectsWithoutSort].sort(compareCreatedAtDateDesc);
 
     filter = filter || initState;
 
@@ -195,7 +196,7 @@ export const ProjectListSortFilterDialog = memo(
       dispatch(setListOfProjects(defaultListOfProjects.sort(compareCreatedAtDateDesc)));
       dispatch(setSortDialogOpen(true));
     });
-    dispatch(setFilter(filter));
+
     // Check for multiple attributes with same sorting priority
     let prioWarning = false;
     let prioWarningTest = {};

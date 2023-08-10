@@ -111,8 +111,8 @@ export const Projects = memo(({}) => {
 
   let filteredListOfProjects = useSelector(state => state.projectReducers.listOfFilteredProjects);
   let filteredListOfProjectsByDate = useSelector(state => state.projectReducers.listOfFilteredProjectsByDate);
-  let listOfAllProjectsDefault0 = useSelector(state => state.projectReducers.listOfProjects);
-  let listOfAllProjectsDefault = [...listOfAllProjectsDefault0].sort(compareCreatedAtDateDesc);
+  let listOfAllProjectsDefaultWithoutSort = useSelector(state => state.projectReducers.listOfProjects);
+  let listOfAllProjectsDefault = [...listOfAllProjectsDefaultWithoutSort].sort(compareCreatedAtDateDesc);
 
   // window height for showing rows per page
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
@@ -120,8 +120,6 @@ export const Projects = memo(({}) => {
   let projectListWindowHeightFinal = parseInt(projectListWindowHeight.toFixed(0), 10);
   const [rowsPerPage, setRowsPerPage] = useState(projectListWindowHeightFinal);
   const [rowsPerPagePerPageSize, setRowsPerPagePerPageSize] = useState(projectListWindowHeightFinal);
-
-  const projectItems = filteredListOfProjects ?? listOfAllProjects;
 
   let searchedByName = [];
   let searchedByTarget = [];
@@ -171,6 +169,14 @@ export const Projects = memo(({}) => {
       dispatch(setSearchDateTo(''));
       const newFilter = { ...filter };
       newFilter.priorityOrder = ['init_date', 'title', 'target', 'targetAccessString', 'description', 'authority'];
+      newFilter.sortOptions = [
+        ['init_date', undefined],
+        ['title', undefined],
+        ['target', 'target.title'],
+        ['targetAccessString', 'project.target_access_string'],
+        ['description', undefined],
+        ['authority', 'project.authority']
+      ];
       newFilter.filter.authority.order = 1;
       newFilter.filter.description.order = 1;
       newFilter.filter.title.order = 1;

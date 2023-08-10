@@ -106,7 +106,7 @@ export const PROJECTS_ATT = {
   description: {
     key: 'description',
     name: 'Description',
-    isFloat: false,
+    isFloat: true,
     color: '#f58231',
     filter: true,
     dateFilter: false,
@@ -115,7 +115,7 @@ export const PROJECTS_ATT = {
   authority: {
     key: 'authority',
     name: 'Authority',
-    isFloat: false,
+    isFloat: true,
     color: '#86844a',
     filter: true,
     dateFilter: false,

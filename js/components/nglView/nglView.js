@@ -53,11 +53,15 @@ const NglView = memo(({ div_id, height, setOrientation, removeAllNglComponents, 
 
   const handleOrientationChanged = useCallback(
     debounce(() => {
+      // try {
       const newStage = getNglView(div_id);
       if (newStage) {
         const currentOrientation = newStage.stage.viewerControls.getOrientation();
         setOrientation(div_id, currentOrientation);
       }
+      // } catch (e) {
+      //   console.error(`Error in handleOrientationChanged: ${e}`);
+      // }
     }, 250),
     [div_id, getNglView, setOrientation]
   );

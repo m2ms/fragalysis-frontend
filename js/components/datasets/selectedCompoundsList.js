@@ -612,7 +612,7 @@ export const SelectedCompoundList = memo(() => {
                         C={complexList.includes(data.molecule.id)}
                         S={surfaceList.includes(data.molecule.id)}
                         V={false}
-                        arrowsHidden
+                        arrowsHidden={false}
                         dragDropEnabled
                         shoppingCartColors={shoppingCartColors}
                         isAddedToShoppingCart={isAddedToShoppingCart}

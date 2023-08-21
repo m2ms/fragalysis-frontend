@@ -28,7 +28,12 @@ import {
   getFirstUnlockedCompoundBefore,
   isDatasetCompoundIterrable,
   isDatasetCompoundLocked,
-  getAllVisibleButNotLockedCompounds
+  getAllVisibleButNotLockedCompounds,
+  getAllVisibleButNotLockedSelectedCompounds,
+  isCompoundLocked,
+  getFirstUnlockedSelectedCompoundAfter,
+  moveSelectedDatasetMoleculeUpDown,
+  getFirstUnlockedSelectedCompoundBefore
 } from '../redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from '../redux/selectors';
@@ -382,6 +387,8 @@ const DatasetMoleculeView = memo(
 
       const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
+      const selectedCompounds = useSelector(state => state.datasetsReducers.selectedCompounds);
+
       const disableMoleculeNglControlButtons =
         useSelector(state => state.datasetsReducers.disableDatasetsNglControlButtons[datasetID]?.[currentID]) || {};
 
@@ -398,6 +405,9 @@ const DatasetMoleculeView = memo(
       const isSurfaceOn = S;
 
       const askLockCompoundsQuestion = useSelector(state => state.datasetsReducers.askLockCompoundsQuestion);
+      const askLockSelectedCompoundsQuestion = useSelector(
+        state => state.datasetsReducers.askLockSelectedCompoundsQuestion
+      );
 
       const isLockVisibleCompoundsDialogOpenLocal = useSelector(
         state => state.datasetsReducers.isLockVisibleCompoundsDialogOpenLocal
@@ -643,20 +653,23 @@ const DatasetMoleculeView = memo(
         }
       };
 
-      const handleClickOnDownArrow = async event => {
-        const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID, currentID));
-        if (unlockedVisibleCompounds?.length > 0 && askLockCompoundsQuestion) {
+      const moveDownSelectedCompound = anchorEl => {
+        //check if there are unlocked but visible compounds in the selected compounds list
+        const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedSelectedCompounds(datasetID, currentID));
+        if (unlockedVisibleCompounds?.length > 0 && askLockSelectedCompoundsQuestion) {
           dispatch(setCmpForLocalLockVisibleCompoundsDialog(data));
-          setLockCompoundsDialogAnchorE1(event.currentTarget);
+          setLockCompoundsDialogAnchorE1(anchorEl);
           dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
         } else {
           const refNext = ref.current.nextSibling;
           scrollToElement(refNext);
 
           let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
-          const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
-          if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
-            nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
+          let nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
+          if (dispatch(isCompoundLocked(nextDatasetID, nextItem))) {
+            const unlockedCmp = dispatch(getFirstUnlockedSelectedCompoundAfter(nextDatasetID, nextItem.id));
+            nextItem = unlockedCmp.molecule;
+            nextDatasetID = unlockedCmp.datasetID;
           }
           const moleculeTitleNext = nextItem && nextItem.name;
 
@@ -668,40 +681,136 @@ const DatasetMoleculeView = memo(
           }
 
           dispatch(
-            moveDatasetMoleculeUpDown(stage, datasetID, data, nextDatasetID, nextItem, dataValue, ARROW_TYPE.DOWN)
+            moveSelectedDatasetMoleculeUpDown(
+              stage,
+              datasetID,
+              data,
+              nextDatasetID,
+              nextItem,
+              dataValue,
+              ARROW_TYPE.DOWN
+            )
           );
         }
       };
 
-      const handleClickOnUpArrow = async event => {
-        const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID, currentID));
-        if (unlockedVisibleCompounds?.length > 0 && askLockCompoundsQuestion) {
+      const handleClickOnDownArrow = async event => {
+        if (inSelectedCompoundsList) {
+          moveDownSelectedCompound(event.currentTarget);
+        } else {
+          const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID, currentID));
+          if (unlockedVisibleCompounds?.length > 0 && askLockCompoundsQuestion) {
+            dispatch(setCmpForLocalLockVisibleCompoundsDialog(data));
+            setLockCompoundsDialogAnchorE1(event.currentTarget);
+            dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
+          } else {
+            const refNext = ref.current.nextSibling;
+            scrollToElement(refNext);
+
+            let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
+            const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
+            if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
+              nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
+            }
+            const moleculeTitleNext = nextItem && nextItem.name;
+
+            let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
+
+            dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+            if (setRef && ref.current) {
+              setRef(refNext);
+            }
+
+            dispatch(
+              moveDatasetMoleculeUpDown(stage, datasetID, data, nextDatasetID, nextItem, dataValue, ARROW_TYPE.DOWN)
+            );
+          }
+        }
+      };
+
+      const moveUpSelectedCompound = anchorEl => {
+        const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedSelectedCompounds(datasetID, currentID));
+        if (unlockedVisibleCompounds?.length > 0 && askLockSelectedCompoundsQuestion) {
           dispatch(setCmpForLocalLockVisibleCompoundsDialog(data));
-          setLockCompoundsDialogAnchorE1(event.currentTarget);
+          setLockCompoundsDialogAnchorE1(anchorEl);
           dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
         } else {
-          const refPrevious = ref.current.previousSibling;
-          scrollToElement(refPrevious);
+          const refNext = ref.current.nextSibling;
+          scrollToElement(refNext);
 
           let previousItem =
             (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
-          const previousDatasetID =
+          let previousDatasetID =
             (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
-          if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
-            previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
+          if (dispatch(isCompoundLocked(previousDatasetID, previousItem))) {
+            const unlockedCmp = dispatch(getFirstUnlockedSelectedCompoundBefore(previousDatasetID, previousItem.id));
+            previousItem = unlockedCmp.molecule;
+            previousDatasetID = unlockedCmp.datasetID;
           }
-          const moleculeTitlePrev = previousItem && previousItem.name;
+          const moleculeTitlePrev = previousItem && previousDatasetID.name;
 
           let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
 
           dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
           if (setRef && ref.current) {
-            setRef(refPrevious);
+            setRef(refNext);
           }
 
           dispatch(
-            moveDatasetMoleculeUpDown(stage, datasetID, data, previousDatasetID, previousItem, dataValue, ARROW_TYPE.UP)
+            moveSelectedDatasetMoleculeUpDown(
+              stage,
+              datasetID,
+              data,
+              previousDatasetID,
+              previousItem,
+              dataValue,
+              ARROW_TYPE.UP
+            )
           );
+        }
+      };
+
+      const handleClickOnUpArrow = async event => {
+        if (inSelectedCompoundsList) {
+          moveUpSelectedCompound(event.currentTarget);
+        } else {
+          const unlockedVisibleCompounds = dispatch(getAllVisibleButNotLockedCompounds(datasetID, currentID));
+          if (unlockedVisibleCompounds?.length > 0 && askLockCompoundsQuestion) {
+            dispatch(setCmpForLocalLockVisibleCompoundsDialog(data));
+            setLockCompoundsDialogAnchorE1(event.currentTarget);
+            dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
+          } else {
+            const refPrevious = ref.current.previousSibling;
+            scrollToElement(refPrevious);
+
+            let previousItem =
+              (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
+            const previousDatasetID =
+              (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
+            if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
+              previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
+            }
+            const moleculeTitlePrev = previousItem && previousItem.name;
+
+            let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
+
+            dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
+            if (setRef && ref.current) {
+              setRef(refPrevious);
+            }
+
+            dispatch(
+              moveDatasetMoleculeUpDown(
+                stage,
+                datasetID,
+                data,
+                previousDatasetID,
+                previousItem,
+                dataValue,
+                ARROW_TYPE.UP
+              )
+            );
+          }
         }
       };
 
@@ -744,6 +853,7 @@ const DatasetMoleculeView = memo(
                   anchorEl={lockCompoundsDialogAnchorE1}
                   datasetId={datasetID}
                   currentCmp={data}
+                  isSelectedCompounds={inSelectedCompoundsList}
                 />
               )}
             {/*Site number*/}

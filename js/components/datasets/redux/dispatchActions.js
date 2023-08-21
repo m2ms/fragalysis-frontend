@@ -73,6 +73,7 @@ import { getRepresentationsByType } from '../../nglView/generatingObjects';
 import { selectAllMoleculeList } from '../../preview/molecule/redux/selectors';
 import { getCompoundById } from '../../../reducers/tracking/dispatchActionsSwitchSnapshot';
 import { getRandomColor } from '../../preview/molecule/utils/color';
+import { BreakfastDiningOutlined } from '@mui/icons-material';
 
 export const initializeDatasetFilter = datasetID => (dispatch, getState) => {
   const state = getState();
@@ -732,11 +733,26 @@ const moveSelectedDatasetMoleculeInspirationsSettings = (data, newItemData, stag
   );
 };
 
+export const lockSelectedCompounds = (selectedCompounds, skipCmpId = 0) => (dispatch, getState) => {
+  let filteredCompounds = [...selectedCompounds];
+  if (skipCmpId) {
+    filteredCompounds = selectedCompounds.filter(item => item.molecule.id !== skipCmpId);
+  }
+
+  filteredCompounds?.forEach(item => {
+    const datasetID = item.datasetID;
+    const molecule = item.molecule;
+    const moleculeID = molecule.id;
+    const moleculeName = molecule.name;
+    dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, moleculeID, moleculeName));
+  });
+};
+
 export const lockCompounds = (datasetID, compoundIds, skipCmpId = 0) => (dispatch, getState) => {
   const state = getState();
   const compounds = state.datasetsReducers.moleculeLists[datasetID];
 
-  let filteredCompounds = [];
+  let filteredCompounds = [...compoundIds];
   if (skipCmpId) {
     filteredCompounds = compoundIds.filter(item => item !== skipCmpId);
   }
@@ -759,6 +775,56 @@ const mergeCompoundIdsList = (compoundIdsList, subList) => {
     }
   });
   return result;
+};
+
+export const isCompoundLocked = (datasetID, compound) => (dispatch, getState) => {
+  const state = getState();
+  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID] || [];
+  return lockedCompounds.includes(compound.id);
+};
+
+export const getAllVisibleButNotLockedSelectedCompounds = (skipDatasetID = '', skipCmpId = 0) => (
+  dispatch,
+  getState
+) => {
+  let result = [];
+
+  const state = getState();
+  const selectedCompounds = state.datasetsReducers.selectedCompounds || [];
+
+  selectedCompounds.forEach(item => {
+    const datasetID = item.datasetID;
+    const molecule = item.molecule;
+    if (datasetID !== skipDatasetID || skipCmpId !== molecule.id) {
+      const isLocked = dispatch(isCompoundLocked(datasetID, molecule));
+      if (!isLocked) {
+        let isVisible = dispatch(isCompoundVisible(datasetID, molecule.id));
+        // isVisible |= state.datasetsReducers.ligandLists[datasetID].includes(molecule.id);
+        // isVisible |= state.datasetsReducers.proteinLists[datasetID].includes(molecule.id);
+        // isVisible |= state.datasetsReducers.complexLists[datasetID].includes(molecule.id);
+        // isVisible |= state.datasetsReducers.surfaceLists[datasetID].includes(molecule.id);
+
+        if (isVisible) {
+          result.push(item);
+        }
+      }
+    }
+  });
+
+  return result;
+};
+
+export const isCompoundVisible = (datasetID, compoundId) => (dispatch, getState) => {
+  let isVisible = false;
+
+  const state = getState();
+
+  isVisible |= state.datasetsReducers.ligandLists[datasetID].includes(compoundId);
+  isVisible |= state.datasetsReducers.proteinLists[datasetID].includes(compoundId);
+  isVisible |= state.datasetsReducers.complexLists[datasetID].includes(compoundId);
+  isVisible |= state.datasetsReducers.surfaceLists[datasetID].includes(compoundId);
+
+  return isVisible;
 };
 
 export const getAllVisibleButNotLockedCompounds = (datasetID, skipCmpId = 0) => (dispatch, getState) => {
@@ -821,6 +887,46 @@ export const getFirstUnlockedCompoundAfter = (datasetID, compoundID) => (dispatc
   return firstUnlockedCompound;
 };
 
+export const getFirstUnlockedSelectedCompoundAfter = (datasetID, compoundID) => (dispatch, getState) => {
+  const state = getState();
+
+  const compounds = state.datasetsReducers.selectedCompounds;
+  const currentItemIndex = compounds.findIndex(item => item.datasetID === datasetID && item.molecule.id === compoundID);
+
+  let firstUnlockedCompound = null;
+  for (let i = currentItemIndex + 1; i < compounds.length; i++) {
+    const compound = compounds[i];
+    if (!dispatch(isCompoundLocked(compound.datasetID, compound.molecule))) {
+      firstUnlockedCompound = compound;
+      break;
+    } else {
+      continue;
+    }
+  }
+
+  return firstUnlockedCompound;
+};
+
+export const getFirstUnlockedSelectedCompoundBefore = (datasetID, compoundID) => (dispatch, getState) => {
+  const state = getState();
+
+  const compounds = state.datasetsReducers.selectedCompounds;
+  const currentItemIndex = compounds.findIndex(item => item.datasetID === datasetID && item.molecule.id === compoundID);
+
+  let firstUnlockedCompound = null;
+  for (let i = currentItemIndex - 1; i >= 0; i--) {
+    const compound = compounds[i];
+    if (!dispatch(isCompoundLocked(compound.datasetID, compound.molecule))) {
+      firstUnlockedCompound = compound;
+      break;
+    } else {
+      continue;
+    }
+  }
+
+  return firstUnlockedCompound;
+};
+
 export const getFirstUnlockedCompoundBefore = (datasetID, compoundID) => (dispatch, getState) => {
   const state = getState();
 
@@ -836,6 +942,43 @@ export const getFirstUnlockedCompoundBefore = (datasetID, compoundID) => (dispat
   return firstUnlockedCompound;
 };
 
+export const moveSelectedDatasetMoleculeUpDown = (
+  stage,
+  datasetID,
+  item,
+  newItemDatasetID,
+  newItem,
+  data,
+  direction
+) => async (dispatch, getState) => {
+  const state = getState();
+  const allInspirations = state.datasetsReducers.allInspirations;
+  const objectsInView = state.nglReducers.objectsInView;
+  const selectedCompounds = state.datasetsReducers.selectedCompounds;
+  let lockedCompounds = [];
+  selectedCompounds.forEach(item => {
+    if (dispatch(isCompoundLocked(item.datasetID, item.molecule))) {
+      lockedCompounds.push(item.molecule.id);
+    }
+  });
+
+  const dataValue = { ...data, objectsInView };
+
+  // ????
+  // dispatch(setArrowUpDown(datasetID, item, newItem, direction, dataValue));
+
+  const inspirations = getInspirationsForMol(allInspirations, datasetID, newItem.id);
+  dispatch(setInspirationMoleculeDataList(inspirations));
+  dispatch(clearCompoundView(newItem, datasetID, stage, true));
+  await Promise.all([
+    dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
+    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
+  ]);
+
+  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
+  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
+};
+
 /**
  * Performance optimization for datasetMoleculeView. Gets objectsInView and passes it to further dispatch requests.
  * It wouldnt do anything else in moleculeView. Also this chains the above 3 methods which were before passed to
@@ -849,7 +992,7 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
   const state = getState();
   const allInspirations = state.datasetsReducers.allInspirations;
   const objectsInView = state.nglReducers.objectsInView;
-  const lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID] ?? [];
+  let lockedCompounds = state.datasetsReducers.selectedCompoundsByDataset[datasetID] ?? [];
 
   const dataValue = { ...data, objectsInView };
 

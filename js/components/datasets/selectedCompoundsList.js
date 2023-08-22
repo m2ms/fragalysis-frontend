@@ -36,6 +36,7 @@ import {
   isCompoundLocked,
   isCompoundVisible,
   moveDatasetMoleculeUpDown,
+  moveSelectedDatasetMoleculeUpDown,
   resetCrossReferenceDialog
 } from './redux/dispatchActions';
 import { NglContext } from '../nglView/nglProvider';
@@ -601,7 +602,7 @@ export const SelectedCompoundList = memo(() => {
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
         dispatch(
-          moveDatasetMoleculeUpDown(
+          moveSelectedDatasetMoleculeUpDown(
             stage,
             firstItem.datasetID,
             firstItem.molecule,
@@ -639,14 +640,14 @@ export const SelectedCompoundList = memo(() => {
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
         dispatch(
-          moveDatasetMoleculeUpDown(
+          moveSelectedDatasetMoleculeUpDown(
             stage,
             firstItem.datasetID,
             firstItem.molecule,
             prevItem.datasetID,
             prevItem.molecule,
             dataValue,
-            ARROW_TYPE.DOWN
+            ARROW_TYPE.UP
           )
         );
       }

@@ -962,13 +962,23 @@ export const moveSelectedDatasetMoleculeUpDown = (
   const allInspirations = state.datasetsReducers.allInspirations;
   const objectsInView = state.nglReducers.objectsInView;
   const selectedCompounds = state.datasetsReducers.selectedCompounds;
-  let lockedCompounds = [];
+  let lockedCompounds = {};
   selectedCompounds.forEach(item => {
     if (dispatch(isCompoundLocked(item.datasetID, item.molecule))) {
-      lockedCompounds.push(item.molecule.id);
+      if (lockedCompounds.hasOwnProperty(item.datasetID)) {
+        lockedCompounds[item.datasetID].push(item.molecule.id);
+      } else {
+        lockedCompounds[item.datasetID] = [item.molecule.id];
+      }
     }
   });
 
+  //also skip next item
+  if (lockedCompounds.hasOwnProperty(newItemDatasetID)) {
+    lockedCompounds[newItemDatasetID].push(newItem.id);
+  } else {
+    lockedCompounds[newItemDatasetID] = [newItem.id];
+  }
   const dataValue = { ...data, objectsInView };
 
   // ????
@@ -982,7 +992,7 @@ export const moveSelectedDatasetMoleculeUpDown = (
     dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
   ]);
 
-  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
+  dispatch(removeSelectedDatasetMolecules(stage, true, { ...lockedCompounds }));
   dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
 };
 
@@ -1010,13 +1020,11 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
   dispatch(clearCompoundView(newItem, datasetID, stage, true));
   await Promise.all([
     dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
-    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true)),
-    dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] })),
-    dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID))
+    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
   ]);
 
-  // dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
-  // dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
+  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
+  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
 };
 
 export const getInspirationsForMol = (allInspirations, datasetId, molId) => {

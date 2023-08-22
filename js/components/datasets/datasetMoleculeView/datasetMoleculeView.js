@@ -754,7 +754,7 @@ const DatasetMoleculeView = memo(
             (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
           if (dispatch(isCompoundLocked(previousDatasetID, previousItem))) {
             const unlockedCmp = dispatch(getFirstUnlockedSelectedCompoundBefore(previousDatasetID, previousItem.id));
-            if (unlockedCmp) {
+            if (!unlockedCmp) {
               return;
             }
             previousItem = unlockedCmp.molecule;

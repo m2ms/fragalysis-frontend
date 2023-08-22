@@ -527,7 +527,7 @@ export const SelectedCompoundList = memo(() => {
     let result = null;
     for (let i = 0; i < moleculesObjectIDListOfCompoundsToBuy.length; i++) {
       const cmp = moleculesObjectIDListOfCompoundsToBuy[i];
-      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule))) {
+      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule)) && !isCompoundFromVectorSelector(cmp.molecule)) {
         const isVisible = dispatch(isCompoundVisible(cmp.datasetID, cmp.molecule.id));
         if (isVisible) {
           result = cmp;
@@ -547,7 +547,7 @@ export const SelectedCompoundList = memo(() => {
     );
     for (let i = currentItemIndex + 1; i < moleculesObjectIDListOfCompoundsToBuy.length; i++) {
       const cmp = moleculesObjectIDListOfCompoundsToBuy[i];
-      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule))) {
+      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule)) && !isCompoundFromVectorSelector(cmp.molecule)) {
         result = cmp;
         break;
       }
@@ -564,7 +564,7 @@ export const SelectedCompoundList = memo(() => {
     );
     for (let i = currentItemIndex - 1; i >= 0; i--) {
       const cmp = moleculesObjectIDListOfCompoundsToBuy[i];
-      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule))) {
+      if (!dispatch(isCompoundLocked(cmp.datasetID, cmp.molecule)) && !isCompoundFromVectorSelector(cmp.molecule)) {
         result = cmp;
         break;
       }

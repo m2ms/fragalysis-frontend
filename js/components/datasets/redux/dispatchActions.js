@@ -74,6 +74,7 @@ import { selectAllMoleculeList } from '../../preview/molecule/redux/selectors';
 import { getCompoundById } from '../../../reducers/tracking/dispatchActionsSwitchSnapshot';
 import { getRandomColor } from '../../preview/molecule/utils/color';
 import { BreakfastDiningOutlined } from '@mui/icons-material';
+import { isCompoundFromVectorSelector } from '../../preview/compounds/redux/dispatchActions';
 
 export const initializeDatasetFilter = datasetID => (dispatch, getState) => {
   const state = getState();
@@ -819,10 +820,10 @@ export const isCompoundVisible = (datasetID, compoundId) => (dispatch, getState)
 
   const state = getState();
 
-  isVisible |= state.datasetsReducers.ligandLists[datasetID].includes(compoundId);
-  isVisible |= state.datasetsReducers.proteinLists[datasetID].includes(compoundId);
-  isVisible |= state.datasetsReducers.complexLists[datasetID].includes(compoundId);
-  isVisible |= state.datasetsReducers.surfaceLists[datasetID].includes(compoundId);
+  isVisible |= state.datasetsReducers.ligandLists[datasetID]?.includes(compoundId);
+  isVisible |= state.datasetsReducers.proteinLists[datasetID]?.includes(compoundId);
+  isVisible |= state.datasetsReducers.complexLists[datasetID]?.includes(compoundId);
+  isVisible |= state.datasetsReducers.surfaceLists[datasetID]?.includes(compoundId);
 
   return isVisible;
 };
@@ -896,7 +897,10 @@ export const getFirstUnlockedSelectedCompoundAfter = (datasetID, compoundID) => 
   let firstUnlockedCompound = null;
   for (let i = currentItemIndex + 1; i < compounds.length; i++) {
     const compound = compounds[i];
-    if (!dispatch(isCompoundLocked(compound.datasetID, compound.molecule))) {
+    if (
+      !dispatch(isCompoundLocked(compound.datasetID, compound.molecule)) &&
+      !isCompoundFromVectorSelector(compound.molecule)
+    ) {
       firstUnlockedCompound = compound;
       break;
     } else {
@@ -916,7 +920,10 @@ export const getFirstUnlockedSelectedCompoundBefore = (datasetID, compoundID) =>
   let firstUnlockedCompound = null;
   for (let i = currentItemIndex - 1; i >= 0; i--) {
     const compound = compounds[i];
-    if (!dispatch(isCompoundLocked(compound.datasetID, compound.molecule))) {
+    if (
+      !dispatch(isCompoundLocked(compound.datasetID, compound.molecule)) &&
+      !isCompoundFromVectorSelector(compound.molecule)
+    ) {
       firstUnlockedCompound = compound;
       break;
     } else {

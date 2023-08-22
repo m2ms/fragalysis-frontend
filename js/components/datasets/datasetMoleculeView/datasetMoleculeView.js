@@ -5,7 +5,13 @@
 import React, { memo, useEffect, useState, useRef, useContext, forwardRef } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { Grid, Button, makeStyles, Tooltip, IconButton } from '@material-ui/core';
-import { ClearOutlined, CheckOutlined, Assignment, AssignmentTurnedIn } from '@material-ui/icons';
+import {
+  ClearOutlined,
+  CheckOutlined,
+  Assignment,
+  AssignmentTurnedIn,
+  KeyboardReturnOutlined
+} from '@material-ui/icons';
 import SVGInline from 'react-svg-inline';
 import classNames from 'classnames';
 import { VIEWS, ARROW_TYPE } from '../../../constants/constants';
@@ -424,7 +430,8 @@ const DatasetMoleculeView = memo(
       const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
       const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn);
 
-      let areArrowsVisible = (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isLocked;
+      let areArrowsVisible =
+        (isLigandOn || isProteinOn || isComplexOn || isSurfaceOn) && !isLocked && !isCompoundFromVectorSelector(data);
 
       if (arrowsHidden) {
         areArrowsVisible = false;
@@ -666,8 +673,11 @@ const DatasetMoleculeView = memo(
 
           let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
           let nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
-          if (dispatch(isCompoundLocked(nextDatasetID, nextItem))) {
+          if (dispatch(isCompoundLocked(nextDatasetID, nextItem)) || isCompoundFromVectorSelector(nextItem)) {
             const unlockedCmp = dispatch(getFirstUnlockedSelectedCompoundAfter(nextDatasetID, nextItem.id));
+            if (!unlockedCmp) {
+              return;
+            }
             nextItem = unlockedCmp.molecule;
             nextDatasetID = unlockedCmp.datasetID;
           }
@@ -744,6 +754,9 @@ const DatasetMoleculeView = memo(
             (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
           if (dispatch(isCompoundLocked(previousDatasetID, previousItem))) {
             const unlockedCmp = dispatch(getFirstUnlockedSelectedCompoundBefore(previousDatasetID, previousItem.id));
+            if (unlockedCmp) {
+              return;
+            }
             previousItem = unlockedCmp.molecule;
             previousDatasetID = unlockedCmp.datasetID;
           }
@@ -859,21 +872,24 @@ const DatasetMoleculeView = memo(
             {/*Site number*/}
             <Grid item container justify="space-between" direction="column" className={classes.site}>
               <Grid item>
-                <DatasetMoleculeSelectCheckbox
-                  checked={isLocked}
-                  className={classes.checkbox}
-                  size="small"
-                  color="primary"
-                  onChange={e => {
-                    const result = e.target.checked;
-                    if (result) {
-                      dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
-                    } else {
-                      dispatch(removeCompoundFromSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
-                      dispatch(deselectVectorCompound(data));
-                    }
-                  }}
-                />
+                {!isCompoundFromVectorSelector(data) && (
+                  <DatasetMoleculeSelectCheckbox
+                    checked={isLocked}
+                    className={classes.checkbox}
+                    size="small"
+                    color="primary"
+                    // disabled={isCompoundFromVectorSelector(data)}
+                    onChange={e => {
+                      const result = e.target.checked;
+                      if (result) {
+                        dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
+                      } else {
+                        dispatch(removeCompoundFromSelectedCompoundsByDataset(datasetID, currentID, moleculeTitle));
+                        dispatch(deselectVectorCompound(data));
+                      }
+                    }}
+                  />
+                )}
               </Grid>
               <Grid item className={classes.rank}>
                 {index + 1}.

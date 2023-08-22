@@ -65,6 +65,7 @@ import { LockVisibleCompoundsDialog } from './lockVisibleCompoundsDialog';
 import { BreakfastDiningOutlined } from '@mui/icons-material';
 import { getRandomColor } from '../preview/molecule/utils/color';
 import { ARROW_TYPE, VIEWS } from '../../constants/constants';
+import { useScrollToCompound } from './useScrollToCompound';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -183,6 +184,8 @@ export const SelectedCompoundList = memo(() => {
     selectedMolecules = [...selectedMolecules, ...molsOfDataset.filter(mol => datasetCmpsToBuy?.includes(mol.id))];
   });
 
+  const { addMoleculeViewRef, setScrollToMoleculeId } = useScrollToCompound();
+
   const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
 
   const askLockSelectedCompoundsQuestion = useSelector(
@@ -217,6 +220,7 @@ export const SelectedCompoundList = memo(() => {
 
   const [lockCompoundsDialogAnchorE1, setLockCompoundsDialogAnchorE1] = useState(null);
 
+  //we need to add also lists to dependancy array because isCompoundVisible depends on them
   useEffect(() => {
     dispatch(setSelectedCompoundsList(moleculesObjectIDListOfCompoundsToBuy));
   }, [moleculesObjectIDListOfCompoundsToBuy, dispatch]);
@@ -585,7 +589,7 @@ export const SelectedCompoundList = memo(() => {
 
       if (firstItem && nextItem) {
         const moleculeTitleNext = nextItem && nextItem.molecule?.name;
-        // setScrollToMoleculeId(nextItem.id);
+        setScrollToMoleculeId(nextItem.molecule?.id);
 
         let dataValue = {
           colourToggle: getRandomColor(firstItem.molecule),
@@ -623,7 +627,7 @@ export const SelectedCompoundList = memo(() => {
 
       if (firstItem && prevItem) {
         const moleculeTitleNext = prevItem && prevItem.molecule?.name;
-        // setScrollToMoleculeId(nextItem.id);
+        setScrollToMoleculeId(prevItem.molecule?.id);
 
         let dataValue = {
           colourToggle: getRandomColor(firstItem.molecule),
@@ -844,7 +848,8 @@ export const SelectedCompoundList = memo(() => {
                         imageWidth={imgWidth}
                         data={data.molecule}
                         datasetID={data.datasetID}
-                        setRef={setSelectedMoleculeRef}
+                        // setRef={setSelectedMoleculeRef}
+                        ref={addMoleculeViewRef}
                         showCrossReferenceModal
                         previousItemData={index > 0 && array[index - 1]}
                         nextItemData={index < array?.length && array[index + 1]}

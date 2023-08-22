@@ -1010,11 +1010,13 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
   dispatch(clearCompoundView(newItem, datasetID, stage, true));
   await Promise.all([
     dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
-    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
+    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true)),
+    dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] })),
+    dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID))
   ]);
 
-  dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
-  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
+  // dispatch(removeSelectedDatasetMolecules(stage, true, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] }));
+  // dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
 };
 
 export const getInspirationsForMol = (allInspirations, datasetId, molId) => {

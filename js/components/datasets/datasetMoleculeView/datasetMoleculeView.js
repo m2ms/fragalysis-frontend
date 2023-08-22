@@ -745,7 +745,7 @@ const DatasetMoleculeView = memo(
           setLockCompoundsDialogAnchorE1(anchorEl);
           dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
         } else {
-          const refNext = ref.current.nextSibling;
+          const refNext = ref.current.previousSibling;
           scrollToElement(refNext);
 
           let previousItem =

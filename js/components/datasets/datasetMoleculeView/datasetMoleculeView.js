@@ -368,7 +368,8 @@ const DatasetMoleculeView = memo(
         disableP,
         disableC,
         inSelectedCompoundsList = false,
-        colorButtonsEnabled = true
+        colorButtonsEnabled = true,
+        getNode
       },
       outsideRef
     ) => {
@@ -668,7 +669,7 @@ const DatasetMoleculeView = memo(
           setLockCompoundsDialogAnchorE1(anchorEl);
           dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
         } else {
-          const refNext = ref.current.nextSibling;
+          let refNext = ref.current.nextSibling;
           scrollToElement(refNext);
 
           let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
@@ -680,6 +681,9 @@ const DatasetMoleculeView = memo(
             }
             nextItem = unlockedCmp.molecule;
             nextDatasetID = unlockedCmp.datasetID;
+          }
+          if (getNode) {
+            refNext = getNode(nextItem.id);
           }
           const moleculeTitleNext = nextItem && nextItem.name;
 
@@ -714,13 +718,16 @@ const DatasetMoleculeView = memo(
             setLockCompoundsDialogAnchorE1(event.currentTarget);
             dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
           } else {
-            const refNext = ref.current.nextSibling;
+            let refNext = ref.current.nextSibling;
             scrollToElement(refNext);
 
             let nextItem = (nextItemData.hasOwnProperty('molecule') && nextItemData.molecule) || nextItemData;
             const nextDatasetID = (nextItemData.hasOwnProperty('datasetID') && nextItemData.datasetID) || datasetID;
             if (dispatch(isDatasetCompoundLocked(nextDatasetID, nextItem.id))) {
               nextItem = dispatch(getFirstUnlockedCompoundAfter(nextDatasetID, nextItem.id));
+            }
+            if (getNode) {
+              refNext = getNode(nextItem.id);
             }
             const moleculeTitleNext = nextItem && nextItem.name;
 
@@ -745,8 +752,8 @@ const DatasetMoleculeView = memo(
           setLockCompoundsDialogAnchorE1(anchorEl);
           dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
         } else {
-          const refNext = ref.current.previousSibling;
-          scrollToElement(refNext);
+          let refPrevious = ref.current.previousSibling;
+          scrollToElement(refPrevious);
 
           let previousItem =
             (previousItemData.hasOwnProperty('molecule') && previousItemData.molecule) || previousItemData;
@@ -760,13 +767,16 @@ const DatasetMoleculeView = memo(
             previousItem = unlockedCmp.molecule;
             previousDatasetID = unlockedCmp.datasetID;
           }
+          if (getNode) {
+            refPrevious = getNode(previousItem.id);
+          }
           const moleculeTitlePrev = previousItem && previousDatasetID.name;
 
           let dataValue = { colourToggle, isLigandOn, isProteinOn, isComplexOn, isSurfaceOn };
 
           dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
           if (setRef && ref.current) {
-            setRef(refNext);
+            setRef(refPrevious);
           }
 
           dispatch(
@@ -793,7 +803,7 @@ const DatasetMoleculeView = memo(
             setLockCompoundsDialogAnchorE1(event.currentTarget);
             dispatch(setIsOpenLockVisibleCompoundsDialogLocal(true));
           } else {
-            const refPrevious = ref.current.previousSibling;
+            let refPrevious = ref.current.previousSibling;
             scrollToElement(refPrevious);
 
             let previousItem =
@@ -802,6 +812,9 @@ const DatasetMoleculeView = memo(
               (previousItemData.hasOwnProperty('datasetID') && previousItemData.datasetID) || datasetID;
             if (dispatch(isDatasetCompoundLocked(previousDatasetID, previousItem.id))) {
               previousItem = dispatch(getFirstUnlockedCompoundBefore(previousDatasetID, previousItem.id));
+            }
+            if (getNode) {
+              refPrevious = getNode(previousItem.id);
             }
             const moleculeTitlePrev = previousItem && previousItem.name;
 

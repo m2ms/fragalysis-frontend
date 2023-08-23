@@ -13,7 +13,8 @@ import {
   ButtonGroup,
   TextField,
   Checkbox,
-  InputAdornment
+  InputAdornment,
+  setRef
 } from '@material-ui/core';
 import React, { useState, useEffect, memo, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
@@ -328,7 +329,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const compoundsToBuyList = useSelector(state => state.datasetsReducers.compoundsToBuyDatasetMap[datasetID]);
 
-  const { addMoleculeViewRef, setScrollToMoleculeId } = useScrollToSelected(
+  const { addMoleculeViewRef, setScrollToMoleculeId, getNode } = useScrollToSelected(
     datasetID,
     moleculesPerPage,
     setCurrentPage
@@ -683,6 +684,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
       if (firstItem && nextItem) {
         const moleculeTitleNext = nextItem && nextItem.name;
+        const node = getNode(nextItem.id);
         setScrollToMoleculeId(nextItem.id);
 
         let dataValue = {
@@ -694,6 +696,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+
+        if (node) {
+          setSelectedMoleculeRef(node);
+        }
         dispatch(
           moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, nextItem, dataValue, ARROW_TYPE.DOWN)
         );
@@ -713,7 +719,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
       if (firstItem && prevItem) {
         const moleculeTitlePrev = prevItem && prevItem.name;
-
+        const node = getNode(prevItem.id);
         setScrollToMoleculeId(prevItem.id);
 
         let dataValue = {
@@ -725,6 +731,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));
+        if (node) {
+          setSelectedMoleculeRef(node);
+        }
         dispatch(moveDatasetMoleculeUpDown(stage, datasetID, firstItem, datasetID, prevItem, dataValue, ARROW_TYPE.UP));
       }
     }
@@ -1062,6 +1071,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             disableP={locked && groupDatasetsNglControlButtonsDisabledState.protein}
                             disableC={locked && groupDatasetsNglControlButtonsDisabledState.complex}
                             dragDropEnabled
+                            getNode={getNode}
                           />
                         );
                       })}

@@ -546,7 +546,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
     currentBoundingClientRectInspiration.y !== 0
   ) {
     if (
-      currentBoundingClientRectInspiration.top < scrollBarBoundingClientRect.top ||
+      Math.round(currentBoundingClientRectInspiration.top) < Math.round(scrollBarBoundingClientRect.top) ||
       Math.abs(scrollBarBoundingClientRect.bottom - currentBoundingClientRectInspiration.top) < 42
     ) {
       dispatch(setIsOpenInspirationDialog(false));
@@ -560,7 +560,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
     currentBoundingClientRectCrossReference.y !== 0
   ) {
     if (
-      currentBoundingClientRectCrossReference.top < scrollBarBoundingClientRect.top ||
+      Math.round(currentBoundingClientRectCrossReference.top) < Math.round(scrollBarBoundingClientRect.top) ||
       Math.abs(scrollBarBoundingClientRect.bottom - currentBoundingClientRectCrossReference.top) < 42
     ) {
       dispatch(resetCrossReferenceDialog());

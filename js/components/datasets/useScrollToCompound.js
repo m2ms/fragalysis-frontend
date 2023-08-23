@@ -28,14 +28,31 @@ export const useScrollToCompound = () => {
   };
 
   // Used to attach the ref of DOM nodes.
+  // const addMoleculeViewRef = useCallback((moleculeId, node) => {
+  //   if (moleculeId && node) {
+  //     setMoleculeViewRefs(prevRefs => ({
+  //       ...prevRefs,
+  //       [moleculeId]: node
+  //     }));
+  //   }
+  // }, []);
+
   const addMoleculeViewRef = useCallback((moleculeId, node) => {
-    if (moleculeId && node) {
-      setMoleculeViewRefs(prevRefs => ({
+    setMoleculeViewRefs(prevRefs => {
+      if (prevRefs.hasOwnProperty(moleculeId)) return prevRefs;
+      return {
         ...prevRefs,
         [moleculeId]: node
-      }));
-    }
+      };
+    });
   }, []);
 
-  return { addMoleculeViewRef, setScrollToMoleculeId };
+  const getNode = useCallback(
+    molId => {
+      return moleculeViewRefs[molId];
+    },
+    [moleculeViewRefs]
+  );
+
+  return { addMoleculeViewRef, setScrollToMoleculeId, getNode };
 };

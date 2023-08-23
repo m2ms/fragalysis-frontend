@@ -67,6 +67,8 @@ import { BreakfastDiningOutlined } from '@mui/icons-material';
 import { getRandomColor } from '../preview/molecule/utils/color';
 import { ARROW_TYPE, VIEWS } from '../../constants/constants';
 import { useScrollToCompound } from './useScrollToCompound';
+import useDisableNglControlButtons from '../preview/molecule/useDisableNglControlButtons';
+import useDisableDatasetNglControlButtons from './useDisableDatasetNglControlButtons';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -185,9 +187,13 @@ export const SelectedCompoundList = memo(() => {
     selectedMolecules = [...selectedMolecules, ...molsOfDataset.filter(mol => datasetCmpsToBuy?.includes(mol.id))];
   });
 
-  const { addMoleculeViewRef, setScrollToMoleculeId } = useScrollToCompound();
+  const { addMoleculeViewRef, setScrollToMoleculeId, getNode } = useScrollToCompound();
 
   const currentCompoundClass = useSelector(state => state.previewReducers.compounds.currentCompoundClass);
+
+  // const groupDatasetsNglControlButtonsDisabledState = useDisableDatasetNglControlButtons(
+  //   lockedMolecules.map(cid => ({ datasetID, molecule: getCompoundForId(cid) }))
+  // );
 
   const askLockSelectedCompoundsQuestion = useSelector(
     state => state.datasetsReducers.askLockSelectedCompoundsQuestion
@@ -590,6 +596,7 @@ export const SelectedCompoundList = memo(() => {
 
       if (firstItem && nextItem) {
         const moleculeTitleNext = nextItem && nextItem.molecule?.name;
+        const node = getNode(nextItem.molecule?.id);
         setScrollToMoleculeId(nextItem.molecule?.id);
 
         let dataValue = {
@@ -601,6 +608,10 @@ export const SelectedCompoundList = memo(() => {
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+
+        if (node) {
+          setSelectedMoleculeRef(node);
+        }
         dispatch(
           moveSelectedDatasetMoleculeUpDown(
             stage,
@@ -628,6 +639,7 @@ export const SelectedCompoundList = memo(() => {
 
       if (firstItem && prevItem) {
         const moleculeTitleNext = prevItem && prevItem.molecule?.name;
+        const node = getNode(prevItem.molecule?.id);
         setScrollToMoleculeId(prevItem.molecule?.id);
 
         let dataValue = {
@@ -639,6 +651,10 @@ export const SelectedCompoundList = memo(() => {
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
+
+        if (node) {
+          setSelectedMoleculeRef(node);
+        }
         dispatch(
           moveSelectedDatasetMoleculeUpDown(
             stage,
@@ -866,6 +882,8 @@ export const SelectedCompoundList = memo(() => {
                         inSelectedCompoundsList
                         colorButtonsEnabled={areColorButtonsEnabled}
                         isLocked={isLocked}
+                        setRef={setSelectedMoleculeRef}
+                        getNode={getNode}
                       />
                     )
                   );

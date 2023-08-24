@@ -132,7 +132,7 @@ const useStyles = makeStyles(theme => ({
   },
   editClassNameIconSelected: {
     padding: '0px',
-    color: theme.palette.primary.main
+    color: 'red'
   },
   arrowsHighlight: {
     borderColor: theme.palette.primary.main,
@@ -759,6 +759,7 @@ export const SelectedCompoundList = memo(() => {
                             onClick={e => {
                               dispatch(onStartEditColorClassName(e));
                               inputRefs[item].current.focus();
+                              inputRefs[item].current.select();
                             }}
                           >
                             <Edit />

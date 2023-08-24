@@ -126,13 +126,25 @@ const useStyles = makeStyles(theme => ({
     padding: '0px',
     color: theme.palette.primary.main
   },
+  arrowsHighlight: {
+    borderColor: theme.palette.primary.main,
+    border: 'solid 2px',
+    backgroundColor: theme.palette.primary.main
+  },
   arrow: {
-    width: 12,
-    height: 15
+    width: 20,
+    height: 25,
+    color: 'white',
+    stroke: 'white',
+    strokeWidth: 2
+  },
+  iconButton: {
+    padding: 0,
+    marginTop: '2px'
   },
   invisArrow: {
-    width: 12,
-    height: 15,
+    width: 20,
+    height: 25,
     visibility: 'hidden'
   },
   arrows: {
@@ -769,23 +781,35 @@ export const SelectedCompoundList = memo(() => {
               <Grid item>
                 <IconButton
                   color="primary"
-                  size="small"
+                  size="medium"
                   // disabled={false || !previousItemData || !areArrowsVisible}
                   disabled={false}
                   onClick={handleClickOnUpArrow}
+                  className={classes.iconButton}
                 >
-                  <ArrowUpward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+                  <ArrowUpward
+                    className={classNames(
+                      areArrowsVisible ? classes.arrow : classes.invisArrow,
+                      areArrowsVisible && classes.arrowsHighlight
+                    )}
+                  />
                 </IconButton>
               </Grid>
               <Grid item>
                 <IconButton
                   color="primary"
-                  size="small"
+                  size="medium"
                   // disabled={false || !nextItemData || !areArrowsVisible}
                   disabled={false}
                   onClick={handleClickOnDownArrow}
+                  className={classes.iconButton}
                 >
-                  <ArrowDownward className={areArrowsVisible ? classes.arrow : classes.invisArrow} />
+                  <ArrowDownward
+                    className={classNames(
+                      areArrowsVisible ? classes.arrow : classes.invisArrow,
+                      areArrowsVisible && classes.arrowsHighlight
+                    )}
+                  />
                 </IconButton>
               </Grid>
             </Grid>

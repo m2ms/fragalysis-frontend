@@ -105,11 +105,19 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: compoundsColors.apricot.color
   },
   textField: {
-    // marginLeft: theme.spacing(1),
+    marginLeft: theme.spacing(0.5),
     // marginRight: theme.spacing(1),
-    width: 70,
+    width: 90,
+    borderRadius: 10,
+
     '& .MuiFormLabel-root': {
       paddingLeft: theme.spacing(1)
+    },
+    '& .MuiInput-underline:before': {
+      borderBottom: '0px solid'
+    },
+    '& .MuiInput-underline:after': {
+      borderBottom: '0px solid'
     }
   },
   selectedInput: {
@@ -231,6 +239,14 @@ export const SelectedCompoundList = memo(() => {
     [compoundsColors.green.key]: greenInput,
     [compoundsColors.purple.key]: purpleInput,
     [compoundsColors.apricot.key]: apricotInput
+  };
+
+  const inputRefs = {
+    [compoundsColors.blue.key]: useRef(),
+    [compoundsColors.red.key]: useRef(),
+    [compoundsColors.green.key]: useRef(),
+    [compoundsColors.purple.key]: useRef(),
+    [compoundsColors.apricot.key]: useRef()
   };
 
   const compoundColors = useSelector(state => state.datasetsReducers.compoundColorByDataset);
@@ -728,35 +744,41 @@ export const SelectedCompoundList = memo(() => {
           <Grid container direction="row" justify="space-between" alignItems="center">
             {Object.keys(compoundsColors).map(item => (
               <>
-                <Grid item key={`${item}-chckbox`}>
-                  <Checkbox
-                    className={classes.classCheckbox}
-                    key={`CHCK_${item}`}
-                    value={`${item}`}
-                    onChange={e => dispatch(onClickFilterClassCheckBox(e))}
-                    checked={colorFilterSettings.hasOwnProperty(item)}
-                  ></Checkbox>
-                </Grid>
                 <Grid item key={item}>
                   <TextField
                     InputProps={{
                       readOnly: editedColorGroup !== item,
-                      startAdornment: (
-                        <InputAdornment position="start">
+                      endAdornment: (
+                        <InputAdornment position="end">
                           <IconButton
                             className={
                               editedColorGroup !== item ? classes.editClassNameIcon : classes.editClassNameIconSelected
                             }
                             color={'inherit'}
                             value={`${item}`}
-                            onClick={e => dispatch(onStartEditColorClassName(e))}
+                            onClick={e => {
+                              dispatch(onStartEditColorClassName(e));
+                              inputRefs[item].current.focus();
+                            }}
                           >
                             <Edit />
                           </IconButton>
                         </InputAdornment>
+                      ),
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Checkbox
+                            className={classes.classCheckbox}
+                            key={`CHCK_${item}`}
+                            value={`${item}`}
+                            onChange={e => dispatch(onClickFilterClassCheckBox(e))}
+                            checked={colorFilterSettings.hasOwnProperty(item)}
+                          ></Checkbox>
+                        </InputAdornment>
                       )
                     }}
                     autoComplete="off"
+                    inputRef={inputRefs[item]}
                     id={`${item}`}
                     key={`CLASS_${item}`}
                     variant="standard"
@@ -765,7 +787,6 @@ export const SelectedCompoundList = memo(() => {
                       classes[item],
                       colorFilterSettings.hasOwnProperty(item) && classes.selectedInput
                     )}
-                    label={compoundsColors[item].text}
                     onChange={e => dispatch(onChangeCompoundClassValue(e))}
                     onKeyDown={e => dispatch(onKeyDownCompoundClass(e))}
                     // onKeyDown={e => dispatch(onKeyDownFilterClass(e))}

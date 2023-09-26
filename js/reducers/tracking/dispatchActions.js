@@ -161,7 +161,8 @@ import { MAP_TYPE } from '../ngl/constants';
 import {
   removeSelectedTag,
   addSelectedTag,
-  loadMoleculesAndTags
+  loadMoleculesAndTags,
+  loadMoleculesAndTagsNew
 } from '../../components/preview/tags/redux/dispatchActions';
 import { turnSide } from '../../components/preview/viewerControls/redux/actions';
 import { getQualityOffActions } from './utils';
@@ -1341,7 +1342,7 @@ const loadAllDatasets = (orderedActionList, target_on, stage) => async (dispatch
 };
 
 const loadAllMolecules = target_on => async (dispatch, getState) => {
-  await dispatch(loadMoleculesAndTags(target_on));
+  await dispatch(loadMoleculesAndTagsNew(target_on));
 };
 
 export const restoreSitesActions = orderedActionList => (dispatch, getState) => {

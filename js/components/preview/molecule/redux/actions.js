@@ -34,3 +34,8 @@ export const setSearchStringOfHitNavigator = (searchStringHitNavigator) => ({
   type: constants.SET_SEARCH_STRING_HIT_NAVIGATOR,
   payload: searchStringHitNavigator
 });
+
+export const setLigandArray = (representation, id ) => ({
+  type: constants.SET_LIGAND,
+  payload: {representation, moleculeId}
+});

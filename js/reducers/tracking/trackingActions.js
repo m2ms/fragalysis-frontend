@@ -1443,6 +1443,7 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
         object_id: action.objectInViewID,
         oldRepresentation: action.oldRepresentation,
         newRepresentation: action.newRepresentation,
+        representation_id: action.representationID,
         text: `${objectType} of ${action.objectInViewID} ${actionDescription.CHANGED} from value: ${oldRepresentationName} to value: ${newRepresentationName}`
       };
     } else if (action.type === nglConstants.SET_BACKGROUND_COLOR) {

@@ -7,7 +7,8 @@ export const INITIAL_STATE = {
 
   // disables NGL control buttons for molecules
   disableNglControlButtons: {}, // moleculeID.nglButtonDisableState,
-  searchStringLHS: ''
+  searchStringLHS: '',
+  selectedLigands: []
 };
 
 export const molecule = (state = INITIAL_STATE, action = {}) => {
@@ -72,6 +73,14 @@ export const molecule = (state = INITIAL_STATE, action = {}) => {
       return {
         ...state,
         searchStringLHS: action.payload
+      };
+    }
+
+    case constants.SET_LIGAND: {
+      const {representation, representationUuid } = action.payload;
+      return {
+        ...state,
+        selectedLigands: action.payload
       };
     }
 

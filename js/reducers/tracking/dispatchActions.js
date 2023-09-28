@@ -168,6 +168,7 @@ import {
 } from '../../components/preview/tags/redux/dispatchActions';
 import { turnSide } from '../../components/preview/viewerControls/redux/actions';
 import { getQualityOffActions } from './utils';
+import { setLigandArray } from '../../components/preview/molecule/redux/actions';
 
 export const addCurrentActionsListToSnapshot = (snapshot, project, nglViewList) => async (dispatch, getState) => {
   let projectID = project && project.projectID;
@@ -447,6 +448,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
     getCurrentActionList(
       orderedActionList,
       actionType.REPRESENTATION_UPDATED,
+      getCollectionOfDatasetOfRepresentation(currentobjectsInView),
+      currentActions
+    );
+
+    getCurrentActionList(
+      orderedActionList,
+      actionType.REPRESENTATION_CHANGED,
       getCollectionOfDatasetOfRepresentation(currentobjectsInView),
       currentActions
     );
@@ -1623,7 +1631,7 @@ const restoreAllSelectionByTypeActions = (moleculesAction, stage, isSelection) =
 
 export const restoreRepresentationActions = (moleculesAction, stages) => (dispatch, getState) => {
   const nglView = stages.find(view => view.id === VIEWS.MAJOR_VIEW);
-
+  const selectedLigand = [];
   let representationsActions = moleculesAction.filter(action => action.type === actionType.REPRESENTATION_ADDED);
   if (representationsActions) {
     representationsActions.forEach(action => {
@@ -1632,13 +1640,34 @@ export const restoreRepresentationActions = (moleculesAction, stages) => (dispat
     });
   }
 
-  let representationsChangesActions = moleculesAction.filter(
+  let representationsUpdateActions = moleculesAction.filter(
     action => action.type === actionType.REPRESENTATION_UPDATED
   );
-  if (representationsChangesActions) {
-    representationsChangesActions.forEach(action => {
+  if (representationsUpdateActions) {
+    representationsUpdateActions.forEach(action => {
       //here the object id is actually protein_code_object_type and is identifier in NGL view so it's ok to use object_id in here
       dispatch(updateRepresentation(true, action.change, action.object_id, action.representation, nglView));
+    });
+  }
+
+  let representationsChangesActions = moleculesAction.filter(
+    action => action.type === actionType.REPRESENTATION_CHANGED
+  );
+
+  if (representationsChangesActions) {
+    representationsChangesActions.forEach(action => {
+      selectedLigand.push(action.newRepresentation);
+      //here the object id is actually protein_code_object_type and is identifier in NGL view so it's ok to use object_id in here
+
+      dispatch(
+        changeComponentRepresentation(
+          action.object_id,
+          action.oldRepresentation,
+          action.newRepresentation,
+          action.newRepresentation.uuid
+        )
+      );
+      dispatch(setLigandArray(selectedLigand, action?.newRepresentation.uuid));
     });
   }
 };

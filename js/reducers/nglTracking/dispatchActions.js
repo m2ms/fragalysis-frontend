@@ -333,6 +333,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList) => async (d
       currentActions
     );
 
+    getCurrentActionList(
+      orderedActionList,
+      actionType.REPRESENTATION_CHANGED,
+      getCollectionOfDatasetOfRepresentation(currentobjectsInView),
+      currentActions
+    );
+
     if (nglViewList) {
       let nglStateList = nglViewList.map(nglView => {
         return { id: nglView.id, orientation: nglView.stage.viewerControls.getOrientation() };

@@ -61,11 +61,17 @@ export const removeComponentRepresentation = (objectInViewID, representation, sk
   skipTracking
 });
 
-export const changeComponentRepresentation = (objectInViewID, oldRepresentation, newRepresentation) => ({
+export const changeComponentRepresentation = (
+  objectInViewID,
+  oldRepresentation,
+  newRepresentation,
+  representationID
+) => ({
   type: CONSTANTS.CHANGE_COMPONENT_REPRESENTATION,
   oldRepresentation,
   newRepresentation,
-  objectInViewID
+  objectInViewID,
+  representationID
 });
 
 export const setNglViewParams = (key, value, stage = undefined, objectId = undefined) => {

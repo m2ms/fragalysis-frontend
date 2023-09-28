@@ -1,4 +1,4 @@
-import React, { useContext, memo } from 'react';
+import React, { useContext, memo, useEffect } from 'react';
 import { Drawer } from '../../../common/Navigation/Drawer';
 import { makeStyles, Grid, IconButton, Select } from '@material-ui/core';
 import TreeView from '@material-ui/lab/TreeView';
@@ -14,6 +14,7 @@ import {
   updateComponentRepresentationVisibilityAll,
   changeComponentRepresentation
 } from '../../../../reducers/ngl/actions';
+import { setLigandArray } from '../../molecule/redux/actions';
 import { deleteObject, checkRemoveFromDensityList } from '../../../../reducers/ngl/dispatchActions';
 import { MOL_REPRESENTATION, OBJECT_TYPE, SELECTION_TYPE } from '../../../nglView/constants';
 import { VIEWS } from '../../../../constants/constants';
@@ -35,7 +36,34 @@ export default memo(({ open, onClose }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
+  const ligandArray = useSelector(state => state.previewReducers.molecule.selectedLigands);
   const { getNglView } = useContext(NglContext);
+
+  console.log('objectsInView2', objectsInView);
+  console.log('ligandArray', ligandArray);
+
+  const selectedLigand = [];
+
+  Object.keys(objectsInView)
+    .filter(
+      item =>
+        objectsInView[item].display_div === VIEWS.MAJOR_VIEW &&
+        objectsInView[item].selectionType !== SELECTION_TYPE.VECTOR
+    )
+    .sort((a, b) => {
+      return a.localeCompare(b);
+    })
+    .map(
+      parentItem =>
+        objectsInView[parentItem].representations &&
+        objectsInView[parentItem].representations
+          .sort((a, b) => (a.lastKnownID > b.lastKnownID ? 1 : -1))
+          .map((representation, index) => {
+            selectedLigand.push([representation]);
+          })
+    );
+
+  console.log('selectedLigand', selectedLigand);
 
   const [editMenuAnchors, setEditMenuAnchors] = React.useState({});
 
@@ -88,7 +116,16 @@ export default memo(({ open, onClose }) => {
     // remove previous representation from NGL
     removeRepresentation(representation, parentKey, true);
 
-    dispatch(changeComponentRepresentation(parentKey, oldRepresentation, newRepresentation));
+    dispatch(changeComponentRepresentation(parentKey, oldRepresentation, newRepresentation, representation.uuid));
+    const updateLigandArray = [];
+    selectedLigand.map(ligand => {
+      if (ligand[0].lastKnownID === representation.lastKnownID) {
+        updateLigandArray.push(newRepresentation);
+      } else {
+        updateLigandArray.push(ligand[0]);
+      }
+    });
+    dispatch(setLigandArray(updateLigandArray, representation.uuid));
   };
 
   const addMolecularRepresentation = (parentKey, e) => {

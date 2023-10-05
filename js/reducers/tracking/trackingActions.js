@@ -855,7 +855,7 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
         let objectType = actionObjectType.MOLECULE;
         let molId = action.molId;
         let mol = dispatch(getMoleculeForId(molId));
-        let objectName = mol.protein_code;
+        let objectName = mol.code;
 
         trackAction = {
           type: actionType.MOLECULE_SELECTED,
@@ -873,7 +873,7 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
         let objectType = actionObjectType.MOLECULE;
         let molId = action.molId;
         let mol = dispatch(getMoleculeForId(molId));
-        let objectName = mol.protein_code;
+        let objectName = mol.code;
 
         trackAction = {
           type: actionType.MOLECULE_UNSELECTED,
@@ -1882,7 +1882,7 @@ const getTargetName = (targetId, state) => {
 const getMoleculeName = (moleculeId, state) => {
   const moleculeList = state.apiReducers.all_mol_lists;
   const molecule = moleculeList.find(molecule => molecule.id === moleculeId);
-  return molecule?.protein_code ?? '';
+  return molecule?.code ?? '';
 };
 
 const getTypeDescriptionOfSelectedAllAction = type => {

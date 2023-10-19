@@ -83,7 +83,9 @@ export const constants = {
 
   SET_TAG_DETAIL_VIEW: prefix + 'SET_TAG_DETAIL_VIEW',
 
-  SET_RESIZABLE_LAYOUT: prefix + 'SET_RESIZABLE_LAYOUT'
+  SET_RESIZABLE_LAYOUT: prefix + 'SET_RESIZABLE_LAYOUT',
+
+  SET_RHS_WIDTH: prefix + 'SET_RHS_WIDTH'
 };
 
 export const PREDEFINED_FILTERS = {

@@ -451,6 +451,10 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_RESIZABLE_LAYOUT:
       return Object.assign({}, state, { resizableLayout: action.payload });
 
+      case constants.SET_RHS_WIDTH:
+        return Object.assign({}, state, { rhsWidth: action.payload });
+  
+
     // Cases like: @@redux/INIT
     default:
       return state;

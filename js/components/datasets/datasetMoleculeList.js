@@ -106,7 +106,13 @@ const useStyles = makeStyles(theme => ({
   },
   gridItemList: {
     overflow: 'auto',
-    height: `calc(100% - ${theme.spacing(6)}px - ${theme.spacing(2)}px)`
+    height: `calc(98% - ${theme.spacing(6)}px - ${theme.spacing(2)}px)`,
+    width: '100%'
+  },
+  gridItemListSmallSize: {
+    overflow: 'auto',
+    height: `calc(85% - ${theme.spacing(6)}px - ${theme.spacing(2)}px)`,
+    width: '100%'
   },
   centered: {
     display: 'flex',
@@ -351,6 +357,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const isLockVisibleCompoundsDialogOpenGlobal = useSelector(
     state => state.datasetsReducers.isLockVisibleCompoundsDialogOpenGlobal
   );
+  const rhsWidth = useSelector(state => state.selectionReducers.rhsWidth);
 
   const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);
   const isLoadingMoleculeList = useSelector(state => state.datasetsReducers.isLoadingMoleculeList);
@@ -952,7 +959,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         )}
       </div>
       <Grid container direction="row" justify="flex-start" className={classes.container}>
-        <Grid item>
+        <Grid item style={{ width: '100%' }}>
           {/* Selection */}
           <Grid container direction="row" alignItems="center">
             {Object.keys(compoundsColors).map(item => (
@@ -1014,7 +1021,14 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         <Grid item>
           {/* Header */}
           {isLoadingMoleculeList === false && (
-            <Grid container justify="flex-start" direction="row" className={classes.molHeader} wrap="nowrap">
+            <Grid
+              container
+              justify="flex-start"
+              direction="row"
+              className={classes.molHeader}
+              wrap="nowrap"
+              style={{ width: '100%' }}
+            >
               <Grid item container justify="flex-start" direction="row">
                 <Tooltip title="Total count of compounds">
                   <Grid item className={classes.rank}>
@@ -1202,7 +1216,13 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         )}
         {isLoadingMoleculeList === false && currentMolecules.length > 0 && (
           <>
-            <Grid item className={classes.gridItemList} ref={scrollBarRef}>
+            <Grid
+              item
+              className={
+                rhsWidth > 480 || rhsWidth === undefined ? classes.gridItemList : classes.gridItemListSmallSize
+              }
+              ref={scrollBarRef}
+            >
               <InfiniteScroll
                 getScrollParent={() =>
                   dispatch(

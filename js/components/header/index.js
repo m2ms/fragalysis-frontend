@@ -17,7 +17,7 @@ import {
   Box,
   ButtonGroup,
   LinearProgress,
-  Tooltip  
+  Tooltip
 } from '@material-ui/core';
 import {
   PowerSettingsNew,
@@ -132,7 +132,7 @@ export default memo(
 
     const openNewProjectModal = useSelector(state => state.projectReducers.isProjectModalOpen);
     const isProjectModalLoading = useSelector(state => state.projectReducers.isProjectModalLoading);
-    
+
     const openSaveSnapshotModal = useSelector(state => state.snapshotReducers.openSavingDialog);
 
     const openDiscourseError = useSelector(state => state.apiReducers.open_discourse_error_modal);
@@ -278,49 +278,74 @@ export default memo(
                       window.location.reload();
                     }}
                   >
-                    Fragalysis: <b id={"headerNavbarTitle"}>{headerNavbarTitle}</b>
+                    Fragalysis: <b id={'headerNavbarTitle'}>{headerNavbarTitle}</b>
                   </Typography>
                 </Button>
-                {username !== null ? targetName !== undefined ?
-                <>
-                 {
-                 currentProject.authorID === null || currentProject.projectID === null || currentProject.authorID ===  userId ?
-                <Button
-                 onClick={() => {isProjectModalLoading === false ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false))) : dispatch(setProjectModalIsLoading(false)),
-                  openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : ''}} 
-                 key="newProject"
-                 color="primary"
-                 startIcon={<CreateNewFolder />}
-                >
-                   New project
-                </Button> 
-                :
-                <Button
-                 onClick={() => {openNewProjectModal === false ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false))) : dispatch(setProjectModalIsLoading(false)),
-                  openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : ''}} 
-                 key="newProject"
-                 color="primary"
-                 startIcon={<CreateNewFolder />}
-                >
-                   New project from snapshot
-                </Button>  }
-                {currentProject.projectID !== null ?
-                <Button
-                   key="saveSnapshot"
-                   color="primary"
-                   onClick={() => {dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']),
-                   openSaveSnapshotModal === false ? dispatch(setOpenSnapshotSavingDialog(true)) : dispatch(setOpenSnapshotSavingDialog(false)),
-                   openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '',
-                   isProjectModalLoading === true ? dispatch(setProjectModalIsLoading(false)) : ''), dispatch(setAddButton(false))}}
-                   startIcon={<Save />}
-                >
-                  Save
-                </Button> : ''}
-                </>
-                : '' : '' }
-                {headerButtons && headerButtons.map(item => item)} 
+                {username !== null ? (
+                  targetName !== undefined ? (
+                    <>
+                      {currentProject.authorID === null ||
+                      currentProject.projectID === null ||
+                      currentProject.authorID === userId ? (
+                        <Button
+                          onClick={() => {
+                            isProjectModalLoading === false
+                              ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false)))
+                              : dispatch(setProjectModalIsLoading(false));
+                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
+                          }}
+                          key="newProject"
+                          color="primary"
+                          startIcon={<CreateNewFolder />}
+                        >
+                          New project
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            openNewProjectModal === false
+                              ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false)))
+                              : dispatch(setProjectModalIsLoading(false));
+                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
+                          }}
+                          key="newProject"
+                          color="primary"
+                          startIcon={<CreateNewFolder />}
+                        >
+                          New project from snapshot
+                        </Button>
+                      )}
+                      {currentProject.projectID !== null ? (
+                        <Button
+                          key="saveSnapshot"
+                          color="primary"
+                          onClick={() => {
+                            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
+                            openSaveSnapshotModal === false
+                              ? dispatch(setOpenSnapshotSavingDialog(true))
+                              : dispatch(setOpenSnapshotSavingDialog(false));
+                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
+                            isProjectModalLoading === true ? dispatch(setProjectModalIsLoading(false)) : '';
+
+                            dispatch(setAddButton(false));
+                          }}
+                          startIcon={<Save />}
+                        >
+                          Save
+                        </Button>
+                      ) : (
+                        ''
+                      )}
+                    </>
+                  ) : (
+                    ''
+                  )
+                ) : (
+                  ''
+                )}
+                {headerButtons && headerButtons.map(item => item)}
                 <AddProjectDetail />
-             </ButtonGroup>
+              </ButtonGroup>
             </Grid>
             <Grid item>
               {discourseAvailable && (

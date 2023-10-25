@@ -224,7 +224,6 @@ export const unselectTag = tag => (dispatch, getState) => {
 //   });
 //   // }
 // };
-
 const getTagsForMol = (molId, tagList) => {
   const result = tagList.filter(t => t.site_observations.includes(molId));
   return result;

@@ -75,6 +75,7 @@ import useDisableNglControlButtons from './useDisableNglControlButtons';
 import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import { extractTargetFromURLParam } from '../utils';
 import { LoadingContext } from '../../loading';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -847,7 +848,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     return molecules;
   };
 
-  const openGlobalTagEditor = () => { };
+  const openGlobalTagEditor = () => {};
 
   // let filterSearchString = '';
   // const getSearchedString = () => {
@@ -898,7 +899,12 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
     <IconButton
       color={'inherit'}
-      disabled={!joinedMoleculeListsCopy.length || noTagsReceived || !tags.length}
+      disabled={
+        !joinedMoleculeListsCopy.length ||
+        noTagsReceived ||
+        !tags.length ||
+        DJANGO_CONTEXT['username'] === 'NOT_LOGGED_IN'
+      }
       onClick={event => {
         if (isTagEditorOpen === false) {
           setTagEditorAnchorEl(event.currentTarget);
@@ -1003,8 +1009,9 @@ export const MoleculeList = memo(({ hideProjects }) => {
                     {filter.priorityOrder.map(attr => (
                       <Grid item key={`Mol-Tooltip-${attr}`}>
                         <Tooltip
-                          title={`${filter.filter[attr].minValue}-${filter.filter[attr].maxValue} ${filter.filter[attr].order === 1 ? '\u2191' : '\u2193'
-                            }`}
+                          title={`${filter.filter[attr].minValue}-${filter.filter[attr].maxValue} ${
+                            filter.filter[attr].order === 1 ? '\u2191' : '\u2193'
+                          }`}
                           placement="top"
                         >
                           <Chip size="small" label={attr} style={{ backgroundColor: getAttrDefinition(attr).color }} />
@@ -1138,14 +1145,22 @@ export const MoleculeList = memo(({ hideProjects }) => {
           </Tooltip>
         )}
         <Grid style={{ marginTop: '4px' }}>
-          <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected: ${allSelectedMolecules ? allSelectedMolecules.length : 0
-            }`}</Typography>
+          <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected: ${
+            allSelectedMolecules ? allSelectedMolecules.length : 0
+          }`}</Typography>
         </Grid>
       </Grid>
       <Grid container spacing={1} direction="column" justifyContent="flex-start" className={classes.container}>
         <Grid item>
           {/* Header */}
-          <Grid container spacing={1} justifyContent="flex-start" direction="row" className={classes.molHeader} wrap="nowrap">
+          <Grid
+            container
+            spacing={1}
+            justifyContent="flex-start"
+            direction="row"
+            className={classes.molHeader}
+            wrap="nowrap"
+          >
             <Grid item container justifyContent="flex-start" direction="row">
               {Object.keys(moleculeProperty).map(key => (
                 <Grid item key={key} className={classes.rightBorder}>
@@ -1264,7 +1279,13 @@ export const MoleculeList = memo(({ hideProjects }) => {
             </Grid>
           </>
         )}
-        {moleculesAndTagsAreLoading && <Grid container direction="row" justifyContent="center"><Grid item><CircularProgress /></Grid></Grid>}
+        {moleculesAndTagsAreLoading && (
+          <Grid container direction="row" justifyContent="center">
+            <Grid item>
+              <CircularProgress />
+            </Grid>
+          </Grid>
+        )}
       </Grid>
     </Panel>
   );

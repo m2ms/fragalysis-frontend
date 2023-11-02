@@ -75,6 +75,7 @@ import useDisableNglControlButtons from './useDisableNglControlButtons';
 import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import { extractTargetFromURLParam } from '../utils';
 import { LoadingContext } from '../../loading';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -898,7 +899,12 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
     <IconButton
       color={'inherit'}
-      disabled={!joinedMoleculeListsCopy.length || noTagsReceived || !tags.length}
+      disabled={
+        !joinedMoleculeListsCopy.length ||
+        noTagsReceived ||
+        !tags.length ||
+        DJANGO_CONTEXT['username'] === 'NOT_LOGGED_IN'
+      }
       onClick={event => {
         if (isTagEditorOpen === false) {
           setTagEditorAnchorEl(event.currentTarget);

@@ -307,17 +307,13 @@ export const img_data_init = `<svg xmlns="http://www.w3.org/2000/svg" version="1
     <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="0.689655172413793s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform>
   </circle>  '</svg>`;
 
-const MoleculeView = memo(
+const ObservationCmpView = memo(
   ({
     imageHeight,
     imageWidth,
     data,
-    searchMoleculeGroup,
     index,
-    previousItemData,
-    nextItemData,
     setRef,
-    removeSelectedTypes,
     L,
     P,
     C,
@@ -327,12 +323,11 @@ const MoleculeView = memo(
     Q,
     V,
     I,
-    isTagEditorInvokedByMolecule,
-    isTagEditorOpen,
     selected,
     disableL,
     disableP,
-    disableC
+    disableC,
+    observations
   }) => {
     // const [countOfVectors, setCountOfVectors] = useState('-');
     // const [cmpds, setCmpds] = useState('-');
@@ -349,9 +344,6 @@ const MoleculeView = memo(
     const viewParams = useSelector(state => state.nglReducers.viewParams);
     const tagList = useSelector(state => state.apiReducers.tagList);
     const tagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
-    const tagCategories = useSelector(state => state.apiReducers.categoryList);
-
-    const assignTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
 
     const [tagEditModalOpenNew, setTagEditModalOpenNew] = useState(tagEditorOpen);
 
@@ -383,23 +375,6 @@ const MoleculeView = memo(
 
     const colourToggle = getRandomColor(data);
 
-    const getCalculatedProps = useCallback(
-      () => [
-        { name: moleculeProperty.mw, value: data.mw ?? 0 },
-        { name: moleculeProperty.logP, value: data.logp ?? 0 },
-        { name: moleculeProperty.tpsa, value: data.tpsa ?? 0 },
-        { name: moleculeProperty.ha, value: data.ha ?? 0 },
-        { name: moleculeProperty.hacc, value: data.hacc ?? 0 },
-        { name: moleculeProperty.hdon, value: data.hdon ?? 0 },
-        { name: moleculeProperty.rots, value: data.rots ?? 0 },
-        { name: moleculeProperty.rings, value: data.rings ?? 0 },
-        { name: moleculeProperty.velec, value: data.velec ?? 0 }
-        //   { name: moleculeProperty.vectors, value: countOfVectors },
-        //   { name: moleculeProperty.cpd, value: cmpds }
-      ],
-      [data.ha, data.hacc, data.hdon, data.logp, data.mw, data.rings, data.rots, data.tpsa, data.velec]
-    );
-
     const [densityModalOpen, setDensityModalOpen] = useState(false);
     const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
     const [tagPopoverOpen, setTagPopoverOpen] = useState(null);
@@ -407,8 +382,6 @@ const MoleculeView = memo(
     const moleculeImgRef = useRef(null);
 
     const open = tagPopoverOpen ? true : false;
-
-    let proteinData = data?.proteinData;
 
     const getDataForTagsTooltip = () => {
       const assignedTags = getAllTagsForMol(data, tagList);
@@ -1200,8 +1173,7 @@ const MoleculeView = memo(
                 </Tooltip>
               </Grid>
             </Grid>
-            <Grid item xs={12}>
-              {/* Molecule properties */}
+            {/* <Grid item xs={12}>
               <Grid
                 item
                 container
@@ -1215,7 +1187,7 @@ const MoleculeView = memo(
                   <Tooltip title={item.name} key={item.name}>
                     <Grid item className={classNames(classes.rightBorder, getValueMatchingClass(item))}>
                       {item.name === moleculeProperty.mw && Math.round(item.value)}
-                      {item.name === moleculeProperty.logP && Math.round(item.value) /*.toPrecision(1)*/}
+                      {item.name === moleculeProperty.logP && Math.round(item.value) }
                       {item.name === moleculeProperty.tpsa && Math.round(item.value)}
                       {item.name !== moleculeProperty.mw &&
                         item.name !== moleculeProperty.logP &&
@@ -1225,7 +1197,7 @@ const MoleculeView = memo(
                   </Tooltip>
                 ))}
               </Grid>
-            </Grid>
+            </Grid> */}
           </Grid>
           {/* Image */}
           <div
@@ -1276,5 +1248,5 @@ const MoleculeView = memo(
   }
 );
 
-MoleculeView.displayName = 'MoleculeView';
-export default MoleculeView;
+ObservationCmpView.displayName = 'ObservationCmpView';
+export default ObservationCmpView;

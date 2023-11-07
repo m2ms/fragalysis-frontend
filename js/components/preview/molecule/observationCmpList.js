@@ -288,6 +288,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
   const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
+  const obsCmpsToEditIds = useSelector(state => state.selectionReducers.obsCmpsToEdit);
   const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
 
   const object_selection = useSelector(state => state.selectionReducers.mol_group_selection);

@@ -50,13 +50,13 @@ import { MOL_TYPE } from '../redux/constants';
 import { DensityMapsModal } from '../modals/densityMapsModal';
 import { getRandomColor } from '../utils/color';
 import { DEFAULT_TAG_COLOR, getAllTagsForMol } from '../../tags/utils/tagUtils';
-import MoleculeSelectCheckbox from './moleculeSelectCheckbox';
 import useClipboard from 'react-use-clipboard';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import { Edit } from '@material-ui/icons';
 import { DJANGO_CONTEXT } from '../../../../utils/djangoContext';
 import { getFontColorByBackgroundColor } from '../../../../utils/colors';
+import MoleculeSelectCheckbox from '../moleculeView/moleculeSelectCheckbox';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -928,7 +928,7 @@ const ObservationCmpView = memo(
       });
     };
 
-    let moleculeTitle = data?.code.replace(new RegExp(`${target_on_name}-`, 'i'), '');
+    let moleculeTitle = data.smiles;
 
     const moleculeLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
       type => disableMoleculeNglControlButtons[type]

@@ -447,6 +447,27 @@ export const removeFromMolListToEdit = molId => {
   };
 };
 
+export const setObsCmpListToEdit = list => {
+  return {
+    type: constants.SET_OBS_MOL_LIST_TO_EDIT,
+    list: list
+  };
+};
+
+export const appendToObsCmpListToEdit = cmpId => {
+  return {
+    type: constants.APPEND_TO_OBS_MOL_LIST_TO_EDIT,
+    cmpId: cmpId
+  };
+};
+
+export const removeFromObsCmpListToEdit = cmpId => {
+  return {
+    type: constants.REMOVE_FROM_OBS_MOL_LIST_TO_EDIT,
+    molId: cmpId
+  };
+};
+
 export const setTagToEdit = tag => {
   return {
     type: constants.SET_TAG_TO_EDIT,

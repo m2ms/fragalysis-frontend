@@ -39,6 +39,8 @@ export const INITIAL_STATE = {
   currentVector: null, // selected vector smile (ID) of compoundsOfVectors
   moleculesToEdit: [],
 
+  obsCmpsToEdit: [],
+
   // tags
   tagToEdit: null,
   //display all molecules in hit navigator regardless of the tag selection
@@ -424,6 +426,16 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
     case constants.REMOVE_FROM_MOL_LIST_TO_EDIT:
       let reducedMolListToEdit = state.moleculesToEdit.filter(mid => mid !== action.molId);
       return { ...state, moleculesToEdit: [...reducedMolListToEdit] };
+
+    case constants.SET_OBS_MOL_LIST_TO_EDIT:
+      return { ...state, obsCmpsToEdit: [...action.list] };
+
+    case constants.APPEND_TO_OBS_MOL_LIST_TO_EDIT:
+      return { ...state, obsCmpsToEdit: [...state.obsCmpsToEdit, action.cmpId] };
+
+    case constants.REMOVE_FROM_OBS_MOL_LIST_TO_EDIT:
+      let reducedObsCmpListToEdit = state.obsCmpsToEdit.filter(cid => cid !== action.cmpId);
+      return { ...state, obsCmpsToEdit: [...reducedObsCmpListToEdit] };
 
     case constants.SET_TAG_TO_EDIT: {
       return Object.assign({}, state, {

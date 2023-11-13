@@ -46,7 +46,10 @@ export const INITIAL_STATE = {
   //display all molecules in hit navigator regardless of the tag selection
   displayAllMolecules: false,
   displayUntaggedMolecules: false,
-  nextXMolecules: 0
+  nextXMolecules: 0,
+
+  isObservationDialogOpen: false,
+  observationsForLHSCmp: []
 };
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
@@ -151,6 +154,12 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       let diminishedComplexList = new Set(state.complexList);
       diminishedComplexList.delete(action.item.id);
       return Object.assign({}, state, { complexList: [...diminishedComplexList] });
+
+    case constants.SET_OPEN_OBSERVATIONS_DIALOG:
+      return { ...state, isObservationDialogOpen: action.isOpen };
+
+    case constants.SET_OBSERVATIONS_FOR_LHS_CMP:
+      return { ...state, observationsForLHSCmp: [...action.observations] };
 
     case constants.SET_SURFACE_LIST:
       let newSurfaceList = new Set();

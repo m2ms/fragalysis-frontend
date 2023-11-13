@@ -405,6 +405,20 @@ export const setTagEditorOpen = isOpen => {
   };
 };
 
+export const setOpenObservationsDialog = isOpen => {
+  return {
+    type: constants.SET_OPEN_OBSERVATIONS_DIALOG,
+    isOpen: isOpen
+  };
+};
+
+export const setObservationsForLHSCmp = observations => {
+  return {
+    type: constants.SET_OBSERVATIONS_FOR_LHS_CMP,
+    observations: observations
+  };
+};
+
 export const setMoleculeForTagEdit = molId => {
   return {
     type: constants.SET_MOLECULE_FOR_TAG_EDIT,
@@ -464,7 +478,7 @@ export const appendToObsCmpListToEdit = cmpId => {
 export const removeFromObsCmpListToEdit = cmpId => {
   return {
     type: constants.REMOVE_FROM_OBS_MOL_LIST_TO_EDIT,
-    molId: cmpId
+    cmpId: cmpId
   };
 };
 

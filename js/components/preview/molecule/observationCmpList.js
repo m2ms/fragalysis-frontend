@@ -77,6 +77,7 @@ import { extractTargetFromURLParam } from '../utils';
 import { LoadingContext } from '../../loading';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import ObservationCmpView from './observationCmpView';
+import { ObservationsDialog } from './observationsDialog';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -291,6 +292,8 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   const obsCmpsToEditIds = useSelector(state => state.selectionReducers.obsCmpsToEdit);
   const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
 
+  const isObservationDialogOpen = useSelector(state => state.selectionReducers.isObservationDialogOpen);
+
   const object_selection = useSelector(state => state.selectionReducers.mol_group_selection);
 
   const all_mol_lists = useSelector(state => state.apiReducers.all_mol_lists);
@@ -394,7 +397,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     proteinList,
     molForTagEditId,
     isTagEditorOpen,
-    moleculesToEditIds
+    obsCmpsToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, complexList), [
@@ -403,7 +406,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     complexList,
     molForTagEditId,
     isTagEditorOpen,
-    moleculesToEditIds
+    obsCmpsToEditIds
   ]);
   joinedMoleculeLists = useMemo(
     () => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, fragmentDisplayList),
@@ -414,7 +417,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
       fragmentDisplayList,
       molForTagEditId,
       isTagEditorOpen,
-      moleculesToEditIds
+      obsCmpsToEditIds
     ]
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -424,7 +427,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     surfaceList,
     molForTagEditId,
     isTagEditorOpen,
-    moleculesToEditIds
+    obsCmpsToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, densityList), [
@@ -433,7 +436,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     densityList,
     molForTagEditId,
     isTagEditorOpen,
-    moleculesToEditIds
+    obsCmpsToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   joinedMoleculeLists = useMemo(() => addSelectedMoleculesFromUnselectedSites(joinedMoleculeLists, vectorOnList), [
@@ -442,7 +445,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     vectorOnList,
     molForTagEditId,
     isTagEditorOpen,
-    moleculesToEditIds
+    obsCmpsToEditIds
   ]);
 
   if (isActiveFilter) {
@@ -470,8 +473,8 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     }
   }
 
-  if (moleculesToEditIds && moleculesToEditIds.length > 0 && isGlobalEdit) {
-    moleculesToEditIds.forEach(mid => {
+  if (obsCmpsToEditIds && obsCmpsToEditIds.length > 0 && isGlobalEdit) {
+    obsCmpsToEditIds.forEach(mid => {
       if (!joinedMoleculeLists.some(m => m.id === mid)) {
         const tagEditMol = dispatch(getMoleculeForId(mid));
         if (tagEditMol) {
@@ -567,6 +570,12 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     () =>
       allMoleculesList.filter(molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
     [allMoleculesList, moleculesToEditIds, molForTagEditId]
+  );
+
+  const allSelectedLHSCmps = useMemo(
+    () =>
+      allMoleculesList.filter(molecule => obsCmpsToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
+    [allMoleculesList, obsCmpsToEditIds, molForTagEditId]
   );
 
   let currentMolecules = joinedMoleculeLists.slice(0, listItemOffset);
@@ -976,6 +985,9 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
           setIsOpenLPCAlert(false);
         }}
       />
+      {isObservationDialogOpen && (
+        <ObservationsDialog open={isObservationDialogOpen} anchorEl={tagEditorAnchorEl} ref={tagEditorRef} />
+      )}
       {isTagEditorOpen && (
         <TagEditor
           open={isTagEditorOpen}
@@ -1170,7 +1182,6 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
             </Grid>
           </Grid>
         </Grid>
-        {console.log('tagEditorRef', tagEditorRef)}
         {currentMolecules.length > 0 && (
           <>
             <Grid item className={classes.gridItemList} ref={scrollBarRef}>
@@ -1241,6 +1252,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                 </GroupNglControlButtonsContext.Provider> */}
                 {filteredLHSCompoundsList.map((data, index, array) => {
                   const molsForCmp = compoundMolecules[data.id];
+                  const selected = allSelectedLHSCmps.some(molecule => molecule.id === data.id);
 
                   return (
                     <ObservationCmpView
@@ -1259,7 +1271,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                       Q={containsAtLeastOne(qualityList, molsForCmp)}
                       V={containsAtLeastOne(vectorOnList, molsForCmp)}
                       I={containsAtLeastOne(informationList, molsForCmp)}
-                      selected={false}
+                      selected={selected}
                       disableL={false}
                       disableP={false}
                       disableC={false}

@@ -985,6 +985,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingVector, setLoadingVector] = useState(false);
+
     const onVector = () => {
       setLoadingVector(true);
       if (isVectorOn === false) {

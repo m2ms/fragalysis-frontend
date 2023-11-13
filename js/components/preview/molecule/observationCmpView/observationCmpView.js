@@ -62,6 +62,7 @@ import { DJANGO_CONTEXT } from '../../../../utils/djangoContext';
 import { getFontColorByBackgroundColor } from '../../../../utils/colors';
 import MoleculeSelectCheckbox from '../moleculeView/moleculeSelectCheckbox';
 import { isAnyObservationTurnedOnForCmp } from '../../../../reducers/selection/selectors';
+import { first } from 'lodash';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -357,14 +358,64 @@ const ObservationCmpView = memo(
     const { getNglView } = useContext(NglContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
 
-    const isLigandOn = L;
-    const isProteinOn = P;
-    const isComplexOn = C;
-    const isSurfaceOn = S;
-    const isDensityOn = D;
-    const isDensityCustomOn = D_C;
-    const isQualityOn = Q;
-    const isVectorOn = V;
+    const getFirstObservation = () => {
+      let result = null;
+
+      if (observations && observations.length > 0) {
+        result = observations[0];
+      }
+
+      return result;
+    };
+
+    const getAllObservationsSelectedInList = list => {
+      let result = [];
+
+      if (list && list.length > 0 && observations && observations.length > 0) {
+        observations.forEach(obs => {
+          const isPresent = list.some(id => obs.id === id);
+          if (isPresent) {
+            result.push(obs);
+          }
+        });
+      }
+
+      return result;
+    };
+
+    const isAtLeastOneObservationOnInList = list => {
+      let result = false;
+
+      if (list && list.length > 0 && observations && observations.length > 0) {
+        for (const obs of observations) {
+          const isPresent = list.some(id => obs.id === id);
+          if (isPresent) {
+            result = true;
+            break;
+          }
+        }
+      }
+
+      return result;
+    };
+
+    const fragmentDisplayList = useSelector(state => state.selectionReducers.fragmentDisplayList);
+    const proteinList = useSelector(state => state.selectionReducers.proteinList);
+    const complexList = useSelector(state => state.selectionReducers.complexList);
+    const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
+    const densityList = useSelector(state => state.selectionReducers.densityList);
+    const densityListCustom = useSelector(state => state.selectionReducers.densityListCustom);
+    const qualityList = useSelector(state => state.selectionReducers.qualityList);
+    const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
+
+    const isLigandOn = isAtLeastOneObservationOnInList(fragmentDisplayList);
+    const isProteinOn = isAtLeastOneObservationOnInList(proteinList);
+    const isComplexOn = isAtLeastOneObservationOnInList(complexList);
+    const isSurfaceOn = isAtLeastOneObservationOnInList(surfaceList);
+    const isDensityOn = isAtLeastOneObservationOnInList(densityList);
+    const isDensityCustomOn = isAtLeastOneObservationOnInList(densityListCustom);
+    const isQualityOn = isAtLeastOneObservationOnInList(qualityList);
+    const isVectorOn = isAtLeastOneObservationOnInList(vectorOnList);
     const hasAdditionalInformation = I;
 
     const [isCopied, setCopied] = useClipboard(data.smiles, { successDuration: 5000 });
@@ -690,18 +741,26 @@ const ObservationCmpView = memo(
       // }
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'ligand', async () => {
-          await dispatch(addLigand(stage, data, colourToggle, false, true, skipTracking));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            const color = getRandomColor(firstObs);
+            await dispatch(addLigand(stage, firstObs, color, false, true, skipTracking));
+          }
         })
       );
     };
 
     const removeSelectedLigand = (skipTracking = false) => {
-      dispatch(removeLigand(stage, data, skipTracking));
+      const selectedObs = getAllObservationsSelectedInList(fragmentDisplayList);
+      for (const obs of selectedObs) {
+        dispatch(removeLigand(stage, obs, skipTracking));
+      }
       selectedAll.current = false;
     };
 
     const [loadingAll, setLoadingAll] = useState(false);
     const [loadingLigand, setLoadingLigand] = useState(false);
+
     const onLigand = calledFromSelectAll => {
       setLoadingLigand(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -721,7 +780,10 @@ const ObservationCmpView = memo(
     };
 
     const removeSelectedProtein = (skipTracking = false) => {
-      dispatch(removeHitProtein(stage, data, colourToggle, skipTracking));
+      const selectedObs = getAllObservationsSelectedInList(proteinList);
+      for (const obs of selectedObs) {
+        dispatch(removeHitProtein(stage, obs, colourToggle, skipTracking));
+      }
       selectedAll.current = false;
     };
 
@@ -731,12 +793,17 @@ const ObservationCmpView = memo(
       // }
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'protein', async () => {
-          await dispatch(addHitProtein(stage, data, colourToggle, true, skipTracking));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            const color = getRandomColor(firstObs);
+            await dispatch(addHitProtein(stage, firstObs, color, true, skipTracking));
+          }
         })
       );
     };
 
     const [loadingProtein, setLoadingProtein] = useState(false);
+
     const onProtein = calledFromSelectAll => {
       setLoadingProtein(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -756,19 +823,27 @@ const ObservationCmpView = memo(
     };
 
     const removeSelectedComplex = (skipTracking = false) => {
-      dispatch(removeComplex(stage, data, colourToggle, skipTracking));
+      const selectedObs = getAllObservationsSelectedInList(complexList);
+      for (const obs of selectedObs) {
+        dispatch(removeComplex(stage, obs, colourToggle, skipTracking));
+      }
       selectedAll.current = false;
     };
 
     const addNewComplex = (skipTracking = false) => {
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'complex', async () => {
-          await dispatch(addComplex(stage, data, colourToggle, skipTracking));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            const color = getRandomColor(firstObs);
+            await dispatch(addComplex(stage, firstObs, color, skipTracking));
+          }
         })
       );
     };
 
     const [loadingComplex, setLoadingComplex] = useState(false);
+
     const onComplex = calledFromSelectAll => {
       setLoadingComplex(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -788,18 +863,26 @@ const ObservationCmpView = memo(
     };
 
     const removeSelectedSurface = () => {
-      dispatch(removeSurface(stage, data, colourToggle));
+      const selectedObs = getAllObservationsSelectedInList(surfaceList);
+      for (const obs of selectedObs) {
+        dispatch(removeSurface(stage, obs, colourToggle));
+      }
     };
 
     const addNewSurface = () => {
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'surface', async () => {
-          await dispatch(addSurface(stage, data, colourToggle));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            const color = getRandomColor(firstObs);
+            await dispatch(addSurface(stage, firstObs, color));
+          }
         })
       );
     };
 
     const [loadingSurface, setLoadingSurface] = useState(false);
+
     const onSurface = () => {
       setLoadingSurface(true);
       if (isSurfaceOn === false) {
@@ -835,6 +918,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingDensity, setLoadingDensity] = useState(false);
+
     const onDensity = () => {
       setLoadingDensity(true);
       if (isDensityOn === false && isDensityCustomOn === false) {
@@ -854,13 +938,20 @@ const ObservationCmpView = memo(
     };
 
     const removeSelectedQuality = () => {
-      dispatch(removeQuality(stage, data, colourToggle));
+      const selectedObs = getAllObservationsSelectedInList(qualityList);
+      for (const obs of selectedObs) {
+        dispatch(removeQuality(stage, obs, colourToggle));
+      }
     };
 
     const addNewQuality = () => {
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'ligand', async () => {
-          await dispatch(addQuality(stage, data, colourToggle));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            const color = getRandomColor(firstObs);
+            await dispatch(addQuality(stage, firstObs, color));
+          }
         })
       );
     };
@@ -874,13 +965,19 @@ const ObservationCmpView = memo(
     };
 
     const removeSelectedVector = () => {
-      dispatch(removeVector(stage, data));
+      const selectedObs = getAllObservationsSelectedInList(vectorOnList);
+      for (const obs of selectedObs) {
+        dispatch(removeVector(stage, obs));
+      }
     };
 
     const addNewVector = () => {
       dispatch(
         withDisabledMoleculeNglControlButton(currentID, 'vector', async () => {
-          await dispatch(addVector(stage, data));
+          const firstObs = getFirstObservation();
+          if (firstObs) {
+            await dispatch(addVector(stage, firstObs));
+          }
         })
       );
     };

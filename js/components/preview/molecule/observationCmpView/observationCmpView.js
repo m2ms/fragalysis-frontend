@@ -41,7 +41,11 @@ import {
   setMoleculeForTagEdit,
   setTagEditorOpen,
   appendToMolListToEdit,
-  removeFromMolListToEdit
+  removeFromMolListToEdit,
+  setOpenObservationsDialog,
+  setObservationsForLHSCmp,
+  appendToObsCmpListToEdit,
+  removeFromObsCmpListToEdit
 } from '../../../../reducers/selection/actions';
 import { moleculeProperty } from '../helperConstants';
 import { centerOnLigandByMoleculeID } from '../../../../reducers/ngl/dispatchActions';
@@ -57,6 +61,7 @@ import { Edit } from '@material-ui/icons';
 import { DJANGO_CONTEXT } from '../../../../utils/djangoContext';
 import { getFontColorByBackgroundColor } from '../../../../utils/colors';
 import MoleculeSelectCheckbox from '../moleculeView/moleculeSelectCheckbox';
+import { isAnyObservationTurnedOnForCmp } from '../../../../reducers/selection/selectors';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -345,6 +350,8 @@ const ObservationCmpView = memo(
     const tagList = useSelector(state => state.apiReducers.tagList);
     const tagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
 
+    const isObservationDialogOpen = useSelector(state => state.selectionReducers.isObservationDialogOpen);
+
     const [tagEditModalOpenNew, setTagEditModalOpenNew] = useState(tagEditorOpen);
 
     const { getNglView } = useContext(NglContext);
@@ -378,6 +385,10 @@ const ObservationCmpView = memo(
     const [densityModalOpen, setDensityModalOpen] = useState(false);
     const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
     const [tagPopoverOpen, setTagPopoverOpen] = useState(null);
+
+    const isAnyObservationOn = useSelector(state =>
+      isAnyObservationTurnedOnForCmp(state, observations?.map(obs => obs.id) || [])
+    );
 
     const moleculeImgRef = useRef(null);
 
@@ -875,6 +886,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingVector, setLoadingVector] = useState(false);
+
     const onVector = () => {
       setLoadingVector(true);
       if (isVectorOn === false) {
@@ -958,9 +970,9 @@ const ObservationCmpView = memo(
                 onChange={e => {
                   const result = e.target.checked;
                   if (result) {
-                    dispatch(appendToMolListToEdit(currentID));
+                    dispatch(appendToObsCmpListToEdit(currentID));
                   } else {
-                    dispatch(removeFromMolListToEdit(currentID));
+                    dispatch(removeFromObsCmpListToEdit(currentID));
                   }
                 }}
               />
@@ -1168,6 +1180,32 @@ const ObservationCmpView = memo(
                           })}
                         />
                       )}
+                    </Button>
+                  </Grid>
+                </Tooltip>
+                <Tooltip title="observations">
+                  <Grid item>
+                    <Button
+                      variant="outlined"
+                      className={classNames(classes.contColButton, {
+                        [classes.contColButtonSelected]: isAnyObservationOn
+                      })}
+                      onClick={() => {
+                        // setLoadingInspiration(true);
+
+                        if (!isObservationDialogOpen) {
+                          dispatch(setObservationsForLHSCmp(observations));
+                        }
+                        dispatch(setOpenObservationsDialog(!isObservationDialogOpen));
+
+                        if (setRef) {
+                          setRef(ref.current);
+                        }
+                        // setLoadingInspiration(false);
+                      }}
+                      disabled={false}
+                    >
+                      O
                     </Button>
                   </Grid>
                 </Tooltip>

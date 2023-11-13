@@ -767,6 +767,7 @@ const ObservationCmpView = memo(
 
     const [loadingAll, setLoadingAll] = useState(false);
     const [loadingLigand, setLoadingLigand] = useState(false);
+
     const onLigand = calledFromSelectAll => {
       setLoadingLigand(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -809,6 +810,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingProtein, setLoadingProtein] = useState(false);
+
     const onProtein = calledFromSelectAll => {
       setLoadingProtein(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -848,6 +850,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingComplex, setLoadingComplex] = useState(false);
+
     const onComplex = calledFromSelectAll => {
       setLoadingComplex(true);
       if (calledFromSelectAll === true && selectedAll.current === true) {
@@ -886,6 +889,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingSurface, setLoadingSurface] = useState(false);
+
     const onSurface = () => {
       setLoadingSurface(true);
       if (isSurfaceOn === false) {
@@ -921,6 +925,7 @@ const ObservationCmpView = memo(
     };
 
     const [loadingDensity, setLoadingDensity] = useState(false);
+
     const onDensity = () => {
       setLoadingDensity(true);
       if (isDensityOn === false && isDensityCustomOn === false) {

@@ -23,13 +23,15 @@ import { colourList } from './utils/color';
 import {
   setDeselectedAllByType,
   setOpenObservationsDialog,
-  setSelectedAllByType
+  setSelectedAllByType,
+  setTagEditorOpenObs
 } from '../../../reducers/selection/actions';
 import useDisableNglControlButtons from './useDisableNglControlButtons';
 import { Button, Panel } from '../../common';
 import SearchField from '../../common/Components/SearchField';
 import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import MoleculeView from './moleculeView';
+import { TagEditor } from '../tags/modal/tagEditor';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -142,6 +144,10 @@ export const ObservationsDialog = memo(
     const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
     const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
 
+    const isTagEditorOpenObs = useSelector(state => state.selectionReducers.tagEditorOpenedObs);
+
+    const tagEditorRef = useRef();
+
     const dispatch = useDispatch();
 
     const [tagEditorAnchorEl, setTagEditorAnchorEl] = useState(null);
@@ -156,7 +162,7 @@ export const ObservationsDialog = memo(
     }, [observationsDataList, searchString]);
 
     const allSelectedMolecules = observationsDataList.filter(
-      molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId
+      molecule => moleculesToEditIds.includes(molecule.id) /* || molecule.id === molForTagEditId*/
     );
 
     // TODO: refactor from this line (duplicity in datasetMoleculeList.js)
@@ -296,6 +302,10 @@ export const ObservationsDialog = memo(
 
     const groupNglControlButtonsDisabledState = useDisableNglControlButtons(allSelectedMolecules);
 
+    const anyControlButtonDisabled = Object.values(groupNglControlButtonsDisabledState).some(
+      buttonState => buttonState
+    );
+
     //  TODO refactor to this line
 
     return (
@@ -325,6 +335,15 @@ export const ObservationsDialog = memo(
             </Tooltip>
           ]}
         >
+          {isTagEditorOpenObs && (
+            <TagEditor
+              open={isTagEditorOpenObs}
+              closeDisabled={anyControlButtonDisabled}
+              setOpenDialog={setTagEditorOpenObs}
+              anchorEl={tagEditorAnchorEl}
+              ref={tagEditorRef}
+            />
+          )}
           {isLoadingInspirationListOfMolecules === false && moleculeList && (
             <>
               <Grid container justifyContent="flex-start" direction="row" className={classes.molHeader} wrap="nowrap">

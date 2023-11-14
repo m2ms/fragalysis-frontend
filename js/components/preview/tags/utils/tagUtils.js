@@ -120,6 +120,7 @@ export const augumentTagObjectWithId = (tag, tagId) => {
 
 export const getAllTagsForMol = (mol, tagList) => {
   const result = [];
+
   mol.tags_set &&
     mol.tags_set.forEach(tagId => {
       let tag = tagList.filter(t => t.id === tagId);
@@ -127,6 +128,24 @@ export const getAllTagsForMol = (mol, tagList) => {
         result.push(tag[0]);
       }
     });
+
+  return result;
+};
+
+export const getAllTagsForLHSCmp = (observations, tagList) => {
+  const result = [];
+
+  observations &&
+    observations.forEach(obs => {
+      obs.tags_set &&
+        obs.tags_set.forEach(tagId => {
+          let tag = tagList.filter(t => t.id === tagId);
+          if (tag && tag.length > 0 && !result.some(t => t.id === tag[0].id)) {
+            result.push(tag[0]);
+          }
+        });
+    });
+
   return result;
 };
 

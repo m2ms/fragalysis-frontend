@@ -2,7 +2,7 @@
  * Created by abradley on 14/03/2018.
  */
 
-import React, { memo, useEffect, useState, useRef, useContext, useCallback } from 'react';
+import React, { memo, useEffect, useState, useRef, useContext, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Grid, makeStyles, Tooltip, IconButton, Popper, Item, CircularProgress } from '@material-ui/core';
 import { Panel } from '../../../common';
@@ -39,7 +39,7 @@ import {
   setSelectedAll,
   setDeselectedAll,
   setMoleculeForTagEdit,
-  setTagEditorOpen,
+  setTagEditorOpenObs,
   appendToMolListToEdit,
   removeFromMolListToEdit
 } from '../../../../reducers/selection/actions';
@@ -348,12 +348,10 @@ const MoleculeView = memo(
 
     const viewParams = useSelector(state => state.nglReducers.viewParams);
     const tagList = useSelector(state => state.apiReducers.tagList);
-    const tagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
+    const tagEditorOpenObs = useSelector(state => state.selectionReducers.tagEditorOpenedObs);
     const tagCategories = useSelector(state => state.apiReducers.categoryList);
 
-    const assignTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
-
-    const [tagEditModalOpenNew, setTagEditModalOpenNew] = useState(tagEditorOpen);
+    const [tagEditModalOpenNew, setTagEditModalOpenNew] = useState(tagEditorOpenObs);
 
     const { getNglView } = useContext(NglContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
@@ -367,6 +365,11 @@ const MoleculeView = memo(
     const isQualityOn = Q;
     const isVectorOn = V;
     const hasAdditionalInformation = I;
+
+    const allMolecules = useSelector(state => state.apiReducers.all_mol_lists);
+
+    //for some reason when tags are changed for this molecule the data are stale so I need to retrieve them from list of all molecules
+    data = allMolecules.filter(mol => mol.id === data.id)[0];
 
     const [isCopied, setCopied] = useClipboard(data.smiles, { successDuration: 5000 });
 
@@ -410,14 +413,9 @@ const MoleculeView = memo(
 
     let proteinData = data?.proteinData;
 
-    const getDataForTagsTooltip = () => {
-      const assignedTags = getAllTagsForMol(data, tagList);
-      return assignedTags;
-    };
-
     useEffect(() => {
-      setTagEditModalOpenNew(tagEditorOpen);
-    }, [tagEditorOpen]);
+      setTagEditModalOpenNew(tagEditorOpenObs);
+    }, [tagEditorOpenObs]);
 
     const handlePopoverOpen = event => {
       setTagPopoverOpen(event.currentTarget);
@@ -425,6 +423,11 @@ const MoleculeView = memo(
 
     const handlePopoverClose = () => {
       setTagPopoverOpen(null);
+    };
+
+    const getDataForTagsTooltip = () => {
+      const assignedTags = getAllTagsForMol(data, tagList);
+      return assignedTags;
     };
 
     const resolveTagBackgroundColor = tag => {
@@ -448,7 +451,7 @@ const MoleculeView = memo(
     };
 
     const generateTagPopover = () => {
-      const allData = getDataForTagsTooltip();
+      const allData = getAllTagsForMol(data, tagList);
       const sortedData = [...allData].sort((a, b) => a.tag.localeCompare(b.tag));
 
       const modifiedObjects = sortedData.map(obj => {
@@ -510,12 +513,12 @@ const MoleculeView = memo(
                         onClick={() => {
                           if (tagEditModalOpenNew) {
                             setTagEditModalOpenNew(false);
-                            dispatch(setTagEditorOpen(!tagEditModalOpenNew));
+                            dispatch(setTagEditorOpenObs(!tagEditModalOpenNew));
                             dispatch(setMoleculeForTagEdit(null));
                           } else {
                             setTagEditModalOpenNew(true);
                             dispatch(setMoleculeForTagEdit(data.id));
-                            dispatch(setTagEditorOpen(true));
+                            dispatch(setTagEditorOpenObs(true));
                             if (setRef) {
                               setRef(ref.current);
                             }
@@ -572,12 +575,12 @@ const MoleculeView = memo(
                       onClick={() => {
                         if (tagEditModalOpenNew) {
                           setTagEditModalOpenNew(false);
-                          dispatch(setTagEditorOpen(!tagEditModalOpenNew));
+                          dispatch(setTagEditorOpenObs(!tagEditModalOpenNew));
                           dispatch(setMoleculeForTagEdit(null));
                         } else {
                           setTagEditModalOpenNew(true);
                           dispatch(setMoleculeForTagEdit(data.id));
-                          dispatch(setTagEditorOpen(true));
+                          dispatch(setTagEditorOpenObs(true));
                           if (setRef) {
                             setRef(ref.current);
                           }
@@ -594,7 +597,7 @@ const MoleculeView = memo(
               </Grid>
             )}
           </Typography>
-          {tagEditorOpen === false ? (
+          {tagEditorOpenObs === false ? (
             <Typography
               aria-owns={open ? 'mouse-over-popper' : undefined}
               aria-haspopup="true"
@@ -647,12 +650,12 @@ const MoleculeView = memo(
           onClick={() => {
             if (tagEditModalOpenNew) {
               setTagEditModalOpenNew(false);
-              dispatch(setTagEditorOpen(!tagEditModalOpenNew));
+              dispatch(setTagEditorOpenObs(!tagEditModalOpenNew));
               dispatch(setMoleculeForTagEdit(null));
             } else {
               setTagEditModalOpenNew(true);
               dispatch(setMoleculeForTagEdit(data.id));
-              dispatch(setTagEditorOpen(true));
+              dispatch(setTagEditorOpenObs(true));
               if (setRef) {
                 setRef(ref.current);
               }

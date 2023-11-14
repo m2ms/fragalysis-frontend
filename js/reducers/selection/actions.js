@@ -405,6 +405,13 @@ export const setTagEditorOpen = isOpen => {
   };
 };
 
+export const setTagEditorOpenObs = isOpen => {
+  return {
+    type: constants.SET_TAG_EDITOR_OPEN_OBS,
+    isOpen: isOpen
+  };
+};
+
 export const setOpenObservationsDialog = isOpen => {
   return {
     type: constants.SET_OPEN_OBSERVATIONS_DIALOG,
@@ -437,6 +444,13 @@ export const setIsTagGlobalEdit = isGlobalEdit => {
   return {
     type: constants.SET_IS_TAG_GLOBAL_EDIT,
     isGlobalEdit: isGlobalEdit
+  };
+};
+
+export const setIsLHSCmpTagEdit = isLHSCmpTagEdit => {
+  return {
+    type: constants.SET_IS_LHS_CMP_TAG_EDIT,
+    isLHSCmpTagEdit: isLHSCmpTagEdit
   };
 };
 

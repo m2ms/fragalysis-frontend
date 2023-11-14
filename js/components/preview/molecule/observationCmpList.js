@@ -568,13 +568,17 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
 
   const allSelectedMolecules = useMemo(
     () =>
-      allMoleculesList.filter(molecule => moleculesToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
+      allMoleculesList.filter(
+        molecule => moleculesToEditIds.includes(molecule.id) /* || molecule.id === molForTagEditId*/
+      ),
     [allMoleculesList, moleculesToEditIds, molForTagEditId]
   );
 
   const allSelectedLHSCmps = useMemo(
     () =>
-      allMoleculesList.filter(molecule => obsCmpsToEditIds.includes(molecule.id) || molecule.id === molForTagEditId),
+      allMoleculesList.filter(
+        molecule => obsCmpsToEditIds.includes(molecule.id) /* || molecule.id === molForTagEditId*/
+      ),
     [allMoleculesList, obsCmpsToEditIds, molForTagEditId]
   );
 

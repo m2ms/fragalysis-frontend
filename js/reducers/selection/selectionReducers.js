@@ -22,11 +22,13 @@ export const INITIAL_STATE = {
   moleculeAllSelection: [],
   moleculeAllTypeSelection: [],
   tagEditorOpened: false,
+  tagEditorOpenedObs: false,
   molForTagEdit: null,
   tagFilteringMode: false,
 
   selectedTagList: [],
   isGlobalEdit: false,
+  isLHSCmpTagEdit: false,
 
   compoundsOfVectors: null, // list of all vector's compounds to pick
   // compoundsOfVectors: {
@@ -240,6 +242,9 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_TAG_EDITOR_OPEN:
       return { ...state, tagEditorOpened: action.isOpen };
+
+    case constants.SET_TAG_EDITOR_OPEN_OBS:
+      return { ...state, tagEditorOpenedObs: action.isOpen };
 
     case constants.SET_MOLECULE_FOR_TAG_EDIT:
       return { ...state, molForTagEdit: action.molId };
@@ -471,6 +476,9 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_RESIZABLE_LAYOUT:
       return Object.assign({}, state, { resizableLayout: action.payload });
+
+    case constants.SET_IS_LHS_CMP_TAG_EDIT:
+      return { ...state, isLHSCmpTagEdit: action.isLHSCmpTagEdit };
 
     // Cases like: @@redux/INIT
     default:

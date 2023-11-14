@@ -45,7 +45,8 @@ import {
   setOpenObservationsDialog,
   setObservationsForLHSCmp,
   appendToObsCmpListToEdit,
-  removeFromObsCmpListToEdit
+  removeFromObsCmpListToEdit,
+  setIsLHSCmpTagEdit
 } from '../../../../reducers/selection/actions';
 import { moleculeProperty } from '../helperConstants';
 import { centerOnLigandByMoleculeID } from '../../../../reducers/ngl/dispatchActions';
@@ -53,7 +54,7 @@ import { SvgTooltip } from '../../../common';
 import { MOL_TYPE } from '../redux/constants';
 import { DensityMapsModal } from '../modals/densityMapsModal';
 import { getRandomColor } from '../utils/color';
-import { DEFAULT_TAG_COLOR, getAllTagsForMol } from '../../tags/utils/tagUtils';
+import { DEFAULT_TAG_COLOR, getAllTagsForLHSCmp, getAllTagsForMol } from '../../tags/utils/tagUtils';
 import useClipboard from 'react-use-clipboard';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
@@ -446,7 +447,7 @@ const ObservationCmpView = memo(
     const open = tagPopoverOpen ? true : false;
 
     const getDataForTagsTooltip = () => {
-      const assignedTags = getAllTagsForMol(data, tagList);
+      const assignedTags = getAllTagsForLHSCmp(observations, tagList);
       return assignedTags;
     };
 
@@ -547,7 +548,9 @@ const ObservationCmpView = memo(
                             setTagEditModalOpenNew(false);
                             dispatch(setTagEditorOpen(!tagEditModalOpenNew));
                             dispatch(setMoleculeForTagEdit(null));
+                            dispatch(setIsLHSCmpTagEdit(false));
                           } else {
+                            dispatch(setIsLHSCmpTagEdit(true));
                             setTagEditModalOpenNew(true);
                             dispatch(setMoleculeForTagEdit(data.id));
                             dispatch(setTagEditorOpen(true));
@@ -609,7 +612,9 @@ const ObservationCmpView = memo(
                           setTagEditModalOpenNew(false);
                           dispatch(setTagEditorOpen(!tagEditModalOpenNew));
                           dispatch(setMoleculeForTagEdit(null));
+                          dispatch(setIsLHSCmpTagEdit(false));
                         } else {
+                          dispatch(setIsLHSCmpTagEdit(true));
                           setTagEditModalOpenNew(true);
                           dispatch(setMoleculeForTagEdit(data.id));
                           dispatch(setTagEditorOpen(true));
@@ -684,7 +689,9 @@ const ObservationCmpView = memo(
               setTagEditModalOpenNew(false);
               dispatch(setTagEditorOpen(!tagEditModalOpenNew));
               dispatch(setMoleculeForTagEdit(null));
+              dispatch(setIsLHSCmpTagEdit(false));
             } else {
+              dispatch(setIsLHSCmpTagEdit(true));
               setTagEditModalOpenNew(true);
               dispatch(setMoleculeForTagEdit(data.id));
               dispatch(setTagEditorOpen(true));

@@ -55,19 +55,15 @@ import {
   setFilter,
   setMolListToEdit,
   setNextXMolecules,
-  setMoleculeForTagEdit
+  setMoleculeForTagEdit,
+  setTagEditorOpenObs
 } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import * as listType from '../../../constants/listTypes';
 import { useRouteMatch } from 'react-router-dom';
 import { setSortDialogOpen, setSearchStringOfHitNavigator } from './redux/actions';
 import { AlertModal } from '../../common/Modal/AlertModal';
-import {
-  setSelectedAllByType,
-  setDeselectedAllByType,
-  setTagEditorOpen,
-  setIsTagGlobalEdit
-} from '../../../reducers/selection/actions';
+import { setSelectedAllByType, setDeselectedAllByType, setIsTagGlobalEdit } from '../../../reducers/selection/actions';
 import { TagEditor } from '../tags/modal/tagEditor';
 import { getMoleculeForId, selectTag } from '../tags/redux/dispatchActions';
 import SearchField from '../../common/Components/SearchField';
@@ -284,7 +280,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
   const qualityList = useSelector(state => state.selectionReducers.qualityList);
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
   const informationList = useSelector(state => state.selectionReducers.informationList);
-  const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
+  const isTagEditorOpenObs = useSelector(state => state.selectionReducers.tagEditorOpenedObs);
   const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
   const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
@@ -300,7 +296,6 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
   const proteinsHasLoaded = useSelector(state => state.nglReducers.proteinsHasLoaded);
   const currentActionList = useSelector(state => state.trackingReducers.current_actions_list);
-  const assignTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
 
   const [predefinedFilter, setPredefinedFilter] = useState(filter !== undefined ? filter.predefined : DEFAULT_FILTER);
 
@@ -368,7 +363,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     joinedMoleculeLists,
     proteinList,
     molForTagEditId,
-    isTagEditorOpen,
+    isTagEditorOpenObs,
     moleculesToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -377,7 +372,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     joinedMoleculeLists,
     complexList,
     molForTagEditId,
-    isTagEditorOpen,
+    isTagEditorOpenObs,
     moleculesToEditIds
   ]);
   joinedMoleculeLists = useMemo(
@@ -388,7 +383,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
       joinedMoleculeLists,
       fragmentDisplayList,
       molForTagEditId,
-      isTagEditorOpen,
+      isTagEditorOpenObs,
       moleculesToEditIds
     ]
   );
@@ -398,7 +393,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     joinedMoleculeLists,
     surfaceList,
     molForTagEditId,
-    isTagEditorOpen,
+    isTagEditorOpenObs,
     moleculesToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -407,7 +402,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     joinedMoleculeLists,
     densityList,
     molForTagEditId,
-    isTagEditorOpen,
+    isTagEditorOpenObs,
     moleculesToEditIds
   ]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -416,7 +411,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
     joinedMoleculeLists,
     vectorOnList,
     molForTagEditId,
-    isTagEditorOpen,
+    isTagEditorOpenObs,
     moleculesToEditIds
   ]);
 
@@ -906,14 +901,14 @@ export const MoleculeList = memo(({ hideProjects }) => {
         DJANGO_CONTEXT['username'] === 'NOT_LOGGED_IN'
       }
       onClick={event => {
-        if (isTagEditorOpen === false) {
+        if (isTagEditorOpenObs === false) {
           setTagEditorAnchorEl(event.currentTarget);
           dispatch(setIsTagGlobalEdit(true));
-          dispatch(setTagEditorOpen(true));
+          dispatch(setTagEditorOpenObs(true));
         } else {
           setTagEditorAnchorEl(null);
           dispatch(setIsTagGlobalEdit(false));
-          dispatch(setTagEditorOpen(false));
+          dispatch(setTagEditorOpenObs(false));
         }
       }}
     >
@@ -976,11 +971,11 @@ export const MoleculeList = memo(({ hideProjects }) => {
           setIsOpenLPCAlert(false);
         }}
       />
-      {isTagEditorOpen && (
+      {isTagEditorOpenObs && (
         <TagEditor
-          open={isTagEditorOpen}
+          open={isTagEditorOpenObs}
           closeDisabled={anyControlButtonDisabled}
-          setOpenDialog={setTagEditorOpen}
+          setOpenDialog={setTagEditorOpenObs}
           anchorEl={tagEditorAnchorEl}
           ref={tagEditorRef}
         />
@@ -1230,7 +1225,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
                         sigmaaInfo={data?.proteinData?.sigmaa_info || null}
                         diffInfo={data?.proteinData?.diff_info || null}
                         isTagEditorInvokedByMolecule={isTagEditorInvokedByMolecule}
-                        isTagEditorOpen={isTagEditorInvokedByMolecule && isTagEditorOpen}
+                        isTagEditorOpen={isTagEditorInvokedByMolecule && isTagEditorOpenObs}
                         selected={selected}
                         disableL={selected && groupNglControlButtonsDisabledState.ligand}
                         disableP={selected && groupNglControlButtonsDisabledState.protein}

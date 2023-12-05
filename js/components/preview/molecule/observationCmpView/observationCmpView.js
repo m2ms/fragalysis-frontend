@@ -434,6 +434,23 @@ const ObservationCmpView = memo(
 
     const colourToggle = getRandomColor(data);
 
+    const getCalculatedProps = useCallback(
+      () => [
+        { name: moleculeProperty.mw, value: data.mw ?? 0 },
+        { name: moleculeProperty.logP, value: data.logp ?? 0 },
+        { name: moleculeProperty.tpsa, value: data.tpsa ?? 0 },
+        { name: moleculeProperty.ha, value: data.ha ?? 0 },
+        { name: moleculeProperty.hacc, value: data.hacc ?? 0 },
+        { name: moleculeProperty.hdon, value: data.hdon ?? 0 },
+        { name: moleculeProperty.rots, value: data.rots ?? 0 },
+        { name: moleculeProperty.rings, value: data.rings ?? 0 },
+        { name: moleculeProperty.velec, value: data.velec ?? 0 }
+        //   { name: moleculeProperty.vectors, value: countOfVectors },
+        //   { name: moleculeProperty.cpd, value: cmpds }
+      ],
+      [data.ha, data.hacc, data.hdon, data.logp, data.mw, data.rings, data.rots, data.tpsa, data.velec]
+    );
+
     const [densityModalOpen, setDensityModalOpen] = useState(false);
     const [moleculeTooltipOpen, setMoleculeTooltipOpen] = useState(false);
     const [tagPopoverOpen, setTagPopoverOpen] = useState(null);
@@ -711,10 +728,11 @@ const ObservationCmpView = memo(
 
     // componentDidMount
     useEffect(() => {
-      dispatch(getMolImage(data.id, MOL_TYPE.HIT, imageWidth, imageHeight)).then(i => {
+      const obs = getFirstObservation();
+      dispatch(getMolImage(obs.id, MOL_TYPE.HIT, imageWidth, imageHeight)).then(i => {
         setImg_data(i);
       });
-    }, [data.id, data.smiles, imageHeight, imageWidth, dispatch]);
+    }, [data.id, data.smiles, imageHeight, imageWidth, dispatch, getFirstObservation]);
 
     useEffect(() => {
       dispatch(getQualityInformation(data));
@@ -1045,6 +1063,7 @@ const ObservationCmpView = memo(
     };
 
     let moleculeTitle = data.smiles;
+    const moleculeTitleTruncated = moleculeTitle.substring(0, 20) + (moleculeTitle.length > 20 ? '...' : '');
 
     const moleculeLPCControlButtonDisabled = ['ligand', 'protein', 'complex'].some(
       type => disableMoleculeNglControlButtons[type]
@@ -1089,7 +1108,7 @@ const ObservationCmpView = memo(
             {/* Title label */}
             <Grid item xs={7}>
               <Tooltip title={moleculeTitle} placement="bottom-start">
-                <div className={classes.moleculeTitleLabel}>{moleculeTitle}</div>
+                <div className={classes.moleculeTitleLabel}>{moleculeTitleTruncated}</div>
               </Tooltip>
               {generateTagPopover()}
             </Grid>
@@ -1315,7 +1334,7 @@ const ObservationCmpView = memo(
                 </Tooltip>
               </Grid>
             </Grid>
-            {/* <Grid item xs={12}>
+            <Grid item xs={12}>
               <Grid
                 item
                 container
@@ -1329,7 +1348,7 @@ const ObservationCmpView = memo(
                   <Tooltip title={item.name} key={item.name}>
                     <Grid item className={classNames(classes.rightBorder, getValueMatchingClass(item))}>
                       {item.name === moleculeProperty.mw && Math.round(item.value)}
-                      {item.name === moleculeProperty.logP && Math.round(item.value) }
+                      {item.name === moleculeProperty.logP && Math.round(item.value)}
                       {item.name === moleculeProperty.tpsa && Math.round(item.value)}
                       {item.name !== moleculeProperty.mw &&
                         item.name !== moleculeProperty.logP &&
@@ -1339,7 +1358,7 @@ const ObservationCmpView = memo(
                   </Tooltip>
                 ))}
               </Grid>
-            </Grid> */}
+            </Grid>
           </Grid>
           {/* Image */}
           <div

@@ -388,15 +388,15 @@ const MoleculeView = memo(
 
     const getCalculatedProps = useCallback(
       () => [
-        { name: moleculeProperty.mw, value: data.mw ?? 0 },
-        { name: moleculeProperty.logP, value: data.logp ?? 0 },
-        { name: moleculeProperty.tpsa, value: data.tpsa ?? 0 },
-        { name: moleculeProperty.ha, value: data.ha ?? 0 },
-        { name: moleculeProperty.hacc, value: data.hacc ?? 0 },
-        { name: moleculeProperty.hdon, value: data.hdon ?? 0 },
-        { name: moleculeProperty.rots, value: data.rots ?? 0 },
-        { name: moleculeProperty.rings, value: data.rings ?? 0 },
-        { name: moleculeProperty.velec, value: data.velec ?? 0 }
+        // { name: moleculeProperty.mw, value: data.mw ?? 0 },
+        // { name: moleculeProperty.logP, value: data.logp ?? 0 },
+        // { name: moleculeProperty.tpsa, value: data.tpsa ?? 0 },
+        // { name: moleculeProperty.ha, value: data.ha ?? 0 },
+        // { name: moleculeProperty.hacc, value: data.hacc ?? 0 },
+        // { name: moleculeProperty.hdon, value: data.hdon ?? 0 },
+        // { name: moleculeProperty.rots, value: data.rots ?? 0 },
+        // { name: moleculeProperty.rings, value: data.rings ?? 0 },
+        // { name: moleculeProperty.velec, value: data.velec ?? 0 }
         //   { name: moleculeProperty.vectors, value: countOfVectors },
         //   { name: moleculeProperty.cpd, value: cmpds }
       ],

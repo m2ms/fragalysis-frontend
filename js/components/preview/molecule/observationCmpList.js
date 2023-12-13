@@ -304,6 +304,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   const categories = useSelector(state => state.apiReducers.categoryList);
 
   const lhsCompoundsList = useSelector(state => getLHSCompoundsList(state));
+  const visibleObservations = useSelector(state => selectJoinedMoleculeList(state));
 
   const proteinsHasLoaded = useSelector(state => state.nglReducers.proteinsHasLoaded);
 
@@ -329,29 +330,6 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   /*useEffect(() => {
       // setCurrentPage(0);
     }, [object_selection]);*/
-
-  let filteredLHSCompoundsList = useMemo(() => {
-    return lhsCompoundsList;
-  }, [lhsCompoundsList]);
-
-  let compoundMolecules = useMemo(() => {
-    const compoundMolecules = {};
-
-    filteredLHSCompoundsList.forEach(compound => {
-      const molsForCmp = allMoleculesList.filter(molecule => molecule.cmpd === compound.id);
-      compoundMolecules[compound.id] = molsForCmp.sort((a, b) => {
-        if (a.code < b.code) {
-          return -1;
-        }
-        if (a.code > b.code) {
-          return 1;
-        }
-        return 0;
-      });
-    });
-
-    return compoundMolecules;
-  }, [filteredLHSCompoundsList, allMoleculesList]);
 
   let joinedMoleculeLists = useMemo(() => {
     // const searchedString = currentActionList.find(action => action.type === 'SEARCH_STRING_HIT_NAVIGATOR');
@@ -499,7 +477,11 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   const wereMoleculesInitialized = useRef(false);
 
   useEffect(() => {
-    if ((proteinsHasLoaded === true || proteinsHasLoaded === null) && all_mol_lists.length > 0) {
+    if (
+      (proteinsHasLoaded === true || proteinsHasLoaded === null) &&
+      all_mol_lists?.length > 0 &&
+      lhsCompoundsList?.length > 0
+    ) {
       if (!directAccessProcessed && directDisplay && directDisplay.molecules && directDisplay.molecules.length > 0) {
         dispatch(applyDirectSelection(majorViewStage));
         wereMoleculesInitialized.current = true;
@@ -533,6 +515,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     }
   }, [
     list_type,
+    lhsCompoundsList,
     majorViewStage,
     dispatch,
     hideProjects,
@@ -735,6 +718,36 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
     return null;
   };
 
+  let filteredLHSCompoundsList = useMemo(() => {
+    const compounds = [];
+    lhsCompoundsList.forEach(compound => {
+      const molsForCmp = joinedMoleculeLists.filter(molecule => molecule.cmpd === compound.id);
+      if (molsForCmp.length > 0) {
+        compounds.push(compound);
+      }
+    });
+    return compounds;
+  }, [lhsCompoundsList, joinedMoleculeLists]);
+
+  let compoundMolecules = useMemo(() => {
+    const compoundMolecules = {};
+
+    filteredLHSCompoundsList.forEach(compound => {
+      const molsForCmp = allMoleculesList.filter(molecule => molecule.cmpd === compound.id);
+      compoundMolecules[compound.id] = molsForCmp.sort((a, b) => {
+        if (a.code < b.code) {
+          return -1;
+        }
+        if (a.code > b.code) {
+          return 1;
+        }
+        return 0;
+      });
+    });
+
+    return compoundMolecules;
+  }, [filteredLHSCompoundsList, allMoleculesList]);
+
   const isLigandOn = changeButtonClassname(fragmentDisplayList, joinedLigandMatchLength);
   const isProteinOn = changeButtonClassname(proteinList, joinedProteinMatchLength);
   const isComplexOn = changeButtonClassname(complexList, joinedComplexMatchLength);
@@ -935,7 +948,8 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
         }
       }}
       color={'inherit'}
-      disabled={/*!joinedMoleculeListsCopy.length || */ predefinedFilter !== 'none'}
+      // disabled={predefinedFilter !== 'none'}
+      disabled={true}
     >
       <Tooltip title="Filter/Sort">
         <FilterList />
@@ -1178,11 +1192,11 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
             wrap="nowrap"
           >
             <Grid item container justifyContent="flex-start" direction="row">
-              {Object.keys(moleculeProperty).map(key => (
+              {/* {Object.keys(moleculeProperty).map(key => (
                 <Grid item key={key} className={classes.rightBorder}>
                   {moleculeProperty[key]}
                 </Grid>
-              ))}
+              ))} */}
             </Grid>
           </Grid>
         </Grid>
@@ -1216,44 +1230,6 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                 }
                 useWindow={false}
               >
-                {/* <GroupNglControlButtonsContext.Provider value={groupNglControlButtonsDisabledState}>
-                  {currentMolecules.map((data, index, array) => {
-                    const selected = allSelectedMolecules.some(molecule => molecule.id === data.id);
-                    const isTagEditorInvokedByMolecule = data.id === molForTagEditId;
-
-                    return (
-                      <MoleculeView
-                        key={data.id}
-                        index={index}
-                        imageHeight={imgHeight}
-                        imageWidth={imgWidth}
-                        data={data}
-                        previousItemData={index > 0 && array[index - 1]}
-                        nextItemData={index < array?.length && array[index + 1]}
-                        setRef={setTagEditorAnchorEl}
-                        removeSelectedTypes={removeSelectedTypes}
-                        L={fragmentDisplayList.includes(data.id)}
-                        P={proteinList.includes(data.id)}
-                        C={complexList.includes(data.id)}
-                        S={surfaceList.includes(data.id)}
-                        D={densityList.includes(data.id)}
-                        D_C={densityListCustom.includes(data.id)}
-                        Q={qualityList.includes(data.id)}
-                        V={vectorOnList.includes(data.id)}
-                        I={informationList.includes(data.id)}
-                        eventInfo={data?.proteinData?.event_info || null}
-                        sigmaaInfo={data?.proteinData?.sigmaa_info || null}
-                        diffInfo={data?.proteinData?.diff_info || null}
-                        isTagEditorInvokedByMolecule={isTagEditorInvokedByMolecule}
-                        isTagEditorOpen={isTagEditorInvokedByMolecule && isTagEditorOpen}
-                        selected={selected}
-                        disableL={selected && groupNglControlButtonsDisabledState.ligand}
-                        disableP={selected && groupNglControlButtonsDisabledState.protein}
-                        disableC={selected && groupNglControlButtonsDisabledState.complex}
-                      />
-                    );
-                  })}
-                </GroupNglControlButtonsContext.Provider> */}
                 {filteredLHSCompoundsList.map((data, index, array) => {
                   const molsForCmp = compoundMolecules[data.id];
                   const selected = allSelectedLHSCmps.some(molecule => molecule.id === data.id);

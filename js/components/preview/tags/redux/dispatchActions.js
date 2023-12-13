@@ -218,6 +218,15 @@ export const loadMoleculesAndTagsNew = targetId => async (dispatch, getState) =>
       const siteObs = allMolecules.find(m => m.cmpd === c.id);
       c['smiles'] = siteObs ? siteObs.smiles : '';
     });
+    compounds.sort((a, b) => {
+      if (a.smiles < b.smiles) {
+        return -1;
+      }
+      if (a.smiles > b.smiles) {
+        return 1;
+      }
+      return 0;
+    });
     dispatch(setLHSCompoundsLIst([...compounds]));
   });
 };

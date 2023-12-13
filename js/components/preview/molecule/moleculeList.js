@@ -483,7 +483,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
         categories.length > 0
       ) {
         dispatch(initializeFilter(object_selection, joinedMoleculeLists));
-        dispatch(initializeMolecules(majorViewStage));
+        // dispatch(initializeMolecules(majorViewStage));
         wereMoleculesInitialized.current = true;
       }
       if (
@@ -494,7 +494,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
         noTagsReceived
       ) {
         dispatch(initializeFilter(object_selection, joinedMoleculeLists));
-        dispatch(initializeMolecules(majorViewStage));
+        // dispatch(initializeMolecules(majorViewStage));
         wereMoleculesInitialized.current = true;
       }
     }
@@ -1157,11 +1157,11 @@ export const MoleculeList = memo(({ hideProjects }) => {
             wrap="nowrap"
           >
             <Grid item container justifyContent="flex-start" direction="row">
-              {Object.keys(moleculeProperty).map(key => (
+              {/* {Object.keys(moleculeProperty).map(key => (
                 <Grid item key={key} className={classes.rightBorder}>
                   {moleculeProperty[key]}
                 </Grid>
-              ))}
+              ))} */}
             </Grid>
           </Grid>
         </Grid>

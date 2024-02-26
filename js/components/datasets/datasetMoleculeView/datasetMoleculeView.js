@@ -461,6 +461,7 @@ const DatasetMoleculeView = memo(
       // #1249 dataset molecules currently could use side observation molecule for some renders
       const allMolecules = useSelector(state => state.apiReducers.all_mol_lists);
       const [pdbData, setPdbData] = useState(null);
+      const [isCustomPdb, setIsCustomPdb] = useState(false);
       const isPdbAvailable = !!(data && (data.pdb_info || pdbData));
 
       useEffect(() => {
@@ -470,7 +471,8 @@ const DatasetMoleculeView = memo(
             setPdbData(molecule);
           }
         } else {
-          setPdbData(data.pdb_info);
+          setPdbData(data);
+          setIsCustomPdb(true);
         }
       }, [data, allMolecules]);
 

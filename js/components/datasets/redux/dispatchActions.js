@@ -299,10 +299,17 @@ export const loadDatasetCompoundsWithScores = (datasetsToLoad = null) => (dispat
           // -----> add 'site_observation_code' to molecules whereas '/compound-molecules' has more molecule info so far, can be removed later
           const compondMolecules = await api({ url: `${base_url}/api/compound-molecules/?compound_set=${dataset.id}` });
           const compondMoleculesMap = {};
-          compondMolecules.data.results.forEach(molecule => compondMoleculesMap[molecule.name] = molecule.site_observation_code);
+          compondMolecules.data.results.forEach(
+            molecule =>
+              (compondMoleculesMap[molecule.name] = {
+                site_observation_code: molecule.site_observation_code,
+                pdb_info: molecule.pdb_info
+              })
+          );
           response.data.results.forEach(molecule => {
             if (compondMoleculesMap.hasOwnProperty(molecule.name)) {
-              molecule['site_observation_code'] = compondMoleculesMap[molecule.name];
+              molecule['site_observation_code'] = compondMoleculesMap[molecule.name].site_observation_code;
+              molecule['pdb_info'] = compondMoleculesMap[molecule.name].pdb_info;
             }
           });
           // <-----
@@ -1331,7 +1338,14 @@ export const moveSelectedMoleculeSettings = (
       let representations = getRepresentationsByType(data.objectsInView, newItem, OBJECT_TYPE.PROTEIN, datasetID);
       promises.push(
         dispatch(
-          addDatasetHitProtein(stage, newItem, getRandomColor(newItem), datasetIdOfMolecule, skipTracking, representations)
+          addDatasetHitProtein(
+            stage,
+            newItem,
+            getRandomColor(newItem),
+            datasetIdOfMolecule,
+            skipTracking,
+            representations
+          )
         )
       );
     }

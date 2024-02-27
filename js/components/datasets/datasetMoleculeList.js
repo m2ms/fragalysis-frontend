@@ -428,9 +428,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   );
 
   const ligandList = useSelector(state => state.datasetsReducers.ligandLists[datasetID]);
-  // const proteinList = useSelector(state => state.datasetsReducers.proteinLists[datasetID]);
-  // const complexList = useSelector(state => state.datasetsReducers.complexLists[datasetID]);
-  // const surfaceList = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
+  const proteinListDataset = useSelector(state => state.datasetsReducers.proteinLists[datasetID]);
+  const complexListDataset = useSelector(state => state.datasetsReducers.complexLists[datasetID]);
+  const surfaceListDataset = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
   // #1249 dataset molecules currently could use side observation molecule for some renders
   const proteinList = useSelector(state => state.selectionReducers.proteinList);
   const complexList = useSelector(state => state.selectionReducers.complexList);
@@ -656,7 +656,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         <Tooltip title="Filter/Sort">
           <>
             {/* fontSize does not change font here, but it disqualifies default font size so we do not need to !important */}
-            {isActiveFilter && <Circle className={classes.dotOverlay} fontSize='9px' color={'error'} />}
+            {isActiveFilter && <Circle className={classes.dotOverlay} fontSize="9px" color={'error'} />}
             <FilterList />
           </>
         </Tooltip>
@@ -917,7 +917,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   };
 
   return (
-    <Panel hasHeader title={title} withTooltip headerActions={actions} style={{ height: '94%' }} >
+    <Panel hasHeader title={title} withTooltip headerActions={actions} style={{ height: '94%' }}>
       <AlertModal
         title="Are you sure?"
         description={`Loading of ${joinedMoleculeLists?.length} may take a long time`}
@@ -942,40 +942,32 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
           setIsDeleteDatasetAlertOpen(false);
         }}
       />
-      {
-        sortDialogOpen && (
-          <DatasetFilter
-            open={sortDialogOpen}
-            anchorEl={sortDialogAnchorEl}
-            datasetID={datasetID}
-            filterProperties={filterProperties}
-            active={filterSettings && filterSettings.active}
-            predefined={filterSettings && filterSettings.predefined}
-            priorityOrder={filterSettings && filterSettings.priorityOrder}
-            setSortDialogAnchorEl={setSortDialogAnchorEl}
-          />
-        )
-      }
-      {
-        isOpenInspirationDialog && (
-          <InspirationDialog open anchorEl={selectedMoleculeRef} datasetID={datasetID} ref={inspirationDialogRef} />
-        )
-      }
-      {
-        askLockCompoundsQuestion && isLockVisibleCompoundsDialogOpenGlobal && (
-          <LockVisibleCompoundsDialog
-            open
-            ref={lockVisibleCompoundsDialogRef}
-            anchorEl={lockCompoundsDialogAnchorE1}
-            datasetId={datasetID}
-          />
-        )
-      }
-      {
-        isOpenCrossReferenceDialog && (
-          <CrossReferenceDialog open anchorEl={selectedMoleculeRef} ref={crossReferenceDialogRef} />
-        )
-      }
+      {sortDialogOpen && (
+        <DatasetFilter
+          open={sortDialogOpen}
+          anchorEl={sortDialogAnchorEl}
+          datasetID={datasetID}
+          filterProperties={filterProperties}
+          active={filterSettings && filterSettings.active}
+          predefined={filterSettings && filterSettings.predefined}
+          priorityOrder={filterSettings && filterSettings.priorityOrder}
+          setSortDialogAnchorEl={setSortDialogAnchorEl}
+        />
+      )}
+      {isOpenInspirationDialog && (
+        <InspirationDialog open anchorEl={selectedMoleculeRef} datasetID={datasetID} ref={inspirationDialogRef} />
+      )}
+      {askLockCompoundsQuestion && isLockVisibleCompoundsDialogOpenGlobal && (
+        <LockVisibleCompoundsDialog
+          open
+          ref={lockVisibleCompoundsDialogRef}
+          anchorEl={lockCompoundsDialogAnchorE1}
+          datasetId={datasetID}
+        />
+      )}
+      {isOpenCrossReferenceDialog && (
+        <CrossReferenceDialog open anchorEl={selectedMoleculeRef} ref={crossReferenceDialogRef} />
+      )}
       <div ref={filterRef}>
         {/* TODO disable showing of filter tags for now */}
         {false && isActiveFilter && (
@@ -992,8 +984,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                     {filterSettings.priorityOrder.map(attr => (
                       <Grid item key={`Mol-Tooltip-${attr}`}>
                         <Tooltip
-                          title={`${filterProperties[attr].minValue}-${filterProperties[attr].maxValue} ${filterProperties[attr].order === 1 ? '\u2191' : '\u2193'
-                            }`}
+                          title={`${filterProperties[attr].minValue}-${filterProperties[attr].maxValue} ${
+                            filterProperties[attr].order === 1 ? '\u2191' : '\u2193'
+                          }`}
                           placement="top"
                         >
                           <Chip size="small" label={attr} className={classes.propertyChip} />
@@ -1336,9 +1329,21 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             previousItemData={index > 0 && array[index - 1]}
                             nextItemData={index < array?.length && array[index + 1]}
                             L={ligandList?.includes(data.id)}
-                            P={proteinList?.includes(idToFind)}
-                            C={complexList?.includes(idToFind)}
-                            S={surfaceList?.includes(idToFind)}
+                            P={
+                              data.isCustomPdb
+                                ? proteinListDataset?.includes(idToFind)
+                                : proteinList?.includes(idToFind)
+                            }
+                            C={
+                              data.isCustomPdb
+                                ? complexListDataset?.includes(idToFind)
+                                : complexList?.includes(idToFind)
+                            }
+                            S={
+                              data.isCustomPdb
+                                ? surfaceListDataset?.includes(idToFind)
+                                : surfaceList?.includes(idToFind)
+                            }
                             V={false}
                             moveMolecule={moveMolecule}
                             isLocked={locked}
@@ -1396,7 +1401,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
           </>
         )}
       </Grid>
-    </Panel >
+    </Panel>
   );
 };
 

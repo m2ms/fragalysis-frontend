@@ -310,6 +310,7 @@ export const loadDatasetCompoundsWithScores = (datasetsToLoad = null) => (dispat
             if (compondMoleculesMap.hasOwnProperty(molecule.name)) {
               molecule['site_observation_code'] = compondMoleculesMap[molecule.name].site_observation_code;
               molecule['pdb_info'] = compondMoleculesMap[molecule.name].pdb_info;
+              molecule['isCustomPdb'] = !!!compondMoleculesMap[molecule.name].site_observation_code;
             }
           });
           // <-----

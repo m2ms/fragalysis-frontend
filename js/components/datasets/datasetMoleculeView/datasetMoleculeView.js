@@ -461,7 +461,6 @@ const DatasetMoleculeView = memo(
       // #1249 dataset molecules currently could use side observation molecule for some renders
       const allMolecules = useSelector(state => state.apiReducers.all_mol_lists);
       const [pdbData, setPdbData] = useState(null);
-      const [isCustomPdb, setIsCustomPdb] = useState(false);
       const isPdbAvailable = !!(data && (data.pdb_info || pdbData));
 
       useEffect(() => {
@@ -472,7 +471,6 @@ const DatasetMoleculeView = memo(
           }
         } else {
           setPdbData(data);
-          setIsCustomPdb(true);
         }
       }, [data, allMolecules]);
 
@@ -554,8 +552,11 @@ const DatasetMoleculeView = memo(
       const addNewProtein = (skipTracking = false) => {
         dispatch(
           withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'protein', () => {
-            dispatch(addHitProtein(stage, pdbData, colourToggle, true, skipTracking, undefined, true));
-            // dispatch(addDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
+            if (data.isCustomPdb) {
+              dispatch(addDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
+            } else {
+              dispatch(addHitProtein(stage, pdbData, colourToggle, true, skipTracking, undefined, true));
+            }
           })
         );
       };
@@ -588,8 +589,11 @@ const DatasetMoleculeView = memo(
       const addNewComplex = (skipTracking = false) => {
         dispatch(
           withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'complex', () => {
-            // dispatch(addDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
-            dispatch(addComplex(stage, pdbData, colourToggle, skipTracking, undefined, true));
+            if (data.isCustomPdb) {
+              dispatch(addDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
+            } else {
+              dispatch(addComplex(stage, pdbData, colourToggle, skipTracking, undefined, true));
+            }
           })
         );
       };
@@ -622,8 +626,11 @@ const DatasetMoleculeView = memo(
       const addNewSurface = async () => {
         dispatch(
           withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'surface', () => {
-            dispatch(addSurface(stage, pdbData, colourToggle, false, undefined, true));
-            // dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
+            if (data.isCustomPdb) {
+              dispatch(addDatasetSurface(stage, data, colourToggle, datasetID));
+            } else {
+              dispatch(addSurface(stage, pdbData, colourToggle, false, undefined, true));
+            }
           })
         );
       };

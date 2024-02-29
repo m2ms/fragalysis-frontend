@@ -61,7 +61,7 @@ import {
 } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Link, DeleteForever, ArrowUpward, ArrowDownward, Edit } from '@material-ui/icons';
-import { getJoinedMoleculeLists } from './redux/selectors';
+import { getJoinedMoleculeLists, getLHSVisibleListsForRHS } from './redux/selectors';
 import { InspirationDialog } from './inspirationDialog';
 import { CrossReferenceDialog } from './crossReferenceDialog';
 import { AlertModal } from '../common/Modal/AlertModal';
@@ -432,9 +432,11 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const complexListDataset = useSelector(state => state.datasetsReducers.complexLists[datasetID]);
   const surfaceListDataset = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
   // #1249 dataset molecules currently could use side observation molecule for some renders
-  const proteinList = useSelector(state => state.selectionReducers.proteinList);
-  const complexList = useSelector(state => state.selectionReducers.complexList);
-  const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
+
+  const { proteinList, complexList, surfaceList } = useSelector(state => getLHSVisibleListsForRHS(state, datasetID));
+  // const proteinList = useSelector(state => state.selectionReducers.proteinList);
+  // const complexList = useSelector(state => state.selectionReducers.complexList);
+  // const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
   const allMoleculesList = useSelector(state => state.apiReducers.all_mol_lists);
 
   // const [selectedMolecules, setSelectedMolecules] = useState([]);
@@ -485,11 +487,17 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   };
 
   let isLigandOn = isSelectedTypeOn(ligandList);
-  let isProteinOn = isSelectedTypeOn(proteinList);
-  let isComplexOn = isSelectedTypeOn(complexList);
+  let isProteinOn = isSelectedTypeOn(proteinList) || isSelectedTypeOn(proteinListDataset);
+  let isComplexOn = isSelectedTypeOn(complexList) || isSelectedTypeOn(complexListDataset);
 
   let areArrowsVisible =
-    isTypeOn(ligandList) || isTypeOn(proteinList) || isTypeOn(complexList) || isTypeOn(surfaceList);
+    isTypeOn(ligandList) ||
+    isTypeOn(proteinList) ||
+    isTypeOn(complexList) ||
+    isTypeOn(surfaceList) ||
+    isTypeOn(proteinListDataset) ||
+    isTypeOn(complexListDataset) ||
+    isTypeOn(surfaceListDataset);
 
   const addType = {
     ligand: addDatasetLigand,

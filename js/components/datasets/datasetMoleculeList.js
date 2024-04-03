@@ -86,6 +86,14 @@ import {
 import { LockVisibleCompoundsDialog } from './lockVisibleCompoundsDialog';
 import { size } from 'lodash';
 import { Circle } from '@mui/icons-material';
+import {
+  addComplex,
+  addHitProtein,
+  addSurface,
+  removeComplex,
+  removeHitProtein,
+  removeSurface
+} from '../preview/molecule/redux/dispatchActions';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -433,10 +441,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   const surfaceListDataset = useSelector(state => state.datasetsReducers.surfaceLists[datasetID]);
   // #1249 dataset molecules currently could use side observation molecule for some renders
 
-  const { proteinList, complexList, surfaceList } = useSelector(state => getLHSVisibleListsForRHS(state, datasetID));
-  // const proteinList = useSelector(state => state.selectionReducers.proteinList);
-  // const complexList = useSelector(state => state.selectionReducers.complexList);
-  // const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
+  // const { proteinList, complexList, surfaceList } = useSelector(state => getLHSVisibleListsForRHS(state, datasetID));
+  const proteinList = useSelector(state => state.selectionReducers.proteinList);
+  const complexList = useSelector(state => state.selectionReducers.complexList);
+  const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
   const allMoleculesList = useSelector(state => state.apiReducers.all_mol_lists);
 
   // const [selectedMolecules, setSelectedMolecules] = useState([]);
@@ -513,6 +521,20 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
     surface: removeDatasetSurface
   };
 
+  const addLHSType = {
+    ligand: addDatasetLigand,
+    protein: addHitProtein,
+    complex: addComplex,
+    surface: addSurface
+  };
+
+  const removeLHSType = {
+    ligand: removeDatasetLigand,
+    protein: removeHitProtein,
+    complex: removeComplex,
+    surface: removeSurface
+  };
+
   // TODO: "currentMolecules" do not need to correspondent to selections in {type}List
   // TODO: so this could lead to inconsistend behaviour while scrolling
   // TODO: maybe change "currentMolecules.forEach" to "{type}List.forEach"
@@ -524,12 +546,24 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
       if ((type === 'protein' || type === 'complex') && !molecule.pdb_info) {
         continue;
       }
-      dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking));
+      if (type === 'ligand') {
+        dispatch(
+          removeType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
+        );
+      } else {
+        if (molecule.site_observation_code) {
+          const lhsMol = allMoleculesList.find(mol => mol.code === molecule.site_observation_code);
+          if (lhsMol) {
+            dispatch(removeLHSType[type](stage, lhsMol, colourList[molecule.id % colourList.length], skipTracking));
+          }
+        } else if (molecule.isCustomPdb) {
+          dispatch(
+            removeType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
+          );
+        }
+      }
     }
-    // lockedMolecules.forEach(cid => {
-    //   let molecule = getCompoundForId(cid);
-    //   dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking));
-    // });
+
     selectedAll.current = false;
   };
 
@@ -544,20 +578,54 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
           if ((type === 'protein' || type === 'complex') && !molecule.pdb_info) {
             continue;
           }
-          promises.push(
-            dispatch(
-              addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
-            )
-          );
+          if (type === 'ligand') {
+            promises.push(
+              dispatch(
+                addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
+              )
+            );
+          } else {
+            if (molecule.site_observation_code) {
+              const lhsMol = allMoleculesList.find(mol => mol.code === molecule.site_observation_code);
+              if (lhsMol) {
+                if (type === 'protein') {
+                  promises.push(
+                    dispatch(
+                      addLHSType[type](
+                        stage,
+                        lhsMol,
+                        colourList[molecule.id % colourList.length],
+                        true,
+                        skipTracking,
+                        undefined,
+                        true
+                      )
+                    )
+                  );
+                } else if (type === 'complex') {
+                  promises.push(
+                    dispatch(
+                      addLHSType[type](
+                        stage,
+                        lhsMol,
+                        colourList[molecule.id % colourList.length],
+                        skipTracking,
+                        undefined,
+                        true
+                      )
+                    )
+                  );
+                }
+              }
+            } else if (molecule.isCustomPdb) {
+              promises.push(
+                dispatch(
+                  addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
+                )
+              );
+            }
+          }
         }
-        // lockedMolecules.forEach(cid => {
-        //   let molecule = getCompoundForId(cid);
-        //   promises.push(
-        //     dispatch(
-        //       addType[type](stage, molecule, colourList[molecule.id % colourList.length], datasetID, skipTracking)
-        //     )
-        //   );
-        // });
 
         await Promise.all(promises);
       })

@@ -544,8 +544,11 @@ const DatasetMoleculeView = memo(
       };
 
       const removeSelectedProtein = (skipTracking = false) => {
-        // dispatch(removeDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
-        dispatch(removeHitProtein(stage, pdbData, colourToggle, skipTracking));
+        if (data.isCustomPdb) {
+          dispatch(removeDatasetHitProtein(stage, data, colourToggle, datasetID, skipTracking));
+        } else {
+          dispatch(removeHitProtein(stage, pdbData, colourToggle, skipTracking));
+        }
         selectedAll.current = false;
       };
 
@@ -581,8 +584,11 @@ const DatasetMoleculeView = memo(
       };
 
       const removeSelectedComplex = (skipTracking = false) => {
-        // dispatch(removeDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
-        dispatch(removeComplex(stage, pdbData, colourToggle, skipTracking));
+        if (data.isCustomPdb) {
+          dispatch(removeDatasetComplex(stage, data, colourToggle, datasetID, skipTracking));
+        } else {
+          dispatch(removeComplex(stage, pdbData, colourToggle, skipTracking));
+        }
         selectedAll.current = false;
       };
 
@@ -618,8 +624,11 @@ const DatasetMoleculeView = memo(
       };
 
       const removeSelectedSurface = () => {
-        // dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID));
-        dispatch(removeSurface(stage, pdbData, colourToggle));
+        if (data.isCustomPdb) {
+          dispatch(removeDatasetSurface(stage, data, colourToggle, datasetID));
+        } else {
+          dispatch(removeSurface(stage, pdbData, colourToggle));
+        }
         selectedAll.current = false;
       };
 

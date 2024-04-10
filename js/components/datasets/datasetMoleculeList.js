@@ -43,7 +43,10 @@ import {
   deleteDataset,
   getTrackingActions,
   moveDatasetMoleculeUpDown,
-  getAllVisibleButNotLockedCompounds
+  getAllVisibleButNotLockedCompounds,
+  getObservationForLHSReference,
+  getCurrentDatasetIterator,
+  resetDatasetIterator
 } from './redux/dispatchActions';
 import {
   setAskLockCompoundsQuestion,
@@ -57,7 +60,8 @@ import {
   appendCompoundColorOfDataset,
   appendColorToAllCompoundsOfDataset,
   removeCompoundColorOfDataset,
-  removeColorFromAllCompoundsOfDataset
+  removeColorFromAllCompoundsOfDataset,
+  setDatasetIterator
 } from './redux/actions';
 import { DatasetFilter } from './datasetFilter';
 import { FilterList, Link, DeleteForever, ArrowUpward, ArrowDownward, Edit } from '@material-ui/icons';
@@ -637,6 +641,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   };
 
   const onButtonToggle = (type, calledFromSelectAll = false) => {
+    resetIterator();
     if (calledFromSelectAll === true && selectedAll.current === true) {
       // REDO
       if (eval('is' + ucfirst(type) + 'On') === false) {
@@ -784,6 +789,10 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
     lockedMolecules.map(cid => ({ datasetID, molecule: getCompoundForId(cid) }))
   );
 
+  const resetIterator = () => {
+    dispatch(resetDatasetIterator(datasetID));
+  };
+
   // useEffectDebugger(
   //   () => {},
   //   [setSortDialogAnchorEl, loadNextMolecules, addMoleculeViewRef, setSelectedMoleculeRef, moveMolecule],
@@ -851,14 +860,36 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   // );
 
   const getFirstItemForIterationStart = () => {
-    const firstItem = joinedMoleculeLists.find(
-      mol =>
-        (ligandList.includes(mol.id) ||
-          proteinList.includes(mol.id) ||
-          complexList.includes(mol.id) ||
-          surfaceList.includes(mol.id)) &&
-        !lockedMolecules.includes(mol.id)
-    );
+    let firstItem = dispatch(getCurrentDatasetIterator(datasetID));
+    if (!firstItem) {
+      firstItem = joinedMoleculeLists.find(mol => {
+        if (!mol.isCustomPdb) {
+          const obs = dispatch(getObservationForLHSReference(mol));
+          if (obs) {
+            return (
+              (ligandList.includes(mol.id) ||
+                proteinList.includes(obs.id) ||
+                complexList.includes(obs.id) ||
+                surfaceList.includes(obs.id)) &&
+              !lockedMolecules.includes(mol.id)
+            );
+          } else {
+            return false;
+          }
+        } else {
+          return (
+            (ligandList.includes(mol.id) ||
+              proteinListDataset.includes(mol.id) ||
+              complexListDataset.includes(mol.id) ||
+              surfaceListDataset.includes(mol.id)) &&
+            !lockedMolecules.includes(mol.id)
+          );
+        }
+      });
+      // if (firstItem) {
+      //   dispatch(setDatasetIterator(datasetID, firstItem));
+      // }
+    }
 
     return firstItem;
   };
@@ -892,12 +923,28 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         const node = getNode(nextItem.id);
         setScrollToMoleculeId(nextItem.id);
 
+        let firstItemIdToUse = firstItem.id;
+        let isCustomPdb = true;
+        if (!firstItem.isCustomPdb) {
+          isCustomPdb = false;
+          const obs = dispatch(getObservationForLHSReference(firstItem));
+          if (obs) {
+            firstItemIdToUse = obs.id;
+          }
+        }
+
         let dataValue = {
           colourToggle: getRandomColor(firstItem),
           isLigandOn: ligandList.includes(firstItem.id),
-          isProteinOn: proteinList.includes(firstItem.id),
-          isComplexOn: complexList.includes(firstItem.id),
-          isSurfaceOn: surfaceList.includes(firstItem.id)
+          isProteinOn: isCustomPdb
+            ? proteinListDataset.includes(firstItemIdToUse)
+            : proteinList.includes(firstItemIdToUse),
+          isComplexOn: isCustomPdb
+            ? complexListDataset.includes(firstItemIdToUse)
+            : complexList.includes(firstItemIdToUse),
+          isSurfaceOn: isCustomPdb
+            ? surfaceListDataset.includes(firstItemIdToUse)
+            : surfaceList.includes(firstItemIdToUse)
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitleNext));
@@ -927,12 +974,28 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
         const node = getNode(prevItem.id);
         setScrollToMoleculeId(prevItem.id);
 
+        let firstItemIdToUse = firstItem.id;
+        let isCustomPdb = true;
+        if (!firstItem.isCustomPdb) {
+          isCustomPdb = false;
+          const obs = dispatch(getObservationForLHSReference(firstItem));
+          if (obs) {
+            firstItemIdToUse = obs.id;
+          }
+        }
+
         let dataValue = {
           colourToggle: getRandomColor(firstItem),
           isLigandOn: ligandList.includes(firstItem.id),
-          isProteinOn: proteinList.includes(firstItem.id),
-          isComplexOn: complexList.includes(firstItem.id),
-          isSurfaceOn: surfaceList.includes(firstItem.id)
+          isProteinOn: isCustomPdb
+            ? proteinListDataset.includes(firstItemIdToUse)
+            : proteinList.includes(firstItemIdToUse),
+          isComplexOn: isCustomPdb
+            ? complexListDataset.includes(firstItemIdToUse)
+            : complexList.includes(firstItemIdToUse),
+          isSurfaceOn: isCustomPdb
+            ? surfaceListDataset.includes(firstItemIdToUse)
+            : surfaceList.includes(firstItemIdToUse)
         };
 
         dispatch(setCrossReferenceCompoundName(moleculeTitlePrev));

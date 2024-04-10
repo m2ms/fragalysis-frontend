@@ -39,7 +39,9 @@ import {
   isCompoundLocked,
   getFirstUnlockedSelectedCompoundAfter,
   moveSelectedDatasetMoleculeUpDown,
-  getFirstUnlockedSelectedCompoundBefore
+  getFirstUnlockedSelectedCompoundBefore,
+  resetSelectedCompoundIterator,
+  resetDatasetIterator
 } from '../redux/dispatchActions';
 
 import { isAnyInspirationTurnedOn, getFilteredDatasetMoleculeList } from '../redux/selectors';
@@ -504,6 +506,14 @@ const DatasetMoleculeView = memo(
       const current_style =
         isLigandOn || isProteinOn || isComplexOn || isSurfaceOn ? selected_style : not_selected_style;
 
+      const resetIterator = () => {
+        if (inSelectedCompoundsList) {
+          dispatch(resetSelectedCompoundIterator());
+        } else {
+          dispatch(resetDatasetIterator(datasetID));
+        }
+      };
+
       const addNewLigand = (skipTracking = false) => {
         dispatch(
           withDisabledDatasetMoleculeNglControlButton(datasetID, currentID, 'ligand', () => {
@@ -522,6 +532,7 @@ const DatasetMoleculeView = memo(
       const [loadingAll, setLoadingAll] = useState(false);
       const [loadingLigand, setLoadingLigand] = useState(false);
       const onLigand = calledFromSelectAll => {
+        resetIterator();
         setLoadingLigand(true);
         if (calledFromSelectAll === true && selectedAll.current === true) {
           if (isLigandOn === false) {
@@ -566,6 +577,7 @@ const DatasetMoleculeView = memo(
 
       const [loadingProtein, setLoadingProtein] = useState(false);
       const onProtein = calledFromSelectAll => {
+        resetIterator();
         setLoadingProtein(true);
         if (calledFromSelectAll === true && selectedAll.current === true) {
           if (isProteinOn === false) {
@@ -606,6 +618,7 @@ const DatasetMoleculeView = memo(
 
       const [loadingComplex, setLoadingComplex] = useState(false);
       const onComplex = calledFromSelectAll => {
+        resetIterator();
         setLoadingComplex(true);
         if (calledFromSelectAll === true && selectedAll.current === true) {
           if (isComplexOn === false) {
@@ -646,6 +659,7 @@ const DatasetMoleculeView = memo(
 
       const [loadingSurface, setLoadingSurface] = useState(false);
       const onSurface = calledFromSelectAll => {
+        resetIterator();
         setLoadingSurface(true);
         if (calledFromSelectAll === true && selectedAll.current === true) {
           if (isSurfaceOn === false) {

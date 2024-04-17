@@ -487,9 +487,18 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const compoundColors = useSelector(state => state.datasetsReducers.compoundColorByDataset[datasetID]) ?? {};
 
-  const isSelectedTypeOn = typeList => {
+  const isSelectedTypeOn = (typeList, isLHSReference) => {
     if (typeList) {
-      return typeList.some(molId => allMolecules.some(mol => mol.id === molId));
+      if (!isLHSReference) {
+        return typeList.some(molId => allMolecules.some(mol => mol.id === molId));
+      } else {
+        const molsWithLHSReference = allMolecules.filter(mol => mol.site_observation_code);
+        return typeList.some(molId =>
+          molsWithLHSReference.some(
+            mol => mol.site_observation_code === allMoleculesList.find(m => m.id === molId)?.code
+          )
+        );
+      }
     }
     return false;
   };
@@ -498,9 +507,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
     return typeList && typeList.length > 0;
   };
 
-  let isLigandOn = isSelectedTypeOn(ligandList);
-  let isProteinOn = isSelectedTypeOn(proteinList) || isSelectedTypeOn(proteinListDataset);
-  let isComplexOn = isSelectedTypeOn(complexList) || isSelectedTypeOn(complexListDataset);
+  let isLigandOn = isSelectedTypeOn(ligandList, false);
+  let isProteinOn = isSelectedTypeOn(proteinList, true) || isSelectedTypeOn(proteinListDataset, false);
+  let isComplexOn = isSelectedTypeOn(complexList, true) || isSelectedTypeOn(complexListDataset, false);
 
   let areArrowsVisible =
     isTypeOn(ligandList) ||

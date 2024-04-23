@@ -32,7 +32,6 @@ import {
   moveDatasetMoleculeUpDown,
   getFirstUnlockedCompoundAfter,
   getFirstUnlockedCompoundBefore,
-  isDatasetCompoundIterrable,
   isDatasetCompoundLocked,
   getAllVisibleButNotLockedCompounds,
   getAllVisibleButNotLockedSelectedCompounds,
@@ -89,6 +88,7 @@ import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart';
 import { compoundsColors } from '../../preview/compounds/redux/constants';
 import { LockVisibleCompoundsDialog } from '../lockVisibleCompoundsDialog';
 import { fabClasses } from '@mui/material';
+import useClipboard from 'react-use-clipboard';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -928,6 +928,7 @@ const DatasetMoleculeView = memo(
       };
 
       const moleculeTitle = data && data.name;
+      const [isNameCopied, setNameCopied] = useClipboard(moleculeTitle, { successDuration: 5000 });
       const datasetTitle = datasets?.find(item => `${item.id}` === `${datasetID}`)?.title;
 
       const allScores = { ...data?.numerical_scores, ...data?.text_scores };
@@ -1006,7 +1007,13 @@ const DatasetMoleculeView = memo(
               >
                 <Grid item className={classes.inheritWidth}>
                   <Tooltip title={moleculeTitle} placement="bottom-start">
-                    <div className={classNames(classes.moleculeTitleLabel, isLocked && classes.selectedMolecule)}>
+                    <div
+                      className={classNames(classes.moleculeTitleLabel, isLocked && classes.selectedMolecule)}
+                      onCopy={e => {
+                        e.preventDefault();
+                        setNameCopied(moleculeTitle);
+                      }}
+                    >
                       {moleculeTitle}
                     </div>
                   </Tooltip>

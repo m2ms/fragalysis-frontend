@@ -67,9 +67,9 @@ export const setDatasetIterator = (datasetID, currentCmp) => ({
   payload: { datasetID, currentCmp }
 });
 
-export const setSelectedCompoundsIterator = (datasetID, currentCmp) => ({
+export const setSelectedCompoundsIterator = (datasetID, molecule) => ({
   type: constants.SET_SELECTED_COMPOUNDS_ITERATOR,
-  payload: { datasetID, currentCmp }
+  payload: { datasetID, molecule }
 });
 
 export const setLigandList = function(datsetID, ligandList) {

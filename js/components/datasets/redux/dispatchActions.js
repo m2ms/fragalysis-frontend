@@ -849,10 +849,16 @@ const moveSelectedDatasetMoleculeInspirationsSettings = (data, newItemData, stag
   );
 };
 
-export const lockSelectedCompounds = (selectedCompounds, skipCmpId = 0) => (dispatch, getState) => {
+export const lockSelectedCompounds = (selectedCompounds, skipCmp = null) => (dispatch, getState) => {
   let filteredCompounds = [...selectedCompounds];
-  if (skipCmpId) {
-    filteredCompounds = selectedCompounds.filter(item => item.molecule.id !== skipCmpId);
+  if (skipCmp) {
+    filteredCompounds = selectedCompounds.filter(item => {
+      let result = true;
+      if (item.molecule.id === skipCmp.molecule.id && item.datasetID === skipCmp.datasetID) {
+        result = false;
+      }
+      return result;
+    });
   }
 
   filteredCompounds?.forEach(item => {
@@ -864,22 +870,22 @@ export const lockSelectedCompounds = (selectedCompounds, skipCmpId = 0) => (disp
   });
 };
 
-export const lockCompounds = (datasetID, compoundIds, skipCmpId = 0) => (dispatch, getState) => {
+export const lockCompounds = (datasetID, compoundsToLock, skipCmp = null) => (dispatch, getState) => {
   const state = getState();
   const compounds = state.datasetsReducers.moleculeLists[datasetID];
 
-  let filteredCompounds = [...compoundIds];
-  if (skipCmpId) {
-    filteredCompounds = compoundIds.filter(item => item !== skipCmpId);
+  let filteredCompounds = [...compoundsToLock];
+  if (skipCmp) {
+    filteredCompounds = compoundsToLock.filter(item => item.id !== skipCmp.id);
   }
 
-  filteredCompounds?.forEach(compoundID => {
-    const filteredCIds = compounds.filter(cmp => cmp.id === compoundID);
+  filteredCompounds?.forEach(compound => {
+    const filteredCmps = compounds.filter(cmp => cmp.id === compound.id);
     let molName = '';
-    if (filteredCIds && filteredCIds.length > 0) {
-      molName = filteredCIds[0].name;
+    if (filteredCmps && filteredCmps.length > 0) {
+      molName = filteredCmps[0].name;
     }
-    dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, compoundID, molName));
+    dispatch(appendCompoundToSelectedCompoundsByDataset(datasetID, compound.id, molName));
   });
 };
 
@@ -914,11 +920,7 @@ export const getAllVisibleButNotLockedSelectedCompounds = (skipDatasetID = '', s
     if (datasetID !== skipDatasetID || skipCmpId !== molecule.id) {
       const isLocked = dispatch(isCompoundLocked(datasetID, molecule));
       if (!isLocked) {
-        let isVisible = dispatch(isCompoundVisible(datasetID, molecule.id));
-        // isVisible |= state.datasetsReducers.ligandLists[datasetID].includes(molecule.id);
-        // isVisible |= state.datasetsReducers.proteinLists[datasetID].includes(molecule.id);
-        // isVisible |= state.datasetsReducers.complexLists[datasetID].includes(molecule.id);
-        // isVisible |= state.datasetsReducers.surfaceLists[datasetID].includes(molecule.id);
+        let isVisible = dispatch(isCompoundVisible(item));
 
         if (isVisible) {
           result.push(item);
@@ -930,15 +932,27 @@ export const getAllVisibleButNotLockedSelectedCompounds = (skipDatasetID = '', s
   return result;
 };
 
-export const isCompoundVisible = (datasetID, compoundId) => (dispatch, getState) => {
+export const isCompoundVisible = cmp => (dispatch, getState) => {
   let isVisible = false;
 
   const state = getState();
 
+  const datasetID = cmp.datasetID;
+  const compoundId = cmp.molecule.id;
+  const isCustomPdb = cmp.molecule.isCustomPdb;
+
+  let itemIdToUse = isCustomPdb ? cmp.molecule.id : dispatch(getObservationForLHSReference(cmp.molecule))?.id;
+
   isVisible |= state.datasetsReducers.ligandLists[datasetID]?.includes(compoundId);
-  isVisible |= state.datasetsReducers.proteinLists[datasetID]?.includes(compoundId);
-  isVisible |= state.datasetsReducers.complexLists[datasetID]?.includes(compoundId);
-  isVisible |= state.datasetsReducers.surfaceLists[datasetID]?.includes(compoundId);
+  isVisible |= isCustomPdb
+    ? state.datasetsReducers.proteinLists[datasetID]?.includes(itemIdToUse)
+    : state.selectionReducers.proteinList.includes(itemIdToUse);
+  isVisible |= isCustomPdb
+    ? state.datasetsReducers.complexLists[datasetID]?.includes(itemIdToUse)
+    : state.selectionReducers.complexList.includes(itemIdToUse);
+  isVisible |= isCustomPdb
+    ? state.datasetsReducers.surfaceLists[datasetID]?.includes(itemIdToUse)
+    : state.selectionReducers.surfaceList.includes(itemIdToUse);
 
   return isVisible;
 };
@@ -947,36 +961,31 @@ export const getAllVisibleButNotLockedCompounds = (datasetID, skipCmpId = 0) => 
   let result = [];
 
   const state = getState();
-  const lockedCmps = state.datasetsReducers.selectedCompoundsByDataset[datasetID] || [];
+  // const lockedCmps = state.datasetsReducers.selectedCompoundsByDataset[datasetID] || [];
+  const datasetCmps = state.datasetsReducers.moleculeLists[datasetID];
 
-  result = mergeCompoundIdsList(result, state.datasetsReducers.ligandLists[datasetID]);
-  result = mergeCompoundIdsList(result, state.datasetsReducers.proteinLists[datasetID]);
-  result = mergeCompoundIdsList(result, state.datasetsReducers.complexLists[datasetID]);
-  result = mergeCompoundIdsList(result, state.datasetsReducers.surfaceLists[datasetID]);
+  datasetCmps.forEach(cmp => {
+    if (skipCmpId !== cmp.id) {
+      const isLocked = dispatch(isCompoundLocked(datasetID, cmp));
+      if (!isLocked) {
+        let isVisible = dispatch(isCompoundVisible({ datasetID, molecule: cmp }));
 
-  result = result.filter(item => !lockedCmps.includes(item));
-  if (skipCmpId) {
-    result = result.filter(item => item !== skipCmpId);
-  }
+        if (isVisible) {
+          result.push(cmp);
+        }
+      }
+    }
+  });
 
-  return result;
-};
+  // result = mergeCompoundIdsList(result, state.datasetsReducers.ligandLists[datasetID]);
+  // result = mergeCompoundIdsList(result, state.datasetsReducers.proteinLists[datasetID]);
+  // result = mergeCompoundIdsList(result, state.datasetsReducers.complexLists[datasetID]);
+  // result = mergeCompoundIdsList(result, state.datasetsReducers.surfaceLists[datasetID]);
 
-export const isDatasetCompoundIterrable = (datasetID, compoundID) => (dispatch, getState) => {
-  let result = false;
-
-  if (dispatch(isDatasetCompoundLocked(datasetID, compoundID))) {
-    const state = getState();
-
-    const L = state.datasetsReducers.ligandLists[datasetID].includes(compoundID);
-    const P = state.datasetsReducers.proteinLists[datasetID].includes(compoundID);
-    const C = state.datasetsReducers.complexLists[datasetID].includes(compoundID);
-    const S = state.datasetsReducers.surfaceLists[datasetID].includes(compoundID);
-
-    result = !(L || P || C || S);
-  } else {
-    result = true;
-  }
+  // result = result.filter(item => !lockedCmps.includes(item));
+  // if (skipCmpId) {
+  //   result = result.filter(item => item !== skipCmpId);
+  // }
 
   return result;
 };

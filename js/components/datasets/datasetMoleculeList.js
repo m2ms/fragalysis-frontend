@@ -510,15 +510,9 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
   let isLigandOn = isSelectedTypeOn(ligandList, false);
   let isProteinOn = isSelectedTypeOn(proteinList, true) || isSelectedTypeOn(proteinListDataset, false);
   let isComplexOn = isSelectedTypeOn(complexList, true) || isSelectedTypeOn(complexListDataset, false);
+  let isSurfaceOn = isSelectedTypeOn(surfaceList, true) || isSelectedTypeOn(surfaceListDataset, false);
 
-  let areArrowsVisible =
-    isTypeOn(ligandList) ||
-    isTypeOn(proteinList) ||
-    isTypeOn(complexList) ||
-    isTypeOn(surfaceList) ||
-    isTypeOn(proteinListDataset) ||
-    isTypeOn(complexListDataset) ||
-    isTypeOn(surfaceListDataset);
+  let areArrowsVisible = isLigandOn || isProteinOn || isComplexOn || isSurfaceOn;
 
   const addType = {
     ligand: addDatasetLigand,
@@ -1500,7 +1494,7 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
                             disableL={locked && groupDatasetsNglControlButtonsDisabledState.ligand}
                             disableP={locked && groupDatasetsNglControlButtonsDisabledState.protein}
                             disableC={locked && groupDatasetsNglControlButtonsDisabledState.complex}
-                            dragDropEnabled
+                            dragDropEnabled={false}
                             getNode={getNode}
                           />
                         );

@@ -201,8 +201,8 @@ const TagDetails = memo(() => {
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
   const moleculesToEdit =
     moleculesToEditIds &&
-      moleculesToEditIds.length > 0 &&
-      !(moleculesToEditIds.length === 1 && moleculesToEditIds[0] === null)
+    moleculesToEditIds.length > 0 &&
+    !(moleculesToEditIds.length === 1 && moleculesToEditIds[0] === null)
       ? moleculesToEditIds.map(id => dispatch(getMoleculeForId(id)))
       : [];
 
@@ -446,7 +446,7 @@ const TagDetails = memo(() => {
               Select all tags
             </Button>
           </Grid>
-          {DJANGO_CONTEXT.pk && ([
+          {DJANGO_CONTEXT.pk && [
             <Grid item>
               <Button
                 onClick={() => handleEditTagsButton()}
@@ -461,7 +461,7 @@ const TagDetails = memo(() => {
               </Button>
             </Grid>,
             <EditTagsModal open={showEditTagsModal} setOpenDialog={setShowEditTagsModal} anchorEl={ref?.current} />
-          ])}
+          ]}
         </Grid>
       </div>
       <div ref={elementRef} className={classes.containerExpanded} style={{ height: tagDetailView ? '89%' : '93%' }}>

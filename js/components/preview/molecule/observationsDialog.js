@@ -32,11 +32,13 @@ import SearchField from '../../common/Components/SearchField';
 import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import MoleculeView from './moleculeView';
 import { TagEditor } from '../tags/modal/tagEditor';
+import { ToastContext } from '../../toast';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 const useStyles = makeStyles(theme => ({
   paper: {
     width: 472,
-    height: 294,
+    // minHeight: 294,
     overflowY: 'hidden'
   },
   molHeader: {
@@ -112,6 +114,39 @@ const useStyles = makeStyles(theme => ({
       backgroundColor: theme.palette.primary.semidark
       //color: theme.palette.black
     }
+  },
+  contColButtonBottomRow: {
+    border: '1px solid'
+  },
+  bottomRow: {
+    marginTop: theme.spacing(1) / 4
+  },
+  dropdownContent: {
+    display: 'none',
+    position: 'absolute',
+    backgroundColor: theme.palette.primary.contrastText,
+    maxWidth: 150,
+    marginTop: -1,
+    border: '1px solid',
+    borderColor: theme.palette.primary.main,
+    // color: theme.palette.primary.contrastText,
+    // boxShadow: '0px 8px 16px 0px rgba(0, 0, 0, 0.2)',
+    zIndex: 1
+  },
+  dropdownItem: {
+    fontSize: 12,
+    // fontWeight: 'bold',
+    paddingLeft: theme.spacing(1) / 4,
+    paddingRight: theme.spacing(1) / 4,
+    '&:hover': {
+      cursor: 'pointer',
+      backgroundColor: theme.palette.primary.light
+    }
+  },
+  dropdown: {
+    '&:hover $dropdownContent': {
+      display: 'flex'
+    }
   }
 }));
 
@@ -127,6 +162,7 @@ export const ObservationsDialog = memo(
     const selectedAll = useRef(false);
 
     const { getNglView } = useContext(NglContext);
+    const { toastInfo } = useContext(ToastContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
 
     const isLoadingInspirationListOfMolecules = useSelector(
@@ -304,6 +340,20 @@ export const ObservationsDialog = memo(
       buttonState => buttonState
     );
 
+    const handleSetAsGroupName = () => {
+      toastInfo('calling handleSetAsGroupName!', { autoHideDuration: 5000 });
+    };
+    const handleSetMainObservation = () => {
+      toastInfo('calling handleSetMainObservation!', { autoHideDuration: 5000 });
+    };
+    const handleManageGrouping = (poseId) => {
+      if (poseId === 0) {
+        toastInfo(`calling handleManageGrouping and creating new pose from selection`, { autoHideDuration: 5000 });
+      } else {
+        toastInfo(`calling handleManageGrouping for pose with id ${poseId}`, { autoHideDuration: 5000 });
+      }
+    };
+
     //  TODO refactor to this line
 
     return (
@@ -465,6 +515,53 @@ export const ObservationsDialog = memo(
                   </Grid>
                 )}
               </div>
+              {DJANGO_CONTEXT.pk && <Grid container direction="row" justifyContent="space-evenly" alignItems="center" className={classes.bottomRow}>
+                <Grid item>
+                  <Button
+                    onClick={handleSetAsGroupName}
+                    disabled={allSelectedMolecules.length !== 1}
+                    color="inherit"
+                    variant="text"
+                    size="small"
+                    data-id="setAsGroupName"
+                    className={classNames(classes.contColButton, classes.contColButtonBottomRow)}
+                  >
+                    Set as group name
+                  </Button>
+                </Grid>
+                <Grid item>
+                  <Button
+                    onClick={handleSetMainObservation}
+                    disabled={allSelectedMolecules.length !== 1}
+                    color="inherit"
+                    variant="text"
+                    size="small"
+                    data-id="setMainObservation"
+                    className={classNames(classes.contColButton, classes.contColButtonBottomRow)}
+                  >
+                    Set main observation
+                  </Button>
+                </Grid>
+                <Grid item className={classes.dropdown}>
+                  <Button
+                    disabled={allSelectedMolecules.length < 1}
+                    color="inherit"
+                    variant="text"
+                    size="small"
+                    data-id="manageGrouping"
+                    className={classNames(classes.contColButton, classes.contColButtonBottomRow)}
+                  >
+                    Manage grouping
+                  </Button>
+                  <Grid container direction="column" className={classes.dropdownContent} >
+                    <Grid item className={classes.dropdownItem} onClick={() => handleManageGrouping(0)}>new group from selection</Grid>
+                    {/* TODO just a placeholder for poses here */}
+                    {[{ id: 1, label: '1x' }, { id: 2, label: '2x' }, { id: 3, label: '3x' }].map(pose =>
+                      <Grid item className={classes.dropdownItem} onClick={() => handleManageGrouping(pose.id)}>add selection to {pose.label}</Grid>
+                    )}
+                  </Grid>
+                </Grid>
+              </Grid>}
             </>
           )}
           {isLoadingInspirationListOfMolecules === true && (

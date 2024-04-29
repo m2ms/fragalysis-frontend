@@ -1,6 +1,6 @@
 import React, { forwardRef, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { CircularProgress, Grid, Popper, IconButton, Typography, Tooltip } from '@material-ui/core';
-import { Close } from '@material-ui/icons';
+import { Close, KeyboardArrowDown } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/styles';
 import { useDispatch, useSelector } from 'react-redux';
 import classNames from 'classnames';
@@ -549,6 +549,7 @@ export const ObservationsDialog = memo(
                     variant="text"
                     size="small"
                     data-id="manageGrouping"
+                    endIcon={<KeyboardArrowDown />}
                     className={classNames(classes.contColButton, classes.contColButtonBottomRow)}
                   >
                     Manage grouping

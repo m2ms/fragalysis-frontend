@@ -186,25 +186,25 @@ const getTagsForMol = (molId, tagList) => {
 };
 
 export const loadMoleculesAndTagsNew = targetId => async (dispatch, getState) => {
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getTags`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getTags`);
   let tags = await getTags(targetId);
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getTags`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getTags`);
   tags = tags.results;
   if (tags?.length > 0) {
-    // console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of tags received: ${tags?.length}`);
+    console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of tags received: ${tags?.length}`);
     dispatch(setNoTagsReceived(false));
   }
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getTagCategories`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getTagCategories`);
   const tagCategories = await getTagCategories();
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of tag categories received: ${tagCategories?.length}`);
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getTagCategories`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of tag categories received: ${tagCategories?.length}`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getTagCategories`);
   // const canonSitesList = await getCanonSites(targetId);
   // const canonConformSitest = await getCanonConformSites(targetId);
 
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getAllDataNew`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getAllDataNew`);
   const data = await getAllDataNew(targetId);
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getAllDataNew`);
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of molecules received: ${data?.results?.length}`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getAllDataNew`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of molecules received: ${data?.results?.length}`);
   let allMolecules = [];
   data?.results?.forEach(mol => {
     let newObject = { ...mol };
@@ -235,18 +235,18 @@ export const loadMoleculesAndTagsNew = targetId => async (dispatch, getState) =>
   });
 
   dispatch(setAllMolLists([...allMolecules]));
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of molecules stored: ${allMolecules?.length}`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of molecules stored: ${allMolecules?.length}`);
   //need to do this this way because only categories which have at least one tag assigned are sent from backend
   tags = tags.sort(compareTagsAsc);
   dispatch(setMoleculeTags(tags));
   dispatch(setTagSelectorData(tagCategories, tags));
   dispatch(setAllDataLoaded(true));
 
-  // console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getPoses`);
+  console.log(`snapshotDebug - loadMoleculesAndTagsNew - before getPoses`);
   return getPoses(targetId).then(poses => {
-    // console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getPoses`);
+    console.log(`snapshotDebug - loadMoleculesAndTagsNew - after getPoses`);
     const modifiedPoses = [];
-    // console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of poses received: ${poses?.length}`);
+    console.log(`snapshotDebug - loadMoleculesAndTagsNew - no. of poses received: ${poses?.length}`);
     poses?.forEach(pose => {
       const siteObs = allMolecules.filter(m => pose.site_observations.includes(m.id));
       const firstObs = siteObs[0];
@@ -280,6 +280,6 @@ export const loadMoleculesAndTagsNew = targetId => async (dispatch, getState) =>
       return 0;
     });
     dispatch(setLHSCompoundsLIst(modifiedPoses));
-    // console.log(`snapshotDebug - loadMoleculesAndTagsNew - end of function`);
+    console.log(`snapshotDebug - loadMoleculesAndTagsNew - end of function`);
   });
 };

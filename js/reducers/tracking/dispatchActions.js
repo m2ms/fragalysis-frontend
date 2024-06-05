@@ -905,16 +905,16 @@ export const restoreCurrentActionsList = snapshotID => async (dispatch, getState
 };
 
 const restoreTrackingActions = snapshotID => async (dispatch, getState) => {
-  // console.log(`snapshotDebug - restoreTrackingActions - start`);
+  console.log(`snapshotDebug - restoreTrackingActions - start`);
   if (snapshotID) {
     try {
-      // console.log(`snapshotDebug - restoreTrackingActions - before getting actions`);
+      console.log(`snapshotDebug - restoreTrackingActions - before getting actions`);
       return api({
         url: `${base_url}/api/snapshot-actions/?snapshot=${snapshotID}`
       }).then(response => {
-        // console.log(`snapshotDebug - restoreTrackingActions - after getting actions`);
+        console.log(`snapshotDebug - restoreTrackingActions - after getting actions`);
         let results = response.data.results;
-        // console.log(`snapshotDebug - restoreTrackingActions - no. of actions: ${results.length}`);
+        console.log(`snapshotDebug - restoreTrackingActions - no. of actions: ${results.length}`);
         let listToSet = [];
         results.forEach(r => {
           let resultActions = JSON.parse(r.actions);
@@ -923,7 +923,7 @@ const restoreTrackingActions = snapshotID => async (dispatch, getState) => {
 
         let snapshotActions = [...listToSet];
         dispatch(setCurrentActionsList(snapshotActions));
-        // console.log(`snapshotDebug - restoreTrackingActions - end - success`);
+        console.log(`snapshotDebug - restoreTrackingActions - end - success`);
         return Promise.resolve(snapshotActions);
         // return Promise.resolve();
       });
@@ -931,7 +931,7 @@ const restoreTrackingActions = snapshotID => async (dispatch, getState) => {
       throw new Error(error);
     }
   } else {
-    // console.log(`snapshotDebug - restoreTrackingActions - end - no snapshot`);
+    console.log(`snapshotDebug - restoreTrackingActions - end - no snapshot`);
     return Promise.resolve([]);
   }
 };
@@ -975,7 +975,7 @@ export const restoreAfterTargetActions = (stages, projectId, snapshotId) => asyn
 
   // const currentActionList = state.trackingReducers.current_actions_list;
   const orderedActionList = currentActionList.sort((a, b) => a.timestamp - b.timestamp);
-  // console.log(`snapshotDebug - restoreAfterTargetActions - no. of actions: ${orderedActionList.length}`);
+  console.log(`snapshotDebug - restoreAfterTargetActions - no. of actions: ${orderedActionList.length}`);
   const targetId = state.apiReducers.target_on;
 
   if (targetId && stages && stages.length > 0) {
@@ -996,12 +996,12 @@ export const restoreAfterTargetActions = (stages, projectId, snapshotId) => asyn
       .finally(() => {});
 
     await dispatch(restoreSitesActions(orderedActionList));
-    // console.log(`snapshotDebug - restoreAfterTargetActions - before loadData`);
+    console.log(`snapshotDebug - restoreAfterTargetActions - before loadData`);
     await dispatch(loadData(orderedActionList, targetId, majorView));
-    // console.log(`snapshotDebug - restoreAfterTargetActions - after loadData`);
-    // console.log(`snapshotDebug - restoreAfterTargetActions - before restoreTagActions`);
+    console.log(`snapshotDebug - restoreAfterTargetActions - after loadData`);
+    console.log(`snapshotDebug - restoreAfterTargetActions - before restoreTagActions`);
     await dispatch(restoreTagActions(orderedActionList));
-    // console.log(`snapshotDebug - restoreAfterTargetActions - after restoreTagActions`);
+    console.log(`snapshotDebug - restoreAfterTargetActions - after restoreTagActions`);
     await dispatch(restoreMoleculesActions(orderedActionList, majorView.stage));
     await dispatch(restoreRepresentationActions(orderedActionList, stages));
     await dispatch(restoreProject(projectId));
@@ -1402,12 +1402,12 @@ export const restoreNglOrientationAnim = (orderedActionList, stages) => async (d
 };
 
 const loadData = (orderedActionList, targetId, majorView) => async (dispatch, getState) => {
-  // console.log(`snapshotDebug - loadData - before loadAllMolecules`);
+  console.log(`snapshotDebug - loadData - before loadAllMolecules`);
   await dispatch(loadAllMolecules(targetId));
-  // console.log(`snapshotDebug - loadData - after loadAllMolecules`);
-  // console.log(`snapshotDebug - loadData - before loadAllDatasets`);
+  console.log(`snapshotDebug - loadData - after loadAllMolecules`);
+  console.log(`snapshotDebug - loadData - before loadAllDatasets`);
   await dispatch(loadAllDatasets(orderedActionList, targetId, majorView.stage));
-  // console.log(`snapshotDebug - loadData - after loadAllDatasets`);
+  console.log(`snapshotDebug - loadData - after loadAllDatasets`);
 };
 
 const loadAllDatasets = (orderedActionList, target_on, stage) => async (dispatch, getState) => {

@@ -8,7 +8,7 @@ import {
   setIsSnapshotDirty,
   setSnapshotActionsDownloaded
 } from './actions';
-import { resetSelectionState } from '../selection/actions';
+import { resetSelectionState, setScrollFiredForLHS } from '../selection/actions';
 import { resetDatasetsStateOnSnapshotChange, resetDatasetScrolledMap } from '../../components/datasets/redux/actions';
 import { resetViewerControlsState } from '../../components/preview/viewerControls/redux/actions';
 import { resetNglTrackingState } from '../nglTracking/dispatchActions';
@@ -132,6 +132,7 @@ export const restoreAfterSnapshotChange = (stages, projectId) => async (dispatch
     // console.count(`AFTER restoration orientation from snapshot`);
 
     dispatch(resetDatasetScrolledMap()); // Have a look at useScrollToSelected.js
+    dispatch(setScrollFiredForLHS(false));
     dispatch(setIsActionsRestoring(false, true));
 
     console.count(`restoreAfterSnapshotChange end`);

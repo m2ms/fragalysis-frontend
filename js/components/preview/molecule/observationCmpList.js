@@ -81,6 +81,7 @@ import { LoadingContext } from '../../loading';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import ObservationCmpView from './observationCmpView';
 import { ObservationsDialog } from './observationsDialog';
+import { useScrollToSelectedPose } from './useScrollToSelectedPose';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -333,6 +334,11 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   if (directDisplay && directDisplay.target) {
     target = directDisplay.target;
   }
+
+  const { addMoleculeViewRef, setScrollToMoleculeId, getNode } = useScrollToSelectedPose(
+    moleculesPerPage,
+    setCurrentPage
+  );
 
   let selectedMolecule = [];
   // TODO: Reset Infinity scroll
@@ -1221,6 +1227,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
 
                   return (
                     <ObservationCmpView
+                      ref={addMoleculeViewRef}
                       key={data.id}
                       imageHeight={imgHeight}
                       imageWidth={imgWidth}

@@ -54,11 +54,15 @@ export const INITIAL_STATE = {
   poseIdForObservationsDialog: 0,
 
   areLSHCompoundsInitialized: false,
-  toastMessages: []
+  toastMessages: [],
+  isScrollFiredForLHS: false
 };
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
   switch (action.type) {
+    case constants.SET_SCROLL_FIRED_FOR_LHS: {
+      return { ...state, isScrollFiredForLHS: action.isFired };
+    }
     case constants.SET_TO_BUY_LIST:
       return Object.assign({}, state, {
         to_buy_list: action.to_buy_list

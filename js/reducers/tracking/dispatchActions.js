@@ -17,7 +17,8 @@ import {
   removeFromMolListToEdit,
   setNextXMolecules,
   setTagDetailView,
-  addToastMessage
+  addToastMessage,
+  setScrollFiredForLHS
 } from '../selection/actions';
 import {
   resetReducersForRestoringActions,
@@ -96,7 +97,9 @@ import {
   appendCompoundColorOfDataset,
   removeCompoundColorOfDataset,
   setCompoundToSelectedCompoundsByDataset,
-  setSelectAllButtonForDataset
+  setSelectAllButtonForDataset,
+  appendColorToSelectedColorFilter,
+  removeColorFromSelectedColorFilter
 } from '../../components/datasets/redux/actions';
 import {
   removeComponentRepresentation,
@@ -482,7 +485,7 @@ const saveActionsList = (project, snapshot, actionList, nglViewList, isAnonymous
     getCommonLastActionByType(orderedActionList, actionType.DATASET_INDEX, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.DATASET_FILTER, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.DATASET_FILTER_SCORE, currentActions);
-    getCommonLastActionByType(orderedActionList, actionType.CLASS_SELECTED, currentActions);
+    getLastColorFilterActions(orderedActionList, actionType.COLOR_FILTER_TURNED_OFF, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.CLASS_UPDATED, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.ISO_LEVEL_EVENT, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.BOX_SIZE_EVENT, currentActions);
@@ -658,6 +661,16 @@ const getCurrentActionListDensity = (orderedActionList, type, collection, curren
       }
     });
   }
+};
+
+const getLastColorFilterActions = (orderedActionList, type, currentActions) => {
+  let actionList = orderedActionList.filter(action => action.type === type);
+  Object.keys(compoundsColors).forEach(color => {
+    let action = actionList.find(action => action.value === color);
+    if (action) {
+      currentActions.push({ ...action });
+    }
+  });
 };
 
 const getCommonLastActionByType = (orderedActionList, type, currentActions) => {
@@ -1037,6 +1050,7 @@ export const restoreAfterTargetActions = (stages, projectId, snapshotId) => asyn
     dispatch(setIsActionsRestoring(false, true));
     dispatch(restoreViewerControlActions(orderedActionList));
     dispatch(resetDatasetScrolledMap()); // Have a look at useScrollToSelected.js
+    dispatch(setScrollFiredForLHS(false));
     dispatch(setIsSnapshotDirty(false));
     dispatch(restoreSearchString(orderedActionList));
     dispatch(restoreSearchStringHitNavigator(orderedActionList));
@@ -1458,7 +1472,12 @@ export const restoreSitesActions = orderedActionList => (dispatch, getState) => 
       if (tag) {
         dispatch(addSelectedTag(tag));
         if (tag.hidden) {
-          dispatch(addToastMessage({ level: TOAST_LEVELS.WARNING, text: `Tag ${tag.tag} is selected in the snapshot but it's hidden.` }));
+          dispatch(
+            addToastMessage({
+              level: TOAST_LEVELS.WARNING,
+              text: `Tag ${tag.tag} is selected in the snapshot but it's hidden.`
+            })
+          );
         }
       }
     });
@@ -1476,7 +1495,12 @@ export const restoreTagActions = orderedActionList => (dispatch, getState) => {
       if (tag) {
         dispatch(addSelectedTag(tag));
         if (tag.hidden) {
-          dispatch(addToastMessage({ level: TOAST_LEVELS.WARNING, text: `Tag ${tag.tag} is selected in the snapshot but it's hidden.` }));
+          dispatch(
+            addToastMessage({
+              level: TOAST_LEVELS.WARNING,
+              text: `Tag ${tag.tag} is selected in the snapshot but it's hidden.`
+            })
+          );
         }
       }
     });
@@ -1560,6 +1584,11 @@ export const restoreCartActions = (orderedActionList, majorViewStage) => async (
     value = value !== undefined ? value : '';
     dispatch(setCompoundClasses(newValue, oldValue, value, id));
   }
+
+  let colorFilterRemoveActions = orderedActionList.filter(action => action.type === actionType.COLOR_FILTER_TURNED_OFF);
+  colorFilterRemoveActions?.forEach(action => {
+    dispatch(handleColorFilterAction(action, false));
+  });
 
   let vectorCompoundActions = orderedActionList.filter(action => action.type === actionType.VECTOR_COUMPOUND_ADDED);
   if (vectorCompoundActions) {
@@ -2368,6 +2397,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.CLASS_UPDATED:
         dispatch(handleClassUpdatedAction(action, false));
         break;
+      case actionType.COLOR_FILTER_TURNED_ON:
+        dispatch(handleColorFilterAction(action, false));
+        break;
+      case actionType.COLOR_FILTER_TURNED_OFF:
+        dispatch(handleColorFilterAction(action, true));
+        break;
       case actionType.TARGET_LOADED:
         dispatch(handleTargetAction(action, false));
         break;
@@ -2642,6 +2677,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.CLASS_UPDATED:
         dispatch(handleClassUpdatedAction(action, true));
+        break;
+      case actionType.COLOR_FILTER_TURNED_ON:
+        dispatch(handleColorFilterAction(action, true));
+        break;
+      case actionType.COLOR_FILTER_TURNED_OFF:
+        dispatch(handleColorFilterAction(action, false));
         break;
       case actionType.TARGET_LOADED:
         dispatch(handleTargetAction(action, true));
@@ -3044,6 +3085,17 @@ const handleClassUpdatedAction = (action, isAdd) => (dispatch, getState) => {
     let value = isAdd ? action.object_name : action.oldCompoundClasses[id];
     value = value !== undefined ? value : '';
     dispatch(setCompoundClasses(newValue, oldValue, value, id));
+  }
+};
+
+const handleColorFilterAction = (action, isSelected) => (dispatch, getState) => {
+  if (action) {
+    const color = action.value;
+    if (isSelected) {
+      dispatch(appendColorToSelectedColorFilter(color));
+    } else {
+      dispatch(removeColorFromSelectedColorFilter(color));
+    }
   }
 };
 

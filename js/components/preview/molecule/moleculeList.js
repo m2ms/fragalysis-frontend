@@ -72,6 +72,7 @@ import GroupNglControlButtonsContext from './groupNglControlButtonsContext';
 import { extractTargetFromURLParam } from '../utils';
 import { LoadingContext } from '../../loading';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
+import { useScrollToSelectedPose } from './useScrollToSelectedPose';
 
 const useStyles = makeStyles(theme => ({
   container: {

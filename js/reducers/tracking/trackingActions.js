@@ -738,6 +738,38 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
           text: `${actionDescription.VECTOR} ${objectName} ${actionDescription.SELECTED}`
         };
       }
+    } else if (action.type === customDatasetConstants.APPEND_COLOR_TO_SELECTED_COLOR_FILTERS) {
+      if (action.payload) {
+        let objectType = actionObjectType.COMPOUND;
+
+        trackAction = {
+          type: actionType.COLOR_FILTER_TURNED_ON,
+          annotation: actionAnnotation.CHECK,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: 'color_filter',
+          object_id: 'color_filter',
+          value: action.payload.colorClass,
+          text: `${actionDescription.CLASS} filter turned on for color: ${action.payload.colorClass} `
+        };
+      }
+    } else if (action.type === customDatasetConstants.REMOVE_COLOR_FROM_SELECTED_COLOR_FILTERS) {
+      if (action.payload) {
+        let objectType = actionObjectType.COMPOUND;
+
+        trackAction = {
+          type: actionType.COLOR_FILTER_TURNED_OFF,
+          annotation: actionAnnotation.CLEAR,
+          timestamp: Date.now(),
+          username: username,
+          object_type: objectType,
+          object_name: 'color_filter',
+          object_id: 'color_filter',
+          value: action.payload.colorClass,
+          text: `${actionDescription.CLASS} filter turned off for color: ${action.payload.colorClass} `
+        };
+      }
     } else if (action.type === previewCompoundConstants.SET_CURRENT_COMPOUND_CLASS) {
       if (action.payload) {
         let objectType = actionObjectType.COMPOUND;

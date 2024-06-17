@@ -574,3 +574,10 @@ export const addToastMessage = toastMessage => {
     toastMessage: toastMessage
   };
 };
+
+export const setScrollFiredForLHS = isFired => {
+  return {
+    type: constants.SET_SCROLL_FIRED_FOR_LHS,
+    isFired: isFired
+  };
+};

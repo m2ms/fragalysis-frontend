@@ -242,7 +242,7 @@ export const findTrackAction = (action, state) => (dispatch, getState) => {
           timestamp: Date.now(),
           username: username,
           object_type: objectType,
-          items: action.items,
+          items: [...action.items],
           text: `All hits were selected`
         };
       }

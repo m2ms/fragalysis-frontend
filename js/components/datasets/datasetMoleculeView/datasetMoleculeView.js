@@ -948,12 +948,10 @@ const DatasetMoleculeView = memo(
             className={classNames(classes.container, dragDropEnabled ? classes.dragDropCursor : undefined)}
             wrap="nowrap"
             ref={node => {
-              if (dragDropEnabled) {
-                ref.current = node;
-              }
               if (outsideRef) {
                 outsideRef(data.id, node);
               }
+              ref.current = node;
             }}
             data-handler-id={dragDropEnabled ? handlerId : undefined}
             style={{ opacity }}

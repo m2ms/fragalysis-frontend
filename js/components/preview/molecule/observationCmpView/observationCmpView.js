@@ -44,7 +44,8 @@ import {
   setOpenObservationsDialog,
   setObservationsForLHSCmp,
   setIsLHSCmpTagEdit,
-  setPoseIdForObservationsDialog
+  setPoseIdForObservationsDialog,
+  setObservationDialogAction
 } from '../../../../reducers/selection/actions';
 import { moleculeProperty } from '../helperConstants';
 import { centerOnLigandByMoleculeID } from '../../../../reducers/ngl/dispatchActions';
@@ -1674,10 +1675,10 @@ const ObservationCmpView = memo(
                         (poseIdForObservationsDialog === data.id && !isObservationDialogOpen)
                       ) {
                         dispatch(setOpenObservationsDialog(true));
-                        // dispatch(setObservationDialogAction(data.id, observations, !isObservationDialogOpen, 0, []));
+                        dispatch(setObservationDialogAction(data.id, observations, true, 0, []));
                       } else {
                         dispatch(setOpenObservationsDialog(false));
-                        // dispatch(setObservationDialogAction(data.id, observations, !isObservationDialogOpen, 0, []));
+                        dispatch(setObservationDialogAction(0, [], false, data.id, observations));
                       }
                       dispatch(setPoseIdForObservationsDialog(data.id));
 

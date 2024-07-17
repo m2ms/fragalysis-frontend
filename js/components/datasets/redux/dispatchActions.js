@@ -1110,14 +1110,14 @@ export const moveSelectedDatasetMoleculeUpDown = (
 
   const inspirations = getInspirationsForMol(allInspirations, datasetID, newItem.id);
   dispatch(setInspirationMoleculeDataList(inspirations));
-  dispatch(clearCompoundView(newItem, datasetID, stage, true));
+  dispatch(clearCompoundView(newItem, datasetID, stage, false));
   await Promise.all([
-    dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
-    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
+    dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, false)),
+    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, false))
   ]);
 
-  dispatch(removeSelectedDatasetMolecules(stage, true, newItem, { ...lockedCompounds }));
-  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
+  dispatch(removeSelectedDatasetMolecules(stage, false, newItem, { ...lockedCompounds }));
+  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, false, datasetID));
 
   dispatch(setSelectedCompoundsIterator(newItemDatasetID, newItem));
 };
@@ -1139,21 +1139,21 @@ export const moveDatasetMoleculeUpDown = (stage, datasetID, item, newItemDataset
 
   const dataValue = { ...data, objectsInView };
 
-  dispatch(setArrowUpDown(datasetID, item, newItem, direction, dataValue));
+  // dispatch(setArrowUpDown(datasetID, item, newItem, direction, dataValue));
 
   const inspirations = getInspirationsForMol(allInspirations, datasetID, newItem.id);
   dispatch(setInspirationMoleculeDataList(inspirations));
-  dispatch(clearCompoundView(newItem, datasetID, stage, true));
+  dispatch(clearCompoundView(newItem, datasetID, stage, false));
   console.log('moveDatasetMoleculeUpDown - compounds cleared');
   await Promise.all([
-    dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, true)),
-    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, true))
+    dispatch(moveSelectedMoleculeSettings(stage, item, newItem, newItemDatasetID, datasetID, dataValue, false)),
+    dispatch(moveSelectedDatasetMoleculeInspirationsSettings(item, newItem, stage, false))
   ]);
 
   dispatch(
-    removeSelectedDatasetMolecules(stage, true, newItem, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] })
+    removeSelectedDatasetMolecules(stage, false, newItem, { [newItemDatasetID]: [newItem.id, ...lockedCompounds] })
   );
-  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, true, datasetID));
+  dispatch(removeSelectedTypesOfDatasetInspirations([newItem], stage, false, datasetID));
 
   dispatch(setDatasetIterator(newItemDatasetID, newItem));
 };

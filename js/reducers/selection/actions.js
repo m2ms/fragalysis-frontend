@@ -426,6 +426,17 @@ export const setPoseIdForObservationsDialog = poseId => {
   };
 };
 
+export const setObservationDialogAction = (poseId, observations, open, prevPoseId, prevObservations) => {
+  return {
+    type: constants.SET_OBSERVATION_DIALOG_ACTION,
+    poseId: poseId,
+    observations: observations,
+    open: open,
+    prevPoseId: prevPoseId,
+    prevObservations: prevObservations
+  };
+};
+
 export const setObservationsForLHSCmp = observations => {
   return {
     type: constants.SET_OBSERVATIONS_FOR_LHS_CMP,
@@ -525,6 +536,24 @@ export const setUnselectAllMolecules = listOfNames => {
   return {
     type: constants.SET_UNSELECT_ALL_MOLECULES,
     items: listOfNames
+  };
+};
+
+//this is dummy action because we just need to record given action by tracking reducer
+//so we can undo, redo it and also restore from snapshot
+export const setSelectVisiblePoses = listOfItems => {
+  return {
+    type: constants.SET_SELECT_VISIBLE_POSES,
+    items: listOfItems
+  };
+};
+
+//this is dummy action because we just need to record given action by tracking reducer
+//so we can undo, redo it and also restore from snapshot
+export const setUnselectVisiblePoses = listOfItems => {
+  return {
+    type: constants.SET_UNSELECT_VISIBLE_POSES,
+    items: listOfItems
   };
 };
 

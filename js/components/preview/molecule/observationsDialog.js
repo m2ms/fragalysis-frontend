@@ -31,7 +31,10 @@ import {
   appendToMolListToEdit,
   removeFromMolListToEdit,
   setDeselectedAllByType,
+  setObservationDialogAction,
+  setObservationsForLHSCmp,
   setOpenObservationsDialog,
+  setPoseIdForObservationsDialog,
   setSelectedAllByType,
   setTagEditorOpenObs
 } from '../../../reducers/selection/actions';
@@ -212,6 +215,7 @@ export const ObservationsDialog = memo(
       state => state.datasetsReducers.isLoadingInspirationListOfMolecules
     );
     const observationsDataList = useSelector(state => state.selectionReducers.observationsForLHSCmp);
+    const poseIdForDialog = useSelector(state => state.selectionReducers.poseIdForObservationsDialog);
 
     const ligandList = useSelector(state => state.selectionReducers.fragmentDisplayList);
     const proteinList = useSelector(state => state.selectionReducers.proteinList);
@@ -501,6 +505,10 @@ export const ObservationsDialog = memo(
               } else {
                 if (sourcePose.site_observations.length === 1) {
                   dispatch(setOpenObservationsDialog(false));
+                  dispatch(setObservationsForLHSCmp([]));
+                  dispatch(setPoseIdForObservationsDialog(0));
+
+                  // dispatch(setObservationDialogAction(0, [], false));
                 }
                 sourcePose = dispatch(removeObservationsFromPose(sourcePose, moleculesToEditIds));
                 destinationPose = await dispatch(addObservationsToPose(destinationPose, moleculesToEditIds));
@@ -579,7 +587,13 @@ export const ObservationsDialog = memo(
               <IconButton
                 color="inherit"
                 className={classes.headerButton}
-                onClick={() => dispatch(setOpenObservationsDialog(false))}
+                onClick={() => {
+                  dispatch(setOpenObservationsDialog(false));
+                  dispatch(setObservationsForLHSCmp([]));
+                  dispatch(setPoseIdForObservationsDialog(0));
+
+                  dispatch(setObservationDialogAction(0, [], false, poseIdForDialog, observationsDataList));
+                }}
               >
                 <Close />
               </IconButton>

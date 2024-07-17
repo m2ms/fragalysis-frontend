@@ -18,6 +18,10 @@ export const useScrollToSelectedPose = (moleculesPerPage, setCurrentPage) => {
   const densityListCustom = useSelector(state => state.selectionReducers.densityListCustom);
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
 
+  const isObservationsDialogOpen = useSelector(state => state.selectionReducers.isObservationDialogOpen);
+
+  const poseIdForObservationsDialog = useSelector(state => state.selectionReducers.poseIdForObservationsDialog);
+
   const scrollFired = useSelector(state => state.selectionReducers.isScrollFiredForLHS);
 
   const [moleculeViewRefs, setMoleculeViewRefs] = useState({});
@@ -25,11 +29,20 @@ export const useScrollToSelectedPose = (moleculesPerPage, setCurrentPage) => {
 
   // First pass, iterates over all the molecules and checks if any of them is selected. If it is,
   // it saves the ID of the molecule and determines how many pages of molecules should be displayed.
-  // This is done only once and only if right hand side is open.
+  // This is done only once.
   // This also gets reset on snapshot change.
   useEffect(() => {
     if (!scrollFired) {
-      if (
+      if (isObservationsDialogOpen && poseIdForObservationsDialog) {
+        for (let i = 0; i < poses.length; i++) {
+          const pose = poses[i];
+          if (pose.id === poseIdForObservationsDialog) {
+            setCurrentPage(i / moleculesPerPage + 1);
+            setScrollToMoleculeId(poseIdForObservationsDialog);
+            break;
+          }
+        }
+      } else if (
         ligands?.length ||
         proteins?.length ||
         complexes?.length ||
@@ -74,7 +87,9 @@ export const useScrollToSelectedPose = (moleculesPerPage, setCurrentPage) => {
     densityListCustom.length,
     densityList,
     densityListCustom,
-    vectorOnList
+    vectorOnList,
+    poseIdForObservationsDialog,
+    isObservationsDialogOpen
   ]);
 
   // Second pass, once the list of molecules is displayed and the refs to their DOM nodes have been
@@ -113,7 +128,7 @@ export const useScrollToSelectedPose = (moleculesPerPage, setCurrentPage) => {
 
   const addMoleculeViewRef = useCallback((moleculeId, node) => {
     setMoleculeViewRefs(prevRefs => {
-      if (prevRefs.hasOwnProperty(moleculeId)) return prevRefs;
+      if (prevRefs.hasOwnProperty(moleculeId) || !node) return prevRefs;
       return {
         ...prevRefs,
         [moleculeId]: node

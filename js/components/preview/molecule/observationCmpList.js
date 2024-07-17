@@ -45,7 +45,8 @@ import {
   withDisabledMoleculesNglControlButtons,
   removeSelectedTypesInHitNavigator,
   selectAllHits,
-  autoHideTagEditorDialogsOnScroll
+  autoHideTagEditorDialogsOnScroll,
+  selectAllVisibleObservations
 } from './redux/dispatchActions';
 import { DEFAULT_FILTER, PREDEFINED_FILTERS } from '../../../reducers/selection/constants';
 import { Edit, FilterList } from '@material-ui/icons';
@@ -58,7 +59,9 @@ import {
   setMoleculeForTagEdit,
   setObservationsForLHSCmp,
   setOpenObservationsDialog,
-  setLHSCompoundsInitialized
+  setLHSCompoundsInitialized,
+  setPoseIdForObservationsDialog,
+  setObservationDialogAction
 } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import * as listType from '../../../constants/listTypes';
@@ -725,6 +728,9 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
       if (!cmp) {
         dispatch(setObservationsForLHSCmp([]));
         dispatch(setOpenObservationsDialog(false));
+        dispatch(setPoseIdForObservationsDialog(0));
+
+        // dispatch(setObservationDialogAction(0, [], false));
       }
     }
   }, [isObservationDialogOpen, filteredLHSCompoundsList, observationsForLHSCmp, dispatch]);
@@ -1135,7 +1141,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                   [classes.contColButtonHalfSelected]: false
                 })}
                 onClick={() => {
-                  dispatch(selectAllHits([], null, false));
+                  dispatch(selectAllVisibleObservations([], null, false));
                   // setSelectDisplayedHitsPressed(!selectDisplayedHitsPressed);
                 }}
                 disabled={false}
@@ -1154,7 +1160,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                   [classes.contColButtonHalfSelected]: false
                 })}
                 onClick={() => {
-                  dispatch(selectAllHits(uniqueSelectedMoleculeForHitNavigator, null, false));
+                  dispatch(selectAllVisibleObservations(uniqueSelectedMoleculeForHitNavigator, null, false));
                   // setSelectDisplayedHitsPressed(!selectDisplayedHitsPressed);
                 }}
                 disabled={false}

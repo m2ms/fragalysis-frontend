@@ -50,7 +50,8 @@ import {
   addDensityCustomView,
   removeDensity,
   getProteinData,
-  selectAllHits
+  selectAllHits,
+  selectAllVisibleObservations
 } from '../../components/preview/molecule/redux/dispatchActions';
 import { setSortDialogOpen, setSearchStringOfHitNavigator } from '../../components/preview/molecule/redux/actions';
 import {
@@ -99,7 +100,11 @@ import {
   setCompoundToSelectedCompoundsByDataset,
   setSelectAllButtonForDataset,
   appendColorToSelectedColorFilter,
-  removeColorFromSelectedColorFilter
+  removeColorFromSelectedColorFilter,
+  setIsOpenInspirationDialog,
+  setInspirationList,
+  setInspirationDialogOpenedForSelectedCompounds,
+  setSelectedDatasetScrolled
 } from '../../components/datasets/redux/actions';
 import {
   removeComponentRepresentation,
@@ -151,7 +156,10 @@ import {
   setSelectedAll,
   setDeselectedAll,
   setSelectedAllByType,
-  setDeselectedAllByType
+  setDeselectedAllByType,
+  setObservationsForLHSCmp,
+  setOpenObservationsDialog,
+  setPoseIdForObservationsDialog
 } from '../../../js/reducers/selection/actions';
 import {
   setSelectedAll as setSelectedAllOfDataset,
@@ -241,7 +249,10 @@ const saveActionsList = (project, snapshot, actionList, nglViewList, isAnonymous
     const currentTargets = (currentTargetOn && [currentTargetOn]) || [];
     const currentVectorSmiles = (currentVector && [currentVector]) || [];
 
-    let orderedActionList = actionList.reverse((a, b) => a.timestamp - b.timestamp);
+    //filter out empty actions - don't know why but they sometimes appear in between activating ligand and protein...
+    const filteredActionList = actionList.filter(a => Object.keys(a).length > 0);
+
+    let orderedActionList = filteredActionList.reverse((a, b) => a.timestamp - b.timestamp);
 
     let currentActions = [];
 
@@ -321,6 +332,13 @@ const saveActionsList = (project, snapshot, actionList, nglViewList, isAnonymous
     getCurrentActionListOfSelectAllMolecules(
       orderedActionList,
       actionType.ALL_MOLECULES_SELECTED,
+      getCollection(selectedMolecules),
+      currentActions
+    );
+
+    getCurrentActionListOfSelectAllVisibleHits(
+      orderedActionList,
+      actionType.ALL_VISIBLE_HITS_SELECTED,
       getCollection(selectedMolecules),
       currentActions
     );
@@ -481,6 +499,8 @@ const saveActionsList = (project, snapshot, actionList, nglViewList, isAnonymous
       currentActions
     );
 
+    getCommonLastActionByType(orderedActionList, actionType.POSE_WINDOW_ACTION, currentActions);
+    getCommonLastActionByType(orderedActionList, actionType.INSPIRATION_WINDOW_ACTION, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.TAB, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.DATASET_INDEX, currentActions);
     getCommonLastActionByType(orderedActionList, actionType.DATASET_FILTER, currentActions);
@@ -774,17 +794,23 @@ const getCurrentActionListOfAllSelectionByTypeOfDataset = (
 
 const getCurrentActionListOfSelectAllMolecules = (orderedActionList, type, collection, currentActions) => {
   let action = orderedActionList.find(action => action.type === type);
-  if (action && collection) {
+  if (action) {
     let actionItems = action.items;
     let items = [];
-    collection.forEach(data => {
-      let item = actionItems.find(ai => ai.id === data.id);
-      if (item) {
-        items.push(item);
+    actionItems?.forEach(ai => {
+      if (ai.associatedObs && ai.associatedObs.length > 0) {
+        items.push(...ai.associatedObs);
       }
     });
 
     currentActions.push(Object.assign({ ...action, items: items }));
+  }
+};
+
+const getCurrentActionListOfSelectAllVisibleHits = (orderedActionList, type, collection, currentActions) => {
+  let action = orderedActionList.find(action => action.type === type);
+  if (action) {
+    currentActions.push(Object.assign({ ...action }));
   }
 };
 
@@ -1009,8 +1035,11 @@ export const restoreAfterTargetActions = (stages, projectId, snapshotId) => asyn
     currentActionList = state.trackingReducers.current_actions_list;
   }
 
+  //for some reason we have empty actions here... sometimes
+  currentActionList = currentActionList.filter(a => Object.keys(a).length > 0);
+
   // const currentActionList = state.trackingReducers.current_actions_list;
-  const orderedActionList = currentActionList.sort((a, b) => a.timestamp - b.timestamp);
+  let orderedActionList = currentActionList.sort((a, b) => a.timestamp - b.timestamp);
   // console.log(`snapshotDebug - restoreAfterTargetActions - no. of actions: ${orderedActionList.length}`);
   const targetId = state.apiReducers.target_on;
 
@@ -1047,10 +1076,11 @@ export const restoreAfterTargetActions = (stages, projectId, snapshotId) => asyn
     dispatch(restoreSnapshotImageActions(projectId));
     dispatch(restoreNglStateAction(orderedActionList, stages));
     dispatch(restoreNglSettingsAction(orderedActionList, majorView.stage));
-    dispatch(setIsActionsRestoring(false, true));
     dispatch(restoreViewerControlActions(orderedActionList));
+    dispatch(setIsActionsRestoring(false, true));
     dispatch(resetDatasetScrolledMap()); // Have a look at useScrollToSelected.js
     dispatch(setScrollFiredForLHS(false));
+    dispatch(setSelectedDatasetScrolled(false));
     dispatch(setIsSnapshotDirty(false));
     dispatch(restoreSearchString(orderedActionList));
     dispatch(restoreSearchStringHitNavigator(orderedActionList));
@@ -1524,6 +1554,8 @@ export const restoreMoleculesActions = (orderedActionList, stage) => async (disp
     await dispatch(addNewType(moleculesAction, actionType.DENSITY_TYPE_ON, 'density', stage, state));
     await dispatch(addNewType(moleculesAction, actionType.DENSITY_CUSTOM_TURNED_ON, 'densityCustom', stage, state));
     await dispatch(restoreSelectAllMolecules(moleculesAction));
+    await dispatch(restoreSelectAllVisibleHits(moleculesAction));
+    await dispatch(restorePoseWindow(moleculesAction));
   }
 
   dispatch(restoreAllSelectionActions(orderedActionList, stage, true));
@@ -1664,6 +1696,35 @@ const restoreSelectAllMolecules = moleculesAction => (dispatch, getState) => {
     action.items.forEach(m => {
       dispatch(handleSelectMoleculeByName(m.code, true));
     });
+  }
+};
+
+const restoreSelectAllVisibleHits = moleculesAction => (dispatch, getState) => {
+  let action = moleculesAction.find(ma => ma.type === actionType.ALL_VISIBLE_HITS_SELECTED);
+  if (action && action.items) {
+    const state = getState();
+    const allMolecules = state.apiReducers.all_mol_lists;
+    dispatch(setNextXMolecules(allMolecules.length));
+    action.items.forEach(m => {
+      dispatch(handleSelectMoleculeByName(m.code, true));
+    });
+  }
+};
+
+const restorePoseWindow = moleculesAction => (dispatch, getState) => {
+  let action = moleculesAction.find(ma => ma.type === actionType.POSE_WINDOW_ACTION);
+  if (action && action.isOpen && action.items?.length > 0) {
+    dispatch(handlePoseWindowAction(action, false));
+  }
+};
+
+const restoreInspirationsWindow = customDatasetAction => (dispatch, getState) => {
+  let action = customDatasetAction.find(ma => ma.type === actionType.INSPIRATION_WINDOW_ACTION);
+  if (action && action.isOpen && action.items?.length > 0) {
+    if (action.isSelectedList) {
+      dispatch(setInspirationDialogOpenedForSelectedCompounds(true));
+    }
+    dispatch(handleInspirationsWindowAction(action, false));
   }
 };
 
@@ -2019,6 +2080,8 @@ export const restoreCompoundsActions = (orderedActionList, stage) => (dispatch, 
 
   dispatch(restoreAllSelectionActions(orderedActionList, stage, false));
   dispatch(restoreAllSelectionByTypeActions(orderedActionList, stage, false));
+  dispatch(restoreInspirationsWindow(compoundsAction));
+
   dispatch(setIsTrackingCompoundsRestoring(false));
 };
 
@@ -2379,6 +2442,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
       case actionType.ARROW_NAVIGATION:
         dispatch(handleArrowNavigationAction(action, false, majorViewStage));
         break;
+      case actionType.POSE_WINDOW_ACTION:
+        dispatch(handlePoseWindowAction(action, true));
+        break;
+      case actionType.INSPIRATION_WINDOW_ACTION:
+        dispatch(handleInspirationsWindowAction(action, true));
+        break;
       case actionType.VECTOR_SELECTED:
         dispatch(handleVectorAction(action, false));
         break;
@@ -2465,6 +2534,12 @@ const handleUndoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.ALL_MOLECULES_UNSELECTED:
         dispatch(handleSelectAllMolecules(action, true));
+        break;
+      case actionType.ALL_VISIBLE_HITS_SELECTED:
+        dispatch(handleSelectAllVisibleHits(action, false));
+        break;
+      case actionType.ALL_VISIBLE_HITS_UNSELECTED:
+        dispatch(handleSelectAllVisibleHits(action, true));
         break;
       case actionType.TAB:
         dispatch(handleTabAction(action, false));
@@ -2618,6 +2693,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
       case actionType.SURFACE_TURNED_ON:
         dispatch(handleMoleculeAction(action, 'surface', true, majorViewStage, state));
         break;
+      case actionType.POSE_WINDOW_ACTION:
+        dispatch(handlePoseWindowAction(action, false));
+        break;
+      case actionType.INSPIRATION_WINDOW_ACTION:
+        dispatch(handleInspirationsWindowAction(action, false));
+        break;
       case actionType.QUALITY_TURNED_ON:
         dispatch(handleMoleculeAction(action, 'quality', true, majorViewStage, state));
         break;
@@ -2746,6 +2827,12 @@ const handleRedoAction = (action, stages) => (dispatch, getState) => {
         break;
       case actionType.ALL_MOLECULES_UNSELECTED:
         dispatch(handleSelectAllMolecules(action, false));
+        break;
+      case actionType.ALL_VISIBLE_HITS_SELECTED:
+        dispatch(handleSelectAllVisibleHits(action, true));
+        break;
+      case actionType.ALL_VISIBLE_HITS_UNSELECTED:
+        dispatch(handleSelectAllVisibleHits(action, false));
         break;
       case actionType.TAB:
         dispatch(handleTabAction(action, true));
@@ -3252,6 +3339,12 @@ const handleSelectAllMolecules = (action, isSelected) => (dispatch, getState) =>
   }
 };
 
+const handleSelectAllVisibleHits = (action, isSelected) => (dispatch, getState) => {
+  if (action && action.items) {
+    dispatch(selectAllVisibleObservations(action.items, setNextXMolecules, !isSelected));
+  }
+};
+
 const handleSelectAllDatasetCompounds = (action, isSelected) => (dispatch, getState) => {
   if (action.selectAllButton) {
     dispatch(setSelectAllButtonForDataset(isSelected));
@@ -3661,6 +3754,68 @@ const handleTagAction = (action, isSelected) => (dispatch, getState) => {
       } else {
         dispatch(removeSelectedTag(tag));
       }
+    }
+  }
+};
+
+const handlePoseWindowAction = (action, invert) => (dispatch, getState) => {
+  if (action) {
+    const openDialog = action.isOpen;
+    if (openDialog) {
+      if (invert && action.prevPoseId && action.prevObservations?.length > 0) {
+        dispatch(setObservationsForLHSCmp(action.prevObservations));
+        dispatch(setOpenObservationsDialog(true));
+        dispatch(setPoseIdForObservationsDialog(action.prevPoseId));
+        dispatch(setScrollFiredForLHS(false));
+      } else if (invert) {
+        dispatch(setObservationsForLHSCmp([]));
+        dispatch(setOpenObservationsDialog(false));
+        dispatch(setPoseIdForObservationsDialog(0));
+        // dispatch(setScrollFiredForLHS(false));
+      } else if (action.object_id && action.items?.length > 0) {
+        dispatch(setObservationsForLHSCmp(action.items));
+        dispatch(setOpenObservationsDialog(true));
+        dispatch(setPoseIdForObservationsDialog(action.object_id));
+        dispatch(setScrollFiredForLHS(false));
+      } else {
+        console.error(`${invert ? 'Undo' : 'Redo'} failed for action: ${JSON.stringify(action)}`);
+      }
+    } else {
+      dispatch(setObservationsForLHSCmp([]));
+      dispatch(setOpenObservationsDialog(false));
+      dispatch(setPoseIdForObservationsDialog(0));
+    }
+  }
+};
+
+const handleInspirationsWindowAction = (action, invert) => (dispatch, getState) => {
+  if (action) {
+    const openDialog = action.isOpen;
+    if (openDialog) {
+      if (invert && action.prevCmpdId && action.prevInspirations?.length > 0) {
+        dispatch(setInspirationMoleculeDataList(action.prevInspirations));
+        dispatch(setIsOpenInspirationDialog(true));
+        dispatch(setInspirationList(action.datasetID, [action.prevCmpdId]));
+        dispatch(resetDatasetScrolledMap());
+        dispatch(setSelectedDatasetScrolled(false));
+      } else if (invert) {
+        dispatch(setInspirationMoleculeDataList([]));
+        dispatch(setIsOpenInspirationDialog(false));
+        dispatch(setInspirationList(action.datasetID, 0));
+        // dispatch(resetDatasetScrolledMap());
+      } else if (action.object_id && action.items?.length > 0) {
+        dispatch(setInspirationMoleculeDataList(action.items));
+        dispatch(setIsOpenInspirationDialog(true));
+        dispatch(setInspirationList(action.datasetID, [action.object_id]));
+        dispatch(resetDatasetScrolledMap());
+        dispatch(setSelectedDatasetScrolled(false));
+      } else {
+        console.error(`${invert ? 'Undo' : 'Redo'} failed for action: ${JSON.stringify(action)}`);
+      }
+    } else {
+      dispatch(setInspirationMoleculeDataList([]));
+      dispatch(setIsOpenInspirationDialog(false));
+      dispatch(setInspirationList(action.datasetID, 0));
     }
   }
 };

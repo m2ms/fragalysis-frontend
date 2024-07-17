@@ -9,7 +9,11 @@ import {
   setSnapshotActionsDownloaded
 } from './actions';
 import { resetSelectionState, setScrollFiredForLHS } from '../selection/actions';
-import { resetDatasetsStateOnSnapshotChange, resetDatasetScrolledMap } from '../../components/datasets/redux/actions';
+import {
+  resetDatasetsStateOnSnapshotChange,
+  resetDatasetScrolledMap,
+  setSelectedDatasetScrolled
+} from '../../components/datasets/redux/actions';
 import { resetViewerControlsState } from '../../components/preview/viewerControls/redux/actions';
 import { resetNglTrackingState } from '../nglTracking/dispatchActions';
 import { removeAllNglComponents } from '../ngl/actions';
@@ -133,6 +137,7 @@ export const restoreAfterSnapshotChange = (stages, projectId) => async (dispatch
 
     dispatch(resetDatasetScrolledMap()); // Have a look at useScrollToSelected.js
     dispatch(setScrollFiredForLHS(false));
+    dispatch(setSelectedDatasetScrolled(false));
     dispatch(setIsActionsRestoring(false, true));
 
     console.count(`restoreAfterSnapshotChange end`);

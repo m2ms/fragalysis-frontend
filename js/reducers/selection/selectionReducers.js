@@ -168,7 +168,10 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return { ...state, isObservationDialogOpen: action.isOpen };
 
     case constants.SET_POSE_ID_FOR_OBSERVATIONS_DIALOG:
-      return { ...state, poseIdForObservationsDialog: action.poseId };
+      return {
+        ...state,
+        poseIdForObservationsDialog: action.poseId
+      };
 
     case constants.SET_OBSERVATIONS_FOR_LHS_CMP:
       return { ...state, observationsForLHSCmp: [...action.observations] };

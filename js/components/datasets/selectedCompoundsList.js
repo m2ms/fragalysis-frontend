@@ -955,11 +955,11 @@ export const SelectedCompoundList = memo(() => {
         {currentMolecules.length > 0 && (
           <Grid item className={classes.gridItemList} ref={scrollBarRef}>
             <InfiniteScroll
-              getScrollParent={() => {
-                dispatch(
-                  autoHideDatasetDialogsOnScroll({ inspirationDialogRef, crossReferenceDialogRef, scrollBarRef })
-                );
-              }}
+              // getScrollParent={() => {
+              //   dispatch(
+              //     autoHideDatasetDialogsOnScroll({ inspirationDialogRef, crossReferenceDialogRef, scrollBarRef })
+              //   );
+              // }}
               pageStart={0}
               loadMore={loadNextMolecules}
               hasMore={canLoadMore}

@@ -60,7 +60,8 @@ import {
   setAskLockCompoundsQuestion,
   setCompoundToSelectedCompoundsByDataset,
   setInspirationDialogAction,
-  setInspirationMoleculeDataList
+  setInspirationMoleculeDataList,
+  setIsOpenInspirationDialog
 } from '../redux/actions';
 import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
 import { ArrowDownward, ArrowUpward, MyLocation } from '@material-ui/icons';
@@ -482,6 +483,8 @@ const DatasetMoleculeView = memo(
           dispatch(setInspirationMoleculeDataList(getInspirationsForMol(allInspirations, datasetID, currentID)));
           if (setRef) {
             setRef(ref.current);
+            // dispatch(setIsOpenInspirationDialog(true));
+            // console.log(`After setting the ref for ${currentID}`);
           }
         }
       }, [

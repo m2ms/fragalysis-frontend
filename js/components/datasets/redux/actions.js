@@ -338,10 +338,12 @@ export const removeFromInspirationMoleculeDataList = moleculeID => ({
   payload: moleculeID
 });
 
-export const setIsOpenInspirationDialog = isOpen => ({
-  type: constants.SET_IS_OPEN_INSPIRATION_DIALOG,
-  payload: isOpen
-});
+export const setIsOpenInspirationDialog = isOpen => {
+  return {
+    type: constants.SET_IS_OPEN_INSPIRATION_DIALOG,
+    payload: isOpen
+  };
+};
 
 export const setIsOpenCrossReferenceDialog = isOpen => ({
   type: constants.SET_IS_OPEN_CROSS_REFERENCE_DIALOG,

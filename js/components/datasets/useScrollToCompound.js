@@ -42,8 +42,8 @@ export const useScrollToCompound = () => {
   const isSelectedCompoundsTab = tabValue === 1;
 
   const dialogOpenedForInspirationWithId =
-    isSelectedCompoundsTab && Object.keys(inspirationLists).length > 0
-      ? inspirationLists[Object.keys(inspirationLists)].length > 0
+    isSelectedCompoundsTab && Object.keys(inspirationLists)?.length > 0
+      ? inspirationLists[Object.keys(inspirationLists)]?.length > 0
         ? inspirationLists[Object.keys(inspirationLists)][0]
         : 0
       : 0;

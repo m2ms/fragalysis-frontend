@@ -1434,15 +1434,15 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
               ref={scrollBarRef}
             >
               <InfiniteScroll
-                getScrollParent={() =>
-                  dispatch(
-                    autoHideDatasetDialogsOnScroll({
-                      inspirationDialogRef,
-                      crossReferenceDialogRef,
-                      scrollBarRef
-                    })
-                  )
-                }
+                // getScrollParent={() =>
+                //   dispatch(
+                //     autoHideDatasetDialogsOnScroll({
+                //       inspirationDialogRef,
+                //       crossReferenceDialogRef,
+                //       scrollBarRef
+                //     })
+                //   )
+                // }
                 pageStart={0}
                 loadMore={loadNextMolecules}
                 hasMore={canLoadMore}

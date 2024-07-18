@@ -553,6 +553,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
   const state = getState();
   const isOpenInspirationDialog = state.datasetsReducers.isOpenInspirationDialog;
   const isOpenCrossReferenceDialog = state.datasetsReducers.isOpenCrossReferenceDialog;
+  const isActionRestoring = state.trackingReducers.isActionRestoring;
 
   const currentBoundingClientRectInspiration =
     (inspirationDialogRef.current && inspirationDialogRef.current.getBoundingClientRect()) || null;
@@ -562,6 +563,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
   const scrollBarBoundingClientRect = (scrollBarRef.current && scrollBarRef.current.getBoundingClientRect()) || null;
 
   if (
+    !isActionRestoring &&
     isOpenInspirationDialog &&
     currentBoundingClientRectInspiration !== null &&
     scrollBarBoundingClientRect !== null &&
@@ -572,7 +574,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
       Math.round(currentBoundingClientRectInspiration.top) < Math.round(scrollBarBoundingClientRect.top) ||
       Math.abs(scrollBarBoundingClientRect.bottom - currentBoundingClientRectInspiration.top) < 42
     ) {
-      dispatch(setIsOpenInspirationDialog(false));
+      // dispatch(setIsOpenInspirationDialog(false));
     }
   }
   if (

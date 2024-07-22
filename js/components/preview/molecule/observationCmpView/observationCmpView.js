@@ -445,8 +445,11 @@ const ObservationCmpView = memo(
       useEffect(() => {
         if (isObservationDialogOpen && poseIdForObservationsDialog === currentID) {
           dispatch(setObservationsForLHSCmp(observations));
+          if (setRef) {
+            setRef(ref.current);
+          }
         }
-      }, [observations, isObservationDialogOpen, dispatch, poseIdForObservationsDialog, currentID]);
+      }, [observations, isObservationDialogOpen, dispatch, poseIdForObservationsDialog, currentID, setRef]);
 
       const getMainObservation = useCallback(() => {
         let result = null;

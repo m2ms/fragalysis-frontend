@@ -120,7 +120,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
       setTryToOpen(false);
       dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
     } else if (!isSnapshotDirty && tryToOpen && transitionToSnapshot) {
-      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
+      // dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, nglViewList, stage));
       setTryToOpen(false);
     }
   }, [dispatch, isSnapshotDirty, nglViewList, sessionProjectID, stage, transitionToSnapshot, tryToOpen]);

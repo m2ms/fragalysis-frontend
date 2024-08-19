@@ -204,7 +204,22 @@ export const addDatasetLigand = (
       representations: representations,
       datasetID: datasetID
     })
-  );
+  ).finally(() => {
+    const skipOrientation = false; //state.trackingReducers.skipOrientationChange;
+    if (!skipOrientation) {
+      const ligandOrientation = stage.viewerControls.getOrientation();
+      dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
+
+      dispatch(appendMoleculeOrientation(getDatasetMoleculeID(datasetID, data?.id), ligandOrientation));
+
+      // keep current orientation of NGL View
+      if (!skipOrientation) {
+        console.count(`Before applying orientation after loading dataset ligand.`);
+        stage.viewerControls.orient(currentOrientation);
+        console.count(`After applying orientation after loading dataset ligand.`);
+      }
+    }
+  });
 };
 
 export const removeDatasetLigand = (stage, data, colourToggle, datasetID, skipTracking = false) => dispatch => {

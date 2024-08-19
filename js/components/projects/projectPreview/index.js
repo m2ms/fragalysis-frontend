@@ -4,8 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useRouteMatch } from 'react-router-dom';
 import { loadCurrentSnapshotByID, loadSnapshotByProjectID } from '../redux/dispatchActions';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
-import { restoreCurrentActionsList } from '../../../reducers/tracking/dispatchActions';
-import { setIsSnapshotDirty } from '../../../reducers/tracking/actions';
 import { setDownloadStructuresDialogOpen } from '../../snapshot/redux/actions';
 import { ToastContext } from '../../toast';
 import { LegacySnapshotModal } from '../legacySnapshotModal';
@@ -21,8 +19,8 @@ export const ProjectPreview = memo(({}) => {
   const snapshotId = match && match.params && match.params.snapshotId;
   const currentSnapshotID = useSelector(state => state.projectReducers.currentSnapshot.id);
   const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
-  const isActionRestoring = useSelector(state => state.trackingReducers.isActionRestoring);
-  const isActionRestored = useSelector(state => state.trackingReducers.isActionRestored);
+  const isActionRestoring = false; //useSelector(state => state.trackingReducers.isActionRestoring);
+  const isActionRestored = true; //useSelector(state => state.trackingReducers.isActionRestored);
 
   const [showLegacySnapshotModal, setShowLegacySnapshotModal] = useState(false);
 
@@ -32,7 +30,7 @@ export const ProjectPreview = memo(({}) => {
         .then(response => {
           if (response !== false) {
             isSnapshotLoaded.current = response;
-            dispatch(setIsSnapshotDirty(false));
+            // dispatch(setIsSnapshotDirty(false));
             setCanShow(true);
           }
         })
@@ -48,7 +46,7 @@ export const ProjectPreview = memo(({}) => {
               if (response) {
                 if (response.session_project && `${response.session_project.id}` === projectId) {
                   isSnapshotLoaded.current = response.id;
-                  dispatch(setIsSnapshotDirty(false));
+                  // dispatch(setIsSnapshotDirty(false));
                   setCanShow(true);
                 } else {
                   setCanShow(false);
@@ -73,11 +71,8 @@ export const ProjectPreview = memo(({}) => {
           });
       } else {
         if (isActionRestoring === false && isActionRestored === false) {
-          let snapshotID = currentSnapshotID;
           isSnapshotLoaded.current = currentSnapshotID;
           setCanShow(true);
-
-          dispatch(restoreCurrentActionsList(snapshotID));
         }
       }
     }

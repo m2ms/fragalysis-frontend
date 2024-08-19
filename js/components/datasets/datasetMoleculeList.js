@@ -397,8 +397,6 @@ const DatasetMoleculeList = ({ title, datasetID, url }) => {
 
   const searchString = useSelector(state => state.datasetsReducers.searchString);
 
-  const currentActionList = useSelector(state => state.trackingReducers.current_actions_list);
-
   const isActiveFilter = !!(filterSettings || {}).active;
   const { getNglView } = useContext(NglContext);
 

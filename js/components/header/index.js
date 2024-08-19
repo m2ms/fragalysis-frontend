@@ -48,7 +48,6 @@ import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { useHistory } from 'react-router-dom';
 import { IssueReport } from '../userFeedback/issueReport';
 import { FundersModal } from '../funders/fundersModal';
-import { TrackingModal } from '../tracking/trackingModal';
 // eslint-disable-next-line import/extensions
 import { version } from '../../../package.json';
 import { isDiscourseAvailable, openDiscourseLink } from '../../utils/discourse';
@@ -58,7 +57,6 @@ import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
 import { lockLayout, resetCurrentLayout } from '../../reducers/layout/actions';
 import { ChangeLayoutButton } from './changeLayoutButton';
-import { setIsActionsRestoring, setProjectActionListLoaded } from '../../reducers/tracking/actions';
 import { layouts } from '../../reducers/layout/layouts';
 import { setOpenSnapshotSavingDialog } from '../snapshot/redux/actions';
 import { activateSnapshotDialog } from '../snapshot/redux/dispatchActions';
@@ -67,7 +65,6 @@ import { getVersions } from '../../utils/version';
 import { AddProjectDetail } from '../projects/addProjectDetail';
 import { ServicesStatusWrapper } from '../services';
 import { COMPANIES, get_logo } from '../funders/constants';
-import { setEditTargetDialogOpen } from '../target/redux/actions';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -256,11 +253,6 @@ export default memo(
                     variant="h5"
                     color="textPrimary"
                     onClick={() => {
-                      dispatch(setIsActionsRestoring(false, false));
-                      dispatch(setProjectActionListLoaded(false));
-                      // dispatch(setCurrentProject(null, null, null, null, null, [], null));
-                      // dispatch(setDialogCurrentStep(0));
-                      // dispatch(setForceCreateProject(false));
                       history.push(URLS.landing);
                       window.location.reload();
                     }}
@@ -502,7 +494,6 @@ export default memo(
           </Grid>
         </AppBar>
         <FundersModal openModal={openFunders} onModalClose={() => setOpenFunders(false)} />
-        <TrackingModal openModal={openTrackingModal} onModalClose={() => setOpenTrackingModal(false)} />
         <DiscourseErrorModal openModal={openDiscourseError} />
         <Drawer
           anchor="left"
@@ -541,8 +532,6 @@ export default memo(
               <ListItem
                 button
                 onClick={() => {
-                  dispatch(setIsActionsRestoring(false, false));
-                  dispatch(setProjectActionListLoaded(false));
                   history.push(URLS.landing);
                   window.location.reload();
                 }}

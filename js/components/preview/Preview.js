@@ -108,7 +108,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
 
   const customDatasets = useSelector(state => state.datasetsReducers.datasets);
   const target_on = useSelector(state => state.apiReducers.target_on);
-  const isTrackingRestoring = useSelector(state => state.trackingReducers.isTrackingCompoundsRestoring);
+  const isTrackingRestoring = false; //useSelector(state => state.trackingReducers.isTrackingCompoundsRestoring);
 
   const all_mol_lists = useSelector(state => state.apiReducers.all_mol_lists);
   const moleculeLists = useSelector(state => state.datasetsReducers.moleculeLists);

@@ -9,10 +9,7 @@ import { resetLoadedSnapshots, resetProjectsReducer } from '../../projects/redux
 import { resetSelectionState } from '../../../reducers/selection/actions';
 import { URLS } from '../../routes/constants';
 import { resetDatasetsState } from '../../datasets/redux/actions';
-import { restoreAfterTargetActions } from '../../../reducers/tracking/dispatchActions';
-import { resetTrackingState } from '../../../reducers/tracking/actions';
 import { setTargetOn } from '../../../reducers/api/actions';
-import { resetNglTrackingState } from '../../../reducers/nglTracking/dispatchActions';
 import { resetViewerControlsState } from '../viewerControls/redux/actions';
 // eslint-disable-next-line import/extensions
 import { default_squonk_project } from '../../../../package.json';
@@ -56,7 +53,7 @@ export const shouldLoadProtein = ({
 
   const targetOn = targetIdList.find(target => target.id === targetOnId);
 
-  const isRestoring = state.trackingReducers.isActionRestoring;
+  const isRestoring = false; //state.trackingReducers.isActionRestoring;
   if (
     targetIdList &&
     targetIdList.length > 0 &&
@@ -90,7 +87,7 @@ export const shouldLoadProtein = ({
       (!routeSnapshotID || routeSnapshotID === currentSnapshotID.toString()) &&
       isRestoring === true
     ) {
-      dispatch(restoreAfterTargetActions(nglViewList, routeProjectID, currentSnapshotID));
+      // dispatch(restoreAfterTargetActions(nglViewList, routeProjectID, currentSnapshotID));
     }
 
     if (targetOn !== undefined) {
@@ -133,8 +130,8 @@ export const unmountPreviewComponent = (stages = []) => dispatch => {
     }
   });
 
-  dispatch(resetTrackingState());
-  dispatch(resetNglTrackingState());
+  // dispatch(resetTrackingState());
+  // dispatch(resetNglTrackingState());
 
   dispatch(resetCurrentCompoundsSettings(true));
   dispatch(resetProjectsReducer());
@@ -161,8 +158,6 @@ export const resetReducersBetweenSnapshots = (stages = []) => dispatch => {
   dispatch(resetLoadedSnapshots());
   dispatch(resetSelectionState());
   dispatch(resetDatasetsState());
-  dispatch(resetTrackingState());
-  dispatch(resetNglTrackingState());
   dispatch(setTargetOn(undefined));
   dispatch(resetViewerControlsState());
 };

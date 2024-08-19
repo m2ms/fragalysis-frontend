@@ -48,7 +48,6 @@ import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { useHistory } from 'react-router-dom';
 import { IssueReport } from '../userFeedback/issueReport';
 import { FundersModal } from '../funders/fundersModal';
-import { TrackingModal } from '../tracking/trackingModal';
 // eslint-disable-next-line import/extensions
 import { version } from '../../../package.json';
 import { isDiscourseAvailable, openDiscourseLink } from '../../utils/discourse';
@@ -58,7 +57,6 @@ import { DiscourseErrorModal } from './discourseErrorModal';
 import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
 import { lockLayout, resetCurrentLayout } from '../../reducers/layout/actions';
 import { ChangeLayoutButton } from './changeLayoutButton';
-import { setIsActionsRestoring, setProjectActionListLoaded } from '../../reducers/tracking/actions';
 import { layouts } from '../../reducers/layout/layouts';
 import { setOpenSnapshotSavingDialog } from '../snapshot/redux/actions';
 import { activateSnapshotDialog } from '../snapshot/redux/dispatchActions';
@@ -257,11 +255,6 @@ export default memo(
                     variant="h5"
                     color="textPrimary"
                     onClick={() => {
-                      dispatch(setIsActionsRestoring(false, false));
-                      dispatch(setProjectActionListLoaded(false));
-                      // dispatch(setCurrentProject(null, null, null, null, null, [], null));
-                      // dispatch(setDialogCurrentStep(0));
-                      // dispatch(setForceCreateProject(false));
                       history.push(URLS.landing);
                       window.location.reload();
                     }}
@@ -273,8 +266,8 @@ export default memo(
                   targetName !== undefined ? (
                     <>
                       {currentProject.authorID === null ||
-                        currentProject.projectID === null ||
-                        currentProject.authorID === userId ? (
+                      currentProject.projectID === null ||
+                      currentProject.authorID === userId ? (
                         <Button
                           onClick={() => {
                             isProjectModalLoading === false
@@ -503,7 +496,6 @@ export default memo(
           </Grid>
         </AppBar>
         <FundersModal openModal={openFunders} onModalClose={() => setOpenFunders(false)} />
-        <TrackingModal openModal={openTrackingModal} onModalClose={() => setOpenTrackingModal(false)} />
         <DiscourseErrorModal openModal={openDiscourseError} />
         <Drawer
           anchor="left"
@@ -542,8 +534,6 @@ export default memo(
               <ListItem
                 button
                 onClick={() => {
-                  dispatch(setIsActionsRestoring(false, false));
-                  dispatch(setProjectActionListLoaded(false));
                   history.push(URLS.landing);
                   window.location.reload();
                 }}
@@ -575,7 +565,7 @@ export default memo(
                 </ListItemIcon>
                 <ListItemText primary="Contributors" />
               </ListItem>
-              {DJANGO_CONTEXT.pk &&
+              {DJANGO_CONTEXT.pk && (
                 <>
                   <Divider />
                   <ListItem button onClick={() => openLink(URLS.lhsUpload)}>
@@ -597,7 +587,7 @@ export default memo(
                     <ListItemText primary="Metadata upload" />
                   </ListItem>
                 </>
-              }
+              )}
               <Divider />
               {authListItem}
             </Grid>

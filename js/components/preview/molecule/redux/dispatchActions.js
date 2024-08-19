@@ -607,7 +607,7 @@ export const addLigand = (
     })
   ).then(() => {
     const state = getState();
-    const skipOrientation = state.trackingReducers.skipOrientationChange;
+    const skipOrientation = false; //state.trackingReducers.skipOrientationChange;
     if (!skipOrientation) {
       const ligandOrientation = stage.viewerControls.getOrientation();
       dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
@@ -1260,7 +1260,10 @@ export const selectAllHits = (allFilteredLhsCompounds, setNextXMolecules, unsele
   }
 };
 
-export const selectAllVisibleObservations = (visibleObservations, setNextXMolecules, unselect) => (dispatch, getState) => {
+export const selectAllVisibleObservations = (visibleObservations, setNextXMolecules, unselect) => (
+  dispatch,
+  getState
+) => {
   if (setNextXMolecules) {
     dispatch(setNextXMolecules(visibleObservations?.length || 0));
   }

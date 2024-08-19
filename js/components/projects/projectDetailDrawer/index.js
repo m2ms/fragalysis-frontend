@@ -79,7 +79,7 @@ export const ProjectDetailDrawer = memo(({ showHistory, setShowHistory }) => {
   const currentSnapshotList = useSelector(state => state.projectReducers.currentSnapshotList);
   const currentSnapshotTree = useSelector(state => state.projectReducers.currentSnapshotTree);
   const isLoadingTree = useSelector(state => state.projectReducers.isLoadingTree);
-  const currentSnapshotImageList = useSelector(state => state.trackingReducers.snapshotActionImageList);
+  // const currentSnapshotImageList = useSelector(state => state.trackingReducers.snapshotActionImageList);
 
   const handleClickOnCommit = commit => {
     dispatch(setSelectedSnapshotToSwitch(commit.hash));
@@ -150,18 +150,18 @@ export const ProjectDetailDrawer = memo(({ showHistory, setShowHistory }) => {
         name: node.title
       });
 
-      let currentSnapshotImage = currentSnapshotImageList.find(i => i.id === node.id);
+      let currentSnapshotImage = null; //currentSnapshotImageList.find(i => i.id === node.id);
       const nodeImages =
         currentSnapshotImage != null
           ? [
-            {
-              src: currentSnapshotImage.image,
-              thumbnail: currentSnapshotImage.image,
-              thumbnailWidth: 0,
-              thumbnailHeight: 0,
-              caption: currentSnapshotImage.title
-            }
-          ]
+              {
+                src: currentSnapshotImage.image,
+                thumbnail: currentSnapshotImage.image,
+                thumbnailWidth: 0,
+                thumbnailHeight: 0,
+                caption: currentSnapshotImage.title
+              }
+            ]
           : [];
 
       newBranch.commit(
@@ -191,14 +191,14 @@ export const ProjectDetailDrawer = memo(({ showHistory, setShowHistory }) => {
   const images =
     image != null
       ? [
-        {
-          src: image.image,
-          thumbnail: image.image,
-          thumbnailWidth: 0,
-          thumbnailHeight: 0,
-          caption: image.title
-        }
-      ]
+          {
+            src: image.image,
+            thumbnail: image.image,
+            thumbnailWidth: 0,
+            thumbnailHeight: 0,
+            caption: image.title
+          }
+        ]
       : [];
 
   return (

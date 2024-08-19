@@ -75,11 +75,9 @@ import {
 } from '../../preview/molecule/redux/dispatchActions';
 import { OBJECT_TYPE } from '../../nglView/constants';
 import { getRepresentationsByType } from '../../nglView/generatingObjects';
-import { selectAllMoleculeList } from '../../preview/molecule/redux/selectors';
-import { getCompoundById } from '../../../reducers/tracking/dispatchActionsSwitchSnapshot';
 import { getRandomColor } from '../../preview/molecule/utils/color';
-import { BreakfastDiningOutlined } from '@mui/icons-material';
 import { isCompoundFromVectorSelector } from '../../preview/compounds/redux/dispatchActions';
+import { getCompoundById } from '../../../utils/genericDispatchActions';
 
 export const initializeDatasetFilter = datasetID => (dispatch, getState) => {
   const state = getState();
@@ -224,8 +222,7 @@ export const addDatasetLigand = (
       markAsRightSideLigand: true
     })
   ).finally(() => {
-    const state = getState();
-    const skipOrientation = state.trackingReducers.skipOrientationChange;
+    const skipOrientation = false; //state.trackingReducers.skipOrientationChange;
     if (!skipOrientation) {
       const ligandOrientation = stage.viewerControls.getOrientation();
       dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
@@ -553,7 +550,7 @@ export const autoHideDatasetDialogsOnScroll = ({ inspirationDialogRef, crossRefe
   const state = getState();
   const isOpenInspirationDialog = state.datasetsReducers.isOpenInspirationDialog;
   const isOpenCrossReferenceDialog = state.datasetsReducers.isOpenCrossReferenceDialog;
-  const isActionRestoring = state.trackingReducers.isActionRestoring;
+  const isActionRestoring = false; //state.trackingReducers.isActionRestoring;
 
   const currentBoundingClientRectInspiration =
     (inspirationDialogRef.current && inspirationDialogRef.current.getBoundingClientRect()) || null;

@@ -265,3 +265,8 @@ export const addToQualityCache = (name, cacheItem) => ({
   type: CONSTANTS.ADD_TO_QUALITY_CACHE,
   payload: { name: name, cacheItem: cacheItem }
 });
+
+export const setSkipOrientationChange = skip => ({
+  type: CONSTANTS.SET_SKIP_ORIENTATION_CHANGE,
+  skip: skip
+});

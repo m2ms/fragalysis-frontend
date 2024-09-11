@@ -49,7 +49,14 @@ import { SvgTooltip } from '../../../common';
 import { MOL_TYPE } from '../redux/constants';
 import { DensityMapsModal } from '../modals/densityMapsModal';
 import { getRandomColor } from '../utils/color';
-import { DEFAULT_TAG_COLOR, getAllTagsForCategories, getAllTagsForLHSCmp, getAllTagsForMol, getAllTagsForObservation, getAllTagsForObservationPopover } from '../../tags/utils/tagUtils';
+import {
+  DEFAULT_TAG_COLOR,
+  getAllTagsForCategories,
+  getAllTagsForLHSCmp,
+  getAllTagsForMol,
+  getAllTagsForObservation,
+  getAllTagsForObservationPopover
+} from '../../tags/utils/tagUtils';
 import MoleculeSelectCheckbox from './moleculeSelectCheckbox';
 import useClipboard from 'react-use-clipboard';
 import Typography from '@mui/material/Typography';
@@ -503,17 +510,24 @@ const MoleculeView = memo(
       return getFontColorByBackgroundColor(bgColor);
     };
 
-    const getAllTags = useCallback(() => getAllTagsForCategories(data, tagList, tagCategories), [data, tagList, tagCategories]);
+    const getAllTags = useCallback(() => getAllTagsForCategories(data, tagList, tagCategories), [
+      data,
+      tagList,
+      tagCategories
+    ]);
 
     /**
      * Get tag for render
      */
-    const getTagType = useCallback((type) => {
-      const defaultTagObject = { tag_prefix: '-', color: 'orange' };
-      const tagCategory = tagCategories.find(tag => tag.category === type);
-      const tagObject = tagCategory ? getAllTags().find(tag => tag.category === tagCategory.id) : defaultTagObject;
-      return tagObject ?? defaultTagObject;
-    }, [getAllTags, tagCategories]);
+    const getTagType = useCallback(
+      type => {
+        const defaultTagObject = { tag_prefix: '-', color: 'orange' };
+        const tagCategory = tagCategories.find(tag => tag.category === type);
+        const tagObject = tagCategory ? getAllTags().find(tag => tag.category === tagCategory.id) : defaultTagObject;
+        return tagObject ?? defaultTagObject;
+      },
+      [getAllTags, tagCategories]
+    );
 
     const generateTagPopover = () => {
       // const allData = getAllTagsForObservation(data, tagList, tagCategories);
@@ -1050,10 +1064,10 @@ const MoleculeView = memo(
       switch (string?.length) {
         case 1:
         case 2:
-          fontSize = 18
+          fontSize = 18;
           break;
         case 4:
-          fontSize = 10
+          fontSize = 10;
           break;
         default:
           break;
@@ -1067,12 +1081,9 @@ const MoleculeView = memo(
           container
           justifyContent="space-between"
           direction="row"
-          className={classNames(
-            classes.container,
-            {
-              [classes.containerHeight]: !hideImage
-            }
-          )}
+          className={classNames(classes.container, {
+            [classes.containerHeight]: !hideImage
+          })}
           wrap="nowrap"
           ref={ref}
         >
@@ -1104,22 +1115,33 @@ const MoleculeView = memo(
               <Grid item container justifyContent="flex-start" alignItems="center" direction="row">
                 <Grid item container justifyContent="space-between" direction="column" xs={3}>
                   {/* Title label */}
-                  <Tooltip title={moleculeTitle + (data.id === pose?.main_site_observation ? " - main observation" : "")} placement="bottom-start">
+                  <Tooltip
+                    title={moleculeTitle + (data.id === pose?.main_site_observation ? ' - main observation' : '')}
+                    placement="bottom-start"
+                  >
                     <Grid
                       item
                       onCopy={e => {
                         e.preventDefault();
                         setNameCopied(moleculeTitle);
                       }}
-                      className={classNames(classes.moleculeTitleLabel, { [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation })}
+                      className={classNames(classes.moleculeTitleLabel, {
+                        [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                      })}
                     >
-                      <span className={classNames(classes.moleculeTitleLabelMain, { [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation })}>{moleculeTitleTruncated}</span>
+                      <span
+                        className={classNames(classes.moleculeTitleLabelMain, {
+                          [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                        })}
+                      >
+                        {moleculeTitleTruncated}
+                      </span>
                       <br />
                       {data?.compound_code}
                     </Grid>
                   </Tooltip>
                   {/* Molecule properties */}
-                  {getCalculatedProps().length > 0 &&
+                  {getCalculatedProps().length > 0 && (
                     <Grid item container justifyContent="space-between" direction="row">
                       {/* Molecule properties */}
                       <Grid
@@ -1146,7 +1168,7 @@ const MoleculeView = memo(
                         ))}
                       </Grid>
                     </Grid>
-                  }
+                  )}
                 </Grid>
                 <Grid item container justifyContent="flex-start" alignItems="flex-end" direction="column" xs={4}>
                   {/* Control Buttons A, L, C, V */}
@@ -1357,33 +1379,45 @@ const MoleculeView = memo(
                   justifyContent="center"
                   alignItems="center"
                   // wrap="nowrap"
-                  style={{ height: "100%" }}
+                  style={{ height: '100%' }}
                 >
-                  {['CanonSites', 'ConformerSites', 'CrystalformSites', 'Crystalforms', 'Quatassemblies'].map(tagCategory => {
-                    const tagTypeObject = getTagType(tagCategory);
-                    const tagLabel = tagCategory === 'ConformerSites' ? tagTypeObject.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '') : tagTypeObject?.tag_prefix;
-                    return <Tooltip
-                      key={`tag-category-${tagCategory}`}
-                      title={<div style={{ whiteSpace: 'pre-line' }}>{PLURAL_TO_SINGULAR[tagCategory]} - {tagTypeObject.upload_name}</div>}
-                    >
-                      <Grid item xs
-                        className={classNames(classes.contColButtonMenu)}
-                        style={{
-                          backgroundColor: resolveTagBackgroundColor(tagTypeObject),
-                          color: resolveTagForegroundColor(tagTypeObject),
-                          fontSize: getFontSize(tagLabel)
-                        }}
-                      >
-                        {tagLabel}
-                      </Grid>
-                    </Tooltip>
-                  }
+                  {['CanonSites', 'ConformerSites', 'CrystalformSites', 'Crystalforms', 'Quatassemblies'].map(
+                    tagCategory => {
+                      const tagTypeObject = getTagType(tagCategory);
+                      const tagLabel =
+                        tagCategory === 'ConformerSites'
+                          ? tagTypeObject.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '')
+                          : tagTypeObject?.tag_prefix;
+                      return (
+                        <Tooltip
+                          key={`tag-category-${tagCategory}`}
+                          title={
+                            <div style={{ whiteSpace: 'pre-line' }}>
+                              {PLURAL_TO_SINGULAR[tagCategory]} - {tagTypeObject.upload_name}
+                            </div>
+                          }
+                        >
+                          <Grid
+                            item
+                            xs
+                            className={classNames(classes.contColButtonMenu)}
+                            style={{
+                              backgroundColor: resolveTagBackgroundColor(tagTypeObject),
+                              color: resolveTagForegroundColor(tagTypeObject),
+                              fontSize: getFontSize(tagLabel)
+                            }}
+                          >
+                            {tagLabel}
+                          </Grid>
+                        </Tooltip>
+                      );
+                    }
                   )}
                 </Grid>
               </Grid>
             </Grid>
             {/* Image */}
-            {(hideImage !== true) &&
+            {hideImage !== true && (
               <div
                 style={{
                   ...current_style,
@@ -1411,29 +1445,36 @@ const MoleculeView = memo(
                     </Tooltip>
                   )}
                 </div>
-              </div>}
+              </div>
+            )}
           </Grid>
-          {showExpandedView && <Grid item container alignItems='center' wrap="nowrap">
-            {['CanonSites', 'ConformerSites', 'CrystalformSites', 'Crystalforms', 'Quatassemblies'].map((tagCategory, index) => {
-              const tagTypeObject = getTagType(tagCategory);
-              let tagLabel = '';
-              if (tagTypeObject) {
-                if (tagCategory === 'CrystalformSites') {
-                  // "chop" more of CrystalformSites name
-                  tagLabel = tagTypeObject.upload_name.substring(tagTypeObject.upload_name.indexOf('-') + 1);
-                  tagLabel = tagLabel.substring(tagLabel.indexOf('-') + 1);
-                } else {
-                  tagLabel = tagTypeObject.upload_name.substring(tagTypeObject.upload_name.indexOf('-') + 1);
+          {showExpandedView && (
+            <Grid item container alignItems="center" wrap="nowrap">
+              {['CanonSites', 'ConformerSites', 'CrystalformSites', 'Crystalforms', 'Quatassemblies'].map(
+                (tagCategory, index) => {
+                  const tagTypeObject = getTagType(tagCategory);
+                  let tagLabel = '';
+                  if (tagTypeObject) {
+                    if (tagCategory === 'CrystalformSites') {
+                      // "chop" more of CrystalformSites name
+                      tagLabel = tagTypeObject.upload_name.substring(tagTypeObject.upload_name.indexOf('-') + 1);
+                      tagLabel = tagLabel.substring(tagLabel.indexOf('-') + 1);
+                    } else {
+                      tagLabel = tagTypeObject.upload_name.substring(tagTypeObject.upload_name.indexOf('-') + 1);
+                    }
+                  }
+                  return (
+                    <Tooltip title={PLURAL_TO_SINGULAR[tagCategory]} key={index}>
+                      <Grid item align="center" className={classes.categoryCell} style={{ fontSize: 12 }}>
+                        {tagLabel}
+                      </Grid>
+                    </Tooltip>
+                  );
                 }
-              }
-              return <Tooltip title={PLURAL_TO_SINGULAR[tagCategory]} key={index}>
-                <Grid item align="center" className={classes.categoryCell} style={{ fontSize: 12 }}>
-                  {tagLabel}
-                </Grid>
-              </Tooltip>
-            })}
-          </Grid>}
-        </Grid >
+              )}
+            </Grid>
+          )}
+        </Grid>
         <SvgTooltip
           open={moleculeTooltipOpen}
           anchorEl={moleculeImgRef.current}

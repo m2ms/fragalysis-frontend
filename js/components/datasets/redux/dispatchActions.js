@@ -37,7 +37,9 @@ import {
   removeDataset,
   appendCompoundToSelectedCompoundsByDataset,
   setDatasetIterator,
-  setSelectedCompoundsIterator
+  setSelectedCompoundsIterator,
+  appendToBeDisplayedListForDataset,
+  updateInToBeDisplayedListForDataset
 } from './actions';
 import { base_url } from '../../routes/constants';
 import {
@@ -78,6 +80,7 @@ import { getRepresentationsByType } from '../../nglView/generatingObjects';
 import { getRandomColor } from '../../preview/molecule/utils/color';
 import { isCompoundFromVectorSelector } from '../../preview/compounds/redux/dispatchActions';
 import { getCompoundById } from '../../../utils/genericDispatchActions';
+import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
 
 export const initializeDatasetFilter = datasetID => (dispatch, getState) => {
   const state = getState();
@@ -104,34 +107,26 @@ export const addDatasetHitProtein = (
   skipTracking = false,
   representations = undefined
 ) => async dispatch => {
-  dispatch(appendProteinList(datasetID, generateMoleculeCompoundId(data), skipTracking));
-  return dispatch(
-    loadObject({
-      target: Object.assign(
-        { display_div: VIEWS.MAJOR_VIEW },
-        generateHitProteinObject(data, colourToggle, base_url, datasetID)
-      ),
-      stage,
-      previousRepresentations: representations,
-      orientationMatrix: null
+  dispatch(
+    appendToBeDisplayedListForDataset(datasetID, {
+      type: NGL_OBJECTS.PROTEIN,
+      id: data.id,
+      display: true,
+      representations: representations,
+      datasetID: datasetID
     })
-  ).finally(() => {
-    const currentOrientation = stage.viewerControls.getOrientation();
-    dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
-  });
+  );
 };
 
 export const removeDatasetHitProtein = (stage, data, colourToggle, datasetID, skipTracking = false) => dispatch => {
   dispatch(
-    deleteObject(
-      Object.assign(
-        { display_div: VIEWS.MAJOR_VIEW },
-        generateHitProteinObject(data, colourToggle, base_url, datasetID)
-      ),
-      stage
-    )
+    updateInToBeDisplayedListForDataset(datasetID, {
+      id: data.id,
+      display: false,
+      type: NGL_OBJECTS.PROTEIN,
+      datasetID: datasetID
+    })
   );
-  dispatch(removeFromProteinList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
 export const addDatasetComplex = (
@@ -142,31 +137,26 @@ export const addDatasetComplex = (
   skipTracking = false,
   representations = undefined
 ) => async dispatch => {
-  dispatch(appendComplexList(datasetID, generateMoleculeCompoundId(data), skipTracking));
-  return dispatch(
-    loadObject({
-      target: Object.assign(
-        { display_div: VIEWS.MAJOR_VIEW },
-        generateComplexObject(data, colourToggle, base_url, datasetID)
-      ),
-      stage,
-      previousRepresentations: representations,
-      orientationMatrix: null
+  dispatch(
+    appendToBeDisplayedListForDataset(datasetID, {
+      type: NGL_OBJECTS.COMPLEX,
+      id: data.id,
+      display: true,
+      representations: representations,
+      datasetID: datasetID
     })
-  ).finally(() => {
-    const currentOrientation = stage.viewerControls.getOrientation();
-    dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
-  });
+  );
 };
 
 export const removeDatasetComplex = (stage, data, colourToggle, datasetID, skipTracking = false) => dispatch => {
   dispatch(
-    deleteObject(
-      Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateComplexObject(data, colourToggle, base_url, datasetID)),
-      stage
-    )
+    updateInToBeDisplayedListForDataset(datasetID, {
+      id: data.id,
+      display: false,
+      type: NGL_OBJECTS.COMPLEX,
+      datasetID: datasetID
+    })
   );
-  dispatch(removeFromComplexList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
 export const addDatasetSurface = (
@@ -176,31 +166,48 @@ export const addDatasetSurface = (
   datasetID,
   representations = undefined
 ) => async dispatch => {
-  dispatch(appendSurfaceList(datasetID, generateMoleculeCompoundId(data)));
-  return dispatch(
-    loadObject({
-      target: Object.assign(
-        { display_div: VIEWS.MAJOR_VIEW },
-        generateSurfaceObject(data, colourToggle, base_url, datasetID)
-      ),
-      stage,
-      previousRepresentations: representations,
-      orientationMatrix: null
+  dispatch(
+    appendToBeDisplayedListForDataset(datasetID, {
+      type: NGL_OBJECTS.SURFACE,
+      id: data.id,
+      display: true,
+      representations: representations,
+      datasetID: datasetID
     })
-  ).finally(() => {
-    const currentOrientation = stage.viewerControls.getOrientation();
-    dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
-  });
+  );
+  // dispatch(appendSurfaceList(datasetID, generateMoleculeCompoundId(data)));
+  // return dispatch(
+  //   loadObject({
+  //     target: Object.assign(
+  //       { display_div: VIEWS.MAJOR_VIEW },
+  //       generateSurfaceObject(data, colourToggle, base_url, datasetID)
+  //     ),
+  //     stage,
+  //     previousRepresentations: representations,
+  //     orientationMatrix: null
+  //   })
+  // ).finally(() => {
+  //   const currentOrientation = stage.viewerControls.getOrientation();
+  //   dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
+  // });
 };
 
 export const removeDatasetSurface = (stage, data, colourToggle, datasetID) => dispatch => {
   dispatch(
-    deleteObject(
-      Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateSurfaceObject(data, colourToggle, base_url, datasetID)),
-      stage
-    )
+    updateInToBeDisplayedListForDataset(datasetID, {
+      id: data.id,
+      display: false,
+      type: NGL_OBJECTS.SURFACE,
+      datasetID: datasetID
+    })
   );
-  dispatch(removeFromSurfaceList(datasetID, generateMoleculeCompoundId(data)));
+  // dispatch(
+  //   deleteObject(
+  //     Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateSurfaceObject(data, colourToggle, base_url, datasetID)),
+  //     stage
+  //   )
+  // );
+  // dispatch(removeFromSurfaceList(datasetID, generateMoleculeCompoundId(data)));
 };
 
 export const addDatasetLigand = (
@@ -211,42 +218,26 @@ export const addDatasetLigand = (
   skipTracking = false,
   representations = undefined
 ) => async (dispatch, getState) => {
-  dispatch(appendLigandList(datasetID, generateMoleculeCompoundId(data), skipTracking));
-  console.count(`Grabbed orientation before loading dataset ligand`);
-  const currentOrientation = stage.viewerControls.getOrientation();
-  return dispatch(
-    loadObject({
-      target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateMoleculeObject(data, colourToggle, datasetID)),
-      stage,
-      previousRepresentations: representations,
-      markAsRightSideLigand: true
+  dispatch(
+    appendToBeDisplayedListForDataset(datasetID, {
+      type: NGL_OBJECTS.LIGAND,
+      id: data.id,
+      display: true,
+      representations: representations,
+      datasetID: datasetID
     })
-  ).finally(() => {
-    const skipOrientation = false; //state.trackingReducers.skipOrientationChange;
-    if (!skipOrientation) {
-      const ligandOrientation = stage.viewerControls.getOrientation();
-      dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
-
-      dispatch(appendMoleculeOrientation(getDatasetMoleculeID(datasetID, data?.id), ligandOrientation));
-
-      // keep current orientation of NGL View
-      if (!skipOrientation) {
-        console.count(`Before applying orientation after loading dataset ligand.`);
-        stage.viewerControls.orient(currentOrientation);
-        console.count(`After applying orientation after loading dataset ligand.`);
-      }
-    }
-  });
+  );
 };
 
 export const removeDatasetLigand = (stage, data, colourToggle, datasetID, skipTracking = false) => dispatch => {
   dispatch(
-    deleteObject(
-      Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateMoleculeObject(data, undefined, datasetID)),
-      stage
-    )
+    updateInToBeDisplayedListForDataset(datasetID, {
+      id: data.id,
+      display: false,
+      type: NGL_OBJECTS.LIGAND,
+      datasetID: datasetID
+    })
   );
-  dispatch(removeFromLigandList(datasetID, generateMoleculeCompoundId(data), skipTracking));
 };
 
 export const loadDataSets = targetId => async dispatch => {

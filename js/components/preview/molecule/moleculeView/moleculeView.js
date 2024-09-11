@@ -1503,7 +1503,7 @@ const MoleculeView = memo(
                     const tagTypeObject = getTagType(tagCategory);
                     const tagLabel =
                       tagCategory === 'ConformerSites'
-                        ? tagTypeObject.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '')
+                        ? tagTypeObject?.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '')
                         : tagTypeObject?.tag_prefix;
                     return (
                       <Tooltip

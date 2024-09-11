@@ -49,7 +49,14 @@ import { SvgTooltip } from '../../../common';
 import { MOL_TYPE } from '../redux/constants';
 import { DensityMapsModal } from '../modals/densityMapsModal';
 import { getRandomColor } from '../utils/color';
-import { DEFAULT_TAG_COLOR, getAllTagsForCategories, getAllTagsForLHSCmp, getAllTagsForMol, getAllTagsForObservation, getAllTagsForObservationPopover } from '../../tags/utils/tagUtils';
+import {
+  DEFAULT_TAG_COLOR,
+  getAllTagsForCategories,
+  getAllTagsForLHSCmp,
+  getAllTagsForMol,
+  getAllTagsForObservation,
+  getAllTagsForObservationPopover
+} from '../../tags/utils/tagUtils';
 import MoleculeSelectCheckbox from './moleculeSelectCheckbox';
 import useClipboard from 'react-use-clipboard';
 import Typography from '@mui/material/Typography';
@@ -360,7 +367,13 @@ export const img_data_init = `<svg xmlns="http://www.w3.org/2000/svg" version="1
     <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="0.689655172413793s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform>
   </circle>  '</svg>`;
 
-export const XCA_TAGS_CATEGORIES = ['CanonSites', 'ConformerSites', 'Quatassemblies', 'Crystalforms', 'CrystalformSites'];
+export const XCA_TAGS_CATEGORIES = [
+  'CanonSites',
+  'ConformerSites',
+  'Quatassemblies',
+  'Crystalforms',
+  'CrystalformSites'
+];
 
 const MoleculeView = memo(
   ({
@@ -544,7 +557,7 @@ const MoleculeView = memo(
         setHeaderWidthsHandler(data.longcode, 'LongCode');
         XCA_TAGS_CATEGORIES.forEach(tagCategory => {
           setHeaderWidthsHandler(getTagLabel(tagCategory), tagCategory);
-        })
+        });
       }
     }, [showExpandedView, getTagType, getTagLabel, centroidRes, data.longcode, setHeaderWidthsHandler]);
 
@@ -581,18 +594,25 @@ const MoleculeView = memo(
       return getFontColorByBackgroundColor(bgColor);
     };
 
-    const getAllTags = useCallback(() => getAllTagsForCategories(data, tagList, tagCategories), [data, tagList, tagCategories]);
+    const getAllTags = useCallback(() => getAllTagsForCategories(data, tagList, tagCategories), [
+      data,
+      tagList,
+      tagCategories
+    ]);
 
     /**
      * Get tag for render
      */
-    const getTagType = useCallback((type) => {
-      // TODO change this to null maybe?
-      const defaultTagObject = { tag_prefix: '-', color: 'orange', upload_name: '-' };
-      const tagCategory = tagCategories.find(tag => tag.category === type);
-      const tagObject = tagCategory ? getAllTags().find(tag => tag.category === tagCategory.id) : defaultTagObject;
-      return tagObject ?? defaultTagObject;
-    }, [getAllTags, tagCategories]);
+    const getTagType = useCallback(
+      type => {
+        // TODO change this to null maybe?
+        const defaultTagObject = { tag_prefix: '-', color: 'orange', upload_name: '-' };
+        const tagCategory = tagCategories.find(tag => tag.category === type);
+        const tagObject = tagCategory ? getAllTags().find(tag => tag.category === tagCategory.id) : defaultTagObject;
+        return tagObject ?? defaultTagObject;
+      },
+      [getAllTags, tagCategories]
+    );
 
     const generateTagPopover = () => {
       // const allData = getAllTagsForObservation(data, tagList, tagCategories);
@@ -1129,10 +1149,10 @@ const MoleculeView = memo(
       switch (string?.length) {
         case 1:
         case 2:
-          fontSize = 18
+          fontSize = 18;
           break;
         case 4:
-          fontSize = 10
+          fontSize = 10;
           break;
         default:
           break;
@@ -1140,23 +1160,29 @@ const MoleculeView = memo(
       return fontSize;
     };
 
-    const getTagLabel = useCallback(tagCategory => {
-      const tagTypeObject = getTagType(tagCategory);
-      let tagLabel = '';
-      if (tagTypeObject) {
-        tagLabel = tagTypeObject.tag;
-      }
-      return tagLabel;
-    }, [getTagType]);
+    const getTagLabel = useCallback(
+      tagCategory => {
+        const tagTypeObject = getTagType(tagCategory);
+        let tagLabel = '';
+        if (tagTypeObject) {
+          tagLabel = tagTypeObject.tag;
+        }
+        return tagLabel;
+      },
+      [getTagType]
+    );
 
-    const getTagTooltip = useCallback(tagCategory => {
-      const tagTypeObject = getTagType(tagCategory);
-      let tagTooltip = '';
-      if (tagTypeObject) {
-        tagTooltip = tagTypeObject.upload_name;
-      }
-      return tagTooltip;
-    }, [getTagType]);
+    const getTagTooltip = useCallback(
+      tagCategory => {
+        const tagTypeObject = getTagType(tagCategory);
+        let tagTooltip = '';
+        if (tagTypeObject) {
+          tagTooltip = tagTypeObject.upload_name;
+        }
+        return tagTooltip;
+      },
+      [getTagType]
+    );
 
     const copyExperimentalPaths = async () => {
       await navigator.clipboard.writeText(experimentalPath);
@@ -1169,12 +1195,9 @@ const MoleculeView = memo(
           container
           justifyContent="space-between"
           direction="row"
-          className={classNames(
-            classes.container,
-            {
-              [classes.containerHeight]: !hideImage
-            }
-          )}
+          className={classNames(classes.container, {
+            [classes.containerHeight]: !hideImage
+          })}
           wrap="nowrap"
           ref={ref}
         >
@@ -1206,22 +1229,36 @@ const MoleculeView = memo(
               <Grid item container justifyContent="flex-start" alignItems="center" direction="row" xs>
                 <Grid item container justifyContent="space-between" direction="column" xs={3}>
                   {/* Title label */}
-                  <Tooltip title={data.prefix_tooltip ?? '-' + (data.id === pose?.main_site_observation ? " - main observation" : "")} placement="bottom-start">
+                  <Tooltip
+                    title={
+                      data.prefix_tooltip ??
+                      '-' + (data.id === pose?.main_site_observation ? ' - main observation' : '')
+                    }
+                    placement="bottom-start"
+                  >
                     <Grid
                       item
                       onCopy={e => {
                         e.preventDefault();
                         setNameCopied(moleculeTitle);
                       }}
-                      className={classNames(classes.moleculeTitleLabel, { [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation })}
+                      className={classNames(classes.moleculeTitleLabel, {
+                        [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                      })}
                     >
-                      <span className={classNames(classes.moleculeTitleLabelMain, { [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation })}>{moleculeTitleTruncated}</span>
+                      <span
+                        className={classNames(classes.moleculeTitleLabelMain, {
+                          [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                        })}
+                      >
+                        {moleculeTitleTruncated}
+                      </span>
                       <br />
                       {data?.compound_code}
                     </Grid>
                   </Tooltip>
                   {/* Molecule properties */}
-                  {getCalculatedProps().length > 0 &&
+                  {getCalculatedProps().length > 0 && (
                     <Grid item container justifyContent="space-between" direction="row">
                       {/* Molecule properties */}
                       <Grid
@@ -1248,7 +1285,7 @@ const MoleculeView = memo(
                         ))}
                       </Grid>
                     </Grid>
-                  }
+                  )}
                 </Grid>
                 <Grid item container justifyContent="flex-start" alignItems="flex-end" direction="column" xs={4}>
                   {/* Control Buttons A, L, C, V */}
@@ -1458,33 +1495,43 @@ const MoleculeView = memo(
                   direction="row"
                   alignItems="center"
                   // wrap="nowrap"
-                  style={{ height: "100%" }}
+                  style={{ height: '100%' }}
                 >
                   {XCA_TAGS_CATEGORIES.map(tagCategory => {
                     const tagTypeObject = getTagType(tagCategory);
-                    const tagLabel = tagCategory === 'ConformerSites' ? tagTypeObject.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '') : tagTypeObject?.tag_prefix;
-                    return <Tooltip
-                      key={`tag-category-${tagCategory}`}
-                      title={<div style={{ whiteSpace: 'pre-line' }}>{PLURAL_TO_SINGULAR[tagCategory]} - {tagTypeObject.tag}</div>}
-                    >
-                      <Grid item xs
-                        className={classNames(classes.contColButtonMenu)}
-                        style={{
-                          backgroundColor: resolveTagBackgroundColor(tagTypeObject),
-                          color: resolveTagForegroundColor(tagTypeObject),
-                          fontSize: getFontSize(tagLabel)
-                        }}
+                    const tagLabel =
+                      tagCategory === 'ConformerSites'
+                        ? tagTypeObject.tag_prefix.replace(getTagType('CanonSites')?.tag_prefix, '')
+                        : tagTypeObject?.tag_prefix;
+                    return (
+                      <Tooltip
+                        key={`tag-category-${tagCategory}`}
+                        title={
+                          <div style={{ whiteSpace: 'pre-line' }}>
+                            {PLURAL_TO_SINGULAR[tagCategory]} - {tagTypeObject.tag}
+                          </div>
+                        }
                       >
-                        {tagLabel}
-                      </Grid>
-                    </Tooltip>
-                  }
-                  )}
+                        <Grid
+                          item
+                          xs
+                          className={classNames(classes.contColButtonMenu)}
+                          style={{
+                            backgroundColor: resolveTagBackgroundColor(tagTypeObject),
+                            color: resolveTagForegroundColor(tagTypeObject),
+                            fontSize: getFontSize(tagLabel)
+                          }}
+                        >
+                          {tagLabel}
+                        </Grid>
+                      </Tooltip>
+                    );
+                  })}
                 </Grid>
               </Grid>
             </Grid>
             {/* Image */}
-            {(hideImage !== true) &&
+            {hideImage !== true && (
               <div
                 style={{
                   ...current_style,
@@ -1512,35 +1559,50 @@ const MoleculeView = memo(
                     </Tooltip>
                   )}
                 </div>
-              </div>}
+              </div>
+            )}
           </Grid>
-          {showExpandedView && <Grid item container alignItems='center' wrap="nowrap">
-            {XCA_TAGS_CATEGORIES.map((tagCategory, index) => {
-              return <Tooltip title={`${PLURAL_TO_SINGULAR[tagCategory]} - ${getTagTooltip(tagCategory)}`} key={index}>
-                <Grid item align="center" className={classes.categoryCell} style={{ minWidth: headerWidths[tagCategory] }}>
-                  {getTagLabel(tagCategory)}
+          {showExpandedView && (
+            <Grid item container alignItems="center" wrap="nowrap">
+              {XCA_TAGS_CATEGORIES.map((tagCategory, index) => {
+                return (
+                  <Tooltip title={`${PLURAL_TO_SINGULAR[tagCategory]} - ${getTagTooltip(tagCategory)}`} key={index}>
+                    <Grid
+                      item
+                      align="center"
+                      className={classes.categoryCell}
+                      style={{ minWidth: headerWidths[tagCategory] }}
+                    >
+                      {getTagLabel(tagCategory)}
+                    </Grid>
+                  </Tooltip>
+                );
+              })}
+              <Tooltip title={'CentroidRes'}>
+                <Grid
+                  item
+                  align="center"
+                  className={classes.categoryCell}
+                  style={{ minWidth: headerWidths.CentroidRes }}
+                >
+                  {centroidRes}
                 </Grid>
               </Tooltip>
-            })}
-            <Tooltip title={"CentroidRes"}>
-              <Grid item align="center" className={classes.categoryCell} style={{ minWidth: headerWidths.CentroidRes }}>
-                {centroidRes}
-              </Grid>
-            </Tooltip>
-            <Tooltip title={"LongCode"}>
-              <Grid item align="center" className={classes.categoryCell} style={{ minWidth: headerWidths.LongCode }}>
-                {data.longcode}
-              </Grid>
-            </Tooltip>
-            <Tooltip title={experimentalPath.length > 0 ? experimentalPath : 'empty path'}>
-              <Grid item align="center" style={{ minWidth: headerWidths.Path }}>
-                <IconButton color="inherit" onClick={copyExperimentalPaths} size="small">
-                  <ContentCopyRounded fontSize="small" />
-                </IconButton>
-              </Grid>
-            </Tooltip>
-          </Grid>}
-        </Grid >
+              <Tooltip title={'LongCode'}>
+                <Grid item align="center" className={classes.categoryCell} style={{ minWidth: headerWidths.LongCode }}>
+                  {data.longcode}
+                </Grid>
+              </Tooltip>
+              <Tooltip title={experimentalPath.length > 0 ? experimentalPath : 'empty path'}>
+                <Grid item align="center" style={{ minWidth: headerWidths.Path }}>
+                  <IconButton color="inherit" onClick={copyExperimentalPaths} size="small">
+                    <ContentCopyRounded fontSize="small" />
+                  </IconButton>
+                </Grid>
+              </Tooltip>
+            </Grid>
+          )}
+        </Grid>
         <SvgTooltip
           open={moleculeTooltipOpen}
           anchorEl={moleculeImgRef.current}

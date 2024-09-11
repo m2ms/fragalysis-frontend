@@ -47,6 +47,16 @@ import { setTagEditorOpen, setMoleculeForTagEdit, setToastMessages } from '../..
 import { LoadingContext } from '../loading';
 import { ToastContext } from '../toast';
 import { TOAST_LEVELS } from '../toast/constants';
+import { useDisplayLigandLHS } from '../../reducers/ngl/useDisplayLigandLHS';
+import { useDisplayProteinLHS } from '../../reducers/ngl/useDisplayProteinLHS';
+import { useDisplayComplexLHS } from '../../reducers/ngl/useDisplayComplexLHS';
+import { useDisplaySurfaceLHS } from '../../reducers/ngl/useDisplaySurfacesLHS';
+import { useDisplayVectorLHS } from '../../reducers/ngl/useDisplayVectorLHS';
+import { useDisplayDensityLHS } from '../../reducers/ngl/useDisplayDensityLHS';
+import { useDisplayLigandRHS } from '../../reducers/ngl/useDisplayLigandRHS';
+import { useDisplayProteinRHS } from '../../reducers/ngl/useDisplayProteinRHS';
+import { useDisplayComplexRHS } from '../../reducers/ngl/useDisplayComplexRHS';
+import { useDisplaySurfaceRHS } from '../../reducers/ngl/useDisplaySurfaceRHS';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
@@ -127,6 +137,18 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
   const toastMessages = useSelector(state => state.selectionReducers.toastMessages);
 
   const { setMoleculesAndTagsAreLoading } = useContext(LoadingContext);
+
+  useDisplayLigandLHS();
+  useDisplayProteinLHS();
+  useDisplayComplexLHS();
+  useDisplaySurfaceLHS();
+  useDisplayVectorLHS();
+  useDisplayDensityLHS();
+
+  useDisplayLigandRHS();
+  useDisplayProteinRHS();
+  useDisplayComplexRHS();
+  useDisplaySurfaceRHS();
 
   useEffect(() => {
     if (target_on && !isSnapshot) {

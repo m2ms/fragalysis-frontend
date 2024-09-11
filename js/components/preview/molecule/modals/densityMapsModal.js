@@ -60,11 +60,11 @@ export const DensityMapsModal = memo(({ openDialog, setOpenDialog, data, setDens
   };
 
   const handleCloseModal = () => {
-    dispatch(setOpenDialog(false));
+    setOpenDialog(false);
   };
 
   const handleSaveButton = () => {
-    dispatch(setOpenDialog(false));
+    setOpenDialog(false);
     setDensity();
   };
 

@@ -45,12 +45,16 @@ export const INITIAL_STATE = {
   qualityCache: {},
   electronDensityColor_event: 'blue',
   electronDensityColor_sigmaa: 'blue',
-  electronDensityColor_diff: 'blue'
+  electronDensityColor_diff: 'blue',
+  skipOrientationChange: false
 };
 
 export default function nglReducers(state = INITIAL_STATE, action = {}) {
   switch (action.type) {
     // Defined in initialState - but may be needed if we want to load a different structure
+
+    case CONSTANTS.SET_SKIP_ORIENTATION_CHANGE:
+      return { ...state, skipOrientationChange: action.skip };
 
     case CONSTANTS.LOAD_OBJECT:
       // at first check if object was already stashed
@@ -117,7 +121,10 @@ export default function nglReducers(state = INITIAL_STATE, action = {}) {
       // stash state of the object
       let newObjectsInViewStash = JSON.parse(JSON.stringify(state.objectsInViewStash));
       if (objectsInViewTemp.hasOwnProperty(action.target.name)) {
-        newObjectsInViewStash[action.target.name] = { ...objectsInViewTemp[action.target.name], representations: objectsInViewTemp[action.target.name].representations };
+        newObjectsInViewStash[action.target.name] = {
+          ...objectsInViewTemp[action.target.name],
+          representations: objectsInViewTemp[action.target.name].representations
+        };
       }
 
       delete objectsInViewTemp[action.target.name];

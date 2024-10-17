@@ -23,6 +23,7 @@ export const useDisplaySurfaceLHS = () => {
   const displaySurface = useCallback(
     surfaceData => {
       const data = allObservations.find(obs => obs.id === surfaceData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       dispatch(appendSurfaceList(generateMoleculeId(data)));
@@ -45,6 +46,7 @@ export const useDisplaySurfaceLHS = () => {
   const removeSurface = useCallback(
     surfaceData => {
       const data = allObservations.find(obs => obs.id === surfaceData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       dispatch(

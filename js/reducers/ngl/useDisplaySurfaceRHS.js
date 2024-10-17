@@ -27,7 +27,8 @@ export const useDisplaySurfaceRHS = () => {
   const displaySurface = useCallback(
     surfaceData => {
       const datasetCompounds = allCompounds[surfaceData.datasetID];
-      const data = datasetCompounds.find(obs => obs.id === surfaceData.id);
+      const data = datasetCompounds?.find(obs => obs.id === surfaceData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       const datasetID = surfaceData.datasetID;
 
@@ -54,6 +55,7 @@ export const useDisplaySurfaceRHS = () => {
     surfaceData => {
       const datasetCompounds = allCompounds[surfaceData.datasetID];
       const data = datasetCompounds?.find(obs => obs.id === surfaceData.id);
+      if (!data) return;
       const datasetID = surfaceData.datasetID;
       const colourToggle = getRandomColor(data);
 

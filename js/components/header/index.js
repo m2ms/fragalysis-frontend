@@ -270,10 +270,14 @@ export default memo(
                       currentProject.authorID === userId ? (
                         <Button
                           onClick={() => {
-                            isProjectModalLoading === false
-                              ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false)))
-                              : dispatch(setProjectModalIsLoading(false));
-                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
+                            if (!isProjectModalLoading) {
+                              dispatch(setProjectModalIsLoading(true));
+                              dispatch(setAddButton(false));
+                            } else {
+                              dispatch(setProjectModalIsLoading(false));
+                            }
+
+                            openSaveSnapshotModal ?? dispatch(setOpenSnapshotSavingDialog(false));
                           }}
                           key="newProject"
                           color="primary"
@@ -284,10 +288,14 @@ export default memo(
                       ) : (
                         <Button
                           onClick={() => {
-                            openNewProjectModal === false
-                              ? (dispatch(setProjectModalIsLoading(true)), dispatch(setAddButton(false)))
-                              : dispatch(setProjectModalIsLoading(false));
-                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
+                            if (!openNewProjectModal) {
+                              dispatch(setProjectModalIsLoading(true));
+                              dispatch(setAddButton(false));
+                            } else {
+                              dispatch(setProjectModalIsLoading(false));
+                            }
+
+                            openSaveSnapshotModal ?? dispatch(setOpenSnapshotSavingDialog(false));
                           }}
                           key="newProject"
                           color="primary"
@@ -305,8 +313,8 @@ export default memo(
                             openSaveSnapshotModal === false
                               ? dispatch(setOpenSnapshotSavingDialog(true))
                               : dispatch(setOpenSnapshotSavingDialog(false));
-                            openSaveSnapshotModal === true ? dispatch(setOpenSnapshotSavingDialog(false)) : '';
-                            isProjectModalLoading === true ? dispatch(setProjectModalIsLoading(false)) : '';
+                            openSaveSnapshotModal ?? dispatch(setOpenSnapshotSavingDialog(false));
+                            isProjectModalLoading ?? dispatch(setProjectModalIsLoading(false));
 
                             dispatch(setAddButton(false));
                           }}

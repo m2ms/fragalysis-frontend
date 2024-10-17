@@ -27,7 +27,8 @@ export const useDisplayProteinRHS = () => {
   const displayProtein = useCallback(
     proteinData => {
       const datasetCompounds = allCompounds[proteinData.datasetID];
-      const data = datasetCompounds.find(obs => obs.id === proteinData.id);
+      const data = datasetCompounds?.find(obs => obs.id === proteinData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       const datasetID = proteinData.datasetID;
 
@@ -54,6 +55,7 @@ export const useDisplayProteinRHS = () => {
     proteinData => {
       const datasetCompounds = allCompounds[proteinData.datasetID];
       const data = datasetCompounds?.find(obs => obs.id === proteinData.id);
+      if (!data) return;
       const datasetID = proteinData.datasetID;
       const colourToggle = getRandomColor(data);
 

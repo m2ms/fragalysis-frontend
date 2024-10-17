@@ -1,4 +1,9 @@
-import { reloadApiState, setSessionTitle } from '../../../reducers/api/actions';
+import {
+  reloadApiState,
+  setIsSnapshot,
+  setSessionTitle,
+  setSnapshotLoadingInProgress
+} from '../../../reducers/api/actions';
 import { reloadSelectionReducer } from '../../../reducers/selection/actions';
 import { api, METHOD } from '../../../utils/api';
 import {
@@ -21,7 +26,7 @@ import {
 import { reloadPreviewReducer } from '../../preview/redux/dispatchActions';
 import { ProjectCreationType, SnapshotType } from '../../projects/redux/constants';
 import moment from 'moment';
-import { setProteinLoadingState } from '../../../reducers/ngl/actions';
+import { setProteinLoadingState, setReapplyOrientation } from '../../../reducers/ngl/actions';
 import { reloadNglViewFromSnapshot } from '../../../reducers/ngl/dispatchActions';
 import { base_url, URLS } from '../../routes/constants';
 import {
@@ -35,6 +40,12 @@ import { reloadDatasetsReducer } from '../../datasets/redux/actions';
 import { captureScreenOfSnapshot } from '../../userFeedback/browserApi';
 import { setCurrentProject } from '../../projects/redux/actions';
 import { createProjectPost } from '../../../utils/discourse';
+import { deepClone, deepMergeWithPriority, deepMergeWithPriorityAndWhiteList } from '../../../utils/objectUtils';
+import {
+  SNAPSHOT_VALUES_TO_BE_DELETED,
+  SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS
+} from './utilitySnapshotShapes';
+import { setEntireState } from '../../../reducers/actions';
 
 export const getListOfSnapshots = () => (dispatch, getState) => {
   const userID = DJANGO_CONTEXT['pk'] || null;
@@ -186,7 +197,7 @@ export const createInitSnapshotFromCopy = ({
   return Promise.reject('ProjectID is missing');
 };
 
-const getAdditionalInfo = state => {
+const getAdditionalInfo = (state, snapshotState = null) => {
   const allMolecules = state.apiReducers.all_mol_lists;
   const { moleculesToEdit, fragmentDisplayList } = state.selectionReducers;
   const currentSnapshotSelectedCompounds = allMolecules
@@ -214,7 +225,8 @@ const getAdditionalInfo = state => {
     currentSnapshotSelectedCompounds,
     currentSnapshotVisibleCompounds,
     currentSnapshotSelectedDatasetsCompounds,
-    currentSnapshotVisibleDatasetsCompounds
+    currentSnapshotVisibleDatasetsCompounds,
+    snapshotState
   };
 };
 
@@ -231,6 +243,7 @@ export const createNewSnapshot = ({
   createDiscourse = false
 }) => async (dispatch, getState) => {
   const state = getState();
+  const snapshotData = dispatch(getCleanStateForSnapshot());
   const selectedSnapshotToSwitch = state.snapshotReducers.selectedSnapshotToSwitch;
   const disableRedirect = state.snapshotReducers.disableRedirect;
   const currentSnapshot = state.projectReducers.currentSnapshot;
@@ -255,7 +268,7 @@ export const createNewSnapshot = ({
         session_project,
         children: currentSnapshot.children,
         data: '[]',
-        additional_info: getAdditionalInfo(state)
+        additional_info: getAdditionalInfo(state, snapshotData)
       },
       method: METHOD.PUT
     });
@@ -292,7 +305,7 @@ export const createNewSnapshot = ({
             session_project,
             data: '[]',
             children: [],
-            additional_info: getAdditionalInfo(state)
+            additional_info: getAdditionalInfo(state, snapshotData)
           },
           method: METHOD.POST
         }).then(res => {
@@ -367,6 +380,7 @@ export const createNewSnapshot = ({
                           dispatch(setIsLoadingSnapshotDialog(false));
                           dispatch(setSnapshotJustSaved(projectResponse.data.id));
                           dispatch(setDialogCurrentStep());
+                          dispatch(setReapplyOrientation(true));
                         }
                       }
                     })
@@ -497,6 +511,7 @@ export const createNewSnapshotWithoutStateModification = ({
 };
 
 export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {}) => async (dispatch, getState) => {
+  const snapshotData = dispatch(getCleanStateForSnapshot());
   const state = getState();
   const targetId = state.apiReducers.target_on;
   const loggedInUserID = DJANGO_CONTEXT['pk'];
@@ -525,7 +540,7 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
         dispatch(setIsLoadingSnapshotDialog(true));
       }
 
-      const additional_info = getAdditionalInfo(state);
+      const additional_info = getAdditionalInfo(state, snapshotData);
 
       const data = {
         title: ProjectCreationType.READ_ONLY,
@@ -573,4 +588,51 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
       }
     }
   }
+};
+
+export const getCleanStateForSnapshot = () => (dispatch, getState) => {
+  const state = getState();
+  //this is inefficient and it might cause problems with huge targets so
+  //having a custom deepClone function that only clones the necessary data would be better
+  //for now I'm skipping this to implement complete end to end functionality and then I'll optimize
+  let snapshotData = deepClone(state);
+  snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
+  snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
+
+  return snapshotData;
+};
+
+export const changeSnapshot = (projectID, snapshotID) => async (dispatch, getState) => {
+  dispatch(setSnapshotLoadingInProgress(true));
+  dispatch(setIsSnapshot(true));
+  // A hacky way of changing the URL without triggering react-router
+  window.history.replaceState(null, null, `${URLS.projects}${projectID}/${snapshotID}`);
+
+  // Load the needed data
+  const snapshotResponse = await api({ url: `${base_url}/api/snapshots/${snapshotID}` });
+
+  const snapshotState = snapshotResponse.data.additional_info.snapshotState;
+
+  dispatch(
+    setCurrentSnapshot({
+      id: snapshotResponse.data.id,
+      type: snapshotResponse.data.type,
+      title: snapshotResponse.data.title,
+      author: snapshotResponse.data.author,
+      description: snapshotResponse.data.description,
+      created: snapshotResponse.data.created,
+      children: snapshotResponse.data.children,
+      parent: snapshotResponse.data.parent,
+      data: snapshotResponse.data.data
+    })
+  );
+
+  const currentState = getState();
+  const newState = deepMergeWithPriorityAndWhiteList(
+    currentState,
+    snapshotState,
+    SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS
+  );
+
+  // dispatch(setEntireState(newState));
 };

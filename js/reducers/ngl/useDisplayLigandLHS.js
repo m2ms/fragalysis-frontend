@@ -14,7 +14,7 @@ import { NglContext } from '../../components/nglView/nglProvider';
 import { getRandomColor } from '../../components/preview/molecule/utils/color';
 import { readQualityInformation } from '../../components/nglView/renderingHelpers';
 import { deleteObject, loadObject, setOrientation } from './dispatchActions';
-import { appendMoleculeOrientation } from './actions';
+import { appendMoleculeOrientation, setNglViewFromSnapshotRendered } from './actions';
 import { removeVector } from '../../components/preview/molecule/redux/dispatchActions';
 import { getToBeDisplayedStructures } from './utils';
 
@@ -29,9 +29,12 @@ export const useDisplayLigandLHS = () => {
   const { getNglView } = useContext(NglContext);
   const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
 
+  // const isLoadingCurrentSnapshot = useSelector(state => state.projectReducers.isLoadingCurrentSnapshot);
+
   const displayLigand = useCallback(
     ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       const currentOrientation = stage.viewerControls.getOrientation();
 
@@ -59,7 +62,7 @@ export const useDisplayLigandLHS = () => {
         })
       ).then(() => {
         const skipOrientation = skipOrientationChange;
-        if (!skipOrientation) {
+        if (!skipOrientation /* || isLoadingCurrentSnapshot*/) {
           const ligandOrientation = stage.viewerControls.getOrientation();
           dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
 
@@ -71,14 +74,17 @@ export const useDisplayLigandLHS = () => {
             console.count(`After applying orientation matrix after loading ligand.`);
           }
         }
+        // dispatch(setNglViewFromSnapshotRendered(false));
       });
     },
-    [allObservations, dispatch, skipOrientationChange, stage]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allObservations, dispatch, stage] //skipOrientationChange and isLoadingCurrentSnapshot are not included in the dependencies by desing
   );
 
   const removeLigand = useCallback(
     ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
+      if (!data) return;
       dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateMoleculeObject(data)), stage));
       dispatch(removeFromFragmentDisplayList(generateMoleculeId(data)));
       dispatch(removeFromQualityList(generateMoleculeId(data)));

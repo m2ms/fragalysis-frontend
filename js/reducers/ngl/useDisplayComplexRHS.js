@@ -27,7 +27,8 @@ export const useDisplayComplexRHS = () => {
   const displayComplex = useCallback(
     complexData => {
       const datasetCompounds = allCompounds[complexData.datasetID];
-      const data = datasetCompounds.find(obs => obs.id === complexData.id);
+      const data = datasetCompounds?.find(obs => obs.id === complexData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       const datasetID = complexData.datasetID;
 
@@ -54,6 +55,7 @@ export const useDisplayComplexRHS = () => {
     complexData => {
       const datasetCompounds = allCompounds[complexData.datasetID];
       const data = datasetCompounds?.find(obs => obs.id === complexData.id);
+      if (!data) return;
       const datasetID = complexData.datasetID;
       const colourToggle = getRandomColor(data);
 

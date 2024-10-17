@@ -29,6 +29,7 @@ export const useDisplayProteinLHS = () => {
   const displayProtein = useCallback(
     proteinData => {
       const data = allObservations.find(obs => obs.id === proteinData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       dispatch(appendProteinList(generateMoleculeId(data)));
@@ -65,6 +66,7 @@ export const useDisplayProteinLHS = () => {
   const removeProtein = useCallback(
     proteinData => {
       const data = allObservations.find(obs => obs.id === proteinData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       dispatch(
         deleteObject(

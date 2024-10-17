@@ -931,6 +931,7 @@ export const applyDirectSelection = stage => (dispatch, getState) => {
 };
 
 export const getQualityInformation = (data, molType, width, height) => (dispatch, getState) => {
+  if (!data) return null;
   let moleculeObject = generateMoleculeObject(data);
   let qualityInformation = dispatch(readQualityInformation(moleculeObject.name, data.ligand_mol_file));
 

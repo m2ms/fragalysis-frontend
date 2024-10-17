@@ -187,7 +187,7 @@ export const ProjectDetailDrawer = memo(({ showHistory, setShowHistory }) => {
     setShowHistory(false);
   };
 
-  let image = currentSnapshotTree != null ? currentSnapshotImageList.find(i => i.id === currentSnapshotTree.id) : null;
+  let image = null; //currentSnapshotTree != null ? currentSnapshotImageList.find(i => i.id === currentSnapshotTree.id) : null;
   const images =
     image != null
       ? [

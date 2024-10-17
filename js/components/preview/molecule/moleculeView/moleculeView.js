@@ -443,9 +443,9 @@ const MoleculeView = memo(
     const allPoses = useSelector(state => state.apiReducers.lhs_compounds_list);
 
     //for some reason when tags are changed for this molecule the data are stale so I need to retrieve them from list of all molecules
-    data = allMolecules.filter(mol => mol.id === data.id)[0];
+    data = allMolecules.filter(mol => mol.id === data?.id)[0];
 
-    const [isCopied, setCopied] = useClipboard(data.smiles, { successDuration: 5000 });
+    const [isCopied, setCopied] = useClipboard(data?.smiles, { successDuration: 5000 });
 
     const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
     const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn);
@@ -458,7 +458,7 @@ const MoleculeView = memo(
 
     const colourToggle = getRandomColor(data);
 
-    const pose = useMemo(() => allPoses.find(p => p.id === data.pose), [allPoses, data]);
+    const pose = useMemo(() => allPoses.find(p => p.id === data?.pose), [allPoses, data]);
 
     const getCalculatedProps = useCallback(
       () => [
@@ -474,7 +474,7 @@ const MoleculeView = memo(
         //   { name: moleculeProperty.vectors, value: countOfVectors },
         //   { name: moleculeProperty.cpd, value: cmpds }
       ],
-      [data.ha, data.hacc, data.hdon, data.logp, data.mw, data.rings, data.rots, data.tpsa, data.velec]
+      []
     );
 
     const [densityModalOpen, setDensityModalOpen] = useState(false);
@@ -689,7 +689,7 @@ const MoleculeView = memo(
                             dispatch(setMoleculeForTagEdit([]));
                           } else {
                             setTagEditModalOpenNew(true);
-                            dispatch(setMoleculeForTagEdit([data.id]));
+                            dispatch(setMoleculeForTagEdit([data?.id]));
                             dispatch(setTagEditorOpenObs(true));
                             if (setRef) {
                               setRef(ref.current);
@@ -751,7 +751,7 @@ const MoleculeView = memo(
                         dispatch(setMoleculeForTagEdit([]));
                       } else {
                         setTagEditModalOpenNew(true);
-                        dispatch(setMoleculeForTagEdit([data.id]));
+                        dispatch(setMoleculeForTagEdit([data?.id]));
                         dispatch(setTagEditorOpenObs(true));
                         if (setRef) {
                           setRef(ref.current);
@@ -826,7 +826,7 @@ const MoleculeView = memo(
                 dispatch(setMoleculeForTagEdit([]));
               } else {
                 setTagEditModalOpenNew(true);
-                dispatch(setMoleculeForTagEdit([data.id]));
+                dispatch(setMoleculeForTagEdit([data?.id]));
                 dispatch(setTagEditorOpenObs(true));
                 if (setRef) {
                   setRef(ref.current);
@@ -845,10 +845,12 @@ const MoleculeView = memo(
 
     // componentDidMount
     useEffect(() => {
-      dispatch(getMolImage(data.id, MOL_TYPE.HIT, imageWidth, imageHeight)).then(i => {
-        setImg_data(i);
-      });
-    }, [data.id, data.smiles, imageHeight, imageWidth, dispatch]);
+      if (data) {
+        dispatch(getMolImage(data?.id, MOL_TYPE.HIT, imageWidth, imageHeight)).then(i => {
+          setImg_data(i);
+        });
+      }
+    }, [data, imageHeight, imageWidth, dispatch]);
 
     useEffect(() => {
       dispatch(getQualityInformation(data));
@@ -1134,7 +1136,7 @@ const MoleculeView = memo(
     // let moleculeTitle = data?.code.replace(new RegExp(`${target_on_name}-`, 'i'), '');
     // let moleculeTitle = data?.code;
     let moleculeTitle = data?.code.replaceAll(`${target_on_name}-`, '');
-    const moleculeTitleTruncated = moleculeTitle.substring(0, 20) + (moleculeTitle.length > 20 ? '...' : '');
+    const moleculeTitleTruncated = moleculeTitle?.substring(0, 20) + (moleculeTitle?.length > 20 ? '...' : '') || '';
 
     const [isNameCopied, setNameCopied] = useClipboard(moleculeTitle, { successDuration: 5000 });
 
@@ -1232,7 +1234,7 @@ const MoleculeView = memo(
                   <Tooltip
                     title={
                       data.prefix_tooltip ??
-                      '-' + (data.id === pose?.main_site_observation ? ' - main observation' : '')
+                      '-' + (data?.id === pose?.main_site_observation ? ' - main observation' : '')
                     }
                     placement="bottom-start"
                   >
@@ -1243,12 +1245,12 @@ const MoleculeView = memo(
                         setNameCopied(moleculeTitle);
                       }}
                       className={classNames(classes.moleculeTitleLabel, {
-                        [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                        [classes.moleculeTitleLabelMainObs]: data?.id === pose?.main_site_observation
                       })}
                     >
                       <span
                         className={classNames(classes.moleculeTitleLabelMain, {
-                          [classes.moleculeTitleLabelMainObs]: data.id === pose?.main_site_observation
+                          [classes.moleculeTitleLabelMainObs]: data?.id === pose?.main_site_observation
                         })}
                       >
                         {moleculeTitleTruncated}
@@ -1304,7 +1306,7 @@ const MoleculeView = memo(
                             variant="outlined"
                             className={classes.myLocationButton}
                             onClick={() => {
-                              dispatch(centerOnLigandByMoleculeID(stage, data.id));
+                              dispatch(centerOnLigandByMoleculeID(stage, data?.id));
                             }}
                             disabled={false || !isLigandOn}
                           >

@@ -46,7 +46,10 @@ export const INITIAL_STATE = {
   electronDensityColor_event: 'blue',
   electronDensityColor_sigmaa: 'blue',
   electronDensityColor_diff: 'blue',
-  skipOrientationChange: false
+  skipOrientationChange: false,
+  nglViewFromSnapshotRendered: false,
+  snapshotOrientationApplied: false,
+  reapplyOrientation: false
 };
 
 export default function nglReducers(state = INITIAL_STATE, action = {}) {
@@ -55,6 +58,15 @@ export default function nglReducers(state = INITIAL_STATE, action = {}) {
 
     case CONSTANTS.SET_SKIP_ORIENTATION_CHANGE:
       return { ...state, skipOrientationChange: action.skip };
+
+    case CONSTANTS.SET_REAPPLY_ORIENTATION:
+      return { ...state, reapplyOrientation: action.reapply };
+
+    case CONSTANTS.SET_NGL_VIEW_FROM_SNAPSHOT_RENDERED:
+      return { ...state, nglViewFromSnapshotRendered: { ...action.rendered } };
+
+    case CONSTANTS.SET_SNAPSHOT_ORIENTATION_APPLIED:
+      return { ...state, snapshotOrientationApplied: action.applied };
 
     case CONSTANTS.LOAD_OBJECT:
       // at first check if object was already stashed
@@ -202,9 +214,9 @@ export default function nglReducers(state = INITIAL_STATE, action = {}) {
     case CONSTANTS.APPEND_MOLECULE_ORIENTATION:
       const newMoleculeOrientations = Object.assign({}, state.moleculeOrientations);
 
-      if (newMoleculeOrientations[action.payload.moleculeID] === undefined) {
-        newMoleculeOrientations[action.payload.moleculeID] = action.payload.orientation;
-      }
+      // if (newMoleculeOrientations[action.payload.moleculeID] === undefined) {
+      newMoleculeOrientations[action.payload.moleculeID] = action.payload.orientation;
+      // }
       return Object.assign({}, state, { moleculeOrientations: newMoleculeOrientations });
 
     case CONSTANTS.REMOVE_MOLECULE_ORIENTATION:

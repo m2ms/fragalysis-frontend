@@ -270,3 +270,18 @@ export const setSkipOrientationChange = skip => ({
   type: CONSTANTS.SET_SKIP_ORIENTATION_CHANGE,
   skip: skip
 });
+
+export const setNglViewFromSnapshotRendered = rendered => ({
+  type: CONSTANTS.SET_NGL_VIEW_FROM_SNAPSHOT_RENDERED,
+  rendered
+});
+
+export const setSnapshotOrientationApplied = applied => ({
+  type: CONSTANTS.SET_SNAPSHOT_ORIENTATION_APPLIED,
+  applied
+});
+
+export const setReapplyOrientation = reapply => ({
+  type: CONSTANTS.SET_REAPPLY_ORIENTATION,
+  reapply
+});

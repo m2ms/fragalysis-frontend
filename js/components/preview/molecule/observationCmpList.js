@@ -312,6 +312,8 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   const noTagsReceived = useSelector(state => state.apiReducers.noTagsReceived);
   const categories = useSelector(state => state.apiReducers.categoryList);
 
+  const lhsDataIsLoaded = useSelector(state => state.apiReducers.lhsDataIsLoaded);
+
   const observationsForLHSCmp = useSelector(state => state.selectionReducers.observationsForLHSCmp);
 
   const lhsCompoundsList = useSelector(state => getLHSCompoundsList(state));
@@ -722,7 +724,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
   }, [joinedMoleculeLists, lhsCompoundsList]);
 
   useEffect(() => {
-    if (isObservationDialogOpen && observationsForLHSCmp?.length > 0) {
+    if (isObservationDialogOpen && observationsForLHSCmp?.length > 0 && lhsDataIsLoaded) {
       const cmpId = observationsForLHSCmp[0].cmpd;
       const cmp = filteredLHSCompoundsList.find(c => c.compound === cmpId);
       if (!cmp) {
@@ -733,7 +735,7 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
         // dispatch(setObservationDialogAction(0, [], false));
       }
     }
-  }, [isObservationDialogOpen, filteredLHSCompoundsList, observationsForLHSCmp, dispatch]);
+  }, [isObservationDialogOpen, filteredLHSCompoundsList, observationsForLHSCmp, dispatch, lhsDataIsLoaded]);
 
   const newMolsToEdit = [];
   allMoleculesList.forEach(cm => {
@@ -1036,8 +1038,9 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
                     {filter.priorityOrder.map(attr => (
                       <Grid item key={`Mol-Tooltip-${attr}`}>
                         <Tooltip
-                          title={`${filter.filter[attr].minValue}-${filter.filter[attr].maxValue} ${filter.filter[attr].order === 1 ? '\u2191' : '\u2193'
-                            }`}
+                          title={`${filter.filter[attr].minValue}-${filter.filter[attr].maxValue} ${
+                            filter.filter[attr].order === 1 ? '\u2191' : '\u2193'
+                          }`}
                           placement="top"
                         >
                           <Chip size="small" label={attr} style={{ backgroundColor: getAttrDefinition(attr).color }} />
@@ -1171,8 +1174,9 @@ export const ObservationCmpList = memo(({ hideProjects }) => {
           </Tooltip>
         )}
         <Grid style={{ marginTop: '4px' }}>
-          <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected: ${allSelectedMolecules ? allSelectedMolecules.length : 0
-            }`}</Typography>
+          <Typography variant="caption" className={classes.noOfSelectedHits}>{`Selected: ${
+            allSelectedMolecules ? allSelectedMolecules.length : 0
+          }`}</Typography>
         </Grid>
       </Grid>
       <Grid container spacing={1} direction="column" justifyContent="flex-start" className={classes.container}>

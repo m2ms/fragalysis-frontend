@@ -175,21 +175,6 @@ export const addDatasetSurface = (
       datasetID: datasetID
     })
   );
-  // dispatch(appendSurfaceList(datasetID, generateMoleculeCompoundId(data)));
-  // return dispatch(
-  //   loadObject({
-  //     target: Object.assign(
-  //       { display_div: VIEWS.MAJOR_VIEW },
-  //       generateSurfaceObject(data, colourToggle, base_url, datasetID)
-  //     ),
-  //     stage,
-  //     previousRepresentations: representations,
-  //     orientationMatrix: null
-  //   })
-  // ).finally(() => {
-  //   const currentOrientation = stage.viewerControls.getOrientation();
-  //   dispatch(setOrientation(VIEWS.MAJOR_VIEW, currentOrientation));
-  // });
 };
 
 export const removeDatasetSurface = (stage, data, colourToggle, datasetID) => dispatch => {
@@ -201,13 +186,6 @@ export const removeDatasetSurface = (stage, data, colourToggle, datasetID) => di
       datasetID: datasetID
     })
   );
-  // dispatch(
-  //   deleteObject(
-  //     Object.assign({ display_div: VIEWS.MAJOR_VIEW }, generateSurfaceObject(data, colourToggle, base_url, datasetID)),
-  //     stage
-  //   )
-  // );
-  // dispatch(removeFromSurfaceList(datasetID, generateMoleculeCompoundId(data)));
 };
 
 export const addDatasetLigand = (

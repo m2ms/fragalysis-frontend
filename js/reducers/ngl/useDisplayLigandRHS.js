@@ -12,7 +12,7 @@ import {
 } from '../../components/datasets/redux/actions';
 import { generateMoleculeCompoundId, generateMoleculeObject } from '../../components/nglView/generatingObjects';
 import { deleteObject, loadObject, setOrientation } from './dispatchActions';
-import { appendMoleculeOrientation } from './actions';
+import { appendMoleculeOrientation, setNglViewFromSnapshotRendered } from './actions';
 import { getDatasetMoleculeID } from '../../components/datasets/redux/dispatchActions';
 
 export const useDisplayLigandRHS = () => {
@@ -29,7 +29,8 @@ export const useDisplayLigandRHS = () => {
   const displayLigand = useCallback(
     ligandData => {
       const datasetCompounds = allCompounds[ligandData.datasetID];
-      const data = datasetCompounds.find(obs => obs.id === ligandData.id);
+      const data = datasetCompounds?.find(obs => obs.id === ligandData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
       const datasetID = ligandData.datasetID;
 
@@ -60,6 +61,7 @@ export const useDisplayLigandRHS = () => {
             stage.viewerControls.orient(currentOrientation);
             console.count(`After applying orientation after loading dataset ligand.`);
           }
+          // dispatch(setNglViewFromSnapshotRendered(false));
         }
       });
     },
@@ -70,6 +72,7 @@ export const useDisplayLigandRHS = () => {
     ligandData => {
       const datasetCompounds = allCompounds[ligandData.datasetID];
       const data = datasetCompounds?.find(obs => obs.id === ligandData.id);
+      if (!data) return;
       const datasetID = ligandData.datasetID;
 
       dispatch(

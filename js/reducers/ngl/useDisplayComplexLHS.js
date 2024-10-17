@@ -23,6 +23,7 @@ export const useDisplayComplexLHS = () => {
   const displayComplex = useCallback(
     complexData => {
       const data = allObservations.find(obs => obs.id === complexData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       dispatch(appendComplexList(generateMoleculeId(data)));
@@ -45,6 +46,7 @@ export const useDisplayComplexLHS = () => {
   const removeComplex = useCallback(
     complexData => {
       const data = allObservations.find(obs => obs.id === complexData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       dispatch(

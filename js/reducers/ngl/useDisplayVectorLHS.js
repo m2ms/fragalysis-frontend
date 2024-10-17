@@ -34,6 +34,7 @@ export const useDisplayVectorLHS = () => {
   const displayVector = useCallback(
     vectorData => {
       const data = allObservations.find(obs => obs.id === vectorData.id);
+      if (!data) return;
 
       dispatch(appendVectorOnList(generateMoleculeId(data)));
       dispatch(selectVectorAndResetCompounds(currentVector));
@@ -75,6 +76,7 @@ export const useDisplayVectorLHS = () => {
   const removeVector = useCallback(
     vectorData => {
       const data = allObservations.find(obs => obs.id === vectorData.id);
+      if (!data) return;
 
       vector_list
         .filter(item => item.moleculeId === data.id)

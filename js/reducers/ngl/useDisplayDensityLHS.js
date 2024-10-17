@@ -42,6 +42,7 @@ export const useDisplayDensityLHS = () => {
   const displayDensity = useCallback(
     async densityData => {
       const data = allObservations.find(obs => obs.id === densityData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       if (!data.proteinData) {
@@ -98,6 +99,7 @@ export const useDisplayDensityLHS = () => {
   const displayCustomDensity = useCallback(
     async densityData => {
       const data = allObservations.find(obs => obs.id === densityData.id);
+      if (!data) return;
       const colourToggle = getRandomColor(data);
 
       if (!data.proteinData) {

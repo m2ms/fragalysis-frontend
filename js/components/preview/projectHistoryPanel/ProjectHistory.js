@@ -18,6 +18,7 @@ import { NglContext } from '../../nglView/nglProvider';
 import { VIEWS } from '../../../constants/constants';
 import { useRouteMatch } from 'react-router-dom';
 import { setSnapshotLoadingInProgress } from '../../../reducers/api/actions';
+import { changeSnapshot } from '../../snapshot/redux/dispatchActions';
 
 export const heightOfProjectHistory = PROJECTS_JOBS_PANEL_HEIGHT;
 
@@ -117,9 +118,9 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
       dispatch(setSelectedSnapshotToSwitch(transitionToSnapshot.hash));
       dispatch(setIsOpenModalBeforeExit(true));
       setTryToOpen(false);
-      // dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, nglViewList, stage));
+      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
     } else if (!isSnapshotDirty && tryToOpen && transitionToSnapshot) {
-      // dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, nglViewList, stage));
+      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
       setTryToOpen(false);
     }
   }, [dispatch, isSnapshotDirty, nglViewList, sessionProjectID, stage, transitionToSnapshot, tryToOpen]);
@@ -298,7 +299,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
         <div className={classes.containerExpanded}>
           <Gitgraph key={graphKey} options={options}>
             {gitgraph => {
-              if (!!currentSnapshotTree) {
+              if (!!currentSnapshotTree && currentSnapshotList) {
                 renderTreeNode(gitgraph, currentSnapshotTree);
               }
             }}

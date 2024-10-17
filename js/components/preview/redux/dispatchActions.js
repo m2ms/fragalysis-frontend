@@ -9,7 +9,7 @@ import { resetLoadedSnapshots, resetProjectsReducer } from '../../projects/redux
 import { resetSelectionState } from '../../../reducers/selection/actions';
 import { URLS } from '../../routes/constants';
 import { resetDatasetsState } from '../../datasets/redux/actions';
-import { setTargetOn } from '../../../reducers/api/actions';
+import { setProteinIsLoaded, setProteinIsLoading, setTargetOn } from '../../../reducers/api/actions';
 import { resetViewerControlsState } from '../viewerControls/redux/actions';
 // eslint-disable-next-line import/extensions
 import { default_squonk_project } from '../../../../package.json';
@@ -51,6 +51,11 @@ export const shouldLoadProtein = ({
   const targetIdList = state.apiReducers.target_id_list;
   const targetOnId = state.apiReducers.target_on;
 
+  const proteinIsLoading = state.apiReducers.proteinIsLoading;
+  const proteinIsLoaded = state.apiReducers.proteinIsLoaded;
+
+  if (proteinIsLoading || proteinIsLoaded) return;
+
   const targetOn = targetIdList.find(target => target.id === targetOnId);
 
   const isRestoring = false; //state.trackingReducers.isActionRestoring;
@@ -62,33 +67,36 @@ export const shouldLoadProtein = ({
     isLoadingCurrentSnapshot === false
   ) {
     //  1. Generate new protein or skip this action and everything will be loaded from project actions
-    if (!isStateLoaded && currentSnapshotID === null && !routeSnapshotID) {
-      dispatch(setProteinLoadingState(false));
-      Promise.all(
-        nglViewList.map(nglView =>
-          dispatch(loadProtein(nglView)).finally(() => {
-            dispatch(setOrientation(nglView.id, nglView.stage.viewerControls.getOrientation()));
-          })
-        )
-      )
-        .then(() => {
-          dispatch(setProteinLoadingState(true));
-          if (getState().nglReducers.countOfRemainingMoleculeGroups === 0) {
-            const summaryView = nglViewList.find(view => view.id === VIEWS.SUMMARY_VIEW);
-            dispatch(createInitialSnapshot(routeProjectID, summaryView));
-          }
+    // if (!isStateLoaded && currentSnapshotID === null && !routeSnapshotID) {
+    dispatch(setProteinLoadingState(false));
+    dispatch(setProteinIsLoading(true));
+    Promise.all(
+      nglViewList.map(nglView =>
+        dispatch(loadProtein(nglView)).finally(() => {
+          dispatch(setOrientation(nglView.id, nglView.stage.viewerControls.getOrientation()));
         })
-        .catch(error => {
-          dispatch(setProteinLoadingState(false));
-          throw new Error(error);
-        });
-    } else if (
-      currentSnapshotID !== null &&
-      (!routeSnapshotID || routeSnapshotID === currentSnapshotID.toString()) &&
-      isRestoring === true
-    ) {
-      // dispatch(restoreAfterTargetActions(nglViewList, routeProjectID, currentSnapshotID));
-    }
+      )
+    )
+      .then(() => {
+        dispatch(setProteinLoadingState(true));
+        dispatch(setProteinIsLoading(false));
+        dispatch(setProteinIsLoaded(true));
+        if (getState().nglReducers.countOfRemainingMoleculeGroups === 0) {
+          const summaryView = nglViewList.find(view => view.id === VIEWS.SUMMARY_VIEW);
+          dispatch(createInitialSnapshot(routeProjectID, summaryView));
+        }
+      })
+      .catch(error => {
+        dispatch(setProteinLoadingState(false));
+        throw new Error(error);
+      });
+    // } else if (
+    //   currentSnapshotID !== null &&
+    //   (!routeSnapshotID || routeSnapshotID === currentSnapshotID.toString()) &&
+    //   isRestoring === true
+    // ) {
+    //   // dispatch(restoreAfterTargetActions(nglViewList, routeProjectID, currentSnapshotID));
+    // }
 
     if (targetOn !== undefined) {
       document.title = targetOn?.display_name

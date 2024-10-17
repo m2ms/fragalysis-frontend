@@ -1233,7 +1233,7 @@ const MoleculeView = memo(
                   {/* Title label */}
                   <Tooltip
                     title={
-                      data.prefix_tooltip ??
+                      data?.prefix_tooltip ??
                       '-' + (data?.id === pose?.main_site_observation ? ' - main observation' : '')
                     }
                     placement="bottom-start"

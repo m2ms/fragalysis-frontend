@@ -4,7 +4,11 @@ import {
   setSessionTitle,
   setSnapshotLoadingInProgress
 } from '../../../reducers/api/actions';
-import { reloadSelectionReducer } from '../../../reducers/selection/actions';
+import {
+  reloadSelectionReducer,
+  setToBeDisplayedList,
+  updateInToBeDisplayedList
+} from '../../../reducers/selection/actions';
 import { api, METHOD } from '../../../utils/api';
 import {
   setDisableRedirect,
@@ -36,16 +40,29 @@ import {
   setForceProjectCreated
 } from '../../projects/redux/actions';
 import { selectFirstMolGroup } from '../../preview/moleculeGroups/redux/dispatchActions';
-import { reloadDatasetsReducer } from '../../datasets/redux/actions';
+import {
+  reloadDatasetsReducer,
+  setToBeDisplayedListForDataset,
+  setToBeDisplayedLists,
+  updateInToBeDisplayedListForDataset
+} from '../../datasets/redux/actions';
 import { captureScreenOfSnapshot } from '../../userFeedback/browserApi';
 import { setCurrentProject } from '../../projects/redux/actions';
 import { createProjectPost } from '../../../utils/discourse';
-import { deepClone, deepMergeWithPriority, deepMergeWithPriorityAndWhiteList } from '../../../utils/objectUtils';
 import {
+  deepClone,
+  deepMergeWithPriority,
+  deepMergeWithPriorityAndBlackList,
+  deepMergeWithPriorityAndWhiteList
+} from '../../../utils/objectUtils';
+import {
+  SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS,
   SNAPSHOT_VALUES_TO_BE_DELETED,
   SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS
 } from './utilitySnapshotShapes';
 import { setEntireState } from '../../../reducers/actions';
+import { VIEWS } from '../../../constants/constants';
+// import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 
 export const getListOfSnapshots = () => (dispatch, getState) => {
   const userID = DJANGO_CONTEXT['pk'] || null;
@@ -595,14 +612,23 @@ export const getCleanStateForSnapshot = () => (dispatch, getState) => {
   //this is inefficient and it might cause problems with huge targets so
   //having a custom deepClone function that only clones the necessary data would be better
   //for now I'm skipping this to implement complete end to end functionality and then I'll optimize
-  let snapshotData = deepClone(state);
+  // let snapshotData = deepClone(state);
+  // snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
+  // snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
+
+  let snapshotData = {};
+
+  snapshotData = deepMergeWithPriorityAndBlackList({}, state, SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
+  snapshotData = deepClone(snapshotData);
+  snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
+  // snapshotData = deepClone(snapshotData);
   snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
   snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
 
   return snapshotData;
 };
 
-export const changeSnapshot = (projectID, snapshotID) => async (dispatch, getState) => {
+export const changeSnapshot = (projectID, snapshotID, stage) => async (dispatch, getState) => {
   dispatch(setSnapshotLoadingInProgress(true));
   dispatch(setIsSnapshot(true));
   // A hacky way of changing the URL without triggering react-router
@@ -627,12 +653,60 @@ export const changeSnapshot = (projectID, snapshotID) => async (dispatch, getSta
     })
   );
 
-  const currentState = getState();
-  const newState = deepMergeWithPriorityAndWhiteList(
-    currentState,
-    snapshotState,
-    SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS
+  //orientation animation
+  const newOrientation = snapshotState.nglReducers.nglOrientations[VIEWS.MAJOR_VIEW];
+  await stage.animationControls.orient(newOrientation.elements, 2000); //.then(() => {
+  let currentState = getState();
+  const toBeDisplayedLHSCurrent = currentState.selectionReducers.toBeDisplayedList;
+  const toBeDisplayedRHSCurrent = currentState.datasetsReducers.toBeDisplayedList;
+  const toBeDisplayedLHSNew = snapshotState.selectionReducers.toBeDisplayedList;
+  const toBeDisplayedRHSNew = snapshotState.datasetsReducers.toBeDisplayedList;
+
+  //remove LHS stuff that is not in the new snapshot
+  const toBeNoLongerDisplayedLHS = toBeDisplayedLHSCurrent.filter(
+    currentStruct =>
+      !toBeDisplayedLHSNew.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
+  );
+  toBeNoLongerDisplayedLHS.forEach(notToBeDisplayed =>
+    toBeDisplayedLHSNew.push({ ...notToBeDisplayed, display: false })
   );
 
+  //remove RHS stuff that is not in the new snapshot
+  const toBeNoLongerDisplayedRHS = [];
+  Object.keys(toBeDisplayedRHSCurrent).forEach(datasetID => {
+    const currentDataset = toBeDisplayedRHSCurrent[datasetID];
+    const newDataset = toBeDisplayedRHSNew[datasetID];
+    if (newDataset) {
+      const toBeNoLongerDisplayed = currentDataset.filter(
+        currentStruct =>
+          !newDataset.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
+      );
+      toBeNoLongerDisplayedRHS.push(...toBeNoLongerDisplayed);
+    }
+  });
+  toBeNoLongerDisplayedRHS.forEach(notToBeDisplayed =>
+    toBeDisplayedRHSNew[notToBeDisplayed.datasetID]
+      ? toBeDisplayedRHSNew[notToBeDisplayed.datasetID].push({ ...notToBeDisplayed, display: false })
+      : (toBeDisplayedRHSNew[notToBeDisplayed.datasetID] = [{ ...notToBeDisplayed, display: false }])
+  );
+
+  const toBeDisplayedLHSNewDeepCopy = deepClone(toBeDisplayedLHSNew);
+  const toBeDisplayedRHSNewDeepCopy = deepClone(toBeDisplayedRHSNew) || {};
+
+  currentState = getState();
+  // const copyOfCurrentState = deepClone(currentState);
+  const newState = deepMergeWithPriorityAndBlackList(
+    // copyOfCurrentState,
+    currentState,
+    snapshotState,
+    SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS
+  );
+
+  dispatch(setToBeDisplayedList(toBeDisplayedLHSNewDeepCopy));
+  dispatch(setToBeDisplayedLists(toBeDisplayedRHSNewDeepCopy));
+  // });
+  // await new Promise(r => setTimeout(r, 2000));
+
   // dispatch(setEntireState(newState));
+  // console.log('msg');
 };

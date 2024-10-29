@@ -655,3 +655,10 @@ export const updateInToBeDisplayedListForDataset = (datasetID, item) => {
     datasetID: datasetID
   };
 };
+
+export const setToBeDisplayedLists = toBeDisplayedLists => {
+  return {
+    type: constants.SET_TO_BE_DISPLAYED_LISTS,
+    toBeDisplayedLists: toBeDisplayedLists
+  };
+};

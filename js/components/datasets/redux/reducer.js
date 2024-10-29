@@ -132,7 +132,9 @@ const setList = (state, listsName, datasetId, list) => {
 const appendToList = (state, listsName, datasetId, itemId) => {
   const newState = Object.assign({}, state);
 
-  newState[listsName][datasetId] = [...new Set([...newState[listsName][datasetId], itemId])];
+  newState[listsName][datasetId]
+    ? (newState[listsName][datasetId] = [...new Set([...newState[listsName][datasetId], itemId])])
+    : (newState[listsName][datasetId] = [itemId]);
 
   return newState;
 };
@@ -204,6 +206,8 @@ const removeDatasetFromState = (state, datasetId) => {
 
 export const datasetsReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
+    case constants.SET_TO_BE_DISPLAYED_LISTS:
+      return { ...state, toBeDisplayedList: action.toBeDisplayedLists };
     case constants.SET_TO_BE_DISPLAYED_LIST_DATASET: {
       return setList(state, 'toBeDisplayedList', action.datasetID, action.list);
     }

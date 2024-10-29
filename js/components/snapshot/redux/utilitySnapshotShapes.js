@@ -1,6 +1,3 @@
-import { setCurrentSnapshotTree } from '../../projects/redux/actions';
-import { snapshotReducers } from './reducer';
-
 export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   apiReducers: {
     // target_id_list: [],
@@ -37,7 +34,8 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
     isScrollFiredForLHS: false
   },
   snapshotReducers: {
-    openSavingDialog: false
+    openSavingDialog: false,
+    isSnapshotDirty: false
   },
   previewReducers: {
     molecule: {

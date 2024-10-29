@@ -89,7 +89,7 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
   const currentSnapshotJobList = useSelector(state => state.projectReducers.currentSnapshotJobList);
   const currentSnapshotTree = useSelector(state => state.projectReducers.currentSnapshotTree);
   const jobPopUpAnchorEl = useSelector(state => state.projectReducers.jobPopUpAnchorEl);
-  const isSnapshotDirty = false; //useSelector(state => state.trackingReducers.isSnapshotDirty);
+  const isSnapshotDirty = useSelector(state => state.snapshotReducers.isSnapshotDirty);
   const currentSessionProject = useSelector(state => state.projectReducers.currentProject);
   const currentSessionProjectID = currentSessionProject && currentSessionProject.projectID;
   const sessionProjectID = paramsProjectID && paramsProjectID != null ? paramsProjectID : currentSessionProjectID;

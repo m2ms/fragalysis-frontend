@@ -24,11 +24,15 @@ export const INITIAL_STATE = {
   disableRedirect: false,
   snapshotJustSaved: false,
   dontShowShareSnapshot: false,
-  downloadStructuresDialogOpen: false
+  downloadStructuresDialogOpen: false,
+  isSnapshotDirty: false
 };
 
 export const snapshotReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
+    case constants.SET_SNAPSHOT_IS_DIRTY:
+      return { ...state, isSnapshotDirty: action.payload };
+
     case constants.SET_SAVE_TYPE:
       return Object.assign({}, state, {
         saveType: action.payload

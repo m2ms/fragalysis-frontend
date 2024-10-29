@@ -11,10 +11,12 @@ import { rootReducer } from './reducers/rootReducer';
 import { saveStore } from './components/helpers/globalStore';
 import thunkMiddleware from 'redux-thunk';
 import { composeWithDevTools } from 'redux-devtools-extension';
+import actionTrackingMiddleware from './reducers/actionTrackingMiddleware';
 
 const middlewareEnhancer = applyMiddleware(
   //loggerMiddleware,
-  thunkMiddleware
+  thunkMiddleware,
+  actionTrackingMiddleware
 );
 const enhancers = [middlewareEnhancer];
 const composedEnhancers = composeWithDevTools(...enhancers);

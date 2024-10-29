@@ -52,31 +52,85 @@ export const deepClone = obj => {
   return JSON.parse(JSON.stringify(obj));
 };
 
-export const deepMergeWithPriorityAndWhiteList = (a, b, whiteList) => {
-  const isPathPresentInTheWhiteList = (path, whiteList) => {
-    console.log(`isPathPresentInTheWhiteList - path: ${JSON.stringify(path)}`);
-    const result = !!path.reduce((obj, key) => obj[key], whiteList);
-    console.log(`isPathPresentInTheWhiteList - result: ${result}`);
-    return result;
+// export const deepMergeWithPriorityAndWhiteList = (a, b, whiteList) => {
+//   const isPathPresentInTheWhiteList = (path, whiteList) => {
+//     console.log(`isPathPresentInTheWhiteList - path: ${JSON.stringify(path)}`);
+//     const result = !!path.reduce((obj, key) => obj[key], whiteList);
+//     console.log(`isPathPresentInTheWhiteList - result: ${result}`);
+//     return result;
+//   };
+//   const merge = (a, b, path) => {
+//     const keys = Object.keys(b);
+
+//     keys.forEach(key => {
+//       const currentPath = [...path, key];
+//       if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
+//         if (a[key] && typeof a[key] === 'object' && b[key] && typeof b[key] === 'object') {
+//           if (Array.isArray(a[key]) && Array.isArray(b[key]) && isPathPresentInTheWhiteList(currentPath, whiteList)) {
+//             a[key] = [...b[key]];
+//           } else {
+//             if (Object.keys(b[key]).length === 0 && isPathPresentInTheWhiteList(currentPath, whiteList)) {
+//               a[key] = b[key];
+//             } else {
+//               a[key] = merge(a[key], b[key], currentPath);
+//             }
+//           }
+//         } else {
+//           if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
+//             a[key] = b[key];
+//           }
+//         }
+//       }
+//     });
+
+//     // currentPath.pop();
+//     return a;
+//   };
+
+//   return merge({ ...a }, b, []);
+// };
+
+export const deepMergeWithPriorityAndBlackList = (a, b, blackList) => {
+  const isWholePathPresentIntoBlackList = (path, blackList) => {
+    let partOfBlackList = blackList;
+    for (let i = 0; i < path.length; i++) {
+      const pathToCheck = path[i];
+      if (partOfBlackList[pathToCheck]) {
+        partOfBlackList = partOfBlackList[pathToCheck];
+        if (i === path.length - 1 && Object.keys(partOfBlackList).length > 0) {
+          // console.log(`isWholePathPresentIntoBlackList - path: ${JSON.stringify(path)} - false - not entire path`);
+          return false;
+        }
+      } else {
+        // console.log(`isWholePathPresentIntoBlackList - path: ${JSON.stringify(path)} - false`);
+        return false;
+      }
+    }
+    // console.log(`isWholePathPresentIntoBlackList - path: ${JSON.stringify(path)} - true`);
+    return true;
   };
   const merge = (a, b, path) => {
     const keys = Object.keys(b);
 
     keys.forEach(key => {
       const currentPath = [...path, key];
-      if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
+      if (!isWholePathPresentIntoBlackList(currentPath, blackList)) {
         if (a[key] && typeof a[key] === 'object' && b[key] && typeof b[key] === 'object') {
-          if (Array.isArray(a[key]) && Array.isArray(b[key]) && isPathPresentInTheWhiteList(currentPath, whiteList)) {
+          if (
+            Array.isArray(a[key]) &&
+            Array.isArray(b[key]) &&
+            !isWholePathPresentIntoBlackList(currentPath, blackList)
+          ) {
             a[key] = [...b[key]];
           } else {
-            if (Object.keys(b[key]).length === 0 && isPathPresentInTheWhiteList(currentPath, whiteList)) {
+            if (Object.keys(b[key]).length === 0 && !isWholePathPresentIntoBlackList(currentPath, blackList)) {
               a[key] = b[key];
             } else {
               a[key] = merge(a[key], b[key], currentPath);
             }
           }
         } else {
-          if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
+          if (!isWholePathPresentIntoBlackList(currentPath, blackList)) {
             a[key] = b[key];
           }
         }

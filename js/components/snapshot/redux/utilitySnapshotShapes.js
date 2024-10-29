@@ -1,3 +1,6 @@
+import { setCurrentSnapshotTree } from '../../projects/redux/actions';
+import { snapshotReducers } from './reducer';
+
 export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   apiReducers: {
     // target_id_list: [],
@@ -12,7 +15,7 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
     rhsDataIsLoading: true,
     rhsDataIsLoaded: false,
     proteinIsLoading: false,
-    proteinsIsLoaded: false
+    proteinIsLoaded: false
   },
   nglReducers: {
     objectsInView: {},
@@ -32,6 +35,9 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
     qualityList: [],
     vectorOnList: [],
     isScrollFiredForLHS: false
+  },
+  snapshotReducers: {
+    openSavingDialog: false
   },
   previewReducers: {
     molecule: {
@@ -55,43 +61,67 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   }
 };
 
-export const SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS = {
+// export const SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS = {
+//   apiReducers: {
+//     // target_id_list: [],
+//   },
+//   nglReducers: {
+//     objectsInView: {},
+//     pdbCache: {},
+//     qualityCache: {},
+//     nglViewFromSnapshotRendered: false,
+//     snapshotOrientationApplied: false
+//   },
+//   selectionReducers: {
+//     fragmentDisplayList: [],
+//     proteinList: [],
+//     complexList: [],
+//     surfaceList: [],
+//     densityList: [],
+//     densityListCustom: [],
+//     densityListType: [],
+//     qualityList: [],
+//     vectorOnList: [],
+//     isScrollFiredForLHS: false
+//   },
+//   previewReducers: {
+//     molecule: {
+//       imageCache: {}
+//     }
+//   },
+//   datasetsReducers: {
+//     ligandLists: {},
+//     proteinLists: {},
+//     complexLists: {},
+//     surfaceLists: {},
+//     datasetScrolledMap: {},
+//     isSelectedDatasetScrolled: false
+//   },
+//   projectReducers: {
+//     isProjectModalLoading: false
+//   }
+// };
+
+export const SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS = {
   apiReducers: {
-    // target_id_list: [],
-  },
-  nglReducers: {
-    objectsInView: {},
-    pdbCache: {},
-    qualityCache: {},
-    nglViewFromSnapshotRendered: false,
-    snapshotOrientationApplied: false
-  },
-  selectionReducers: {
-    fragmentDisplayList: [],
-    proteinList: [],
-    complexList: [],
-    surfaceList: [],
-    densityList: [],
-    densityListCustom: [],
-    densityListType: [],
-    qualityList: [],
-    vectorOnList: [],
-    isScrollFiredForLHS: false
-  },
-  previewReducers: {
-    molecule: {
-      imageCache: {}
-    }
+    target_id_list: [],
+    legacy_target_id_list: [],
+    all_mol_lists: [],
+    moleculeTags: [],
+    tagList: [],
+    categoryList: [],
+    lhs_compounds_list: []
   },
   datasetsReducers: {
-    ligandLists: {},
-    proteinLists: {},
-    complexLists: {},
-    surfaceLists: {},
-    datasetScrolledMap: {},
-    isSelectedDatasetScrolled: false
+    datasets: [],
+    moleculeLists: {},
+    scoreDatasetMap: {},
+    allInspirations: {}
   },
   projectReducers: {
-    isProjectModalLoading: false
+    currentSnapshot: {},
+    currentSnapshotList: [],
+    currentSnapshotTree: {},
+    currentProject: {}
   }
 };

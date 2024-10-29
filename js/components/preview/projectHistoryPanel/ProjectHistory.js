@@ -118,9 +118,9 @@ export const ProjectHistory = memo(({ showFullHistory, graphKey, expanded, onExp
       dispatch(setSelectedSnapshotToSwitch(transitionToSnapshot.hash));
       dispatch(setIsOpenModalBeforeExit(true));
       setTryToOpen(false);
-      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
+      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, stage));
     } else if (!isSnapshotDirty && tryToOpen && transitionToSnapshot) {
-      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash));
+      dispatch(changeSnapshot(sessionProjectID, transitionToSnapshot.hash, stage));
       setTryToOpen(false);
     }
   }, [dispatch, isSnapshotDirty, nglViewList, sessionProjectID, stage, transitionToSnapshot, tryToOpen]);

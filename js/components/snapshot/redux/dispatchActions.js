@@ -51,6 +51,7 @@ import { setCurrentProject } from '../../projects/redux/actions';
 import { createProjectPost } from '../../../utils/discourse';
 import {
   deepClone,
+  deepEqual,
   deepMergeWithPriority,
   deepMergeWithPriorityAndBlackList,
   deepMergeWithPriorityAndWhiteList
@@ -302,128 +303,128 @@ export const createNewSnapshot = ({
   } else {
     let newType = type;
 
-    return Promise.all([
-      dispatch(setIsLoadingSnapshotDialog(true)),
-      api({ url: `${base_url}/api/snapshots/?session_project=${session_project}&type=INIT` }).then(response => {
-        if (response.data.count === 0) {
-          newType = SnapshotType.INIT;
-          // Without this, the snapshot tree wouldnt work
-          dispatch(setForceProjectCreated(false));
-        }
+    // return Promise.all([
+    dispatch(setIsLoadingSnapshotDialog(true)); //,
+    return api({ url: `${base_url}/api/snapshots/?session_project=${session_project}&type=INIT` }).then(response => {
+      if (response.data.count === 0) {
+        newType = SnapshotType.INIT;
+        // Without this, the snapshot tree wouldnt work
+        dispatch(setForceProjectCreated(false));
+      }
 
-        return api({
-          url: `${base_url}/api/snapshots/`,
-          data: {
-            title,
-            description,
-            type: newType,
-            author,
-            parent,
-            session_project,
-            data: '[]',
-            children: [],
-            additional_info: getAdditionalInfo(state, snapshotData)
-          },
-          method: METHOD.POST
-        }).then(res => {
-          // redirect to project with newest created snapshot /:projectID/:snapshotID
-          if (res.data.id && session_project) {
-            console.log('created snapshot id: ' + res.data.id);
+      return api({
+        url: `${base_url}/api/snapshots/`,
+        data: {
+          title,
+          description,
+          type: newType,
+          author,
+          parent,
+          session_project,
+          data: '[]',
+          children: [],
+          additional_info: getAdditionalInfo(state, snapshotData)
+        },
+        method: METHOD.POST
+      }).then(res => {
+        // redirect to project with newest created snapshot /:projectID/:snapshotID
+        if (res.data.id && session_project) {
+          console.log('created snapshot id: ' + res.data.id);
 
-            // return Promise.resolve(dispatch(saveCurrentActionsList(snapshot, project, nglViewList, false))).then(
-            return new Promise(resolve => {
-              if (disableRedirect === false) {
-                if (selectedSnapshotToSwitch != null) {
-                  if (createDiscourse) {
-                    dispatch(createSnapshotDiscoursePost(res.data.id));
-                  }
-                  //window.location.replace(`${URLS.projects}${session_project}/${selectedSnapshotToSwitch}`);
-                  // await dispatch(changeSnapshot(session_project, selectedSnapshotToSwitch, nglViewList, stage));
-                  dispatch(setOpenSnapshotSavingDialog(false));
-                  dispatch(setIsLoadingSnapshotDialog(false));
-                } else {
-                  // A hacky way of changing the URL without triggering react-router
-                  window.history.replaceState(
-                    null,
-                    null,
-                    `${URLS.projects}${session_project}/${
-                      selectedSnapshotToSwitch === null ? res.data.id : selectedSnapshotToSwitch
-                    }`
-                  );
-                  api({ url: `${base_url}/api/session-projects/${session_project}/` })
-                    .then(async projectResponse => {
-                      const response = await api({
-                        url: `${base_url}/api/snapshots/?session_project=${session_project}`
-                      });
-
-                      const length = response.data.results.length;
-                      if (length === 0) {
-                        dispatch(resetCurrentSnapshot());
-                      } else {
-                        const createdSnapshot =
-                          response.data.results && response.data.results.find(r => r.id === res.data.id);
-                        console.log('new snapshot id: ' + JSON.stringify(createdSnapshot?.id));
-
-                        if (createdSnapshot !== undefined && createdSnapshot !== null) {
-                          // If the tree fails to load, bail out first without modifying the store
-                          await dispatch(loadSnapshotTree(projectResponse.data.id));
-                          await dispatch(
-                            setCurrentSnapshot({
-                              id: createdSnapshot.id,
-                              type: createdSnapshot.type,
-                              title: createdSnapshot.title,
-                              author: createdSnapshot.author,
-                              description: createdSnapshot.description,
-                              created: createdSnapshot.created,
-                              children: createdSnapshot.children,
-                              parent: createdSnapshot.parent,
-                              data: '[]'
-                            })
-                          );
-                          await dispatch(
-                            setCurrentProject({
-                              projectID: projectResponse.data.id,
-                              authorID: projectResponse.data.author || null,
-                              title: projectResponse.data.title,
-                              description: projectResponse.data.description,
-                              targetID: projectResponse.data.target.id,
-                              tags: JSON.parse(projectResponse.data.tags)
-                            })
-                          );
-                          if (createDiscourse) {
-                            dispatch(createSnapshotDiscoursePost());
-                          }
-                          dispatch(setOpenSnapshotSavingDialog(false));
-                          dispatch(setIsLoadingSnapshotDialog(false));
-                          dispatch(setSnapshotJustSaved(projectResponse.data.id));
-                          dispatch(setDialogCurrentStep());
-                          dispatch(setReapplyOrientation(true));
-                        }
-                      }
-                    })
-                    .catch(error => {
-                      dispatch(resetCurrentSnapshot());
-                      dispatch(setIsLoadingSnapshotDialog(false));
-                      console.log(`Error while saving snapshot: ${error}`);
-                    });
+          // return Promise.resolve(dispatch(saveCurrentActionsList(snapshot, project, nglViewList, false))).then(
+          return new Promise(resolve => {
+            if (disableRedirect === false) {
+              if (selectedSnapshotToSwitch != null) {
+                if (createDiscourse) {
+                  dispatch(createSnapshotDiscoursePost(res.data.id));
                 }
-              } else {
+                //window.location.replace(`${URLS.projects}${session_project}/${selectedSnapshotToSwitch}`);
+                // await dispatch(changeSnapshot(session_project, selectedSnapshotToSwitch, nglViewList, stage));
                 dispatch(setOpenSnapshotSavingDialog(false));
                 dispatch(setIsLoadingSnapshotDialog(false));
-                dispatch(
-                  setSharedSnapshot({
-                    title,
-                    description,
-                    url: `${base_url}${URLS.projects}${session_project}/${res.data.id}`
-                  })
+              } else {
+                // A hacky way of changing the URL without triggering react-router
+                window.history.replaceState(
+                  null,
+                  null,
+                  `${URLS.projects}${session_project}/${
+                    selectedSnapshotToSwitch === null ? res.data.id : selectedSnapshotToSwitch
+                  }`
                 );
-                return res.data.id;
+                api({ url: `${base_url}/api/session-projects/${session_project}/` })
+                  .then(async projectResponse => {
+                    const response = await api({
+                      url: `${base_url}/api/snapshots/?session_project=${session_project}`
+                    });
+
+                    const length = response.data.results.length;
+                    if (length === 0) {
+                      dispatch(resetCurrentSnapshot());
+                    } else {
+                      const createdSnapshot =
+                        response.data.results && response.data.results.find(r => r.id === res.data.id);
+                      console.log('new snapshot id: ' + JSON.stringify(createdSnapshot?.id));
+
+                      if (createdSnapshot !== undefined && createdSnapshot !== null) {
+                        // If the tree fails to load, bail out first without modifying the store
+                        await dispatch(loadSnapshotTree(projectResponse.data.id));
+                        await dispatch(
+                          setCurrentSnapshot({
+                            id: createdSnapshot.id,
+                            type: createdSnapshot.type,
+                            title: createdSnapshot.title,
+                            author: createdSnapshot.author,
+                            description: createdSnapshot.description,
+                            created: createdSnapshot.created,
+                            children: createdSnapshot.children,
+                            parent: createdSnapshot.parent,
+                            data: '[]'
+                          })
+                        );
+                        await dispatch(
+                          setCurrentProject({
+                            projectID: projectResponse.data.id,
+                            authorID: projectResponse.data.author || null,
+                            title: projectResponse.data.title,
+                            description: projectResponse.data.description,
+                            targetID: projectResponse.data.target.id,
+                            tags: JSON.parse(projectResponse.data.tags)
+                          })
+                        );
+                        if (createDiscourse) {
+                          dispatch(createSnapshotDiscoursePost());
+                        }
+                        dispatch(setOpenSnapshotSavingDialog(false));
+                        dispatch(setIsLoadingSnapshotDialog(false));
+                        dispatch(setSnapshotJustSaved(projectResponse.data.id));
+                        dispatch(setDialogCurrentStep());
+                        dispatch(setReapplyOrientation(true));
+                      }
+                    }
+                  })
+                  .catch(error => {
+                    dispatch(resetCurrentSnapshot());
+                    dispatch(setIsLoadingSnapshotDialog(false));
+                    console.log(`Error while saving snapshot: ${error}`);
+                  });
               }
-            });
-          }
-        });
-      })
-    ]);
+            } else {
+              dispatch(setOpenSnapshotSavingDialog(false));
+              dispatch(setIsLoadingSnapshotDialog(false));
+              dispatch(
+                setSharedSnapshot({
+                  title,
+                  description,
+                  url: `${base_url}${URLS.projects}${session_project}/${res.data.id}`
+                })
+              );
+              return resolve(res.data.id);
+            }
+          });
+        }
+      });
+    });
+    // ]);
   }
 };
 
@@ -609,19 +610,15 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
 
 export const getCleanStateForSnapshot = () => (dispatch, getState) => {
   const state = getState();
-  //this is inefficient and it might cause problems with huge targets so
-  //having a custom deepClone function that only clones the necessary data would be better
-  //for now I'm skipping this to implement complete end to end functionality and then I'll optimize
-  // let snapshotData = deepClone(state);
-  // snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
-  // snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
 
   let snapshotData = {};
 
-  snapshotData = deepMergeWithPriorityAndBlackList({}, state, SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
+  let notToBeCopiedClone = deepClone(SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
+  delete notToBeCopiedClone.apiReducers.target_id_list;
+
+  snapshotData = deepMergeWithPriorityAndBlackList({}, state, notToBeCopiedClone);
   snapshotData = deepClone(snapshotData);
-  snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
-  // snapshotData = deepClone(snapshotData);
+  snapshotData = deepMergeWithPriority({ ...snapshotData }, notToBeCopiedClone);
   snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
   snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
 
@@ -709,4 +706,49 @@ export const changeSnapshot = (projectID, snapshotID, stage) => async (dispatch,
 
   // dispatch(setEntireState(newState));
   // console.log('msg');
+};
+
+export const isSnapshotModified = snapshotID => async (dispatch, getState) => {
+  let result = false;
+
+  const state = getState();
+
+  const snapshotResponse = await api({ url: `${base_url}/api/snapshots/${snapshotID}` });
+  const originalSnapshotState = snapshotResponse.data.additional_info.snapshotState;
+  let originalSnapshotStateCopy = deepClone(originalSnapshotState);
+
+  let notToBeCopiedClone = deepClone(SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
+  delete notToBeCopiedClone.apiReducers.target_id_list; //array
+
+  const currentSnapshotState = deepMergeWithPriorityAndBlackList({}, state, notToBeCopiedClone);
+  let currentSnapshotStateCopy = deepClone(currentSnapshotState);
+  currentSnapshotStateCopy = deepMergeWithPriority({ ...currentSnapshotStateCopy }, notToBeCopiedClone);
+  currentSnapshotStateCopy = deepMergeWithPriority({ ...currentSnapshotStateCopy }, SNAPSHOT_VALUES_TO_BE_DELETED);
+
+  delete originalSnapshotStateCopy.nglReducers;
+  delete currentSnapshotStateCopy.nglReducers;
+
+  delete originalSnapshotStateCopy.snapshotReducers;
+  delete currentSnapshotStateCopy.snapshotReducers;
+
+  delete originalSnapshotStateCopy.layoutReducers;
+  delete currentSnapshotStateCopy.layoutReducers;
+
+  delete originalSnapshotStateCopy.projectReducers;
+  delete currentSnapshotStateCopy.projectReducers;
+
+  delete originalSnapshotStateCopy.apiReducers;
+  delete currentSnapshotStateCopy.apiReducers;
+
+  delete originalSnapshotStateCopy.previewReducers.molecule.disableNglControlButtons; //array
+  delete currentSnapshotStateCopy.previewReducers.molecule.disableNglControlButtons;
+  delete originalSnapshotStateCopy.selectionReducers.toastMessages; //array
+  delete currentSnapshotStateCopy.selectionReducers.toastMessages;
+
+  let path = '';
+  const isModified = !deepEqual(originalSnapshotStateCopy, currentSnapshotStateCopy, path);
+
+  result = isModified;
+
+  return result;
 };

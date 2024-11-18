@@ -52,44 +52,6 @@ export const deepClone = obj => {
   return JSON.parse(JSON.stringify(obj));
 };
 
-// export const deepMergeWithPriorityAndWhiteList = (a, b, whiteList) => {
-//   const isPathPresentInTheWhiteList = (path, whiteList) => {
-//     console.log(`isPathPresentInTheWhiteList - path: ${JSON.stringify(path)}`);
-//     const result = !!path.reduce((obj, key) => obj[key], whiteList);
-//     console.log(`isPathPresentInTheWhiteList - result: ${result}`);
-//     return result;
-//   };
-//   const merge = (a, b, path) => {
-//     const keys = Object.keys(b);
-
-//     keys.forEach(key => {
-//       const currentPath = [...path, key];
-//       if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
-//         if (a[key] && typeof a[key] === 'object' && b[key] && typeof b[key] === 'object') {
-//           if (Array.isArray(a[key]) && Array.isArray(b[key]) && isPathPresentInTheWhiteList(currentPath, whiteList)) {
-//             a[key] = [...b[key]];
-//           } else {
-//             if (Object.keys(b[key]).length === 0 && isPathPresentInTheWhiteList(currentPath, whiteList)) {
-//               a[key] = b[key];
-//             } else {
-//               a[key] = merge(a[key], b[key], currentPath);
-//             }
-//           }
-//         } else {
-//           if (isPathPresentInTheWhiteList(currentPath, whiteList)) {
-//             a[key] = b[key];
-//           }
-//         }
-//       }
-//     });
-
-//     // currentPath.pop();
-//     return a;
-//   };
-
-//   return merge({ ...a }, b, []);
-// };
-
 export const deepMergeWithPriorityAndBlackList = (a, b, blackList) => {
   const isWholePathPresentIntoBlackList = (path, blackList) => {
     let partOfBlackList = blackList;
@@ -142,4 +104,39 @@ export const deepMergeWithPriorityAndBlackList = (a, b, blackList) => {
   };
 
   return merge({ ...a }, b, []);
+};
+
+export const deepEqual = (obj1, obj2, path = '') => {
+  if (obj1 === obj2) return true;
+
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object' || obj1 === null || obj2 === null) {
+    console.log(`deepEqual - Mismatch found at ${path || 'root'}: ${obj1} !== ${obj2}`);
+    return false;
+  }
+
+  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
+    console.log(`deepEqual - Type mismatch at ${path || 'root'}: One is array, the other is not`);
+    return false;
+  }
+
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) {
+    console.log(`deepEqual - Key length mismatch at ${path || 'root'}: ${keys1.length} !== ${keys2.length}`);
+    return false;
+  }
+
+  for (const key of keys1) {
+    const newPath = path ? `${path}.${key}` : key;
+    if (!keys2.includes(key)) {
+      console.log(`deepEqual - Key missing in second object at ${newPath}`);
+      return false;
+    }
+    if (!deepEqual(obj1[key], obj2[key], newPath)) {
+      return false;
+    }
+  }
+
+  return true;
 };

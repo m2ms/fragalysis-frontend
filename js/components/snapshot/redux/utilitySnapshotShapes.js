@@ -1,3 +1,5 @@
+import { deepClone } from '../../../utils/objectUtils';
+
 export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   apiReducers: {
     // target_id_list: [],
@@ -58,47 +60,6 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
     isProjectModalLoading: false
   }
 };
-
-// export const SNAPSHOT_VALUES_TO_BE_DELETED_SWITCHING_SNAPSHOTS = {
-//   apiReducers: {
-//     // target_id_list: [],
-//   },
-//   nglReducers: {
-//     objectsInView: {},
-//     pdbCache: {},
-//     qualityCache: {},
-//     nglViewFromSnapshotRendered: false,
-//     snapshotOrientationApplied: false
-//   },
-//   selectionReducers: {
-//     fragmentDisplayList: [],
-//     proteinList: [],
-//     complexList: [],
-//     surfaceList: [],
-//     densityList: [],
-//     densityListCustom: [],
-//     densityListType: [],
-//     qualityList: [],
-//     vectorOnList: [],
-//     isScrollFiredForLHS: false
-//   },
-//   previewReducers: {
-//     molecule: {
-//       imageCache: {}
-//     }
-//   },
-//   datasetsReducers: {
-//     ligandLists: {},
-//     proteinLists: {},
-//     complexLists: {},
-//     surfaceLists: {},
-//     datasetScrolledMap: {},
-//     isSelectedDatasetScrolled: false
-//   },
-//   projectReducers: {
-//     isProjectModalLoading: false
-//   }
-// };
 
 export const SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS = {
   apiReducers: {

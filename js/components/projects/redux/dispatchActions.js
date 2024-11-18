@@ -28,6 +28,7 @@ import _ from 'lodash';
 import { setEntireState } from '../../../reducers/actions';
 import { loadTargetList } from '../../target/redux/dispatchActions';
 import { setOrientation } from '../../../reducers/ngl/dispatchActions';
+import { deepClone } from '../../../utils/objectUtils';
 
 export const assignSnapshotToProject = ({ projectID, snapshotID, ...rest }) => (dispatch, getState) => {
   dispatch(resetCurrentSnapshot());
@@ -211,6 +212,16 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
               children: response.data.children,
               parent: response.data.parent,
               data: response.data.data
+            })
+          );
+          dispatch(
+            setCurrentProject({
+              projectID: response.data.session_project.id,
+              authorID: response.data.session_project.author || null,
+              title: response.data.session_project.title,
+              description: response.data.session_project.description,
+              targetID: response.data.session_project.target.id,
+              tags: JSON.parse(response.data.session_project.tags)
             })
           );
           // dispatch(loadTargetListPostStateRestore());
@@ -413,87 +424,9 @@ export const createProjectFromSnapshot = ({ title, description, author, tags, hi
   });
 };
 
-export const createProjectFromScratch = ({ title, description, target, author, tags, history, project }) => (
-  dispatch,
-  getState
-) => {
-  dispatch(setProjectModalIsLoading(true));
-  // dispatch(resetTrackingState());
-  // dispatch(resetNglTrackingState());
-  return api({
-    url: `${base_url}/api/session-projects/`,
-    method: METHOD.POST,
-    data: { title, description, target, author, tags, project }
-  })
-    .then(response => {
-      const projectID = response.data.id;
-      const title = response.data.title;
-      const authorID = response.data.author;
-      const description = response.data.description;
-      const targetID = response.data.target;
-      const tags = response.data.tags;
-
-      dispatch(setCurrentProject({ projectID, authorID, title, description, targetID, tags }));
-
-      let promises = [];
-      promises.push(dispatch(createInitSnapshotToProjectWitActions(projectID, authorID, null, targetID)));
-
-      Promise.all(promises).then(() => {
-        // create project_target relationShip on BE
-        history.push(`${URLS.projects}${projectID}`);
-      });
-    })
-    .finally(() => {
-      dispatch(setProjectModalIsLoading(false));
-    });
-};
-
 export const createProjectWithoutStateModification = data => async () => {
   const response = await api({ url: `${base_url}/api/session-projects/`, method: METHOD.POST, data });
   return response.data.id;
-};
-
-export const createInitSnapshotToProjectWitActions = (session_project, author, parent, target) => (
-  dispatch,
-  getState
-) => {
-  let type = SnapshotType.INIT;
-  const created = moment();
-  const title = 'Initial Snapshot';
-  const description = 'Auto generated initial snapshot';
-
-  return Promise.all([
-    api({ url: `${base_url}/api/snapshots/?session_project=${session_project}&type=INIT` }).then(response => {
-      return api({
-        url: `${base_url}/api/snapshots/`,
-        data: {
-          title,
-          description,
-          type: type,
-          author,
-          parent,
-          session_project,
-          data: '[]',
-          children: []
-        },
-        method: METHOD.POST
-      }).then(res => {
-        dispatch(
-          setCurrentSnapshot({
-            id: res.data.id,
-            type,
-            title,
-            author,
-            description,
-            created,
-            parent,
-            children: res.data.children,
-            data: '[]'
-          })
-        );
-      });
-    })
-  ]);
 };
 
 export const jobFileTransfer = data => {

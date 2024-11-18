@@ -65,3 +65,13 @@ export const setSnapshotIsDirty = isDirty => ({
   type: constants.SET_SNAPSHOT_IS_DIRTY,
   payload: isDirty
 });
+
+export const setSnapshotEditDialogOpen = isOpen => ({
+  type: constants.SET_SNAPSHOT_EDIT_DIALOG_OPEN,
+  payload: isOpen
+});
+
+export const setSnapshotToBeEdited = snapshot => ({
+  type: constants.SET_SNAPSHOT_TO_BE_EDITED,
+  payload: snapshot
+});

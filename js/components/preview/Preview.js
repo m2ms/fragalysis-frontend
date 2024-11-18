@@ -64,6 +64,7 @@ import { useDisplayProteinRHS } from '../../reducers/ngl/useDisplayProteinRHS';
 import { useDisplayComplexRHS } from '../../reducers/ngl/useDisplayComplexRHS';
 import { useDisplaySurfaceRHS } from '../../reducers/ngl/useDisplaySurfaceRHS';
 import { loadTargetList } from '../target/redux/dispatchActions';
+import { EditSnapshotDialog } from './projectHistoryPanel/editSnapshotDialog';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
@@ -346,6 +347,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
       <SaveSnapshotBeforeExit />
       <DownloadStructureDialog />
       <PickProjectModal />
+      <EditSnapshotDialog />
       {!hideProjects && <ProjectDetailDrawer showHistory={showHistory} setShowHistory={setShowHistory} />}
     </>
   );

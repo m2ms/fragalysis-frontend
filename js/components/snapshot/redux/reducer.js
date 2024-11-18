@@ -25,11 +25,19 @@ export const INITIAL_STATE = {
   snapshotJustSaved: false,
   dontShowShareSnapshot: false,
   downloadStructuresDialogOpen: false,
-  isSnapshotDirty: false
+  isSnapshotDirty: false,
+  isSnapshotEditDialogOpen: false,
+  snapshotToBeEdited: null
 };
 
 export const snapshotReducers = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
+    case constants.SET_SNAPSHOT_EDIT_DIALOG_OPEN:
+      return { ...state, isSnapshotEditDialogOpen: action.payload };
+
+    case constants.SET_SNAPSHOT_TO_BE_EDITED:
+      return { ...state, snapshotToBeEdited: action.payload };
+
     case constants.SET_SNAPSHOT_IS_DIRTY:
       return { ...state, isSnapshotDirty: action.payload };
 

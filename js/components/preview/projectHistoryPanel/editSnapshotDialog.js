@@ -87,24 +87,29 @@ export const EditSnapshotDialog = () => {
     if (values.name === '') {
       errors.name = 'Required';
     }
+    if (values.description === '') {
+      errors.description = 'Required';
+    }
 
     return errors;
   };
 
-  const onSubmitForm = async ({ name }) => {
+  const onSubmitForm = async ({ name, description }) => {
     snapshotToBeEdited &&
       api({
         url: `${base_url}/api/snapshots/${snapshotToBeEdited.id}/`,
         method: METHOD.PATCH,
-        data: { title: name }
+        data: { title: name, description: description }
       })
         .then(resp => {
           snapshotToBeEdited.title = name;
-          dispatch(addToastMessage({ text: `Snapshot renamed successfully to ${name}`, level: TOAST_LEVELS.SUCCESS }));
+          snapshotToBeEdited.description = description;
+          dispatch(addToastMessage({ text: `Snapshot saved successfully.`, level: TOAST_LEVELS.SUCCESS }));
           onClose();
         })
         .catch(err => {
-          dispatch(addToastMessage({ text: 'Error renaming snapshot', level: TOAST_LEVELS.ERROR }));
+          dispatch(addToastMessage({ text: 'Saving snapshot failed.', level: TOAST_LEVELS.ERROR }));
+          console.error(`Error while saving the snapshot: ${err}`);
         });
   };
 
@@ -120,7 +125,10 @@ export const EditSnapshotDialog = () => {
           </div>
           <div className={classes.bodyPopup}>
             <Formik
-              initialValues={{ name: snapshotToBeEdited?.title ? snapshotToBeEdited?.title : '' }}
+              initialValues={{
+                name: snapshotToBeEdited?.title ? snapshotToBeEdited?.title : '',
+                description: snapshotToBeEdited?.description ? snapshotToBeEdited?.description : ''
+              }}
               onSubmit={onSubmitForm}
               validate={validate}
             >
@@ -135,6 +143,20 @@ export const EditSnapshotDialog = () => {
                         component={TextField}
                         type="text"
                         name="name"
+                        variant="standard"
+                        margin="none"
+                        disabled={isSubmitting}
+                        autoComplete="off"
+                      />
+                    </Grid>
+                    <Grid item style={{ display: 'flex', alignItems: 'center' }}>
+                      <label htmlFor="name" style={{ marginRight: '1rem' }}>
+                        Description:
+                      </label>
+                      <Field
+                        component={TextField}
+                        type="text"
+                        name="description"
                         variant="standard"
                         margin="none"
                         disabled={isSubmitting}

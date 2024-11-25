@@ -2,7 +2,7 @@
  * Created by abradley on 14/03/2018.
  */
 
-import React, { memo, useContext, forwardRef, useState, useEffect } from 'react';
+import React, { memo, useContext, forwardRef, useState, useEffect, useCallback } from 'react';
 import {
   Grid,
   makeStyles,
@@ -40,7 +40,7 @@ import {
 } from '@material-ui/icons';
 import { HeaderContext } from './headerContext';
 import { Button } from '../common';
-import { URLS } from '../routes/constants';
+import { base_url, URLS } from '../routes/constants';
 import { useCombinedRefs } from '../../utils/refHelpers';
 import { ComputeSize } from '../../utils/computeSize';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
@@ -58,15 +58,27 @@ import { setOpenDiscourseErrorModal } from '../../reducers/api/actions';
 import { lockLayout, resetCurrentLayout } from '../../reducers/layout/actions';
 import { ChangeLayoutButton } from './changeLayoutButton';
 import { layouts } from '../../reducers/layout/layouts';
-import { setOpenSnapshotSavingDialog } from '../snapshot/redux/actions';
-import { activateSnapshotDialog } from '../snapshot/redux/dispatchActions';
-import { setAddButton, setProjectModalIsLoading } from '../projects/redux/actions';
+import {
+  setDisableRedirect,
+  setDontShowShareSnapshot,
+  setOpenSnapshotSavingDialog,
+  setSnapshotEditDialogOpen,
+  setSnapshotToBeEdited
+} from '../snapshot/redux/actions';
+import { activateSnapshotDialog, createNewSnapshot } from '../snapshot/redux/dispatchActions';
+import { setAddButton, setCurrentSnapshot, setProjectModalIsLoading } from '../projects/redux/actions';
 import { getVersions } from '../../utils/version';
 import { AddProjectDetail } from '../projects/addProjectDetail';
 import { ServicesStatusWrapper } from '../services';
 import { COMPANIES, get_logo } from '../funders/constants';
 import { setEditTargetDialogOpen } from '../target/redux/actions';
 import { Upload } from '@mui/icons-material';
+import { SnapshotType } from '../projects/redux/constants';
+import { NglContext } from '../nglView/nglProvider';
+import { VIEWS } from '../../constants/constants';
+import moment from 'moment';
+import { ToastContext } from '../toast';
+import { api } from '../../utils/api';
 
 const useStyles = makeStyles(theme => ({
   padding: {
@@ -117,6 +129,9 @@ export default memo(
     const classes = useStyles();
     const { headerNavbarTitle, setHeaderNavbarTitle, headerButtons } = useContext(HeaderContext);
 
+    const { nglViewList, getNglView } = useContext(NglContext);
+    const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
+
     const [openMenu, setOpenMenu] = useState(false);
     const [openFunders, setOpenFunders] = useState(false);
     const [openTrackingModal, setOpenTrackingModal] = useState(false);
@@ -137,9 +152,14 @@ export default memo(
 
     const selectedLayoutName = useSelector(state => state.layoutReducers.selectedLayoutName);
 
+    const currentSnapshot = useSelector(state => state.projectReducers.currentSnapshot);
+    const currentSnapshotId = currentSnapshot && currentSnapshot.id;
+
     const discourseAvailable = isDiscourseAvailable();
     const targetDiscourseVisible = discourseAvailable && targetName;
     const projectDiscourseVisible = discourseAvailable && currentProject && currentProject.title;
+
+    const { toastError, toastInfo } = useContext(ToastContext);
 
     useEffect(() => {
       setOpenFunders(isFundersLink);
@@ -157,6 +177,46 @@ export default memo(
     const openLink = link => {
       window.open(link, '_blank');
     };
+
+    const createSnapshot = useCallback(
+      (title, description) => {
+        if (!currentSnapshotId || !currentProject || !title || !description) return;
+        // Prepare snapshot data
+        const type = SnapshotType.MANUAL;
+        const author = DJANGO_CONTEXT['pk'] || null;
+        const parent = currentSnapshotId;
+        const session_project = currentProject.projectID;
+
+        // Prevents redirect and displaying of share snapshot dialog
+        dispatch(setDisableRedirect(true));
+        dispatch(setDontShowShareSnapshot(true));
+
+        // With the above flags set, createNewSnapshot returns the ID of newly created snapshot as the second item in the array
+        return dispatch(
+          createNewSnapshot({
+            title,
+            description,
+            type,
+            author,
+            parent,
+            session_project,
+            nglViewList,
+            stage,
+            overwriteSnapshot: false,
+            createDiscourse: false
+          })
+        );
+      },
+      [currentProject, currentSnapshotId, dispatch, nglViewList, stage]
+    );
+
+    const editSnapshot = useCallback(
+      snapshotCopy => {
+        dispatch(setSnapshotToBeEdited(snapshotCopy));
+        dispatch(setSnapshotEditDialogOpen(true));
+      },
+      [dispatch]
+    );
 
     let authListItem;
 
@@ -308,15 +368,43 @@ export default memo(
                         <Button
                           key="saveSnapshot"
                           color="primary"
-                          onClick={() => {
-                            dispatch(activateSnapshotDialog(DJANGO_CONTEXT['pk']));
-                            openSaveSnapshotModal === false
-                              ? dispatch(setOpenSnapshotSavingDialog(true))
-                              : dispatch(setOpenSnapshotSavingDialog(false));
-                            openSaveSnapshotModal ?? dispatch(setOpenSnapshotSavingDialog(false));
-                            isProjectModalLoading ?? dispatch(setProjectModalIsLoading(false));
+                          onClick={async () => {
+                            // Prevents redirect and displaying of share snapshot dialog
+                            dispatch(setDisableRedirect(true));
+                            dispatch(setDontShowShareSnapshot(true));
 
-                            dispatch(setAddButton(false));
+                            const title = moment().format('-- YYYY-MM-DD -- HH:mm:ss');
+                            const description = `snapshot generated by ${DJANGO_CONTEXT['username']}`;
+                            createSnapshot(title, description)
+                              .then(newSnapshotId => {
+                                const options = {
+                                  link: {
+                                    linkAction: editSnapshot,
+                                    linkText: 'Click to edit',
+                                    linkParams: [{ id: newSnapshotId, title: title, description: description }]
+                                  }
+                                };
+                                api({ url: `${base_url}/api/snapshots/${newSnapshotId}` }).then(snapshotResponse => {
+                                  dispatch(
+                                    setCurrentSnapshot({
+                                      id: snapshotResponse.data.id,
+                                      type: snapshotResponse.data.type,
+                                      title: snapshotResponse.data.title,
+                                      author: snapshotResponse.data.author,
+                                      description: snapshotResponse.data.description,
+                                      created: snapshotResponse.data.created,
+                                      children: snapshotResponse.data.children,
+                                      parent: snapshotResponse.data.parent,
+                                      data: snapshotResponse.data.data
+                                    })
+                                  );
+                                  toastInfo('New snapshot created. Switching to selected snapshot.', options);
+                                });
+                              })
+                              .catch(err => {
+                                toastError('Error creating new snapshot. Unable to switch to selected snapshot.');
+                                console.error(`Save snapshot - error: ${err}`);
+                              });
                           }}
                           startIcon={<Save />}
                         >

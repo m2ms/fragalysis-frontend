@@ -515,16 +515,6 @@ export default memo(
                   </>
                 )}
                 <Grid item>
-                  <Button
-                    startIcon={<Timeline />}
-                    variant="text"
-                    size="small"
-                    onClick={() => setOpenTrackingModal(true)}
-                  >
-                    Timeline
-                  </Button>
-                </Grid>
-                <Grid item>
                   <IssueReport />
                 </Grid>
                 <Grid item>

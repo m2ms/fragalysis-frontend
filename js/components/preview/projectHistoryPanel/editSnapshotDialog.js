@@ -8,6 +8,8 @@ import { base_url } from '../../routes/constants';
 import { api, METHOD } from '../../../utils/api';
 import { addToastMessage } from '../../../reducers/selection/actions';
 import { TOAST_LEVELS } from '../../toast/constants';
+import { InputFieldAvatar } from '../../projects/projectModal/inputFieldAvatar';
+import { Description, Title } from '@material-ui/icons';
 
 const useStyles = makeStyles(theme => ({
   body: {
@@ -25,8 +27,8 @@ const useStyles = makeStyles(theme => ({
     margin: theme.spacing(1),
     width: 400
   },
-  renameTargetPopup: {
-    width: '300px',
+  editSnashotPopup: {
+    width: '600px',
     borderRadius: '5px',
     border: '1px solid #000',
     display: 'flex',
@@ -116,7 +118,7 @@ export const EditSnapshotDialog = () => {
   return (
     snapshotToBeEdited && (
       <Modal open={isSnapshotEditDialogOpen} onClose={onClose}>
-        <div className={classes.renameTargetPopup}>
+        <div className={classes.editSnashotPopup}>
           <div className={classes.topPopup}>
             <span>Edit target</span>
             <button className={classes.popUpButton} onClick={onClose}>
@@ -133,34 +135,28 @@ export const EditSnapshotDialog = () => {
               validate={validate}
             >
               {({ submitForm, isSubmitting }) => (
-                <Form /*className={classes.flexRow}*/>
+                <Form>
                   <Grid container direction="column" className={classes.body}>
-                    <Grid item style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="name" style={{ marginRight: '1rem' }}>
-                        Name:
-                      </label>
-                      <Field
-                        component={TextField}
-                        type="text"
-                        name="name"
-                        variant="standard"
-                        margin="none"
-                        disabled={isSubmitting}
-                        autoComplete="off"
+                    <Grid item>
+                      <InputFieldAvatar
+                        icon={<Title />}
+                        field={
+                          <Field component={TextField} className={classes.input} name="name" label="Name" required />
+                        }
                       />
                     </Grid>
-                    <Grid item style={{ display: 'flex', alignItems: 'center' }}>
-                      <label htmlFor="name" style={{ marginRight: '1rem' }}>
-                        Description:
-                      </label>
-                      <Field
-                        component={TextField}
-                        type="text"
-                        name="description"
-                        variant="standard"
-                        margin="none"
-                        disabled={isSubmitting}
-                        autoComplete="off"
+                    <Grid item>
+                      <InputFieldAvatar
+                        icon={<Description />}
+                        field={
+                          <Field
+                            component={TextField}
+                            className={classes.input}
+                            name="description"
+                            label="Description"
+                            required
+                          />
+                        }
                       />
                     </Grid>
                   </Grid>

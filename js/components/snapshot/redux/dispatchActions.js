@@ -310,6 +310,8 @@ export const createNewSnapshot = ({
         newType = SnapshotType.INIT;
         // Without this, the snapshot tree wouldnt work
         dispatch(setForceProjectCreated(false));
+        //if it's INIT snapshot than it's a root snapshot of a project so parent MUST be null
+        parent = null;
       }
 
       return api({

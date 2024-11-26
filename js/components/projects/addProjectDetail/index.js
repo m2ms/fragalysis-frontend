@@ -158,8 +158,11 @@ export const AddProjectDetail = memo(({}) => {
               });
           } else {
             dispatch(createProjectFromSnapshotDialog(data))
-              .then(() => dispatch(createNewSnapshot({ ...snapshotData, session_project: data.projectID })))
-              .then(() => handleCloseModal())
+              .then(() => {
+                dispatch(createNewSnapshot({ ...snapshotData, session_project: data.projectID }));
+                handleCloseModal();
+              })
+              // .then(() => handleCloseModal())
               .catch(error => {
                 setState(() => {
                   throw error;

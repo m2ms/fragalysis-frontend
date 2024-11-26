@@ -27,6 +27,7 @@ const loadProtein = nglView => (dispatch, getState) => {
         targetData = thisTarget;
       }
     });
+    if (!targetData.template_protein) return;
     const targObject = generateProteinObject(targetData);
     if (targObject) {
       let newParams = { display_div: nglView.id };
@@ -36,7 +37,7 @@ const loadProtein = nglView => (dispatch, getState) => {
       return dispatch(loadObject({ target: Object.assign({}, targObject, newParams), stage: nglView.stage }));
     }
   }
-  return Promise.reject('Cannot load Protein to NGL View ID ', nglView.id);
+  // return Promise.reject('Cannot load Protein to NGL View ID ', nglView.id);
 };
 
 export const shouldLoadProtein = ({

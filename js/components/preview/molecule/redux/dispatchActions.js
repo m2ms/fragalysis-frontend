@@ -868,22 +868,6 @@ export const removeSelectedMolTypes = (majorViewStage, molecules, skipTracking, 
   });
 };
 
-// export const searchMoleculeGroupByMoleculeID = moleculeID => (dispatch, getState) =>
-//   api({ url: `${base_url}/api/molgroup/?mol_id=${moleculeID}` }).then(response => {
-//     let resultMolGroupID = null;
-//     const molGroupID = response?.data?.results[0]?.id;
-//     const mol_group_list = getState().apiReducers.mol_group_list;
-
-//     if (mol_group_list && Array.isArray(mol_group_list) && molGroupID) {
-//       mol_group_list.forEach((item, index) => {
-//         if (item.id === molGroupID) {
-//           resultMolGroupID = index + 1;
-//         }
-//       });
-//     }
-//     return Promise.resolve(resultMolGroupID);
-//   });
-
 export const applyDirectSelection = stage => (dispatch, getState) => {
   const state = getState();
 
@@ -947,43 +931,8 @@ export const getQualityInformation = (data, molType, width, height) => (dispatch
 export const getProteinData = molecule => dispatch => {
   return new Promise((resolve, reject) => {
     resolve(molecule.proteinData);
-  }); /*dispatch(getProteinDataByMolId(molecule.id, molecule.code));*/
+  });
 };
-
-// export const getProteinDataByMolId = (molId, proteinCode) => (dispatch, getState) => {
-//   const state = getState();
-//   const proteindDataCache = state.previewReducers.molecule.proteinDataCache;
-
-//   const molIdStr = molId.toString();
-//   if (proteindDataCache.hasOwnProperty(molIdStr)) {
-//     return new Promise((resolve, reject) => {
-//       resolve(proteindDataCache[molIdStr]);
-//     });
-//   } else {
-//     return loadProteinData(proteinCode).then(i => {
-//       if (!proteindDataCache.hasOwnProperty(molIdStr)) {
-//         dispatch(addProteindDataToCache(molId.toString(), i));
-//       }
-//       return i;
-//     });
-//   }
-// };
-
-// const loadProteinData = code => {
-//   if (code) {
-//     let url = new URL(`${base_url}/api/proteins/?code=${code}`);
-//     let onCancel = () => {};
-//     return api({
-//       url,
-//       onCancel
-//     }).then(response => {
-//       return response.data.results;
-//     });
-//   } else {
-//     console.error('Trying to load protein data for unknown molecule protein code.');
-//     return Promise.resolve();
-//   }
-// };
 
 export const getMolImage = (molId, molType, width, height) => (dispatch, getState) => {
   const state = getState();

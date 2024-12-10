@@ -191,7 +191,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
           <Divider />
           <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
             <Grid item xs>
-              <Typography variant="body1">Open</Typography>
+              <Typography variant="body1">Open to public</Typography>
             </Grid>
             <Grid item xs>
               <Typography variant="body1">{currentTarget?.project?.open_to_public ? 'Yes' : 'No'}</Typography>
@@ -203,7 +203,11 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
               <Typography variant="body1">Display name</Typography>
             </Grid>
             <Grid item xs>
-              <TextField value={displayName ?? ""} placeholder="enter name" onChange={e => setDisplayName(e.target.value)} disabled={!editable} />
+              {editable ?
+                <TextField value={displayName ?? ""} placeholder="enter name" onChange={e => setDisplayName(e.target.value)} disabled={!editable} />
+                :
+                <Typography variant="body1">{displayName}</Typography>
+              }
             </Grid>
           </Grid>
           <Divider />

@@ -1219,7 +1219,7 @@ const observationSearchFunctions = {
     return obs.code.toLowerCase().includes(searchTerm.toLowerCase());
   },
   aliases: (obs, searchTerm) => {
-    return true;
+    return obs.identifiers?.some(idf => idf.name.toLowerCase().includes(searchTerm.toLowerCase()));
   },
   compoundId: (obs, searchTerm) => {
     return obs.compound_code.toLowerCase().includes(searchTerm.toLowerCase());

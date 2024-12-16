@@ -57,7 +57,7 @@ export const SearchSettingsDialog = memo(({ openDialog, setOpenDialog }) => {
                   }}
                 />
               }
-              label="Shortcode"
+              label="Observation shortcode"
               labelPlacement="end"
               className={classes.checkbox}
             />
@@ -74,7 +74,7 @@ export const SearchSettingsDialog = memo(({ openDialog, setOpenDialog }) => {
                   }}
                 />
               }
-              label="Aliases"
+              label="Compound aliases"
               labelPlacement="end"
               className={classes.checkbox}
             />

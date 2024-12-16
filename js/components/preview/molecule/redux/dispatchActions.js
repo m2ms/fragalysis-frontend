@@ -1218,13 +1218,13 @@ export const createPose = newPose => async (dispatch, getState) => {
 
 const observationSearchFunctions = {
   shortcode: (obs, searchTerm) => {
-    return obs.code.toLowerCase().includes(searchTerm.toLowerCase());
+    return obs.code?.toLowerCase().includes(searchTerm.toLowerCase());
   },
   aliases: (obs, searchTerm) => {
     return obs.identifiers?.some(idf => idf.name.toLowerCase().includes(searchTerm.toLowerCase()));
   },
   compoundId: (obs, searchTerm) => {
-    return obs.compound_code.toLowerCase().includes(searchTerm.toLowerCase());
+    return obs.compound_code?.toLowerCase().includes(searchTerm.toLowerCase());
   }
 };
 

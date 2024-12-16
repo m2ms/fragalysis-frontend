@@ -1215,3 +1215,31 @@ export const updatePose = newPose => async (dispatch, getState) => {
 export const createPose = newPose => async (dispatch, getState) => {
   return createPoseApi(newPose);
 };
+
+const observationSearchFunctions = {
+  shortcode: (obs, searchTerm) => {
+    return obs.code?.toLowerCase().includes(searchTerm.toLowerCase());
+  },
+  aliases: (obs, searchTerm) => {
+    return obs.identifiers?.some(idf => idf.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  },
+  compoundId: (obs, searchTerm) => {
+    return obs.compound_code?.toLowerCase().includes(searchTerm.toLowerCase());
+  }
+};
+
+export const searchForObservations = (searchTerm, observations, searchSettings) => (dispatch, getState) => {
+  if (!observations || observations.length === 0) return [];
+  if (!searchTerm) return observations;
+
+  let result = [];
+
+  const searchBy = searchSettings.searchBy;
+  const searchByKeys = Object.keys(searchBy).filter(key => searchBy[key]);
+
+  result = observations.filter(obs => {
+    return searchByKeys.reduce((acc, key) => acc || observationSearchFunctions[key](obs, searchTerm), false);
+  });
+
+  return result;
+};

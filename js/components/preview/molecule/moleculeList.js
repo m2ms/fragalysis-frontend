@@ -45,7 +45,8 @@ import {
   withDisabledMoleculesNglControlButtons,
   removeSelectedTypesInHitNavigator,
   selectAllHits,
-  autoHideTagEditorDialogsOnScroll
+  autoHideTagEditorDialogsOnScroll,
+  searchForObservations
 } from './redux/dispatchActions';
 import { DEFAULT_FILTER, PREDEFINED_FILTERS } from '../../../reducers/selection/constants';
 import { Edit, FilterList } from '@material-ui/icons';
@@ -288,6 +289,8 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
   const object_selection = useSelector(state => state.selectionReducers.mol_group_selection);
 
+  const searchSettings = useSelector(state => state.selectionReducers.searchSettings);
+
   const all_mol_lists = useSelector(state => state.apiReducers.all_mol_lists);
   const directDisplay = useSelector(state => state.apiReducers.direct_access);
   const directAccessProcessed = useSelector(state => state.apiReducers.direct_access_processed);
@@ -321,17 +324,13 @@ export const MoleculeList = memo(({ hideProjects }) => {
     }, [object_selection]);*/
 
   let joinedMoleculeLists = useMemo(() => {
-    // const searchedString = currentActionList.find(action => action.type === 'SEARCH_STRING_HIT_NAVIGATOR');
     if (searchString) {
-      return allMoleculesList.filter(molecule => molecule.code.toLowerCase().includes(searchString.toLowerCase()));
-      // } else if (searchedString) {
-      //   return getJoinedMoleculeList.filter(molecule =>
-      //     molecule.protein_code.toLowerCase().includes(searchedString.searchStringHitNavigator.toLowerCase())
-      //   );
+      // return allMoleculesList.filter(molecule => molecule.code.toLowerCase().includes(searchString.toLowerCase()));
+      return dispatch(searchForObservations(searchString, allMoleculesList, searchSettings));
     } else {
       return getJoinedMoleculeList;
     }
-  }, [getJoinedMoleculeList, allMoleculesList, searchString]);
+  }, [searchString, dispatch, allMoleculesList, searchSettings, getJoinedMoleculeList]);
 
   const addSelectedMoleculesFromUnselectedSites = useCallback(
     (joinedMoleculeLists, list) => {
@@ -849,40 +848,7 @@ export const MoleculeList = memo(({ hideProjects }) => {
 
   const openGlobalTagEditor = () => {};
 
-  // let filterSearchString = '';
-  // const getSearchedString = () => {
-  //   filterSearchString = currentActionList.find(action => action.type === 'SEARCH_STRING_HIT_NAVIGATOR');
-  // };
-  // getSearchedString();
-
-  // useEffect(() => {
-  //   if (filterSearchString?.searchStringHitNavigator !== '') {
-  //     setSearchString(filterSearchString.searchStringHitNavigator);
-  //   }
-  // }, [filterSearchString]);
-
   const actions = [
-    /* do not disable filter by itself if it does not have any result */
-    /*<FormControl className={classes.formControl} disabled={({predefinedFilter} === 'none' && !joinedMoleculeListsCopy.length) || sortDialogOpen}>
-      <Select
-        className={classes.select}
-        value={predefinedFilter}
-        onChange={changePredefinedFilter}
-        inputProps={{
-          name: 'predefined',
-          id: 'predefined-label-placeholder',
-          classes: { icon: classes.selectIcon }
-        }}
-        displayEmpty
-        name="predefined"
-      >
-        {Object.keys(PREDEFINED_FILTERS).map(preFilterKey => (
-          <MenuItem key={`Predefined-filter-${preFilterKey}`} value={preFilterKey}>
-            {PREDEFINED_FILTERS[preFilterKey].name}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>,*/
     <SearchField
       className={classes.search}
       id="search-hit-navigator"

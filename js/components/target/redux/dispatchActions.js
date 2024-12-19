@@ -5,6 +5,7 @@ import {
   setLegacyTargetIdList,
   setTargetIdList,
   setTargetOn,
+  setTargetSettings,
   setTargetUnrecognised,
   setUuid
 } from '../../../reducers/api/actions';
@@ -91,6 +92,7 @@ export const updateTarget = ({ targetName, projectName, setIsLoading, targetIdLi
     setIsLoading(true);
     let url = undefined;
     if (target) {
+      // dispatch(setTargetSettings(target?.settings || {}));
       url = `${base_url}/api/targets/?id=${target.id}`;
       return api({ url })
         .then(response => {
@@ -106,6 +108,7 @@ export const updateTarget = ({ targetName, projectName, setIsLoading, targetIdLi
           let promises = [];
           if (!isActionRestoring || isActionRestoring === false) {
             if (!targetOn) {
+              // dispatch(setTargetSettings(response.data.target?.settings || {}));
               promises.push(dispatch(setTargetOn(response.data.target.id, true)));
             }
             if (!currentSessionProject) {

@@ -60,7 +60,8 @@ export const INITIAL_STATE = {
   rhsDataIsLoaded: false,
   proteinIsLoading: false,
   proteinIsLoaded: false,
-  compound_identifiers: []
+  compound_identifiers: [],
+  targetSettings: {}
 };
 
 export const RESET_TARGET_STATE = {
@@ -104,11 +105,15 @@ export const RESET_TARGET_STATE = {
   all_data_loaded: false,
   snapshotLoadingInProgress: false,
   lhs_compounds_list: [],
-  compound_identifiers: []
+  compound_identifiers: [],
+  targetSettings: {}
 };
 
 export default function apiReducers(state = INITIAL_STATE, action = {}) {
   switch (action.type) {
+    case constants.SET_TARGET_SETTINGS:
+      return { ...state, targetSettings: JSON.parse(JSON.stringify(action.targetSettings)) };
+
     case constants.SET_LHS_DATA_IS_LOADING:
       return { ...state, lhsDataIsLoading: action.lhsDataIsLoading };
 
@@ -150,16 +155,19 @@ export default function apiReducers(state = INITIAL_STATE, action = {}) {
     case constants.SET_TARGET_ON: {
       let target_on_name = undefined;
       let target_on_aliases = [];
+      let settings = {};
       for (let ind in state.target_id_list) {
         if (state.target_id_list[ind].id === action.target_on) {
           target_on_name = state.target_id_list[ind].display_name;
           target_on_aliases = state.target_id_list[ind].alias_order;
+          settings = state.target_id_list[ind]?.settings || {};
         }
       }
       return Object.assign({}, state, {
         target_on_name: target_on_name,
         target_on_aliases: target_on_aliases,
-        target_on: action.target_on
+        target_on: action.target_on,
+        targetSettings: JSON.parse(JSON.stringify(settings))
       });
     }
 

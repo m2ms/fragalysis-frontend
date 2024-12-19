@@ -3,7 +3,24 @@
  */
 
 import React, { memo, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Grid, IconButton, makeStyles, MenuItem, Radio, RadioGroup, Select, TextField, Typography } from '@material-ui/core';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  makeStyles,
+  MenuItem,
+  Radio,
+  RadioGroup,
+  Select,
+  TextField,
+  Typography
+} from '@material-ui/core';
 import { Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { ToastContext } from '../toast';
@@ -12,7 +29,7 @@ import { api, METHOD } from '../../utils/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { TOAST_LEVELS } from '../toast/constants';
 import { addToastMessage } from '../../reducers/selection/actions';
-import { replaceTarget, setTargetOnAliases, setTargetOnName } from '../../reducers/api/actions';
+import { replaceTarget, setTargetOnAliases, setTargetOnName, setTargetSettings } from '../../reducers/api/actions';
 import { getCurrentTarget } from '../../reducers/api/selectors';
 
 const useStyles = makeStyles(theme => ({
@@ -53,7 +70,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   const [editable, setEditable] = useState(false);
   const [identifierTypes, setIdentifierTypes] = useState([]);
   const [displayName, setDisplayName] = useState('');
-  const [electronDensity, setElectronDensity] = useState(null);
+
   const [currentTarget, setCurrentTarget] = useState(null);
 
   const target_on_name = useSelector(state => state.apiReducers.target_on_name);
@@ -61,6 +78,11 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   // const targets = useSelector(state => state.apiReducers.target_id_list);
   const activeTarget = useSelector(state => getCurrentTarget(state));
   const selectedTarget = useSelector(state => state.selectionReducers.targetToEdit);
+  const targetSettings = useSelector(state => state.apiReducers.targetSettings);
+
+  const [electronDensity, setElectronDensity] = useState(
+    targetSettings?.density?.representation === 'surface' ? 'surface' : 'wireframe'
+  );
 
   const getIdentifierTypes = async () => {
     return api({
@@ -71,7 +93,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
         return resp.data.results;
       })
       .catch(err => {
-        console.log('error fetching compound-identifier-types', err);
+        console.error('error fetching compound-identifier-types', err);
         return [];
       });
   };
@@ -151,10 +173,12 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
             // in target scope
             dispatch(setTargetOnName(displayName));
             dispatch(setTargetOnAliases(identifierTypes));
+            dispatch(setTargetSettings({ ...targetSettings, density: { representation: electronDensity } }));
           } else {
             // out of target scope
             currentTarget.display_name = displayName;
             currentTarget.alias_order = identifierTypes;
+            currentTarget.settings = { ...targetSettings, density: { representation: electronDensity } };
             dispatch(replaceTarget(currentTarget));
           }
           dispatch(addToastMessage({ text: `Target updated successfully`, level: TOAST_LEVELS.SUCCESS }));
@@ -168,13 +192,9 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
 
   return (
     <Dialog open={openModal} onClose={onModalClose}>
-      <DialogTitle sx={{ m: 0, p: 2 }}>{editable ? "Edit target settings" : "Target settings"}</DialogTitle>
+      <DialogTitle sx={{ m: 0, p: 2 }}>{editable ? 'Edit target settings' : 'Target settings'}</DialogTitle>
       <Tooltip title="Close editor">
-        <IconButton
-          color="inherit"
-          className={classes.headerButton}
-          onClick={onModalClose}
-        >
+        <IconButton color="inherit" className={classes.headerButton} onClick={onModalClose}>
           <Close />
         </IconButton>
       </Tooltip>
@@ -203,11 +223,16 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
               <Typography variant="body1">Display name</Typography>
             </Grid>
             <Grid item xs>
-              {editable ?
-                <TextField value={displayName ?? ""} placeholder="enter name" onChange={e => setDisplayName(e.target.value)} disabled={!editable} />
-                :
+              {editable ? (
+                <TextField
+                  value={displayName ?? ''}
+                  placeholder="enter name"
+                  onChange={e => setDisplayName(e.target.value)}
+                  disabled={!editable}
+                />
+              ) : (
                 <Typography variant="body1">{displayName}</Typography>
-              }
+              )}
             </Grid>
           </Grid>
           <Divider />
@@ -216,30 +241,43 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
               <Typography variant="body1">Preferred alias</Typography>
             </Grid>
             <Grid item xs>
-              {editable ?
+              {editable ? (
                 <Tooltip title="Drag and drop to reorder">
-                  <Grid item container direction="column" justifyContent="center" alignItems="flex-start" spacing={1} onDrop={e => e.preventDefault()} onDragOver={e => e.preventDefault()}>
-                    {identifierTypes?.map((type, index) =>
-                      <Grid key={type} item className={classes.identifier}
+                  <Grid
+                    item
+                    container
+                    direction="column"
+                    justifyContent="center"
+                    alignItems="flex-start"
+                    spacing={1}
+                    onDrop={e => e.preventDefault()}
+                    onDragOver={e => e.preventDefault()}
+                  >
+                    {identifierTypes?.map((type, index) => (
+                      <Grid
+                        key={type}
+                        item
+                        className={classes.identifier}
                         draggable="true"
-                        onDragStart={() => draggedIdentifier.current = index}
-                        onDragEnter={() => draggedOverIdentifier.current = index}
+                        onDragStart={() => (draggedIdentifier.current = index)}
+                        onDragEnter={() => (draggedOverIdentifier.current = index)}
                         onDragEnd={handleSort}
                         onDragOver={e => e.preventDefault()}
                       >
                         <Typography variant="body1">{`${index + 1}. ${type}`}</Typography>
                       </Grid>
-                    )}
+                    ))}
                   </Grid>
-                </Tooltip> :
+                </Tooltip>
+              ) : (
                 <Grid item container direction="column" justifyContent="center" alignItems="flex-start" spacing={1}>
-                  {identifierTypes?.map((type, index) =>
+                  {identifierTypes?.map((type, index) => (
                     <Grid key={type} item>
                       <Typography variant="body1">{`${index + 1}. ${type}`}</Typography>
                     </Grid>
-                  )}
+                  ))}
                 </Grid>
-              }
+              )}
             </Grid>
           </Grid>
           <Divider />
@@ -253,8 +291,8 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
                 value={electronDensity}
                 onChange={e => setElectronDensity(e.target.value)}
               >
-                <FormControlLabel value="wireframe" control={<Radio />} label="Wireframe" disabled={!editable || true} />
-                <FormControlLabel value="surface" control={<Radio />} label="Surface" disabled={!editable || true} />
+                <FormControlLabel value="wireframe" control={<Radio />} label="Wireframe" disabled={!editable} />
+                <FormControlLabel value="surface" control={<Radio />} label="Surface" disabled={!editable} />
               </RadioGroup>
             </Grid>
           </Grid>

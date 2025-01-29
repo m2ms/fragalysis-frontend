@@ -12,14 +12,16 @@ import DisplayControls from './displayControls/';
 import { MouseControls } from './mouseControls';
 import { NglContext } from '../../nglView/nglProvider';
 import { turnSide } from './redux/actions';
+import { PlotlyModal } from './plotlyTest/plotlyModal';
 
 const drawers = {
   settings: 'settings',
   display: 'display',
-  mouse: 'mouse'
+  mouse: 'mouse',
+  plotly: 'plotly'
 };
 
-const initDrawers = { [drawers.settings]: false, [drawers.display]: false, [drawers.mouse]: false };
+const initDrawers = { [drawers.settings]: false, [drawers.display]: false, [drawers.mouse]: false, [drawers.plotly]: false };
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -105,6 +107,11 @@ export const ViewerControls = memo(() => {
           </ButtonGroup>
         </div>
 
+        <Tooltip title={'Open plot.ly modal'}>
+          <Button size="small" color="primary" onClick={() => openDrawer(drawers.plotly)} className={classes.button}>
+            Test plot.ly
+          </Button>
+        </Tooltip>
         <Tooltip title={sidesOpen.RHS ? 'Close right hand side' : 'Open right hand side'}>
           <Button
             variant={sidesOpen.RHS ? 'contained' : 'outlined'}
@@ -120,6 +127,7 @@ export const ViewerControls = memo(() => {
       <SettingControls open={drawerSettings[drawers.settings]} onClose={closeAllDrawers} />
       <DisplayControls open={drawerSettings[drawers.display]} onClose={closeAllDrawers} />
       <MouseControls open={drawerSettings[drawers.mouse]} onClose={closeAllDrawers} />
+      <PlotlyModal open={drawerSettings[drawers.plotly]} />
     </>
   );
 });

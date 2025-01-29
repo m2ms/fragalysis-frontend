@@ -1034,6 +1034,7 @@ const DatasetMoleculeView = memo(
             }}
             data-handler-id={dragDropEnabled ? handlerId : undefined}
             style={{ opacity }}
+            data-id={data.id}
           >
             {askLockCompoundsQuestion &&
               isLockVisibleCompoundsDialogOpenLocal &&
@@ -1397,10 +1398,10 @@ const DatasetMoleculeView = memo(
                                   null}
                               </Grid>
                             )) || (
-                              <Grid item className={classes.rightBorder}>
-                                -
-                              </Grid>
-                            )}
+                                <Grid item className={classes.rightBorder}>
+                                  -
+                                </Grid>
+                              )}
                           </Tooltip>
                         );
                       })}

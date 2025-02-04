@@ -63,6 +63,7 @@ import {
 } from './utilitySnapshotShapes';
 import { setEntireState } from '../../../reducers/actions';
 import { VIEWS } from '../../../constants/constants';
+import { fr } from 'date-fns/locale';
 // import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 
 export const getListOfSnapshots = () => (dispatch, getState) => {
@@ -627,7 +628,7 @@ export const getCleanStateForSnapshot = () => (dispatch, getState) => {
   return snapshotData;
 };
 
-export const changeSnapshot = (projectID, snapshotID, stage) => async (dispatch, getState) => {
+export const changeSnapshot = (projectID, snapshotID, stage, fromJobExec = false) => async (dispatch, getState) => {
   dispatch(setSnapshotLoadingInProgress(true));
   dispatch(setIsSnapshot(true));
   // A hacky way of changing the URL without triggering react-router
@@ -652,45 +653,51 @@ export const changeSnapshot = (projectID, snapshotID, stage) => async (dispatch,
     })
   );
 
-  //orientation animation
-  const newOrientation = snapshotState.nglReducers.nglOrientations[VIEWS.MAJOR_VIEW];
-  await stage.animationControls.orient(newOrientation.elements, 2000); //.then(() => {
   let currentState = getState();
-  const toBeDisplayedLHSCurrent = currentState.selectionReducers.toBeDisplayedList;
-  const toBeDisplayedRHSCurrent = currentState.datasetsReducers.toBeDisplayedList;
-  const toBeDisplayedLHSNew = snapshotState.selectionReducers.toBeDisplayedList;
-  const toBeDisplayedRHSNew = snapshotState.datasetsReducers.toBeDisplayedList;
+  let toBeDisplayedLHSNewDeepCopy = null;
+  let toBeDisplayedRHSNewDeepCopy = null;
+  if (!fromJobExec) {
+    //orientation animation
+    const newOrientation = snapshotState.nglReducers.nglOrientations[VIEWS.MAJOR_VIEW];
+    await stage.animationControls.orient(newOrientation.elements, 2000); //.then(() => {
+    const toBeDisplayedLHSCurrent = currentState.selectionReducers.toBeDisplayedList;
+    const toBeDisplayedRHSCurrent = currentState.datasetsReducers.toBeDisplayedList;
+    const toBeDisplayedLHSNew = snapshotState.selectionReducers.toBeDisplayedList;
+    const toBeDisplayedRHSNew = snapshotState.datasetsReducers.toBeDisplayedList;
 
-  //remove LHS stuff that is not in the new snapshot
-  const toBeNoLongerDisplayedLHS = toBeDisplayedLHSCurrent.filter(
-    currentStruct =>
-      !toBeDisplayedLHSNew.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
-  );
-  toBeNoLongerDisplayedLHS.forEach(notToBeDisplayed =>
-    toBeDisplayedLHSNew.push({ ...notToBeDisplayed, display: false })
-  );
+    //remove LHS stuff that is not in the new snapshot
+    const toBeNoLongerDisplayedLHS = toBeDisplayedLHSCurrent.filter(
+      currentStruct =>
+        !toBeDisplayedLHSNew.find(
+          newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type
+        )
+    );
+    toBeNoLongerDisplayedLHS.forEach(notToBeDisplayed =>
+      toBeDisplayedLHSNew.push({ ...notToBeDisplayed, display: false })
+    );
 
-  //remove RHS stuff that is not in the new snapshot
-  const toBeNoLongerDisplayedRHS = [];
-  Object.keys(toBeDisplayedRHSCurrent).forEach(datasetID => {
-    const currentDataset = toBeDisplayedRHSCurrent[datasetID];
-    const newDataset = toBeDisplayedRHSNew[datasetID];
-    if (newDataset) {
-      const toBeNoLongerDisplayed = currentDataset.filter(
-        currentStruct =>
-          !newDataset.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
-      );
-      toBeNoLongerDisplayedRHS.push(...toBeNoLongerDisplayed);
-    }
-  });
-  toBeNoLongerDisplayedRHS.forEach(notToBeDisplayed =>
-    toBeDisplayedRHSNew[notToBeDisplayed.datasetID]
-      ? toBeDisplayedRHSNew[notToBeDisplayed.datasetID].push({ ...notToBeDisplayed, display: false })
-      : (toBeDisplayedRHSNew[notToBeDisplayed.datasetID] = [{ ...notToBeDisplayed, display: false }])
-  );
+    //remove RHS stuff that is not in the new snapshot
+    const toBeNoLongerDisplayedRHS = [];
+    Object.keys(toBeDisplayedRHSCurrent).forEach(datasetID => {
+      const currentDataset = toBeDisplayedRHSCurrent[datasetID];
+      const newDataset = toBeDisplayedRHSNew[datasetID];
+      if (newDataset) {
+        const toBeNoLongerDisplayed = currentDataset.filter(
+          currentStruct =>
+            !newDataset.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
+        );
+        toBeNoLongerDisplayedRHS.push(...toBeNoLongerDisplayed);
+      }
+    });
+    toBeNoLongerDisplayedRHS.forEach(notToBeDisplayed =>
+      toBeDisplayedRHSNew[notToBeDisplayed.datasetID]
+        ? toBeDisplayedRHSNew[notToBeDisplayed.datasetID].push({ ...notToBeDisplayed, display: false })
+        : (toBeDisplayedRHSNew[notToBeDisplayed.datasetID] = [{ ...notToBeDisplayed, display: false }])
+    );
 
-  const toBeDisplayedLHSNewDeepCopy = deepClone(toBeDisplayedLHSNew);
-  const toBeDisplayedRHSNewDeepCopy = deepClone(toBeDisplayedRHSNew) || {};
+    toBeDisplayedLHSNewDeepCopy = deepClone(toBeDisplayedLHSNew);
+    toBeDisplayedRHSNewDeepCopy = deepClone(toBeDisplayedRHSNew) || {};
+  }
 
   currentState = getState();
   // const copyOfCurrentState = deepClone(currentState);
@@ -701,8 +708,10 @@ export const changeSnapshot = (projectID, snapshotID, stage) => async (dispatch,
     SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS
   );
 
-  dispatch(setToBeDisplayedList(toBeDisplayedLHSNewDeepCopy));
-  dispatch(setToBeDisplayedLists(toBeDisplayedRHSNewDeepCopy));
+  if (!fromJobExec) {
+    dispatch(setToBeDisplayedList(toBeDisplayedLHSNewDeepCopy));
+    dispatch(setToBeDisplayedLists(toBeDisplayedRHSNewDeepCopy));
+  }
   // });
   // await new Promise(r => setTimeout(r, 2000));
 

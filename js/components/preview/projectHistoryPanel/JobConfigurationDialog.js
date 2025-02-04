@@ -31,7 +31,7 @@ import {
 } from '../../projects/redux/dispatchActions';
 import { areArraysSame } from '../../../utils/array';
 import { setDisableRedirect, setDontShowShareSnapshot } from '../../snapshot/redux/actions';
-import { createNewSnapshot } from '../../snapshot/redux/dispatchActions';
+import { changeSnapshot, createNewSnapshot } from '../../snapshot/redux/dispatchActions';
 import { NglContext } from '../../nglView/nglProvider';
 import moment from 'moment';
 import { SnapshotType } from '../../projects/redux/constants';
@@ -167,6 +167,8 @@ const JobConfigurationDialog = ({ snapshots }) => {
   const [open, setOpen] = useState(false);
   const [isError, setIsError] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isLaunchButtonDisabled, setIsLaunchButtonDisabled] = useState(false);
+
   const handleTooltipClose = () => {
     setOpen(false);
   };
@@ -228,31 +230,27 @@ const JobConfigurationDialog = ({ snapshots }) => {
     dispatch(setDisableRedirect(true));
     dispatch(setDontShowShareSnapshot(true));
 
-    // With the above flags set, createNewSnapshot returns the ID of newly created snapshot as the second item in the array
-    const snapshotId = (
-      await dispatch(
-        createNewSnapshot({
-          title,
-          description,
-          type,
-          author,
-          parent,
-          session_project,
-          nglViewList,
-          stage,
-          overwriteSnapshot: false,
-          createDiscourse: true
-        })
-      )
-    )[1];
-
-    // Create new snapshot
-    const newSnapshot = await dispatch(getSnapshotAttributesByID(snapshotId));
-
-    // Trigger graph rerender
-    dispatch(refreshJobsData());
-
-    return newSnapshot;
+    return dispatch(
+      createNewSnapshot({
+        title,
+        description,
+        type,
+        author,
+        parent,
+        session_project,
+        nglViewList,
+        stage,
+        overwriteSnapshot: false,
+        createDiscourse: true
+      })
+    )
+      .then(snapshotId => {
+        return dispatch(getSnapshotAttributesByID(snapshotId));
+      })
+      .then(snapshot => {
+        dispatch(refreshJobsData());
+        return snapshot;
+      });
   };
 
   const validate = values => {
@@ -267,6 +265,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
 
   const onSubmitForm = async ({ job, inputs, snapshot }) => {
     try {
+      setIsLaunchButtonDisabled(true);
       let chosenLHSCompounds = null;
       // TODO: chosenRHSCompounds
       let chosenRHSCompounds = null;
@@ -276,6 +275,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
         chosenSnapshot = snapshot;
         if (!snapshot.additional_info) {
           chosenSnapshot = await createSnapshot();
+          dispatch(changeSnapshot(currentSessionProject.projectID, chosenSnapshot.id, stage, true));
           const currentSnapshotSelectedCompounds = allMolecules
             .filter(molecule => currentSnapshotSelectedCompoundsIDs.includes(molecule.id))
             .map(molecule => molecule /*.code*/);
@@ -339,6 +339,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
           // || !areArraysSame(savedSelection, currentSnapshotSelectedDatasetsCompounds)
         ) {
           chosenSnapshot = await createSnapshot();
+          dispatch(changeSnapshot(currentSessionProject.projectID, chosenSnapshot.id, stage, true));
           chosenLHSCompounds = currentSnapshotSelectedCompounds;
           chosenRHSCompounds = currentSnapshotSelectedDatasetsCompounds;
         } else {
@@ -384,6 +385,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
           !areArraysSame(savedVisibleCompounds, currentSnapshotVisibleDatasetCompounds)
         ) {
           chosenSnapshot = await createSnapshot();
+          dispatch(changeSnapshot(currentSessionProject.projectID, chosenSnapshot.id, stage, true));
           chosenLHSCompounds = currentSnapshotVisibleCompounds;
           chosenRHSCompounds = currentSnapshotVisibleDatasetCompounds;
         } else {
@@ -451,7 +453,9 @@ const JobConfigurationDialog = ({ snapshots }) => {
         setErrorMsg("There's no selected inputs to run the job.");
         setIsError(true);
       }
+      setIsLaunchButtonDisabled(false);
     } catch (err) {
+      setIsLaunchButtonDisabled(false);
       console.error(err);
       setErrorMsg(err.response.data);
       setIsError(true);
@@ -582,7 +586,7 @@ const JobConfigurationDialog = ({ snapshots }) => {
                       {errorMsg?.message ?? errorMsg}
                     </Paper>
                   )}
-                  <Button color="primary" size="large" type="submit">
+                  <Button color="primary" size="large" type="submit" disabled={isLaunchButtonDisabled}>
                     Launch
                   </Button>
                 </div>

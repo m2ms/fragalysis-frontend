@@ -225,7 +225,7 @@ export const loadDataSets = targetId => async dispatch => {
     dispatch(
       setDataset(
         response.data.results.map(ds => ({
-          id: ds.name,
+          id: ds.id,
           title: ds.name, // previously unique_name ($submitter-$method format)
           url: ds.method_url,
           version: ds.spec_version,
@@ -272,10 +272,10 @@ export const loadDatasetCompoundsWithScores = (datasetsToLoad = null) => (dispat
           const compondMoleculesMap = {};
           compondMolecules.data.results.forEach(
             molecule =>
-              (compondMoleculesMap[molecule.name] = {
-                site_observation_code: molecule.site_observation_code,
-                pdb_info: molecule.pdb_info
-              })
+            (compondMoleculesMap[molecule.name] = {
+              site_observation_code: molecule.site_observation_code,
+              pdb_info: molecule.pdb_info
+            })
           );
           response.data.results.forEach(molecule => {
             if (compondMoleculesMap.hasOwnProperty(molecule.name)) {

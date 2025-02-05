@@ -36,7 +36,8 @@ const showLigand = async ({
   markAsRightSideLigand,
   loadQuality,
   quality,
-  state
+  state,
+  center
 }) => {
   let stringBlob = new Blob([input_dict.sdf_info], { type: 'text/plain' });
   console.count(`showLigand started`);
@@ -62,7 +63,8 @@ const showLigand = async ({
       markAsRightSideLigand,
       input_dict,
       orientationMatrix,
-      skipOrientation
+      skipOrientation,
+      center
     );
   }
 };
@@ -75,7 +77,8 @@ const loadLigandFromFile = (
   markAsRightSideLigand,
   input_dict,
   orientationMatrix,
-  skipOrientation
+  skipOrientation,
+  center
 ) => {
   console.count(`loadLigandFromFile started`);
   return stage.loadFile(stringBlob, { name: object_name, ext: 'sdf' }).then(comp => {
@@ -93,19 +96,23 @@ const loadLigandFromFile = (
           }
         )
       ]);
-
-    if (!skipOrientation) {
-      if (orientationMatrix && orientationMatrix.elements) {
-        const matrix = new Matrix4();
-        matrix.fromArray(orientationMatrix.elements);
-        console.count(`Before applying orientation matrix - loadLigandFromFile`);
-        stage.viewerControls.orient(matrix);
-        console.count(`After applying orientation matrix - loadLigandFromFile`);
-      } else if (orientationMatrix === undefined) {
-        comp.autoView('ligand');
-        console.count(`Orientation matrix not found for loadLigandFromFile, using autoView instead.`);
-      }
+    if (center) {
+      comp.autoView('ligand');
+      // const ligandOrientation = stage.viewerControls.getOrientation();
+      // dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
     }
+    // if (!skipOrientation) {
+    //   if (orientationMatrix && orientationMatrix.elements) {
+    //     const matrix = new Matrix4();
+    //     matrix.fromArray(orientationMatrix.elements);
+    //     console.count(`Before applying orientation matrix - loadLigandFromFile`);
+    //     stage.viewerControls.orient(matrix);
+    //     console.count(`After applying orientation matrix - loadLigandFromFile`);
+    //   } else if (orientationMatrix === undefined) {
+    //     comp.autoView('ligand');
+    //     console.count(`Orientation matrix not found for loadLigandFromFile, using autoView instead.`);
+    //   }
+    // }
     console.count(`loadLigandFromFile finished`);
     const returnVal = assignRepresentationArrayToComp(reprArray, comp);
     return returnVal;

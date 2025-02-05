@@ -58,22 +58,28 @@ export const useDisplayLigandLHS = () => {
           stage,
           previousRepresentations: ligandData.representations,
           loadQuality: hasAdditionalInformation,
-          quality: qualityInformation
+          quality: qualityInformation,
+          center: ligandData.center
         })
       ).then(() => {
-        const skipOrientation = skipOrientationChange;
-        if (!skipOrientation /* || isLoadingCurrentSnapshot*/) {
-          const ligandOrientation = stage.viewerControls.getOrientation();
-          dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
-
-          dispatch(appendMoleculeOrientation(data?.id, ligandOrientation));
-          if (!ligandData.center) {
-            // keep current orientation of NGL View
-            console.count(`Before applying orientation matrix after loading ligand.`);
-            stage.viewerControls.orient(currentOrientation);
-            console.count(`After applying orientation matrix after loading ligand.`);
-          }
-        }
+        // const ligandOrientation = stage.viewerControls.getOrientation();
+        // dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
+        // const skipOrientation = skipOrientationChange;
+        // if (!skipOrientation /* || isLoadingCurrentSnapshot*/) {
+        //   const ligandOrientation = stage.viewerControls.getOrientation();
+        //   dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
+        //   dispatch(appendMoleculeOrientation(data?.id, ligandOrientation));
+        //   if (!ligandData.center) {
+        //     // keep current orientation of NGL View
+        //     console.count(`Before applying orientation matrix after loading ligand.`);
+        //     stage.viewerControls.orient(currentOrientation);
+        //     console.count(`After applying orientation matrix after loading ligand.`);
+        //   }
+        // }
+        // if (ligandData.center) {
+        //   const component = stage.getComponentsByName(ligandData.name).first;
+        //   component?.autoView('ligand');
+        // }
         // dispatch(setNglViewFromSnapshotRendered(false));
       });
     },

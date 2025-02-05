@@ -624,6 +624,11 @@ export const getCleanStateForSnapshot = () => (dispatch, getState) => {
   snapshotData = deepMergeWithPriority({ ...snapshotData }, notToBeCopiedClone);
   snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
   snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
+  //this is because we don't want the first ligand to be centered but we always want to apply snapshot orientation
+  snapshotData.selectionReducers.toBeDisplayedList = snapshotData.selectionReducers.toBeDisplayedList.map(obj => ({
+    ...obj,
+    center: false
+  }));
 
   return snapshotData;
 };

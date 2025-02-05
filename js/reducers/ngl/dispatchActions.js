@@ -210,14 +210,25 @@ export const setOrientationByInteraction = (div_id, orientation) => (dispatch, g
   }
 };
 
-export const centerOnLigandByMoleculeID = (stage, moleculeID) => (dispatch, getState) => {
+export const centerOnLigandByMoleculeID = (stage, moleculeID, datasetId = null) => (dispatch, getState) => {
   if (moleculeID && stage) {
     const state = getState();
-    const all_mol_lists = state.apiReducers.all_mol_lists;
-    const observation = all_mol_lists.find(mol => mol.id === moleculeID);
+    let observation = null;
+    if (!datasetId) {
+      const all_mol_lists = state.apiReducers.all_mol_lists;
+      observation = all_mol_lists.find(mol => mol.id === moleculeID);
+    } else {
+      const datasetCompounds = state.datasetsReducers.moleculeLists[datasetId] || [];
+      observation = datasetCompounds.find(mol => mol.id === moleculeID);
+    }
     if (observation) {
       const colourToggle = getRandomColor(observation);
-      let obsObject = generateMoleculeObject(observation, colourToggle);
+      let obsObject = null;
+      if (!datasetId) {
+        obsObject = generateMoleculeObject(observation, colourToggle);
+      } else {
+        obsObject = generateMoleculeObject(observation, colourToggle, datasetId);
+      }
       const component = stage.getComponentsByName(obsObject.name).first;
       component?.autoView();
     }

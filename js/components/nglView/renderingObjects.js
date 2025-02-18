@@ -98,21 +98,7 @@ const loadLigandFromFile = (
       ]);
     if (center) {
       comp.autoView('ligand');
-      // const ligandOrientation = stage.viewerControls.getOrientation();
-      // dispatch(setOrientation(VIEWS.MAJOR_VIEW, ligandOrientation));
     }
-    // if (!skipOrientation) {
-    //   if (orientationMatrix && orientationMatrix.elements) {
-    //     const matrix = new Matrix4();
-    //     matrix.fromArray(orientationMatrix.elements);
-    //     console.count(`Before applying orientation matrix - loadLigandFromFile`);
-    //     stage.viewerControls.orient(matrix);
-    //     console.count(`After applying orientation matrix - loadLigandFromFile`);
-    //   } else if (orientationMatrix === undefined) {
-    //     comp.autoView('ligand');
-    //     console.count(`Orientation matrix not found for loadLigandFromFile, using autoView instead.`);
-    //   }
-    // }
     console.count(`loadLigandFromFile finished`);
     const returnVal = assignRepresentationArrayToComp(reprArray, comp);
     return returnVal;
@@ -139,13 +125,6 @@ const renderHitProtein = (ol, representations, orientationMatrix) => {
   });
 
   const reprArray = representations || createRepresentationsArray([repr3]);
-  // if (orientationMatrix) {
-  //   stage.viewerControls.orient(orientationMatrix);
-  // } else if (orientationMatrix === undefined) {
-  //   comp.autoView('ligand');
-  // TODO: setFocus should be in condition
-  //  comp.stage.setFocus(focus_let_temp);
-  // }
 
   return assignRepresentationArrayToComp(reprArray, comp);
 };
@@ -244,8 +223,8 @@ const showComplex = ({ stage, input_dict, object_name, representations, orientat
   ]).then(ol => renderComplex(ol, representations, orientationMatrix));
 };
 
-const showSurface = ({ stage, input_dict, object_name, representations, orientationMatrix }) =>
-  stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb', defaultAssembly: 'BU1' }).then(comp => {
+const showSurface = ({ stage, input_dict, object_name, representations, orientationMatrix }) => {
+  return stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb', defaultAssembly: 'BU1' }).then(comp => {
     const reprArray =
       representations ||
       createRepresentationsArray([
@@ -260,17 +239,13 @@ const showSurface = ({ stage, input_dict, object_name, representations, orientat
         })
       ]);
 
-    // if (orientationMatrix) {
-    //   stage.viewerControls.orient(orientationMatrix);
-    // } else if (orientationMatrix === undefined) {
-    //   comp.autoView();
-    // }
     return Promise.resolve(assignRepresentationArrayToComp(reprArray, comp));
   });
+};
 
 // ligand
-const showEvent = ({ stage, input_dict, object_name, representations, orientationMatrix }) =>
-  Promise.all(
+const showEvent = ({ stage, input_dict, object_name, representations, orientationMatrix }) => {
+  return Promise.all(
     [
       stage.loadFile(input_dict.pdb_info, { name: object_name, ext: 'pdb', defaultAssembly: 'BU1' }).then(comp => {
         const repr1 = createRepresentationStructure(MOL_REPRESENTATION.cartoon, {});
@@ -333,6 +308,7 @@ const showEvent = ({ stage, input_dict, object_name, representations, orientatio
       })
     ].then(values => [...values])
   );
+};
 
 // vector
 const showCylinder = ({ stage, input_dict, object_name, representations, orientationMatrix }) => {
@@ -381,8 +357,8 @@ const showArrow = ({ stage, input_dict, object_name, representations, orientatio
   return Promise.resolve(assignRepresentationArrayToComp(reprArray, comp));
 };
 
-const showProtein = ({ stage, input_dict, object_name, representations, orientationMatrix, state }) =>
-  stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb', defaultAssembly: 'BU1' }).then(comp => {
+const showProtein = ({ stage, input_dict, object_name, representations, orientationMatrix, state }) => {
+  return stage.loadFile(input_dict.prot_url, { name: object_name, ext: 'pdb', defaultAssembly: 'BU1' }).then(comp => {
     const reprArray =
       representations || createRepresentationsArray([createRepresentationStructure(input_dict.nglProtStyle, {})]);
 
@@ -400,6 +376,7 @@ const showProtein = ({ stage, input_dict, object_name, representations, orientat
     }
     return Promise.resolve(assignRepresentationArrayToComp(reprArray, comp));
   });
+};
 
 const showHotspot = ({ stage, input_dict, object_name, representations }) => {
   if (input_dict.map_type === 'AP') {

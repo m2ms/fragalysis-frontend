@@ -1119,7 +1119,7 @@ const DatasetMoleculeView = memo(
                         variant="outlined"
                         className={classes.myLocationButton}
                         onClick={() => {
-                          dispatch(centerOnLigandByMoleculeID(stage, getDatasetMoleculeID(datasetID, currentID)));
+                          dispatch(centerOnLigandByMoleculeID(stage, currentID, datasetID));
                         }}
                         disabled={false || !isLigandOn || isCompoundFromVectorSelector(data)}
                       >
@@ -1397,10 +1397,10 @@ const DatasetMoleculeView = memo(
                                   null}
                               </Grid>
                             )) || (
-                                <Grid item className={classes.rightBorder}>
-                                  -
-                                </Grid>
-                              )}
+                              <Grid item className={classes.rightBorder}>
+                                -
+                              </Grid>
+                            )}
                           </Tooltip>
                         );
                       })}

@@ -30,7 +30,12 @@ import {
 import { reloadPreviewReducer } from '../../preview/redux/dispatchActions';
 import { ProjectCreationType, SnapshotType } from '../../projects/redux/constants';
 import moment from 'moment';
-import { setProteinLoadingState, setReapplyOrientation } from '../../../reducers/ngl/actions';
+import {
+  setIsSnapshotRendering,
+  setNglObjectsInSnapshotToBeRendered,
+  setProteinLoadingState,
+  setReapplyOrientation
+} from '../../../reducers/ngl/actions';
 import { reloadNglViewFromSnapshot } from '../../../reducers/ngl/dispatchActions';
 import { base_url, URLS } from '../../routes/constants';
 import {
@@ -624,6 +629,27 @@ export const getCleanStateForSnapshot = () => (dispatch, getState) => {
   snapshotData = deepMergeWithPriority({ ...snapshotData }, notToBeCopiedClone);
   snapshotData = deepMergeWithPriority({ ...snapshotData }, SNAPSHOT_VALUES_TO_BE_DELETED);
   snapshotData.nglReducers.snapshotNglOrientation = { ...snapshotData.nglReducers.nglOrientations };
+  //this is because we don't want the first ligand to be centered but we always want to apply snapshot orientation
+  snapshotData.selectionReducers.toBeDisplayedList = snapshotData.selectionReducers.toBeDisplayedList.map(obj => ({
+    ...obj,
+    center: false,
+    rendered: false
+  }));
+  let toBeDisplayedRHS = {};
+  let numberOfItemsRHS = 0;
+  Object.keys(snapshotData.datasetsReducers.toBeDisplayedList).forEach(datasetID => {
+    toBeDisplayedRHS[datasetID] = snapshotData.datasetsReducers.toBeDisplayedList[datasetID].map(obj => ({
+      ...obj,
+      center: false,
+      rendered: false
+    }));
+    numberOfItemsRHS += toBeDisplayedRHS[datasetID].length;
+  });
+  snapshotData.datasetsReducers.toBeDisplayedList = toBeDisplayedRHS;
+  snapshotData.nglReducers.objectsInSnapshotToBeRendered =
+    snapshotData.selectionReducers.toBeDisplayedList.length + numberOfItemsRHS;
+  snapshotData.nglReducers.isSnapshotRendering = true;
+  snapshotData.nglReducers.nglViewFromSnapshotRendered = false;
 
   return snapshotData;
 };
@@ -755,6 +781,44 @@ export const isSnapshotModified = snapshotID => async (dispatch, getState) => {
   delete currentSnapshotStateCopy.previewReducers.molecule.disableNglControlButtons;
   delete originalSnapshotStateCopy.selectionReducers.toastMessages; //array
   delete currentSnapshotStateCopy.selectionReducers.toastMessages;
+
+  originalSnapshotStateCopy.selectionReducers.toBeDisplayedList = originalSnapshotStateCopy.selectionReducers.toBeDisplayedList.map(
+    obj => ({
+      ...obj,
+      center: false,
+      rendered: true
+    })
+  );
+  let toBeDisplayedRHS = {};
+  let numberOfItemsRHS = 0;
+  Object.keys(originalSnapshotStateCopy.datasetsReducers.toBeDisplayedList).forEach(datasetID => {
+    toBeDisplayedRHS[datasetID] = originalSnapshotStateCopy.datasetsReducers.toBeDisplayedList[datasetID].map(obj => ({
+      ...obj,
+      center: false,
+      rendered: true
+    }));
+    numberOfItemsRHS += toBeDisplayedRHS[datasetID].length;
+  });
+  originalSnapshotStateCopy.datasetsReducers.toBeDisplayedList = toBeDisplayedRHS;
+
+  currentSnapshotStateCopy.selectionReducers.toBeDisplayedList = currentSnapshotStateCopy.selectionReducers.toBeDisplayedList.map(
+    obj => ({
+      ...obj,
+      center: false,
+      rendered: true
+    })
+  );
+  toBeDisplayedRHS = {};
+  numberOfItemsRHS = 0;
+  Object.keys(currentSnapshotStateCopy.datasetsReducers.toBeDisplayedList).forEach(datasetID => {
+    toBeDisplayedRHS[datasetID] = currentSnapshotStateCopy.datasetsReducers.toBeDisplayedList[datasetID].map(obj => ({
+      ...obj,
+      center: false,
+      rendered: true
+    }));
+    numberOfItemsRHS += toBeDisplayedRHS[datasetID].length;
+  });
+  currentSnapshotStateCopy.datasetsReducers.toBeDisplayedList = toBeDisplayedRHS;
 
   let path = '';
   const isModified = !deepEqual(originalSnapshotStateCopy, currentSnapshotStateCopy, path);

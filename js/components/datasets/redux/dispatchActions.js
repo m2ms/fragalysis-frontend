@@ -113,7 +113,8 @@ export const addDatasetHitProtein = (
       id: data.id,
       display: true,
       representations: representations,
-      datasetID: datasetID
+      datasetID: datasetID,
+      center: false
     })
   );
 };
@@ -143,7 +144,8 @@ export const addDatasetComplex = (
       id: data.id,
       display: true,
       representations: representations,
-      datasetID: datasetID
+      datasetID: datasetID,
+      center: false
     })
   );
 };
@@ -172,7 +174,8 @@ export const addDatasetSurface = (
       id: data.id,
       display: true,
       representations: representations,
-      datasetID: datasetID
+      datasetID: datasetID,
+      center: false
     })
   );
 };
@@ -202,7 +205,8 @@ export const addDatasetLigand = (
       id: data.id,
       display: true,
       representations: representations,
-      datasetID: datasetID
+      datasetID: datasetID,
+      center: false
     })
   );
 };
@@ -246,7 +250,7 @@ export const loadNewDataSets = targetId => async (dispatch, getState) => {
       const found = currentDatasets.find(cs => cs.id === ds.name);
       if (!found) {
         const dataset = {
-          id: ds.name,
+          id: ds.id,
           title: ds.name, // previously unique_name ($submitter-$method format)
           url: ds.method_url,
           version: ds.spec_version,

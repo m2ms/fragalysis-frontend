@@ -17,6 +17,7 @@ import { readQualityInformation } from '../../components/nglView/renderingHelper
 import { deleteObject, loadObject } from './dispatchActions';
 import { removeVector } from '../../components/preview/molecule/redux/dispatchActions';
 import { getToBeDisplayedStructures } from './utils';
+import { setNglOrientation } from './actions';
 
 export const useDisplayLigandLHS = () => {
   const dispatch = useDispatch();
@@ -61,6 +62,10 @@ export const useDisplayLigandLHS = () => {
           center: ligandData.center
         })
       ).then(() => {
+        if (ligandData.center) {
+          const currentOrientation = stage.viewerControls.getOrientation();
+          dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
+        }
         dispatch(updateInToBeDisplayedList({ id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND }));
       });
     },

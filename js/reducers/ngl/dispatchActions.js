@@ -231,6 +231,8 @@ export const centerOnLigandByMoleculeID = (stage, moleculeID, datasetId = null) 
       }
       const component = stage.getComponentsByName(obsObject.name).first;
       component?.autoView();
+      const currentOrientation = stage.viewerControls.getOrientation();
+      dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
     }
   }
 };

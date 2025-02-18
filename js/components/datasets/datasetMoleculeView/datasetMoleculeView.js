@@ -1397,10 +1397,10 @@ const DatasetMoleculeView = memo(
                                   null}
                               </Grid>
                             )) || (
-                              <Grid item className={classes.rightBorder}>
-                                -
-                              </Grid>
-                            )}
+                                <Grid item className={classes.rightBorder}>
+                                  -
+                                </Grid>
+                              )}
                           </Tooltip>
                         );
                       })}

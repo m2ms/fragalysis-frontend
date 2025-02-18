@@ -276,10 +276,10 @@ export const loadDatasetCompoundsWithScores = (datasetsToLoad = null) => (dispat
           const compondMoleculesMap = {};
           compondMolecules.data.results.forEach(
             molecule =>
-              (compondMoleculesMap[molecule.name] = {
-                site_observation_code: molecule.site_observation_code,
-                pdb_info: molecule.pdb_info
-              })
+            (compondMoleculesMap[molecule.name] = {
+              site_observation_code: molecule.site_observation_code,
+              pdb_info: molecule.pdb_info
+            })
           );
           response.data.results.forEach(molecule => {
             if (compondMoleculesMap.hasOwnProperty(molecule.name)) {

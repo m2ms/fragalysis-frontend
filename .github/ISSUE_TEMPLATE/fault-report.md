@@ -7,11 +7,11 @@ assignees: ''
 
 ---
 
-> Please describe the context for the fault, providing as much detail as possible
+> Please describe the context for the fault, providing as much detail as possible. Items marked `[*]` are generally required.
 
 ### Fragalysis Stack
-- Installation: e.g. `DLS/Production`
-- Date and time (including timezone): e.g. `2025-03-04T18:17:10+0000`
+- Installation [*]: e.g. `DLS/Production`
+- Date and time (including timezone) [*]: e.g. `2025-03-04T18:17:10+0000`
 - Stack version: e.g. `2025.03.1`
 - Frontend version: e.g. `2025.03.1`
 - Backend version: e.g. `2025.03.1`

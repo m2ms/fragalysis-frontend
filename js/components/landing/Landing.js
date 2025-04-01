@@ -8,7 +8,6 @@ import { connect, useDispatch, useSelector } from 'react-redux';
 import * as apiActions from '../../reducers/api/actions';
 import * as selectionActions from '../../reducers/selection/actions';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
-import { Projects } from '../projects';
 import { resetCurrentCompoundsSettings } from '../preview/compounds/redux/actions';
 import { resetProjectsReducer } from '../projects/redux/actions';
 import { withLoadingProjects } from '../target/withLoadingProjects';
@@ -146,9 +145,7 @@ const Landing = memo(
             }}
             onMouseDown={handleMouseDownResizer}
           ></div>
-          <Grid item style={{ width: projectListWidth }}>
-            <Projects />
-          </Grid>
+          <Grid item style={{ width: projectListWidth }}></Grid>
         </Grid>
         <TargetSettingsModal openModal={isEditTargetDialogOpen} onModalClose={onModalClose} isTargetOn={false} />
       </>

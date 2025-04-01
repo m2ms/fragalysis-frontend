@@ -21,12 +21,7 @@ import {
 } from './actions';
 import { setDialogCurrentStep } from '../../snapshot/redux/actions';
 import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
-import {
-  assignSnapshotToProject,
-  createProjectFromSnapshotDialog,
-  createProjectWithoutStateModification,
-  loadSnapshotTree
-} from '../../projects/redux/dispatchActions';
+import { createProjectWithoutStateModification } from '../../projects/redux/dispatchActions';
 import { reloadPreviewReducer } from '../../preview/redux/dispatchActions';
 import { ProjectCreationType, SnapshotType } from '../../projects/redux/constants';
 import moment from 'moment';
@@ -38,12 +33,7 @@ import {
 } from '../../../reducers/ngl/actions';
 import { reloadNglViewFromSnapshot } from '../../../reducers/ngl/dispatchActions';
 import { base_url, URLS } from '../../routes/constants';
-import {
-  resetCurrentSnapshot,
-  setCurrentSnapshot,
-  setForceCreateProject,
-  setForceProjectCreated
-} from '../../projects/redux/actions';
+import { resetCurrentSnapshot, setCurrentSnapshot } from '../../projects/redux/actions';
 import { selectFirstMolGroup } from '../../preview/moleculeGroups/redux/dispatchActions';
 import {
   reloadDatasetsReducer,
@@ -152,45 +142,6 @@ export const saveCurrentSnapshot = ({
     .finally(() => {
       dispatch(getListOfSnapshots());
     });
-};
-
-export const createInitialSnapshot = (projectID, summaryView) => async (dispatch, getState) => {
-  const { apiReducers, nglReducers, selectionReducers, previewReducers, datasetsReducers } = getState();
-  const data = { apiReducers, nglReducers, selectionReducers, previewReducers, datasetsReducers };
-  const type = SnapshotType.INIT;
-  const title = 'Initial Snapshot';
-  const author = DJANGO_CONTEXT.pk || null;
-  const description = 'Auto generated initial snapshot';
-  const parent = null;
-  const children = [];
-  const created = moment();
-
-  // store initial snapshot to BE
-  if (projectID) {
-    await dispatch(saveCurrentSnapshot({ type, title, author, description, data, created, parent, children }));
-
-    await dispatch(assignSnapshotToProject({ projectID, snapshotID: getState().projectReducers.currentSnapshot.id }));
-    dispatch(loadSnapshotTree(projectID)).catch(error => {
-      throw new Error(error);
-    });
-  }
-  // store initial snapshot only to redux state
-  else {
-    await dispatch(
-      setCurrentSnapshot({
-        id: null,
-        type,
-        title,
-        author,
-        description,
-        created,
-        parent,
-        children,
-        data
-      })
-    );
-    dispatch(selectFirstMolGroup({ summaryView }));
-  }
 };
 
 export const createInitSnapshotFromCopy = ({
@@ -315,7 +266,6 @@ export const createNewSnapshot = ({
       if (response.data.count === 0) {
         newType = SnapshotType.INIT;
         // Without this, the snapshot tree wouldnt work
-        dispatch(setForceProjectCreated(false));
         //if it's INIT snapshot than it's a root snapshot of a project so parent MUST be null
         parent = null;
       }
@@ -375,7 +325,6 @@ export const createNewSnapshot = ({
 
                       if (createdSnapshot !== undefined && createdSnapshot !== null) {
                         // If the tree fails to load, bail out first without modifying the store
-                        await dispatch(loadSnapshotTree(projectResponse.data.id));
                         await dispatch(
                           setCurrentSnapshot({
                             id: createdSnapshot.id,
@@ -444,41 +393,6 @@ export const createSnapshotDiscoursePost = (snapshotId = undefined) => (dispatch
   const url = `${base_url}${URLS.projects}${currentProject.projectID}/${currentSnapshotId}`;
   const msg = `${url}`;
   return createProjectPost(currentProject.title, targetName, msg, []);
-};
-
-export const activateSnapshotDialog = (loggedInUserID = undefined, finallyShareSnapshot = false) => (
-  dispatch,
-  getState
-) => {
-  const state = getState();
-  const targetId = state.apiReducers.target_on;
-  const sessionProjectID = state.projectReducers.currentProject.projectID;
-  const currentSnapshotAuthor = state.projectReducers.currentSnapshot.author;
-  const currentProject = state.targetReducers.currentProject;
-
-  dispatch(captureScreenOfSnapshot());
-  dispatch(setDisableRedirect(finallyShareSnapshot));
-
-  if (!loggedInUserID && targetId) {
-    const data = {
-      title: ProjectCreationType.READ_ONLY,
-      description: ProjectCreationType.READ_ONLY,
-      target: targetId,
-      author: null,
-      tags: '[]',
-      project: currentProject.id
-    };
-    dispatch(createProjectFromSnapshotDialog(data)).catch(error => {
-      throw new Error(error);
-    });
-  } else if (
-    finallyShareSnapshot === true &&
-    loggedInUserID &&
-    sessionProjectID !== null &&
-    currentSnapshotAuthor === null
-  ) {
-    dispatch(setForceCreateProject(true));
-  }
 };
 
 export const createNewSnapshotWithoutStateModification = ({

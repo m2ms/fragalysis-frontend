@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { OutPortal } from 'react-reverse-portal';
 import HitNavigator from './molecule/hitNavigator';
-import { ProjectHistoryPanel } from './projectHistoryPanel';
 import { Resizer } from './resizer';
 import { RHS } from './rhs';
 import TagDetails from './tags/details/tagDetails';
@@ -78,9 +77,11 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
       : oneRowHeight;
 
   // limit default tag panel height to not overflow screen by showing of area of max 10 tags
-  const tagDetailListHeight = (preTagList.length > 10 ? 10 : preTagList.length) * listTagHeight + tagDetailListLayoutHeight;
+  const tagDetailListHeight =
+    (preTagList.length > 10 ? 10 : preTagList.length) * listTagHeight + tagDetailListLayoutHeight;
   const tagDetailGridHeight =
-    Math.ceil((preTagList.length > 10 ? 10 : preTagList.length) / defaultTagDetailColumnNumber) * absoluteMaxTagLength + tagDetailGridLayoutHeight;
+    Math.ceil((preTagList.length > 10 ? 10 : preTagList.length) / defaultTagDetailColumnNumber) * absoluteMaxTagLength +
+    tagDetailGridLayoutHeight;
 
   useEffect(() => {
     if (sidesOpen.LHS) {
@@ -209,14 +210,17 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
       {sidesOpen.LHS && (
         <>
           <div className={classes.lhs} style={{ width: lhsWidth }}>
-            <div style={{
-              overflow: 'auto',
-              height: tagDetailsHeight === undefined
-                ? tagDetailView?.tagDetailView === true || tagDetailView === true
-                  ? tagDetailGridHeight
-                  : tagDetailListHeight
-                : tagDetailsHeight
-            }}>
+            <div
+              style={{
+                overflow: 'auto',
+                height:
+                  tagDetailsHeight === undefined
+                    ? tagDetailView?.tagDetailView === true || tagDetailView === true
+                      ? tagDetailGridHeight
+                      : tagDetailListHeight
+                    : tagDetailsHeight
+              }}
+            >
               <TagDetails />
             </div>
             <Resizer orientation="horizontal" onResize={onTagDetailsResize} />
@@ -236,7 +240,7 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
                     : screenHeight - tagDetailsHeight - 20
               }}
             >
-              <HitNavigator hideProjects={hideProjects} />
+              <HitNavigator />
             </div>
           </div>
           <Resizer onResize={onLhsResize} />
@@ -255,17 +259,12 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
         <div>
           <ViewerControls />
         </div>
-        {!hideProjects && (
-          <div>
-            <ProjectHistoryPanel showFullHistory={onShowHistoryChange} />
-          </div>
-        )}
       </div>
       {sidesOpen.RHS && (
         <>
           <Resizer onResize={onRhsResize} />
           <div style={{ width: rhsWidth }}>
-            <RHS hideProjects={hideProjects} />
+            <RHS />
           </div>
         </>
       )}

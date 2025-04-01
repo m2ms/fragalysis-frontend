@@ -116,7 +116,7 @@ const Landing = memo(
 
       return () => {
         window.removeEventListener('resize', handleWindowResize);
-      }
+      };
     }, []);
 
     useEffect(() => {

@@ -613,13 +613,6 @@ export default memo(
 
               <Divider />
 
-              <ListItem button onClick={() => history.push(URLS.projects)}>
-                <ListItemIcon>
-                  <Description />
-                </ListItemIcon>
-                <ListItemText primary="Projects" />
-              </ListItem>
-
               <ListItem button onClick={() => history.push(URLS.management)}>
                 <ListItemIcon>
                   <Work />

@@ -41,7 +41,11 @@ import {
   setToBeDisplayedLists,
   updateInToBeDisplayedListForDataset
 } from '../../datasets/redux/actions';
-import { captureScreenOfSnapshot } from '../../userFeedback/browserApi';
+import {
+  captureScreenOfSnapshotFullScreen,
+  captureScreenOfSnapshotNglScreen,
+  rescaleImage
+} from '../../userFeedback/browserApi';
 import { setCurrentProject } from '../../projects/redux/actions';
 import { createProjectPost } from '../../../utils/discourse';
 import {
@@ -59,6 +63,7 @@ import {
 import { setEntireState } from '../../../reducers/actions';
 import { VIEWS } from '../../../constants/constants';
 import { fr } from 'date-fns/locale';
+import { DEFAULT_SCREENSHOT_RESOLUTION, SCREENSHOT_TYPE } from '../constants';
 // import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 
 export const getListOfSnapshots = () => (dispatch, getState) => {
@@ -172,7 +177,7 @@ export const createInitSnapshotFromCopy = ({
   return Promise.reject('ProjectID is missing');
 };
 
-const getAdditionalInfo = (state, snapshotState = null, image = null) => {
+const getAdditionalInfo = state => {
   const allMolecules = state.apiReducers.all_mol_lists;
   const { moleculesToEdit, fragmentDisplayList } = state.selectionReducers;
   const currentSnapshotSelectedCompounds = allMolecules
@@ -200,9 +205,7 @@ const getAdditionalInfo = (state, snapshotState = null, image = null) => {
     currentSnapshotSelectedCompounds,
     currentSnapshotVisibleCompounds,
     currentSnapshotSelectedDatasetsCompounds,
-    currentSnapshotVisibleDatasetsCompounds,
-    snapshotState,
-    image
+    currentSnapshotVisibleDatasetsCompounds
   };
 };
 
@@ -405,7 +408,10 @@ export const createNewSnapshotWithoutStateModification = ({
   session_project,
   nglViewList,
   axuData = {},
-  additional_info
+  additional_info,
+  state,
+  imageFullScreen = null,
+  imageNgl = null
 }) => (dispatch, getState) => {
   if (!session_project) {
     return Promise.reject('Project ID is missing!');
@@ -446,6 +452,35 @@ export const createNewSnapshotWithoutStateModification = ({
             disableRedirect: true
           })
         );
+        if (imageFullScreen && imageNgl) {
+          const fullScreenImageData = {
+            screenshot: imageFullScreen,
+            screenshot_type: SCREENSHOT_TYPE.FULL_SCREEN,
+            snapshot: res.data.id
+          };
+          const imageNglData = {
+            screenshot: imageNgl,
+            screenshot_type: SCREENSHOT_TYPE.NGL_SCREEN,
+            snapshot: res.data.id
+          };
+          return Promise.all([
+            api({
+              url: `${base_url}/api/snapshot_screenshots/`,
+              data: fullScreenImageData,
+              method: METHOD.POST
+            }),
+            api({
+              url: `${base_url}/api/snapshot_screenshots/`,
+              data: imageNglData,
+              method: METHOD.POST
+            }),
+            api({
+              url: `${base_url}/api/snapshot_state/${res.data.id}/`,
+              data: { state: state },
+              method: METHOD.PUT
+            })
+          ]);
+        }
       }
     });
   });
@@ -476,12 +511,19 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
     //   );
     // } else {
     //user is not logged in and/or is not working on a project so a new snapshot is created and shared
-    const image = await dispatch(captureScreenOfSnapshot());
+    let imageFullscreen = await dispatch(captureScreenOfSnapshotFullScreen());
+    imageFullscreen = await rescaleImage(
+      imageFullscreen,
+      DEFAULT_SCREENSHOT_RESOLUTION.width,
+      DEFAULT_SCREENSHOT_RESOLUTION.height
+    );
+    let imageNgl = await dispatch(captureScreenOfSnapshotNglScreen());
+    imageNgl = await rescaleImage(imageNgl, DEFAULT_SCREENSHOT_RESOLUTION.width, DEFAULT_SCREENSHOT_RESOLUTION.height);
     if (showDialog) {
       dispatch(setIsLoadingSnapshotDialog(true));
     }
 
-    const additional_info = getAdditionalInfo(state, snapshotData, image);
+    const additional_info = getAdditionalInfo(state);
 
     let data = {
       title: ProjectCreationType.READ_ONLY,
@@ -514,7 +556,10 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
           session_project,
           nglViewList,
           axuData,
-          additional_info
+          additional_info,
+          state: snapshotData,
+          imageFullScreen: imageFullscreen,
+          imageNgl: imageNgl
         })
       );
 

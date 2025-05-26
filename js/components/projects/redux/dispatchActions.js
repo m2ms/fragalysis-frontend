@@ -80,7 +80,7 @@ export const loadSnapshotByProjectID = projectID => async (dispatch, getState) =
                   tags: JSON.parse(projectResponse.data.tags)
                 })
               );
-              return Promise.resolve(response.data.results[0].id);
+              return Promise.resolve(snapshot.id);
             } else {
               return downloadSnapshotState(snapshot.id).then(stateResponse => {
                 snapshotState = stateResponse.data.state;
@@ -109,7 +109,7 @@ export const loadSnapshotByProjectID = projectID => async (dispatch, getState) =
                     tags: JSON.parse(projectResponse.data.tags)
                   })
                 );
-                return Promise.resolve(response.data.results[0].id);
+                return Promise.resolve(snapshot.id);
               });
             }
           }
@@ -141,6 +141,7 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
           let snapshotState = null;
           if (snapshot.additional_info.snapshotState) {
             snapshotState = snapshot.additional_info.snapshotState;
+            snapshotState.nglReducers.isNGLQueueEmpty = false;
             dispatch(setEntireState(snapshotState));
             dispatch(
               setCurrentSnapshot({
@@ -166,10 +167,11 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
               })
             );
             // dispatch(loadTargetListPostStateRestore());
-            return Promise.resolve(response.data);
+            return Promise.resolve(snapshot);
           } else {
             return downloadSnapshotState(snapshot.id).then(stateResponse => {
               snapshotState = stateResponse.data.state;
+              snapshotState.nglReducers.isNGLQueueEmpty = false;
               dispatch(setEntireState(snapshotState));
               dispatch(
                 setCurrentSnapshot({
@@ -195,7 +197,7 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
                 })
               );
               // dispatch(loadTargetListPostStateRestore());
-              return Promise.resolve(response.data);
+              return Promise.resolve(snapshot);
             });
             // console.log(`loadCurrentSnapshotByID - snapshotState: ${JSON.stringify(snapshotState)}`);
           }

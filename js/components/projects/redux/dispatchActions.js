@@ -33,7 +33,8 @@ const removeChildren = (children = []) => dispatch => {
 };
 
 const downloadSnapshotState = async snapshotId => {
-  return api({ url: `${base_url}/api/snapshot_state/${snapshotId}/` });
+  const snapshotState = await api({ url: `${base_url}/api/snapshot_state/${snapshotId}/` });
+  return snapshotState.data.state;
 };
 
 export const loadSnapshotByProjectID = projectID => async (dispatch, getState) => {
@@ -44,7 +45,7 @@ export const loadSnapshotByProjectID = projectID => async (dispatch, getState) =
     dispatch(setIsSnapshot(true));
     return api({ url: `${base_url}/api/session-projects/${projectID}/` }).then(projectResponse => {
       return api({ url: `${base_url}/api/snapshots/?session_project=${projectID}&type=INIT` })
-        .then(response => {
+        .then(async response => {
           if (response.data.results.length === 0) {
             dispatch(resetCurrentSnapshot());
             return Promise.resolve(null);
@@ -55,63 +56,36 @@ export const loadSnapshotByProjectID = projectID => async (dispatch, getState) =
             let snapshotState = null;
             if (snapshot.additional_info.snapshotState) {
               snapshotState = snapshot.additional_info.snapshotState;
-              snapshotState.nglReducers.isNGLQueueEmpty = false;
-              dispatch(setEntireState(snapshotState));
-              dispatch(
-                setCurrentSnapshot({
-                  id: snapshot.id,
-                  type: snapshot.type,
-                  title: snapshot.title,
-                  author: snapshot.author,
-                  description: snapshot.description,
-                  created: snapshot.created,
-                  children: snapshot.children,
-                  parent: snapshot.parent,
-                  data: snapshot.data
-                })
-              );
-              dispatch(
-                setCurrentProject({
-                  projectID: projectResponse.data.id,
-                  authorID: projectResponse.data.author || null,
-                  title: projectResponse.data.title,
-                  description: projectResponse.data.description,
-                  targetID: projectResponse.data.target.id,
-                  tags: JSON.parse(projectResponse.data.tags)
-                })
-              );
-              return Promise.resolve(snapshot.id);
             } else {
-              return downloadSnapshotState(snapshot.id).then(stateResponse => {
-                snapshotState = stateResponse.data.state;
-                snapshotState.nglReducers.isNGLQueueEmpty = false;
-                dispatch(setEntireState(snapshotState));
-                dispatch(
-                  setCurrentSnapshot({
-                    id: snapshot.id,
-                    type: snapshot.type,
-                    title: snapshot.title,
-                    author: snapshot.author,
-                    description: snapshot.description,
-                    created: snapshot.created,
-                    children: snapshot.children,
-                    parent: snapshot.parent,
-                    data: snapshot.data
-                  })
-                );
-                dispatch(
-                  setCurrentProject({
-                    projectID: projectResponse.data.id,
-                    authorID: projectResponse.data.author || null,
-                    title: projectResponse.data.title,
-                    description: projectResponse.data.description,
-                    targetID: projectResponse.data.target.id,
-                    tags: JSON.parse(projectResponse.data.tags)
-                  })
-                );
-                return Promise.resolve(snapshot.id);
-              });
+              snapshotState = await downloadSnapshotState(snapshot.id);
             }
+
+            snapshotState.nglReducers.isNGLQueueEmpty = false;
+            dispatch(setEntireState(snapshotState));
+            dispatch(
+              setCurrentSnapshot({
+                id: snapshot.id,
+                type: snapshot.type,
+                title: snapshot.title,
+                author: snapshot.author,
+                description: snapshot.description,
+                created: snapshot.created,
+                children: snapshot.children,
+                parent: snapshot.parent,
+                data: snapshot.data
+              })
+            );
+            dispatch(
+              setCurrentProject({
+                projectID: projectResponse.data.id,
+                authorID: projectResponse.data.author || null,
+                title: projectResponse.data.title,
+                description: projectResponse.data.description,
+                targetID: projectResponse.data.target.id,
+                tags: JSON.parse(projectResponse.data.tags)
+              })
+            );
+            return Promise.resolve(snapshot.id);
           }
         })
         .catch(error => {
@@ -141,66 +115,38 @@ export const loadCurrentSnapshotByID = snapshotID => (dispatch, getState) => {
           let snapshotState = null;
           if (snapshot.additional_info.snapshotState) {
             snapshotState = snapshot.additional_info.snapshotState;
-            snapshotState.nglReducers.isNGLQueueEmpty = false;
-            dispatch(setEntireState(snapshotState));
-            dispatch(
-              setCurrentSnapshot({
-                id: snapshot.id,
-                type: snapshot.type,
-                title: snapshot.title,
-                author: snapshot.author,
-                description: snapshot.description,
-                created: snapshot.created,
-                children: snapshot.children,
-                parent: snapshot.parent,
-                data: snapshot.data
-              })
-            );
-            dispatch(
-              setCurrentProject({
-                projectID: response.data.session_project.id,
-                authorID: response.data.session_project.author || null,
-                title: response.data.session_project.title,
-                description: response.data.session_project.description,
-                targetID: response.data.session_project.target.id,
-                tags: JSON.parse(response.data.session_project.tags)
-              })
-            );
-            // dispatch(loadTargetListPostStateRestore());
-            return Promise.resolve(snapshot);
           } else {
-            return downloadSnapshotState(snapshot.id).then(stateResponse => {
-              snapshotState = stateResponse.data.state;
-              snapshotState.nglReducers.isNGLQueueEmpty = false;
-              dispatch(setEntireState(snapshotState));
-              dispatch(
-                setCurrentSnapshot({
-                  id: snapshot.id,
-                  type: snapshot.type,
-                  title: snapshot.title,
-                  author: snapshot.author,
-                  description: snapshot.description,
-                  created: snapshot.created,
-                  children: snapshot.children,
-                  parent: snapshot.parent,
-                  data: snapshot.data
-                })
-              );
-              dispatch(
-                setCurrentProject({
-                  projectID: response.data.session_project.id,
-                  authorID: response.data.session_project.author || null,
-                  title: response.data.session_project.title,
-                  description: response.data.session_project.description,
-                  targetID: response.data.session_project.target.id,
-                  tags: JSON.parse(response.data.session_project.tags)
-                })
-              );
-              // dispatch(loadTargetListPostStateRestore());
-              return Promise.resolve(snapshot);
-            });
+            snapshotState = await downloadSnapshotState(snapshot.id);
             // console.log(`loadCurrentSnapshotByID - snapshotState: ${JSON.stringify(snapshotState)}`);
           }
+
+          snapshotState.nglReducers.isNGLQueueEmpty = false;
+          dispatch(setEntireState(snapshotState));
+          dispatch(
+            setCurrentSnapshot({
+              id: snapshot.id,
+              type: snapshot.type,
+              title: snapshot.title,
+              author: snapshot.author,
+              description: snapshot.description,
+              created: snapshot.created,
+              children: snapshot.children,
+              parent: snapshot.parent,
+              data: snapshot.data
+            })
+          );
+          dispatch(
+            setCurrentProject({
+              projectID: response.data.session_project.id,
+              authorID: response.data.session_project.author || null,
+              title: response.data.session_project.title,
+              description: response.data.session_project.description,
+              targetID: response.data.session_project.target.id,
+              tags: JSON.parse(response.data.session_project.tags)
+            })
+          );
+          // dispatch(loadTargetListPostStateRestore());
+          return Promise.resolve(snapshot);
         }
       })
       .catch(error => {

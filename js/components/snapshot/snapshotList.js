@@ -158,7 +158,7 @@ const SnapshotList = memo(({ expandHandler = null }) => {
   const snapshotsCreatedThisSession = useSelector(state => state.snapshotReducers.snapshotsCreatedThisSession);
 
   const [onlyMine, setOnlyMine] = useState(true);
-  const [hideStarred, setHideStarred] = useState(false);
+  const [showStarredByOthers, setShowStarredByOthers] = useState(true);
   const [searchString, setSearchString] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsToBeDisplayed, setItemsToBeDisplayed] = useState([]);
@@ -181,7 +181,7 @@ const SnapshotList = memo(({ expandHandler = null }) => {
 
   useEffect(() => {
     setResetInfiniteScroll(true);
-  }, [onlyMine, hideStarred, searchString]);
+  }, [onlyMine, showStarredByOthers, searchString]);
 
   const filteredSnapshotList = useMemo(() => {
     if (!listOfSnapshots || listOfSnapshots.length === 0) return [];
@@ -204,12 +204,20 @@ const SnapshotList = memo(({ expandHandler = null }) => {
       }
     }
 
-    if (hideStarred) {
-      result = result.filter(snapshot => !snapshot?.additional_info?.starred);
+    if (!showStarredByOthers) {
+      if (DJANGO_CONTEXT.pk) {
+        result = result.filter(
+          snapshot => !snapshot?.additional_info?.starred || snapshot?.author?.id === DJANGO_CONTEXT.pk
+        );
+      } else {
+        result = result.filter(
+          snapshot => !snapshot?.additional_info?.starred || snapshotsCreatedThisSession.some(id => id === snapshot.id)
+        );
+      }
     }
 
     return result;
-  }, [listOfSnapshots, searchString, onlyMine, snapshotsCreatedThisSession, hideStarred]);
+  }, [listOfSnapshots, searchString, onlyMine, snapshotsCreatedThisSession, showStarredByOthers]);
 
   const orderedSnapshotList = useMemo(() => {
     let starred = filteredSnapshotList.filter(snapshot => snapshot?.additional_info?.starred) || [];
@@ -234,8 +242,8 @@ const SnapshotList = memo(({ expandHandler = null }) => {
   }, [onlyMine]);
 
   const hideStarredSwitched = useCallback(() => {
-    setHideStarred(!hideStarred);
-  }, [hideStarred]);
+    setShowStarredByOthers(!showStarredByOthers);
+  }, [showStarredByOthers]);
 
   const handleCreateSnapshotClick = () => {
     dispatch(setDontShowShareSnapshot(true));
@@ -289,7 +297,7 @@ const SnapshotList = memo(({ expandHandler = null }) => {
       headerActions={[
         <Grid container className={classes.headerContainer} key="snapshot-header">
           <Grid item xs={4}>
-            <Tooltip title={'Show only mine snapshots. If unchecked, all snapshots will be shown.'}>
+            <Tooltip title={'Show only my snapshots. If unchecked, all snapshots will be shown.'}>
               <FormControlLabel
                 className={classes.tagModeSwitch}
                 classes={{ label: classes.tagLabel }}
@@ -307,19 +315,19 @@ const SnapshotList = memo(({ expandHandler = null }) => {
             </Tooltip>
           </Grid>
           <Grid item xs={4}>
-            <Tooltip title={'Show only starred snapshots. If unchecked, all snapshots will be shown.'}>
+            <Tooltip title={'Show starred snapshots from other users.'}>
               <FormControlLabel
                 className={classes.tagModeSwitch}
                 classes={{ label: classes.tagLabel }}
                 control={
                   <SnapshotSwitch
-                    checked={hideStarred}
+                    checked={showStarredByOthers}
                     onChange={hideStarredSwitched}
                     name="snapshot-filtering-starred"
                     size="small"
                   />
                 }
-                label={'Hide starred'}
+                label={'Show starred'}
               />
             </Tooltip>
           </Grid>

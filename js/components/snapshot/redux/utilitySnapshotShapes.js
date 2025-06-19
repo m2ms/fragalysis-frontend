@@ -40,7 +40,9 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   },
   snapshotReducers: {
     openSavingDialog: false,
-    isSnapshotDirty: false
+    isSnapshotDirty: false,
+    listOfSnapshots: [],
+    snapshotsCreatedThisSession: []
   },
   previewReducers: {
     molecule: {
@@ -87,5 +89,9 @@ export const SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS = {
     currentSnapshotList: [],
     currentSnapshotTree: {},
     currentProject: {}
+  },
+  snapshotReducers: {
+    listOfSnapshots: [],
+    snapshotsCreatedThisSession: []
   }
 };

@@ -64,6 +64,8 @@ import { loadTargetList } from '../target/redux/dispatchActions';
 import { EditSnapshotDialog } from './projectHistoryPanel/editSnapshotDialog';
 import { RenderingProgressDialog } from '../loading/RenderingProgressDialog';
 import { DataDownloadProgressDialog } from '../loading/DataDownloadProgressDialog';
+import layout from '../../reducers/layout/layouts/draggable';
+import SnapshotList from '../snapshot/snapshotList';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
@@ -179,7 +181,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
       toastMessages.forEach(message => {
         switch (message.level) {
           case TOAST_LEVELS.SUCCESS:
-            toastSuccess(message.text);
+            toastSuccess(message.text, { autoHideDuration: 3000 });
             break;
           case TOAST_LEVELS.ERROR:
             toastError(message.text);
@@ -245,6 +247,13 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
 
   const renderItem = id => {
     switch (id) {
+      case layoutItemNames.SNAPSHOT_LIST: {
+        return (
+          <div key="snapshotList">
+            <SnapshotList />
+          </div>
+        );
+      }
       case layoutItemNames.TAG_DETAILS: {
         return (
           <div key="tagDetails">

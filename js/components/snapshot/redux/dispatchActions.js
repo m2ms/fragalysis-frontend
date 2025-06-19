@@ -11,6 +11,8 @@ import {
 } from '../../../reducers/selection/actions';
 import { api, METHOD } from '../../../utils/api';
 import {
+  appendToListOfSnapshots,
+  appendToSnapshotsCreatedThisSession,
   setDisableRedirect,
   setIsLoadingListOfSnapshots,
   setIsLoadingSnapshotDialog,
@@ -66,24 +68,6 @@ import { fr } from 'date-fns/locale';
 import { DEFAULT_SCREENSHOT_RESOLUTION, SCREENSHOT_TYPE } from '../constants';
 // import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 
-export const getListOfSnapshots = () => (dispatch, getState) => {
-  const userID = DJANGO_CONTEXT['pk'] || null;
-  if (userID !== null) {
-    dispatch(setIsLoadingListOfSnapshots(true));
-    return api({ url: `${base_url}/api/snapshots/?session_project__isnull=False&author=${userID}` })
-      .then(response => {
-        if (response && response.data && response.data.results) {
-          dispatch(setListOfSnapshots(response.data.results));
-        }
-      })
-      .finally(() => {
-        dispatch(setIsLoadingListOfSnapshots(false));
-      });
-  } else {
-    return Promise.resolve();
-  }
-};
-
 export const reloadSession = (snapshotData, nglViewList) => (dispatch, getState) => {
   const state = getState();
   const snapshotTitle = state.projectReducers.currentSnapshot.title;
@@ -106,75 +90,6 @@ export const reloadSession = (snapshotData, nglViewList) => (dispatch, getState)
   }
 
   dispatch(setProteinLoadingState(true));
-};
-
-export const saveCurrentSnapshot = ({
-  type,
-  title,
-  author,
-  description,
-  data,
-  created,
-  parent,
-  children,
-  session_project = null
-}) => (dispatch, getState) => {
-  dispatch(resetCurrentSnapshot());
-  return api({
-    url: `${base_url}/api/snapshots/`,
-    data: { type, title, author, description, created, parent, data: '[]', children, session_project },
-    method: METHOD.POST
-  })
-    .then(response =>
-      dispatch(
-        setCurrentSnapshot({
-          id: response.data.id,
-          type,
-          title,
-          author,
-          description,
-          created,
-          parent,
-          children: response.data.children,
-          data
-        })
-      )
-    )
-
-    .catch(error => {
-      throw new Error(error);
-    })
-    .finally(() => {
-      dispatch(getListOfSnapshots());
-    });
-};
-
-export const createInitSnapshotFromCopy = ({
-  title,
-  author,
-  description,
-  data,
-  created,
-  parent,
-  children,
-  session_project
-}) => (dispatch, getState) => {
-  if (session_project) {
-    return dispatch(
-      saveCurrentSnapshot({
-        type: SnapshotType.INIT,
-        title,
-        author,
-        description,
-        data,
-        created,
-        parent,
-        children,
-        session_project
-      })
-    );
-  }
-  return Promise.reject('ProjectID is missing');
 };
 
 const getAdditionalInfo = state => {
@@ -411,7 +326,10 @@ export const createNewSnapshotWithoutStateModification = ({
   additional_info,
   state,
   imageFullScreen = null,
-  imageNgl = null
+  imageNgl = null,
+  overwriteSnapshot = false,
+  snapshotIdToOverwrite = 0,
+  oldImages = []
 }) => (dispatch, getState) => {
   if (!session_project) {
     return Promise.reject('Project ID is missing!');
@@ -437,10 +355,32 @@ export const createNewSnapshotWithoutStateModification = ({
     };
     const dataString = JSON.stringify(dataToSend);
 
+    let method = METHOD.POST;
+    if (overwriteSnapshot) {
+      method = METHOD.PUT;
+    }
+
+    let snapshotIdSlug = '';
+    if (overwriteSnapshot) {
+      snapshotIdSlug = `${snapshotIdToOverwrite}/`;
+    }
+
+    let fullscreenImageSlug = '';
+    if (overwriteSnapshot && oldImages.length > 0) {
+      const firstImage = oldImages.filter(image => image.screenshot_type === SCREENSHOT_TYPE.FULL_SCREEN);
+      fullscreenImageSlug = firstImage.length > 0 ? `${firstImage[0].id}/` : '';
+    }
+
+    let nglViewImageSlug = '';
+    if (overwriteSnapshot && oldImages.length > 1) {
+      const secondImage = oldImages.filter(image => image.screenshot_type === SCREENSHOT_TYPE.NGL_SCREEN);
+      nglViewImageSlug = secondImage.length > 0 ? `${secondImage[0].id}/` : '';
+    }
+
     return api({
-      url: `${base_url}/api/snapshots/`,
+      url: `${base_url}/api/snapshots/${snapshotIdSlug}`,
       data: dataString,
-      method: METHOD.POST
+      method
     }).then(res => {
       if (res.data.id && session_project) {
         dispatch(
@@ -465,28 +405,40 @@ export const createNewSnapshotWithoutStateModification = ({
           };
           return Promise.all([
             api({
-              url: `${base_url}/api/snapshot_screenshots/`,
+              url: `${base_url}/api/snapshot_screenshots/${fullscreenImageSlug}`,
               data: fullScreenImageData,
-              method: METHOD.POST
+              method
             }),
             api({
-              url: `${base_url}/api/snapshot_screenshots/`,
+              url: `${base_url}/api/snapshot_screenshots/${nglViewImageSlug}`,
               data: imageNglData,
-              method: METHOD.POST
+              method
             }),
             api({
               url: `${base_url}/api/snapshot_state/${res.data.id}/`,
               data: { state: state },
               method: METHOD.PUT
             })
-          ]);
+          ]).then(() => {
+            return api({ url: `${base_url}/api/snapshots/${res.data.id}/` }).then(snapshot => {
+              dispatch(appendToSnapshotsCreatedThisSession(res.data.id));
+              dispatch(appendToListOfSnapshots(snapshot.data));
+            });
+          });
         }
       }
     });
   });
 };
 
-export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {}) => async (dispatch, getState) => {
+export const saveAndShareSnapshot = (
+  nglViewList,
+  showDialog = true,
+  axuData = {},
+  overwriteSnapshot = false,
+  snapshotIdToOverwrite = 0,
+  oldImages = []
+) => async (dispatch, getState) => {
   const snapshotData = dispatch(getCleanStateForSnapshot());
   const state = getState();
   const targetId = state.apiReducers.target_on;
@@ -497,20 +449,6 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
   dispatch(setDisableRedirect(true));
 
   if (targetId) {
-    // if (loggedInUserID && currentSessionProject && currentSessionProject.projectID) {
-    //   //if user is logged in and is working on a project the current snapshot is shared
-    //   const currentSnapshot = state.projectReducers.currentSnapshot;
-
-    //   dispatch(
-    //     setSharedSnapshot({
-    //       title: currentSnapshot.title,
-    //       description: currentSnapshot.description,
-    //       url: `${base_url}${URLS.projects}${currentSessionProject.projectID}/${currentSnapshot.id}`,
-    //       disableRedirect: true
-    //     })
-    //   );
-    // } else {
-    //user is not logged in and/or is not working on a project so a new snapshot is created and shared
     let imageFullscreen = await dispatch(captureScreenOfSnapshotFullScreen());
     imageFullscreen = await rescaleImage(
       imageFullscreen,
@@ -559,7 +497,10 @@ export const saveAndShareSnapshot = (nglViewList, showDialog = true, axuData = {
           additional_info,
           state: snapshotData,
           imageFullScreen: imageFullscreen,
-          imageNgl: imageNgl
+          imageNgl: imageNgl,
+          overwriteSnapshot: overwriteSnapshot,
+          snapshotIdToOverwrite: snapshotIdToOverwrite,
+          oldImages: oldImages
         })
       );
 
@@ -624,7 +565,14 @@ export const changeSnapshot = (projectID, snapshotID, stage, fromJobExec = false
   // Load the needed data
   const snapshotResponse = await api({ url: `${base_url}/api/snapshots/${snapshotID}` });
 
-  const snapshotState = snapshotResponse.data.additional_info.snapshotState;
+  const snapshotStateResponse = await api({ url: `${base_url}/api/snapshot_state/${snapshotID}/` });
+  let snapshotState = snapshotStateResponse.data.state;
+
+  if (!snapshotState) {
+    snapshotState = snapshotResponse.data.additional_info.snapshotState;
+  }
+
+  // const snapshotState = snapshotResponse.data.additional_info.snapshotState;
 
   if (!fromJobExec) {
     //orientation animation

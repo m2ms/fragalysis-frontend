@@ -128,6 +128,7 @@ const SnapshotView = ({ snapshot }) => {
   const updateSnapshot = () => {
     const snapshotCopy = { ...snapshot };
     snapshotCopy.session_project = snapshotCopy.session_project.id;
+    snapshotCopy.author = DJANGO_CONTEXT.pk || null;
     api({
       method: METHOD.PUT,
       url: `${base_url}/api/snapshots/${snapshot.id}/`,
@@ -167,9 +168,11 @@ const SnapshotView = ({ snapshot }) => {
   return (
     <Card className={classes.root}>
       <div className={classes.thumbnailWrapper}>
-        <IconButton className={classes.starIcon} onClick={handleStarClick}>
-          {snapshot.additional_info?.starred ? <StarIcon /> : <StarBorderIcon />}
-        </IconButton>
+        {(DJANGO_CONTEXT.pk || snapshot.additional_info?.starred) && (
+          <IconButton className={classes.starIcon} onClick={handleStarClick}>
+            {snapshot.additional_info?.starred ? <StarIcon /> : <StarBorderIcon />}
+          </IconButton>
+        )}
         <ButtonBase onClick={switchToSnapshotClick} className={classes.media}>
           <CardMedia
             component="img"

@@ -145,7 +145,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-const SnapshotList = memo(() => {
+const SnapshotList = memo(({ expandHandler = null }) => {
   const classes = useStyles();
   const ref = useRef(null);
   const dispatch = useDispatch();
@@ -163,6 +163,8 @@ const SnapshotList = memo(() => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsToBeDisplayed, setItemsToBeDisplayed] = useState([]);
 
+  const [resetInfiniteScroll, setResetInfiniteScroll] = useState(false);
+
   const listOfSnapshots = useSelector(state => state.snapshotReducers.listOfSnapshots);
 
   useEffect(() => {
@@ -176,6 +178,10 @@ const SnapshotList = memo(() => {
         });
     }
   }, [dispatch, listOfSnapshots, targetId]);
+
+  useEffect(() => {
+    setResetInfiniteScroll(true);
+  }, [onlyMine, hideStarred, searchString]);
 
   const filteredSnapshotList = useMemo(() => {
     if (!listOfSnapshots || listOfSnapshots.length === 0) return [];
@@ -214,6 +220,14 @@ const SnapshotList = memo(() => {
 
     return [...starred, ...nonStarred];
   }, [filteredSnapshotList]);
+
+  useEffect(() => {
+    if (resetInfiniteScroll) {
+      setResetInfiniteScroll(false);
+      setCurrentPage(0);
+      setItemsToBeDisplayed(orderedSnapshotList.slice(0, snapshotPerPage));
+    }
+  }, [orderedSnapshotList, resetInfiniteScroll]);
 
   const onlyMineSwitched = useCallback(() => {
     setOnlyMine(!onlyMine);
@@ -265,9 +279,13 @@ const SnapshotList = memo(() => {
       hasExpansion
       defaultExpanded
       title="Snapshots"
-      onExpandChange={useCallback(expanded => dispatch(setPanelsExpanded(layoutItemNames.SNAPSHOT_LIST, expanded)), [
-        dispatch
-      ])}
+      onExpandChange={useCallback(
+        expanded => {
+          dispatch(setPanelsExpanded(layoutItemNames.SNAPSHOT_LIST, expanded));
+          expandHandler && expandHandler(expanded);
+        },
+        [dispatch, expandHandler]
+      )}
       headerActions={[
         <Grid container className={classes.headerContainer} key="snapshot-header">
           <Grid item xs={4}>

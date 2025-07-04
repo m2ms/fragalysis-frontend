@@ -66,6 +66,7 @@ import { RenderingProgressDialog } from '../loading/RenderingProgressDialog';
 import { DataDownloadProgressDialog } from '../loading/DataDownloadProgressDialog';
 import layout from '../../reducers/layout/layouts/draggable';
 import SnapshotList from '../snapshot/snapshotList';
+import SnapshotSavingProgressDialog from '../snapshot/modals/snapshotSavingProgressDialog';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
 
@@ -352,6 +353,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
       <EditSnapshotDialog />
       <RenderingProgressDialog />
       <DataDownloadProgressDialog />
+      <SnapshotSavingProgressDialog />
     </>
   );
 });

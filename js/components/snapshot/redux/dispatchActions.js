@@ -19,6 +19,7 @@ import {
   setListOfSnapshots,
   setOpenSnapshotSavingDialog,
   setSharedSnapshot,
+  setSnapshotIsSaving,
   setSnapshotJustSaved
 } from './actions';
 import { setDialogCurrentStep } from '../../snapshot/redux/actions';
@@ -421,8 +422,11 @@ export const createNewSnapshotWithoutStateModification = ({
             })
           ]).then(() => {
             return api({ url: `${base_url}/api/snapshots/${res.data.id}/` }).then(snapshot => {
-              dispatch(appendToSnapshotsCreatedThisSession(res.data.id));
-              dispatch(appendToListOfSnapshots(snapshot.data));
+              if (!overwriteSnapshot) {
+                dispatch(appendToSnapshotsCreatedThisSession(res.data.id));
+                dispatch(appendToListOfSnapshots(snapshot.data));
+              }
+              dispatch(setSnapshotIsSaving(false));
             });
           });
         }
@@ -439,7 +443,9 @@ export const saveAndShareSnapshot = (
   snapshotIdToOverwrite = 0,
   oldImages = []
 ) => async (dispatch, getState) => {
+  dispatch(setSnapshotIsSaving(true));
   const snapshotData = dispatch(getCleanStateForSnapshot());
+  snapshotData.snapshotReducers.isSnapshotSaving = false;
   const state = getState();
   const targetId = state.apiReducers.target_on;
   const loggedInUserID = DJANGO_CONTEXT['pk'];
@@ -508,6 +514,7 @@ export const saveAndShareSnapshot = (
         dispatch(setIsLoadingSnapshotDialog(false));
       }
     } catch (error) {
+      dispatch(setSnapshotIsSaving(false));
       if (showDialog) {
         dispatch(setIsLoadingSnapshotDialog(false));
       }

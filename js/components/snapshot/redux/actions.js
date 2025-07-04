@@ -85,3 +85,8 @@ export const appendToSnapshotsCreatedThisSession = snapshotId => ({
   type: constants.APPEND_TO_SNAPSHOTS_CREATED_THIS_SESSION,
   payload: snapshotId
 });
+
+export const setSnapshotIsSaving = isSaving => ({
+  type: constants.SET_SNAPSHOT_IS_SAVING,
+  payload: isSaving
+});

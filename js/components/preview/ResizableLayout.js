@@ -1,291 +1,311 @@
+import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { makeStyles } from '@material-ui/core';
 import { clamp } from 'lodash';
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { OutPortal } from 'react-reverse-portal';
 
-import HitNavigator from './molecule/hitNavigator';
 import { Resizer } from './resizer';
-import { RHS } from './rhs';
-import TagDetails from './tags/details/tagDetails';
 import SnapshotList from '../snapshot/snapshotList';
+import TagDetails from './tags/details/tagDetails';
+import HitNavigator from './molecule/hitNavigator';
 import { ViewerControls } from './viewerControls';
+import { RHS } from './rhs';
 import { setResizableLayout, setActualRhsWidth } from '../../reducers/selection/actions';
 
 const useStyles = makeStyles(theme => ({
-  root: {
-    display: 'flex',
-    height: '100%'
-  },
-  lhs: {
-    height: '100%',
-    minWidth: 470
-  },
+  root: { display: 'flex', height: '100%' },
+  lhs: { height: '100%', minWidth: 470 },
   nglColumn: {
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(),
     height: '100%'
   },
-  ngl: {
-    flex: 1,
-    minHeight: 0
-  }
+  ngl: { flex: 1, minHeight: 0 }
 }));
 
 const sideWidth = 492;
-const resizerSize = 20; // px   (both vertical & horizontal)
-const MIN_SNAPSHOT_H = 100;
-const MIN_TAG_DETAILS_H = 100;
-const MIN_HIT_NAVIGATOR_H = 120;
+const resizerSize = 20;
 
-export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHistoryChange, nglPortal }) => {
+const MIN_HEIGHTS = {
+  snapshot: 25,
+  tagDetails: 25,
+  hitNavigator: 120
+};
+
+export const ResizableLayout = ({ gridRef, nglPortal }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
 
-  const sidesOpen = useSelector(state => state.previewReducers.viewerControls.sidesOpen);
-  const tagDetailView = useSelector(state => state.selectionReducers.tagDetailView);
-  const preTagList = useSelector(state => state.apiReducers.tagList);
-  const tags = useSelector(state => state.apiReducers.tagList);
+  const sidesOpen = useSelector(s => s.previewReducers.viewerControls.sidesOpen);
 
-  const [lhsWidth, setLhsWidth] = useState(sidesOpen.LHS ? sideWidth : 0);
-  const [rhsWidth, setRhsWidth] = useState(sidesOpen.RHS ? sideWidth : 0);
+  const [panelSuggestedHeights, setPanelSuggestedHeights] = useState([]);
 
-  const clampRange = (value, min, max) => Math.max(min, Math.min(max, value));
+  // If `height` is null/undefined, REMOVE any existing override for the panel.
+  // Otherwise, upsert the numeric override.
+  const mutateSuggestedHeight = useCallback((panelId, height) => {
+    setPanelSuggestedHeights(prev => {
+      if (height == null) {
+        return prev.filter(item => item.id !== panelId);
+      }
+      const idx = prev.findIndex(item => item.id === panelId);
+      const newItem = { id: panelId, suggestedHeight: height };
+      return idx === -1 ? [...prev, newItem] : [...prev.slice(0, idx), newItem, ...prev.slice(idx + 1)];
+    });
+  }, []);
 
-  const listTagHeight = 19;
-  const tagDetailGridLayoutHeight = 135;
-  const tagDetailListLayoutHeight = 145;
+  const panels = useMemo(
+    () => [
+      {
+        id: 'snapshot',
+        component: (
+          <SnapshotList
+            expandHandler={expanded => {
+              if (expanded) {
+                mutateSuggestedHeight('snapshot', null);
+              } else {
+                mutateSuggestedHeight('snapshot', 25);
+              }
+            }}
+          />
+        ),
+        min: MIN_HEIGHTS.snapshot,
+        initialPct: 25
+      },
+      {
+        id: 'tagDetails',
+        component: (
+          <TagDetails
+            expandHandler={expanded => {
+              if (expanded) {
+                mutateSuggestedHeight('tagDetails', null);
+              } else {
+                mutateSuggestedHeight('tagDetails', 25);
+              }
+            }}
+          />
+        ),
+        min: MIN_HEIGHTS.tagDetails,
+        initialPct: 20
+      },
+      {
+        id: 'hitNavigator',
+        component: <HitNavigator />,
+        min: MIN_HEIGHTS.hitNavigator,
+        initialPct: 55
+      }
+    ],
+    [mutateSuggestedHeight]
+  );
 
-  /* longest tag length   */
-  let maxLengthTagDetail = 0;
-  for (let i = 0; i < tags.length; i++) {
-    maxLengthTagDetail = Math.max(maxLengthTagDetail, tags[i].tag.length);
-  }
+  const clampRange = (v, min, max) => Math.max(min, Math.min(max, v));
 
-  const oneRowHeight = 19;
-  const twoRowHeight = 30;
-  const threeRowHeight = 48;
-  const oneRowTagLength = 15;
-  const moreRowTagLength = 30;
-  const defaultColumns = 5;
+  // pixel height available for panels (minus horizontal bars)
+  const getTotalHeight = useCallback(() => {
+    const node = gridRef?.current?.elementRef?.current?.firstChild;
+    if (!node) return 0;
+    const h = node.getBoundingClientRect().height;
+    return h - resizerSize * (panels.length - 1);
+  }, [gridRef, panels]);
 
-  const absoluteMaxTagLength =
-    maxLengthTagDetail > oneRowTagLength
-      ? maxLengthTagDetail > moreRowTagLength
-        ? threeRowHeight
-        : twoRowHeight
-      : oneRowHeight;
+  const lastVariableHeights = useRef({}); // { panelId: px }
 
-  const tagDetailListHeight =
-    (preTagList.length > 10 ? 10 : preTagList.length) * listTagHeight + tagDetailListLayoutHeight;
+  // Store heights that result from user actions (drag / window resize).
+  const rememberHeights = useCallback(
+    arr => {
+      panels.forEach((p, i) => {
+        const hasOverride = panelSuggestedHeights.some(x => x.id === p.id);
+        if (!hasOverride) {
+          lastVariableHeights.current[p.id] = arr[i];
+        }
+      });
+    },
+    [panels, panelSuggestedHeights]
+  );
 
-  const tagDetailGridHeight =
-    Math.ceil((preTagList.length > 10 ? 10 : preTagList.length) / defaultColumns) * absoluteMaxTagLength +
-    tagDetailGridLayoutHeight;
-
-  const preferredTagPanelH =
-    tagDetailView?.tagDetailView === true || tagDetailView === true ? tagDetailGridHeight : tagDetailListHeight;
-
-  const getColumnInnerHeight = useCallback(() => {
-    const gridRect = gridRef.current?.elementRef.current.firstChild.getBoundingClientRect();
-    if (!gridRect) return 0;
-    return gridRect.height - resizerSize * 2; // two horizontal bars
-  }, [gridRef]);
-
-  const [panelHeights, setPanelHeights] = useState(() => {
-    const fallbackTotal = 600; // guess until first measurement
-    const initialHitNav = Math.max(fallbackTotal - preferredTagPanelH * 2, MIN_HIT_NAVIGATOR_H);
-    return {
-      snapshot: preferredTagPanelH,
-      tagDetails: preferredTagPanelH,
-      hitNavigator: initialHitNav
-    };
+  // Initial heights
+  const [heights, setHeights] = useState(() => {
+    const total = getTotalHeight() || 600;
+    const allPctOK = panels.every(p => typeof p.initialPct === 'number');
+    if (allPctOK) {
+      return panels.map(p => clampRange((p.initialPct / 100) * total, p.min, total));
+    }
+    const equal = total / panels.length;
+    return panels.map(p => clampRange(equal, p.min, total));
   });
 
+  // ResizeObserver – preserve ratios on container resize
   useLayoutEffect(() => {
-    const fitPanelsToColumn = () => {
-      const total = getColumnInnerHeight();
+    let lastTotal = null;
+    const observer = new ResizeObserver(() => {
+      const total = getTotalHeight();
+      if (!total || total === lastTotal) return;
+      lastTotal = total;
+      setHeights(prev => {
+        const sum = prev.reduce((a, b) => a + b, 0);
+        const factor = total / sum;
+        let newH = prev.map((h, i) => clampRange(h * factor, panels[i].min, total));
+        const drift = total - newH.reduce((a, b) => a + b, 0);
+        if (Math.abs(drift) > 1) {
+          const idx = newH.indexOf(Math.max(...newH));
+          newH[idx] += drift;
+        }
+        rememberHeights(newH);
+        return newH;
+      });
+    });
+    const node = gridRef?.current?.elementRef?.current?.firstChild;
+    if (node) observer.observe(node);
+    return () => observer.disconnect();
+  }, [getTotalHeight, gridRef, panels, rememberHeights]);
+
+  //  Divider drag handler - horizontal resizers between panels
+  const makeOnResize = useCallback(
+    index => (_, cursorY) => {
+      const total = getTotalHeight();
       if (!total) return;
 
-      setPanelHeights(prev => {
-        const sum = prev.snapshot + prev.tagDetails + prev.hitNavigator;
-        const k = total / sum;
+      const node = gridRef.current.elementRef.current.firstChild;
+      const top = node.getBoundingClientRect().y;
+      const aboveMin = panels.slice(0, index + 1).reduce((s, p) => s + p.min, 0);
+      const belowMin = panels.slice(index + 1).reduce((s, p) => s + p.min, 0);
+      const maxAbove = total - belowMin;
+      const desiredAbove = clampRange(cursorY - top - resizerSize / 2, aboveMin, maxAbove);
 
-        let snap = Math.max(prev.snapshot * k, MIN_SNAPSHOT_H);
-        let tag = Math.max(prev.tagDetails * k, MIN_TAG_DETAILS_H);
-        let hit = Math.max(prev.hitNavigator * k, MIN_HIT_NAVIGATOR_H);
-
-        let excess = snap + tag + hit - total;
-        while (excess > 0.5) {
-          if (hit > tag && hit > snap && hit > MIN_HIT_NAVIGATOR_H) {
-            const delta = Math.min(excess, hit - MIN_HIT_NAVIGATOR_H);
-            hit -= delta;
-            excess -= delta;
-          } else if (tag > snap && tag > MIN_TAG_DETAILS_H) {
-            const delta = Math.min(excess, tag - MIN_TAG_DETAILS_H);
-            tag -= delta;
-            excess -= delta;
-          } else if (snap > MIN_SNAPSHOT_H) {
-            const delta = Math.min(excess, snap - MIN_SNAPSHOT_H);
-            snap -= delta;
-            excess -= delta;
-          } else {
-            break;
-          }
+      setHeights(prev => {
+        const out = [...prev];
+        if (index === 0) {
+          out[0] = desiredAbove;
+          const remain = total - desiredAbove;
+          const oldBelow = prev.slice(1);
+          const sumOld = oldBelow.reduce((a, b) => a + b, 0) || 1;
+          oldBelow.forEach((h, j) => {
+            out[1 + j] = clampRange((h / sumOld) * remain, panels[1 + j].min, remain);
+          });
+        } else {
+          const fixedAbove = prev.slice(0, index).reduce((a, b) => a + b, 0);
+          const newH = clampRange(desiredAbove - fixedAbove, panels[index].min, total - fixedAbove - belowMin);
+          out[index] = newH;
+          const remain = total - fixedAbove - newH;
+          const oldBelow = prev.slice(index + 1);
+          const sumOld = oldBelow.reduce((a, b) => a + b, 0) || 1;
+          oldBelow.forEach((h, j) => {
+            out[index + 1 + j] = clampRange((h / sumOld) * remain, panels[index + 1 + j].min, remain);
+          });
         }
-
-        return { snapshot: snap, tagDetails: tag, hitNavigator: hit };
+        rememberHeights(out);
+        return out;
       });
-    };
+    },
+    [getTotalHeight, gridRef, panels, rememberHeights]
+  );
 
-    fitPanelsToColumn();
-
-    const columnNode = gridRef.current?.elementRef.current.firstChild;
-    if (!columnNode) return;
-
-    const ro = new ResizeObserver(fitPanelsToColumn);
-    ro.observe(columnNode);
-    return () => ro.disconnect();
-  }, [getColumnInnerHeight, gridRef]);
+  const [lhsW, setLhsW] = useState(sidesOpen.LHS ? sideWidth : 0);
+  const [rhsW, setRhsW] = useState(sidesOpen.RHS ? sideWidth : 0);
 
   useEffect(() => {
-    setLhsWidth(sidesOpen.LHS ? sideWidth : 0);
-    setRhsWidth(sidesOpen.RHS ? sideWidth : 0);
-  }, [sidesOpen.LHS, sidesOpen.RHS]);
-
-  // Between SnapshotList (top) and TagDetails (middle)
-  const onSnapshotResize = useCallback(
-    (_, cursorY) => {
-      const total = getColumnInnerHeight();
-      if (!total) return;
-
-      const gridTop = gridRef.current.elementRef.current.firstChild.getBoundingClientRect().y;
-
-      const newSnapshot = clampRange(
-        cursorY - gridTop - resizerSize / 2,
-        MIN_SNAPSHOT_H,
-        total - MIN_TAG_DETAILS_H - MIN_HIT_NAVIGATOR_H
-      );
-
-      setPanelHeights(prev => {
-        const belowTotal = total - newSnapshot;
-        const ratio = prev.tagDetails / (prev.tagDetails + prev.hitNavigator) || 0.5;
-
-        const newTagDetails = clampRange(belowTotal * ratio, MIN_TAG_DETAILS_H, belowTotal - MIN_HIT_NAVIGATOR_H);
-        const newHitNavigator = belowTotal - newTagDetails;
-
-        return {
-          snapshot: newSnapshot,
-          tagDetails: newTagDetails,
-          hitNavigator: newHitNavigator
-        };
-      });
-    },
-    [getColumnInnerHeight, gridRef]
-  );
-
-  // Between TagDetails (middle) and HitNavigator (bottom)
-  const onTagDetailsResize = useCallback(
-    (_, cursorY) => {
-      dispatch(setResizableLayout(true)); // keep original flag
-
-      const total = getColumnInnerHeight();
-      if (!total) return;
-
-      const gridTop = gridRef.current.elementRef.current.firstChild.getBoundingClientRect().y;
-      const offset = panelHeights.snapshot + resizerSize;
-
-      const newTagDetails = clampRange(
-        cursorY - gridTop - offset - resizerSize / 2,
-        MIN_TAG_DETAILS_H,
-        total - panelHeights.snapshot - MIN_HIT_NAVIGATOR_H
-      );
-
-      setPanelHeights(prev => ({
-        ...prev,
-        tagDetails: newTagDetails,
-        hitNavigator: total - panelHeights.snapshot - newTagDetails
-      }));
-    },
-    [dispatch, getColumnInnerHeight, gridRef, panelHeights.snapshot]
-  );
+    setLhsW(sidesOpen.LHS ? sideWidth : 0);
+    setRhsW(sidesOpen.RHS ? sideWidth : 0);
+  }, [sidesOpen]);
 
   const onLhsResize = useCallback(
-    x => {
-      setLhsWidth(() => {
-        const gridRect = gridRef.current?.elementRef.current.firstChild.getBoundingClientRect();
-        if (!gridRect) return 0;
-
-        const adjustedX = x - gridRect.x - resizerSize / 2;
-        const containerWidth = sidesOpen.RHS
-          ? gridRect.width - rhsWidth - resizerSize * 2
-          : gridRect.width - resizerSize;
-
-        return clamp(adjustedX, 0, containerWidth);
-      });
-    },
-    [gridRef, rhsWidth, sidesOpen.RHS]
+    x =>
+      setLhsW(prev => {
+        const node = gridRef.current.elementRef.current.firstChild;
+        const r = node.getBoundingClientRect();
+        const adj = x - r.x - resizerSize / 2;
+        const cw = sidesOpen.RHS ? r.width - rhsW - resizerSize * 2 : r.width - resizerSize;
+        return clamp(adj, 0, cw);
+      }),
+    [gridRef, rhsW, sidesOpen.RHS]
   );
 
   const onRhsResize = useCallback(
-    x => {
-      setRhsWidth(() => {
-        const gridRect = gridRef.current?.elementRef.current.firstChild.getBoundingClientRect();
-        if (!gridRect) return 0;
-
-        let adjustedX, containerWidth;
+    x =>
+      setRhsW(prev => {
+        const node = gridRef.current.elementRef.current.firstChild;
+        const r = node.getBoundingClientRect();
+        let adj, cw;
         if (sidesOpen.LHS) {
-          adjustedX = x - gridRect.x - (lhsWidth + resizerSize) - resizerSize / 2;
-          containerWidth = gridRect.width - lhsWidth - resizerSize * 2;
+          adj = x - r.x - (lhsW + resizerSize) - resizerSize / 2;
+          cw = r.width - lhsW - resizerSize * 2;
         } else {
-          adjustedX = x - gridRect.x - resizerSize / 2;
-          containerWidth = gridRect.width - resizerSize;
+          adj = x - r.x - resizerSize / 2;
+          cw = r.width - resizerSize;
         }
-        const actual = containerWidth - clamp(adjustedX, 0, containerWidth);
+        const actual = cw - clamp(adj, 0, cw);
         dispatch(setActualRhsWidth(actual));
-
         if (actual < 480) return 480;
         if (actual > 900) return 900;
         return actual;
-      });
-    },
-    [gridRef, lhsWidth, sidesOpen.LHS, dispatch]
+      }),
+    [gridRef, lhsW, sidesOpen.LHS, dispatch]
   );
+
+  // distribute free space when overrides change
+  useEffect(() => {
+    const total = getTotalHeight();
+    if (!total) return;
+
+    setHeights(prev => {
+      const next = [...prev];
+      let fixedSum = 0;
+      const variableIdx = [];
+
+      panels.forEach((p, i) => {
+        const ov = panelSuggestedHeights.find(x => x.id === p.id)?.suggestedHeight;
+        if (ov != null) {
+          next[i] = clampRange(ov, p.min, total);
+          fixedSum += next[i];
+        } else {
+          variableIdx.push(i);
+        }
+      });
+
+      const remain = Math.max(total - fixedSum, 0);
+      if (!variableIdx.length) return next;
+
+      const baseSum = variableIdx.reduce((s, i) => s + (lastVariableHeights.current[panels[i].id] ?? prev[i]), 0) || 1;
+
+      variableIdx.forEach(i => {
+        const remembered = lastVariableHeights.current[panels[i].id] ?? prev[i];
+        next[i] = clampRange((remembered / baseSum) * remain, panels[i].min, remain);
+      });
+
+      const drift = total - next.reduce((a, b) => a + b, 0);
+      if (Math.abs(drift) >= 1) next[variableIdx[0]] += drift;
+
+      return next;
+    });
+  }, [panelSuggestedHeights, getTotalHeight, panels]);
 
   return (
     <div className={classes.root}>
-      {/* ─────────── LEFT SIDE BAR ─────────── */}
       {sidesOpen.LHS && (
         <>
-          <div className={classes.lhs} style={{ width: lhsWidth }}>
-            {/* SnapshotList */}
-            <div style={{ height: panelHeights.snapshot, overflow: 'auto' }}>
-              <SnapshotList />
-            </div>
-            <Resizer orientation="horizontal" onResize={onSnapshotResize} />
-
-            {/* TagDetails */}
-            <div style={{ height: panelHeights.tagDetails, overflow: 'auto' }}>
-              <TagDetails />
-            </div>
-            <Resizer orientation="horizontal" onResize={onTagDetailsResize} />
-
-            {/* HitNavigator */}
-            <div style={{ height: panelHeights.hitNavigator }}>
-              <HitNavigator />
-            </div>
+          <div className={classes.lhs} style={{ width: lhsW, display: 'flex', flexDirection: 'column' }}>
+            {panels.map((p, i) => (
+              <React.Fragment key={p.id}>
+                <div
+                  style={{
+                    height: panelSuggestedHeights.find(item => item.id === p.id)?.suggestedHeight ?? heights[i],
+                    overflow: 'auto'
+                  }}
+                >
+                  {p.component}
+                </div>
+                {i < panels.length - 1 && <Resizer orientation="horizontal" onResize={makeOnResize(i)} />}
+              </React.Fragment>
+            ))}
           </div>
           <Resizer onResize={onLhsResize} />
         </>
       )}
 
-      {/* ─────────── NGL COLUMN ─────────── */}
       <div
         className={classes.nglColumn}
         style={{
-          width: `calc(100% - ${lhsWidth}px - ${rhsWidth}px - ${sidesOpen.LHS * resizerSize}px - ${sidesOpen.RHS *
-            resizerSize}px)`
+          width: `calc(100% - ${lhsW}px - ${rhsW}px - ${(sidesOpen.LHS + sidesOpen.RHS) * resizerSize}px)`
         }}
       >
         <div className={classes.ngl}>
@@ -294,11 +314,10 @@ export const ResizableLayout = ({ gridRef, hideProjects, showHistory, onShowHist
         <ViewerControls />
       </div>
 
-      {/* ─────────── RIGHT SIDE BAR ─────────── */}
       {sidesOpen.RHS && (
         <>
           <Resizer onResize={onRhsResize} />
-          <div style={{ width: rhsWidth }}>
+          <div style={{ width: rhsW }}>
             <RHS />
           </div>
         </>

@@ -1,37 +1,40 @@
 const path = require('path');
-const webpack = require('webpack');
 const express = require('express');
+const webpack = require('webpack');
+const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackHotMiddleware = require('webpack-hot-middleware');
+
 const config = require('./webpack.config-dev');
-const PORT = 3030;
-
-const app = express();
 const compiler = webpack(config);
+const app = express();
+const PORT = process.env.PORT || 3030;
 
-// Enable CORS for all methods
-app.use(function(req, res, next) {
+app.use(
+  webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath,
+    stats: { colors: true, chunks: false }
+  })
+);
+
+app.use(
+  webpackHotMiddleware(compiler, {
+    path: '/__webpack_hmr',
+    heartbeat: 2000
+  })
+);
+
+app.use(express.static(path.resolve(__dirname, 'bundles')));
+
+app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
-app.use(
-  require('webpack-dev-middleware')(compiler, {
-    publicPath: config.output.publicPath,
-    hot: true,
-    stats: { colors: true }
-  })
-);
-
-app.use(require('webpack-hot-middleware')(compiler));
-
-app.get('*', function(req, res) {
-  res.sendFile(path.join(__dirname, 'index.html'));
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'index.html'));
 });
 
-app.listen(PORT, function(err) {
-  if (err) {
-    return console.error(err);
-  }
-
-  console.log(`Listening at http://localhost:${PORT}/`);
+app.listen(PORT, () => {
+  console.log(`Dev server listening at http://localhost:${PORT}`);
 });

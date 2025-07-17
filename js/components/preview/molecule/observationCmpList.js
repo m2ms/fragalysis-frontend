@@ -96,6 +96,7 @@ import { SearchSettingsDialog } from './searchSettingsDialog';
 import { set } from 'lodash';
 import { use } from 'react';
 import { TOAST_LEVELS } from '../../toast/constants';
+import { Editor } from 'ketcher-core';
 
 const useStyles = makeStyles(theme => ({
   container: {

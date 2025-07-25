@@ -441,7 +441,8 @@ export const saveAndShareSnapshot = (
   axuData = {},
   overwriteSnapshot = false,
   snapshotIdToOverwrite = 0,
-  oldImages = []
+  oldImages = [],
+  sessionProjectId = 0
 ) => async (dispatch, getState) => {
   dispatch(setSnapshotIsSaving(true));
   const snapshotData = dispatch(getCleanStateForSnapshot());
@@ -450,7 +451,6 @@ export const saveAndShareSnapshot = (
   const targetId = state.apiReducers.target_on;
   const loggedInUserID = DJANGO_CONTEXT['pk'];
   const currentProject = state.targetReducers.currentProject;
-  const currentSessionProject = state.projectReducers.currentProject;
 
   dispatch(setDisableRedirect(true));
 
@@ -480,7 +480,10 @@ export const saveAndShareSnapshot = (
     };
 
     try {
-      let projectID = await dispatch(createProjectWithoutStateModification(data));
+      let projectID = sessionProjectId;
+      if (!overwriteSnapshot || !projectID) {
+        projectID = await dispatch(createProjectWithoutStateModification(data));
+      }
       const username = DJANGO_CONTEXT['username'];
       const title = moment().format('-- YYYY-MM-DD -- HH:mm:ss');
       const description =

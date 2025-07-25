@@ -138,7 +138,7 @@ const SnapshotView = ({ snapshot }) => {
 
   const updateAllOfTheSnapshot = () => {
     dispatch(setDontShowShareSnapshot(true));
-    dispatch(saveAndShareSnapshot(nglViewList, false, {}, true, snapshot.id, images))
+    dispatch(saveAndShareSnapshot(nglViewList, false, {}, true, snapshot.id, images, snapshot.session_project.id))
       .then(() => {
         dispatch(addToastMessage({ text: `Snapshot was successfully updated.`, level: TOAST_LEVELS.SUCCESS }));
         setSnapshotUpdated(true);

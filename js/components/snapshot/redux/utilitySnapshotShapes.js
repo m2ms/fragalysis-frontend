@@ -42,7 +42,7 @@ export const SNAPSHOT_VALUES_TO_BE_DELETED = {
   snapshotReducers: {
     openSavingDialog: false,
     isSnapshotDirty: false,
-    listOfSnapshots: [],
+    listOfSnapshots: null,
     snapshotsCreatedThisSession: []
   },
   previewReducers: {

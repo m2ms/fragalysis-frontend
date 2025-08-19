@@ -123,7 +123,8 @@ const PERMALINK_OPTIONS = [
 ];
 
 const OTHERS = [
-  { flag: 'single_sdf_file', text: 'Single SDF of all ligands', defaultValue: true }
+  { flag: 'single_sdf_file', text: 'Single SDF of all ligands', defaultValue: true },
+  { flag: 'compound_sets', text: 'Computed compound sets', defaultValue: true }
   // { flag: 'sdf_info', text: 'Separate SDFs in subdirectory', defaultValue: false }
 ];
 
@@ -318,16 +319,16 @@ export const DownloadStructureDialog = memo(({}) => {
         } else {
           if (resp?.data?.file_url) {
             //we have a download link so it means that download already exists
-            await handlePreparedDownload(resp.data.file_url, tagData, options, tagName);
+            /*await */ handlePreparedDownload(resp.data.file_url, tagData, options, options, tagName);
           } else if (resp.data.task_status_url) {
             //download doesn't exist yet so we need to handle async task first
-            await handleDownloadTask(resp.data.task_status_url, tagData, options, tagName);
+            /*await */ handleDownloadTask(resp.data.task_status_url, tagData, options, tagName);
           } else {
             throw new Error('Unexpected response from the server: ' + JSON.stringify(resp.data));
           }
         }
 
-        setZipPreparing(false);
+        // setZipPreparing(false);
       }
     } catch (e) {
       setZipPreparing(false);
@@ -397,7 +398,7 @@ export const DownloadStructureDialog = memo(({}) => {
         }
       } else {
         console.log('DownloadStructureDialog - handleDownloadTask - data are not ready yet');
-        setTimeout(() => handleDownloadTask(taskUrl), 2000);
+        setTimeout(() => handleDownloadTask(taskUrl, tagData, options, tagName, existingDownload), 5000);
       }
     }
   };
@@ -453,6 +454,7 @@ export const DownloadStructureDialog = memo(({}) => {
 
   const onUpdateExistingDownload = event => {
     updateExistingDownload(event.target.value);
+    resetDownloadOnChange(true);
   };
 
   // Extracts flags for specified flagList and returns them as a JSON object
@@ -500,8 +502,10 @@ export const DownloadStructureDialog = memo(({}) => {
     }
   };
 
-  const resetDownloadOnChange = () => {
-    setSelectedDownload(newDownload);
+  const resetDownloadOnChange = (downloadChanged = false) => {
+    if (!downloadChanged) {
+      setSelectedDownload(newDownload);
+    }
     setDownloadTagUrl(null);
     setFileSize(null);
     setDownloadUrl(null);

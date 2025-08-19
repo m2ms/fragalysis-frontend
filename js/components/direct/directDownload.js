@@ -59,7 +59,7 @@ export const DirectDownload = memo(url => {
                   downloadStructuresZip(url);
                   dispatch(setDirectDownloadInProgress(false));
                 } else if (resp?.data?.task_status_url) {
-                  await handleTask(resp.data.task_status_url);
+                  /*await */ handleTask(resp.data.task_status_url);
                 }
               });
           }

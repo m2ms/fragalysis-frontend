@@ -3,7 +3,8 @@ version: '3'
 
 services:
   database:
-    image: postgres:12.2
+    image: postgres:15.12-alpine3.21
+    # image: postgres:12.2
     volumes:
       - ../data/postgre/data:/var/lib/postgresql
     environment:
@@ -14,13 +15,13 @@ services:
     ports:
       - '5432:5432'
     healthcheck:
-      test: pg_isready -U fragalysis -d frag
-      interval: 10s
-      timeout: 2s
-      retries: 5
-      start_period: 10s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
   redis:
-    image: redis:7.0.12-alpine3.18
+    # image: redis:7.0.12-alpine3.18
+    image: redis:7.2.3-alpine3.18
     container_name: redis
     ports:
     - "6379:6379"
@@ -99,7 +100,7 @@ services:
       SECURITY_CONNECTOR: ssh_ispyb
       LOGGING_FRAMEWORK_ROOT_LEVEL: DEBUG
       AUTHENTICATE_UPLOAD: 'False'
-      CELERY_TASK_ALWAYS_EAGER: 'True'
+      CELERY_TASK_ALWAYS_EAGER: 'False'
       DEBUG_FRAGALYSIS: 'True'
       PROXY_FORWARDED_PROTO_HEADER: 'http'
       LEGACY_URL: 'https://fragalysis.diamond.ac.uk'
@@ -130,23 +131,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      web:
-        condition: service_healthy
       graph:
         condition: service_healthy
     hostname: celery_worker
     env_file:
       - .env
-    image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
+    # image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
+    image: kaliif/fragalysis-backend:download-task
     restart: on-failure
     volumes:
-    - ./data/logs:/code/logs/
-    - ./data/media:/code/media/
-    - .:/code/
+    - ../data/logs:/code/logs/
+    - ../data/media:/code/media/
     environment:
-      AUTHENTICATE_UPLOAD: ${AUTHENTICATE_UPLOAD:-True}
+      AUTHENTICATE_UPLOAD: 'False'
       DEPLOYMENT_MODE: 'development'
-      POSTGRESQL_USER: postgres
+      POSTGRESQL_DATABASE: frag
+      POSTGRESQL_USER: fragalysis
+      POSTGRESQL_PASSWORD: fragalysis
+      POSTGRESQL_HOST: database
+      POSTGRESQL_PORT: 5432
       # Comma-separated dforced errors (infections?)
       INFECTIONS: ''
       # Celery tasks need to run synchronously
@@ -184,12 +187,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      web:
-        condition: service_healthy
       graph:
         condition: service_healthy
     hostname: celery_beat
     env_file:
       - .env
-    image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
+    # image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
+    image: kaliif/fragalysis-backend:download-task
     restart: on-failure

@@ -375,7 +375,7 @@ export const removeDensity = (
       id: data.id,
       display: false,
       isWireframeStyle: isWireframeStyle,
-      type: NGL_OBJECTS.DENSITY_CUSTOM
+      type: NGL_OBJECTS.DENSITY
     })
   );
 };

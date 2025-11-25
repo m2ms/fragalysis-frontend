@@ -69,6 +69,8 @@ import { base_url } from '../../../routes/constants';
 import { ContentCopyRounded } from '@mui/icons-material';
 import { ToastContext } from '../../../toast';
 import { useRDKit } from '../../../rdkit/RDKitContext';
+import { getCurrentTarget } from '../../../../reducers/api/selectors';
+import { DENSITY_MAP_TYPES, MAP_RENDERING_MODES } from '../utils/constants';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -454,8 +456,13 @@ const MoleculeView = memo(
     const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
     const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn);
 
+    const activeTarget = useSelector(state => getCurrentTarget(state));
+    const defaultMapType = activeTarget?.settings?.electron_density_map_type || DENSITY_MAP_TYPES.EVENT;
+    const defaultMapRendering =
+      activeTarget?.settings?.electron_density_rendering_mode || MAP_RENDERING_MODES.WIREFRAME;
+
     let warningIconVisible = viewParams[COMMON_PARAMS.warningIcon] === true && hasAdditionalInformation === true;
-    let isWireframeStyle = viewParams[NGL_PARAMS.contour_DENSITY];
+    let isWireframeStyle = defaultMapRendering === MAP_RENDERING_MODES.WIREFRAME ? true : false;
 
     const disableMoleculeNglControlButtons =
       useSelector(state => state.previewReducers.molecule.disableNglControlButtons[currentID]) || {};
@@ -1013,16 +1020,16 @@ const MoleculeView = memo(
     };
 
     const removeSelectedDensity = () => {
-      dispatch(removeDensity(stage, data, colourToggle, false));
+      dispatch(removeDensity(stage, data, colourToggle, isWireframeStyle));
     };
 
-    const addNewDensityCustom = async () => {
-      dispatch(
-        withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
-          await dispatch(addDensityCustomView(stage, data, colourToggle, isWireframeStyle));
-        })
-      );
-    };
+    // const addNewDensityCustom = async () => {
+    //   dispatch(
+    //     withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
+    //       await dispatch(addDensityCustomView(stage, data, colourToggle, isWireframeStyle));
+    //     })
+    //   );
+    // };
 
     const addNewDensity = async () => {
       dispatch(
@@ -1039,19 +1046,38 @@ const MoleculeView = memo(
     const [loadingDensity, setLoadingDensity] = useState(false);
     const onDensity = () => {
       setLoadingDensity(true);
-      if (isDensityOn === false && isDensityCustomOn === false) {
+      if (!isDensityOn) {
         dispatch(getDensityMapData(data)).then(r => {
           if (r) {
-            setDensityModalOpen(true);
-          } else {
+            if (defaultMapType === DENSITY_MAP_TYPES.EVENT) {
+              data.proteinData.render_event = true;
+            } else if (defaultMapType === DENSITY_MAP_TYPES._2FoFc) {
+              data.proteinData.render_sigmaa = true;
+            } else if (defaultMapType === DENSITY_MAP_TYPES.FoFC) {
+              data.proteinData.render_diff = true;
+            } else {
+              //unknown type so defaulting to event map
+              data.proteinData.render_event = true;
+            }
             addNewDensity();
           }
         });
-      } else if (isDensityCustomOn === false) {
-        addNewDensityCustom();
       } else {
         removeSelectedDensity();
       }
+      // if (isDensityOn === false && isDensityCustomOn === false) {
+      //   dispatch(getDensityMapData(data)).then(r => {
+      //     if (r) {
+      //       setDensityModalOpen(true);
+      //     } else {
+      //       addNewDensity();
+      //     }
+      //   });
+      // } else if (isDensityCustomOn === false) {
+      //   addNewDensityCustom();
+      // } else {
+      //   removeSelectedDensity();
+      // }
       setLoadingDensity(false);
     };
 
@@ -1451,7 +1477,7 @@ const MoleculeView = memo(
                             className={classNames(
                               classes.contColButton,
                               {
-                                [classes.contColButtonHalfSelected]: isDensityOn && !isDensityCustomOn
+                                [classes.contColButtonSelected]: isDensityOn && !isDensityCustomOn
                               },
                               {
                                 [classes.contColButtonSelected]: isDensityCustomOn

@@ -3,6 +3,8 @@
  */
 
 import React, { memo, useEffect, useState, useRef, useContext, useCallback } from 'react';
+// For right-click popover
+import Popover from '@material-ui/core/Popover';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Grid, makeStyles, Tooltip, IconButton, Popper, CircularProgress } from '@material-ui/core';
 import { Panel } from '../../../../../common';
@@ -42,8 +44,8 @@ import { DensityMapsModal } from '../../../modals/densityMapsModal';
 import { getRandomColor } from '../../../utils/color';
 import { DEFAULT_TAG_COLOR, getAllTagsForLHSCmp } from '../../../../tags/utils/tagUtils';
 import useClipboard from 'react-use-clipboard';
-import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
+import DensityButtonPopover from './DensityButtonPopover';
 import { Edit } from '@material-ui/icons';
 import { DJANGO_CONTEXT } from '../../../../../../utils/djangoContext';
 import { getFontColorByBackgroundColor } from '../../../../../../utils/colors';
@@ -380,6 +382,20 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC, observations }) => {
+  // State for right-click popover on D button
+  const [densityPopoverAnchor, setDensityPopoverAnchor] = useState(null);
+  const [densityPopoverOpen, setDensityPopoverOpen] = useState(false);
+
+  const handleDensityButtonContextMenu = event => {
+    event.preventDefault();
+    setDensityPopoverAnchor(event.currentTarget);
+    setDensityPopoverOpen(true);
+  };
+
+  const handleDensityPopoverClose = () => {
+    setDensityPopoverOpen(false);
+    setDensityPopoverAnchor(null);
+  };
   // const [countOfVectors, setCountOfVectors] = useState('-');
   // const [cmpds, setCmpds] = useState('-');
   const selectedAll = useRef(false);
@@ -1391,6 +1407,7 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
                     }
                   )}
                   onClick={() => onDensity()}
+                  onContextMenu={handleDensityButtonContextMenu}
                   disabled={!hasMap || disableMoleculeNglControlButtons.density}
                 >
                   D
@@ -1402,6 +1419,16 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
                     />
                   )}
                 </Button>
+                {/* Right-click popover for D button */}
+                <Popover
+                  open={densityPopoverOpen}
+                  anchorEl={densityPopoverAnchor}
+                  onClose={handleDensityPopoverClose}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                >
+                  <DensityButtonPopover />
+                </Popover>
               </Grid>
             </Tooltip>
             <Tooltip title="vectors">

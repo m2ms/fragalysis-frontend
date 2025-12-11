@@ -40,7 +40,6 @@ import {
   setIsLHSCmpTagEdit
 } from '../../../../../../reducers/selection/actions';
 import { centerOnLigandByMoleculeID } from '../../../../../../reducers/ngl/dispatchActions';
-import { DensityMapsModal } from '../../../modals/densityMapsModal';
 import { getRandomColor } from '../../../utils/color';
 import { DEFAULT_TAG_COLOR, getAllTagsForLHSCmp } from '../../../../tags/utils/tagUtils';
 import useClipboard from 'react-use-clipboard';
@@ -52,6 +51,7 @@ import { getFontColorByBackgroundColor } from '../../../../../../utils/colors';
 import { CopyDataTable } from '../../copyDataTable';
 import { getCurrentTarget } from '../../../../../../reducers/api/selectors';
 import { DENSITY_MAP_TYPES, MAP_RENDERING_MODES } from '../../../utils/constants';
+import { first } from 'lodash';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -386,16 +386,41 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
   const [densityPopoverAnchor, setDensityPopoverAnchor] = useState(null);
   const [densityPopoverOpen, setDensityPopoverOpen] = useState(false);
 
-  const handleDensityButtonContextMenu = event => {
-    event.preventDefault();
-    setDensityPopoverAnchor(event.currentTarget);
-    setDensityPopoverOpen(true);
-  };
+  // const handleDensityButtonContextMenu = event => {
+  //   event.preventDefault();
+  //   setDensityPopoverAnchor(event.currentTarget);
+  //   setDensityPopoverOpen(true);
+  // };
 
   const handleDensityPopoverClose = () => {
     setDensityPopoverOpen(false);
     setDensityPopoverAnchor(null);
   };
+
+  const [densityTooltipOpen, setDensityTooltipOpen] = React.useState(false);
+
+  const handleTooltipOpen = () => {
+    // Don't open tooltip when the popover is open
+    if (!densityPopoverOpen) {
+      setDensityTooltipOpen(true);
+    }
+  };
+
+  const handleTooltipClose = () => {
+    setDensityTooltipOpen(false);
+  };
+
+  const handleDensityButtonContextMenu = event => {
+    event.preventDefault();
+
+    // 1) Hide tooltip
+    setDensityTooltipOpen(false);
+
+    // 2) Your existing popover logic
+    setDensityPopoverAnchor(event.currentTarget);
+    setDensityPopoverOpen(true);
+  };
+
   // const [countOfVectors, setCountOfVectors] = useState('-');
   // const [cmpds, setCmpds] = useState('-');
   const selectedAll = useRef(false);
@@ -470,23 +495,44 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
     return result;
   };
 
-  const getFirstObservationWithDensity = useCallback(() => {
-    let result = null;
+  const isAtLeastOneObservationOnDensity = list => {
+    let result = false;
 
-    for (const obs of observations) {
-      if (obs?.proteinData?.diff_info || obs?.proteinData?.sigmaa_info || obs?.proteinData?.event_info) {
-        result = obs;
-        break;
+    if (list && list.length > 0 && observations && observations.length > 0) {
+      for (const obs of observations) {
+        const isPresent = list.some(d => obs.id === d.id);
+        if (isPresent) {
+          result = true;
+          break;
+        }
       }
     }
 
     return result;
-  }, [observations]);
+  };
+
+  // const getFirstObservationWithDensity = useCallback(() => {
+  //   let result = null;
+
+  //   for (const obs of observations) {
+  //     if (obs?.proteinData?.diff_info || obs?.proteinData?.sigmaa_info || obs?.proteinData?.event_info) {
+  //       result = obs;
+  //       break;
+  //     }
+  //   }
+
+  //   return result;
+  // }, [observations]);
 
   useEffect(() => {
     for (let i = 0; i < observations.length; i++) {
       const obs = observations[i];
-      if (obs?.proteinData?.diff_info || obs?.proteinData?.sigmaa_info || obs?.proteinData?.event_info) {
+      if (
+        (obs?.proteinData?.diff_info || obs?.proteinData?.sigmaa_info || obs?.proteinData?.event_info) &&
+        (!obs?.proteinData?.diff_info.endsWith('None') ||
+          !obs?.proteinData?.sigmaa_info.endsWith('None') ||
+          !obs?.proteinData?.event_info.endsWith('None'))
+      ) {
         setHasMap(true);
         break;
       }
@@ -498,7 +544,6 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
   const complexList = useSelector(state => state.selectionReducers.complexList);
   const surfaceList = useSelector(state => state.selectionReducers.surfaceList);
   const densityList = useSelector(state => state.selectionReducers.densityList);
-  const densityListCustom = useSelector(state => state.selectionReducers.densityListCustom);
   const qualityList = useSelector(state => state.selectionReducers.qualityList);
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
   // const currentTarget = useSelector(state => getCurrentTarget(state));
@@ -513,8 +558,7 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
   // C stands for contacts now
   const isComplexOn = isAtLeastOneObservationOnInList(complexList);
   const isSurfaceOn = isAtLeastOneObservationOnInList(surfaceList);
-  const isDensityOn = isAtLeastOneObservationOnInList(densityList);
-  const isDensityCustomOn = isAtLeastOneObservationOnInList(densityListCustom);
+  const isDensityOn = isAtLeastOneObservationOnDensity(densityList);
   const isQualityOn = isAtLeastOneObservationOnInList(qualityList);
   const isVectorOn = isAtLeastOneObservationOnInList(vectorOnList);
 
@@ -528,7 +572,6 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
 
   const colourToggle = getRandomColor(getMainObservation());
 
-  const [densityModalOpen, setDensityModalOpen] = useState(false);
   const [tagPopoverOpen, setTagPopoverOpen] = useState(null);
 
   const open = tagPopoverOpen ? true : false;
@@ -1004,26 +1047,22 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
   };
 
   const removeSelectedDensity = () => {
-    const firstObs = getFirstObservationWithDensity();
-    dispatch(removeDensity(stage, firstObs, colourToggle, isWireframeStyle));
+    // const firstObs = getFirstObservationWithDensity();
+    observations.forEach(obs => {
+      if (isAtLeastOneObservationOnDensity([obs])) {
+        dispatch(removeDensity(stage, obs, colourToggle, isWireframeStyle));
+      }
+    });
   };
 
-  //   const addNewDensityCustom = async () => {
-  //     dispatch(
-  //       withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
-  //         const firstObs = getFirstObservationWithDensity();
-  //         await dispatch(addDensityCustomView(stage, firstObs, colourToggle, isWireframeStyle));
-  //       })
-  //     );
-  //   };
-
-  const addNewDensity = async () => {
+  const addNewDensity = async densityObject => {
     dispatch(
       withDisabledMoleculeNglControlButton(currentID, 'ligand', async () => {
         await dispatch(
           withDisabledMoleculeNglControlButton(currentID, 'density', async () => {
-            const firstObs = getFirstObservationWithDensity();
-            await dispatch(addDensity(stage, firstObs, colourToggle, isWireframeStyle));
+            // const firstObs = getFirstObservationWithDensity();
+            const firstObs = getMainObservation();
+            await dispatch(addDensity(firstObs, densityObject));
           })
         );
       })
@@ -1032,42 +1071,65 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
 
   const [loadingDensity, setLoadingDensity] = useState(false);
 
+  const isDensityAvailable = url => {
+    if (!url || url.endsWith('None')) {
+      return false;
+    }
+    return true;
+  };
+
   const onDensity = () => {
     setLoadingDensity(true);
     if (!isDensityOn) {
-      let firstObs = getFirstObservationWithDensity();
+      // let firstObs = getFirstObservationWithDensity();
+      let firstObs = getMainObservation();
       dispatch(getDensityMapData(firstObs)).then(r => {
         if (r) {
+          const densityObject = {};
+          densityObject.id = firstObs.id;
+          densityObject.isWireframeStyle = isWireframeStyle;
+          densityObject.color = colourToggle;
           if (defaultMapType === DENSITY_MAP_TYPES.EVENT) {
-            firstObs.proteinData.render_event = true;
+            //this is ugly but more "elegant/clever" way is to unreadable
+            if (isDensityAvailable(firstObs?.proteinData?.event_info)) {
+              densityObject.render_event = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.sigmaa_info)) {
+              densityObject.render_2FoFc = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.diff_info)) {
+              densityObject.render_FoFc = true;
+            }
           } else if (defaultMapType === DENSITY_MAP_TYPES._2FoFc) {
-            firstObs.proteinData.render_sigmaa = true;
+            if (isDensityAvailable(firstObs?.proteinData?.sigmaa_info)) {
+              densityObject.render_2FoFc = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.event_info)) {
+              densityObject.render_event = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.diff_info)) {
+              densityObject.render_FoFc = true;
+            }
           } else if (defaultMapType === DENSITY_MAP_TYPES.FoFC) {
-            firstObs.proteinData.render_diff = true;
+            if (isDensityAvailable(firstObs?.proteinData?.diff_info)) {
+              densityObject.render_FoFc = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.event_info)) {
+              densityObject.render_event = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.sigmaa_info)) {
+              densityObject.render_2FoFc = true;
+            }
           } else {
-            //unknown type so defaulting to event map
-            firstObs.proteinData.render_event = true;
+            //unknown type so defaulting first available
+            if (isDensityAvailable(firstObs?.proteinData?.event_info)) {
+              densityObject.render_event = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.sigmaa_info)) {
+              densityObject.render_2FoFc = true;
+            } else if (isDensityAvailable(firstObs?.proteinData?.diff_info)) {
+              densityObject.render_FoFc = true;
+            }
           }
-          addNewDensity();
+          addNewDensity(densityObject);
         }
       });
     } else {
       removeSelectedDensity();
     }
-    // if (isDensityOn === false && isDensityCustomOn === false) {
-    //   const firstObs = getFirstObservationWithDensity();
-    //   dispatch(getDensityMapData(firstObs)).then(r => {
-    //     if (r) {
-    //       setDensityModalOpen(true);
-    //     } else {
-    //       addNewDensity();
-    //     }
-    //   });
-    // } else if (isDensityCustomOn === false) {
-    //   addNewDensityCustom();
-    // } else {
-    //   removeSelectedDensity();
-    // }
     setLoadingDensity(false);
   };
 
@@ -1393,19 +1455,21 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
                 </Button>
               </Grid>
             </Tooltip>
-            <Tooltip title="electron density">
+            <Tooltip
+              title="electron density"
+              open={densityTooltipOpen}
+              onOpen={handleTooltipOpen}
+              onClose={handleTooltipClose}
+              disableHoverListener={densityPopoverOpen}
+              disableFocusListener={densityPopoverOpen}
+              disableTouchListener={densityPopoverOpen}
+            >
               <Grid item>
                 <Button
                   variant="outlined"
-                  className={classNames(
-                    classes.contColButton,
-                    {
-                      [classes.contColButtonSelected]: isDensityOn && !isDensityCustomOn
-                    },
-                    {
-                      [classes.contColButtonSelected]: isDensityCustomOn
-                    }
-                  )}
+                  className={classNames(classes.contColButton, {
+                    [classes.contColButtonSelected]: isDensityOn
+                  })}
                   onClick={() => onDensity()}
                   onContextMenu={handleDensityButtonContextMenu}
                   disabled={!hasMap || disableMoleculeNglControlButtons.density}
@@ -1414,12 +1478,12 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
                   {loadingDensity && (
                     <CircularProgress
                       className={classNames(classes.buttonLoadingOverlay, {
-                        [classes.buttonSelectedLoadingOverlay]: isDensityOn || isDensityCustomOn
+                        [classes.buttonSelectedLoadingOverlay]: isDensityOn
                       })}
                     />
                   )}
                 </Button>
-                {/* Right-click popover for D button */}
+
                 <Popover
                   open={densityPopoverOpen}
                   anchorEl={densityPopoverAnchor}
@@ -1427,7 +1491,7 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
                   anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
                   transformOrigin={{ vertical: 'center', horizontal: 'left' }}
                 >
-                  <DensityButtonPopover />
+                  <DensityButtonPopover mol={getMainObservation()} />
                 </Popover>
               </Grid>
             </Tooltip>
@@ -1456,13 +1520,6 @@ export const DetailView = memo(({ data, handleRef, disableL, disableP, disableC,
         </Grid>
         {generateTagPopover()}
       </Grid>
-      <DensityMapsModal
-        openDialog={densityModalOpen}
-        setOpenDialog={setDensityModalOpen}
-        data={getFirstObservationWithDensity()}
-        setDensity={addNewDensity}
-        isQualityOn={isQualityOn}
-      />
     </Grid>
   );
 });

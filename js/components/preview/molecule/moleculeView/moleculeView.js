@@ -1087,6 +1087,9 @@ const MoleculeView = memo(
             densityObject.id = data.id;
             densityObject.isWireframeStyle = isWireframeStyle;
             densityObject.color = colourToggle;
+            densityObject.contour_event = 1.0;
+            densityObject.contour_2FoFc = 1.2;
+            densityObject.contour_FoFc = 3.0;
             if (defaultMapType === DENSITY_MAP_TYPES.EVENT) {
               //this is ugly but more "elegant/clever" way is to unreadable
               if (isDensityAvailable(data?.proteinData?.event_info)) {

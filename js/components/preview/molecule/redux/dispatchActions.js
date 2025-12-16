@@ -273,23 +273,23 @@ export const getDensityChangedParams = densitySettingsObject => (dispatch, getSt
   const isWireframeStyle = densitySettingsObject.isWireframeStyle;
 
   return {
-    isolevel_DENSITY: viewParams[NGL_PARAMS.isolevel_DENSITY],
+    isolevel_DENSITY: densitySettingsObject.contour_event, //viewParams[NGL_PARAMS.isolevel_DENSITY],
     boxSize_DENSITY: viewParams[NGL_PARAMS.boxSize_DENSITY],
     opacity_DENSITY: viewParams[NGL_PARAMS.opacity_DENSITY],
     contour_DENSITY: isWireframeStyle !== undefined ? isWireframeStyle : viewParams[NGL_PARAMS.contour_DENSITY],
     color_DENSITY: densitySettingsObject.color, //viewParams[NGL_PARAMS.color_DENSITY],
-    isolevel_DENSITY_MAP_sigmaa: viewParams[NGL_PARAMS.isolevel_DENSITY_MAP_sigmaa],
+    isolevel_DENSITY_MAP_sigmaa: densitySettingsObject.contour_2FoFc, //viewParams[NGL_PARAMS.isolevel_DENSITY_MAP_sigmaa],
     boxSize_DENSITY_MAP_sigmaa: viewParams[NGL_PARAMS.boxSize_DENSITY_MAP_sigmaa],
     opacity_DENSITY_MAP_sigmaa: viewParams[NGL_PARAMS.opacity_DENSITY_MAP_sigmaa],
     contour_DENSITY_MAP_sigmaa:
       isWireframeStyle !== undefined ? isWireframeStyle : viewParams[NGL_PARAMS.contour_DENSITY_MAP_sigmaa],
     color_DENSITY_MAP_sigmaa: densitySettingsObject.color, //viewParams[NGL_PARAMS.color_DENSITY_MAP_sigmaa],
-    isolevel_DENSITY_MAP_diff: viewParams[NGL_PARAMS.isolevel_DENSITY_MAP_diff],
+    isolevel_DENSITY_MAP_diff: densitySettingsObject.contour_FoFc, //viewParams[NGL_PARAMS.isolevel_DENSITY_MAP_diff],
     boxSize_DENSITY_MAP_diff: viewParams[NGL_PARAMS.boxSize_DENSITY_MAP_diff],
     opacity_DENSITY_MAP_diff: viewParams[NGL_PARAMS.opacity_DENSITY_MAP_diff],
     contour_DENSITY_MAP_diff:
       isWireframeStyle !== undefined ? isWireframeStyle : viewParams[NGL_PARAMS.contour_DENSITY_MAP_diff],
-    color_DENSITY_MAP_diff: densitySettingsObject.color, //viewParams[NGL_PARAMS.color_DENSITY_MAP_diff],
+    color_DENSITY_MAP_diff: /*densitySettingsObject.color,*/ viewParams[NGL_PARAMS.color_DENSITY_MAP_diff],
     color_DENSITY_MAP_diff_negate: viewParams[NGL_PARAMS.color_DENSITY_MAP_diff_negate]
   };
 };

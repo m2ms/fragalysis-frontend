@@ -29,6 +29,8 @@ export const DensityButtonPopover = ({ mol }) => {
 
   const currentDensity = densityList.find(d => d.id === mol.id);
 
+  const densityData = mol.proteinData;
+
   const isDensityAvailable = url => {
     if (!url || url.endsWith('None')) {
       return false;
@@ -37,48 +39,77 @@ export const DensityButtonPopover = ({ mol }) => {
   };
 
   const checkDensity = mapType => {
-    const defaultChecked = { render_event: false, render_2FoFc: false, render_FoFc: false };
-    if (defaultMapType === DENSITY_MAP_TYPES.EVENT) {
-      //this is ugly but more "elegant/clever" way is to unreadable
-      if (isDensityAvailable(mol?.proteinData?.event_info)) {
-        defaultChecked.render_event = true;
-      } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
-        defaultChecked.render_2FoFc = true;
-      } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
-        defaultChecked.render_FoFc = true;
-      }
-    } else if (defaultMapType === DENSITY_MAP_TYPES._2FoFc) {
-      if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
-        defaultChecked.render_2FoFc = true;
-      } else if (isDensityAvailable(mol?.proteinData?.event_info)) {
-        defaultChecked.render_event = true;
-      } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
-        defaultChecked.render_FoFc = true;
-      }
-    } else if (defaultMapType === DENSITY_MAP_TYPES.FoFC) {
-      if (isDensityAvailable(mol?.proteinData?.diff_info)) {
-        defaultChecked.render_FoFc = true;
-      } else if (isDensityAvailable(mol?.proteinData?.event_info)) {
-        defaultChecked.render_event = true;
-      } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
-        defaultChecked.render_2FoFc = true;
+    if (currentDensity) {
+      if (mapType === DENSITY_MAP_TYPES.EVENT) {
+        return currentDensity.render_event;
+      } else if (mapType === DENSITY_MAP_TYPES._2FoFc) {
+        return currentDensity.render_2FoFc;
+      } else if (mapType === DENSITY_MAP_TYPES.FoFC) {
+        return currentDensity.render_FoFc;
       }
     } else {
-      //unknown type so defaulting first available
-      if (isDensityAvailable(mol?.proteinData?.event_info)) {
-        defaultChecked.render_event = true;
-      } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
-        defaultChecked.render_2FoFc = true;
-      } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
-        defaultChecked.render_FoFc = true;
+      const defaultChecked = { render_event: false, render_2FoFc: false, render_FoFc: false };
+      if (defaultMapType === DENSITY_MAP_TYPES.EVENT) {
+        if (isDensityAvailable(mol?.proteinData?.event_info)) {
+          defaultChecked.render_event = true;
+        } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
+          defaultChecked.render_2FoFc = true;
+        } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
+          defaultChecked.render_FoFc = true;
+        }
+      } else if (defaultMapType === DENSITY_MAP_TYPES._2FoFc) {
+        if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
+          defaultChecked.render_2FoFc = true;
+        } else if (isDensityAvailable(mol?.proteinData?.event_info)) {
+          defaultChecked.render_event = true;
+        } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
+          defaultChecked.render_FoFc = true;
+        }
+      } else if (defaultMapType === DENSITY_MAP_TYPES.FoFC) {
+        if (isDensityAvailable(mol?.proteinData?.diff_info)) {
+          defaultChecked.render_FoFc = true;
+        } else if (isDensityAvailable(mol?.proteinData?.event_info)) {
+          defaultChecked.render_event = true;
+        } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
+          defaultChecked.render_2FoFc = true;
+        }
+      } else {
+        // unknown type so defaulting first available
+        if (isDensityAvailable(mol?.proteinData?.event_info)) {
+          defaultChecked.render_event = true;
+        } else if (isDensityAvailable(mol?.proteinData?.sigmaa_info)) {
+          defaultChecked.render_2FoFc = true;
+        } else if (isDensityAvailable(mol?.proteinData?.diff_info)) {
+          defaultChecked.render_FoFc = true;
+        }
+      }
+      if (mapType === DENSITY_MAP_TYPES.EVENT) {
+        return defaultChecked.render_event;
+      } else if (mapType === DENSITY_MAP_TYPES._2FoFc) {
+        return defaultChecked.render_2FoFc;
+      } else if (mapType === DENSITY_MAP_TYPES.FoFC) {
+        return defaultChecked.render_FoFc;
       }
     }
-    if (mapType === DENSITY_MAP_TYPES.EVENT) {
-      return defaultChecked.render_event;
-    } else if (mapType === DENSITY_MAP_TYPES._2FoFc) {
-      return defaultChecked.render_2FoFc;
-    } else if (mapType === DENSITY_MAP_TYPES.FoFC) {
-      return defaultChecked.render_FoFc;
+  };
+
+  const resolveContour = mapType => {
+    if (currentDensity) {
+      if (mapType === DENSITY_MAP_TYPES.EVENT) {
+        return currentDensity.contour_event || 1.0;
+      } else if (mapType === DENSITY_MAP_TYPES._2FoFc) {
+        return currentDensity.contour_2FoFc || 1.0;
+      } else if (mapType === DENSITY_MAP_TYPES.FoFC) {
+        return currentDensity.contour_FoFc || 3.0;
+      }
+    } else {
+      if (mapType === DENSITY_MAP_TYPES.EVENT) {
+        return 1.0;
+      } else if (mapType === DENSITY_MAP_TYPES._2FoFc) {
+        return 1.2;
+      } else if (mapType === DENSITY_MAP_TYPES.FoFC) {
+        return 3.0;
+      }
     }
   };
 
@@ -95,10 +126,14 @@ export const DensityButtonPopover = ({ mol }) => {
         : MAP_RENDERING_MODES.SURFACE
       : defaultMapRendering
   );
-  const [contour, setContour] = useState(1.0);
-  const [color, setColor] = useState(currentDensity ? currentDensity.color : colourToggle);
 
-  const densityData = mol.proteinData;
+  const [contour, setContour] = useState({
+    render_event: resolveContour(DENSITY_MAP_TYPES.EVENT),
+    render_2FoFc: resolveContour(DENSITY_MAP_TYPES._2FoFc),
+    render_FoFc: resolveContour(DENSITY_MAP_TYPES.FoFC)
+  });
+
+  const [color, setColor] = useState(currentDensity ? currentDensity.color : colourToggle);
 
   const createDefaultDensityObject = useCallback(
     (representations = undefined) => {
@@ -115,11 +150,14 @@ export const DensityButtonPopover = ({ mol }) => {
           id: mol.id,
           isWireframeStyle: mode === MAP_RENDERING_MODES.WIREFRAME,
           color: color,
-          ...checked
+          ...checked,
+          contour_event: contour.render_event,
+          contour_2FoFc: contour.render_2FoFc,
+          contour_FoFc: contour.render_FoFc
         }
       };
     },
-    [mol, mode, color, checked]
+    [mol, mode, color, checked, contour]
   );
 
   useEffect(() => {
@@ -129,17 +167,21 @@ export const DensityButtonPopover = ({ mol }) => {
     if (existingDensity) {
       const densityRenderObject = toBeDisplayedList.find(d => d.id === mol.id && d.type === NGL_OBJECTS.DENSITY);
       if (
+        densityRenderObject &&
         densityRenderObject.densityObject.isWireframeStyle === (mode === MAP_RENDERING_MODES.WIREFRAME) &&
         densityRenderObject.densityObject.color === color &&
         densityRenderObject.densityObject.render_event === checked.render_event &&
         densityRenderObject.densityObject.render_2FoFc === checked.render_2FoFc &&
-        densityRenderObject.densityObject.render_FoFc === checked.render_FoFc
+        densityRenderObject.densityObject.render_FoFc === checked.render_FoFc &&
+        densityRenderObject.densityObject.contour_event === contour.render_event &&
+        densityRenderObject.densityObject.contour_2FoFc === contour.render_2FoFc &&
+        densityRenderObject.densityObject.contour_FoFc === contour.render_FoFc
       ) {
         needsToUpdate = false;
       }
       densityToEdit = { ...existingDensity };
-      //hide existing density
-      if (needsToUpdate) {
+      // hide existing density
+      if (needsToUpdate && densityRenderObject) {
         dispatch(updateInToBeDisplayedList({ ...densityRenderObject, display: false }));
       }
     } else {
@@ -156,7 +198,10 @@ export const DensityButtonPopover = ({ mol }) => {
         ...densityToEdit.densityObject,
         isWireframeStyle: mode === MAP_RENDERING_MODES.WIREFRAME,
         color: color,
-        ...checked
+        ...checked,
+        contour_event: contour.render_event,
+        contour_2FoFc: contour.render_2FoFc,
+        contour_FoFc: contour.render_FoFc
       }
     };
     if (needsToUpdate) {
@@ -187,8 +232,11 @@ export const DensityButtonPopover = ({ mol }) => {
     setMode(event.target.value);
   };
 
-  const handleContour = (event, value) => {
-    setContour(value);
+  const handleContour = name => (event, value) => {
+    setContour(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const throttledHandleColor = useMemo(
@@ -199,64 +247,112 @@ export const DensityButtonPopover = ({ mol }) => {
     [setColor]
   );
 
+  const isEventAvailable =
+    !!densityData &&
+    !!densityData.event_info &&
+    densityData.event_info !== '' &&
+    !densityData.event_info?.endsWith('None');
+
+  const is2FoFcAvailable =
+    !!densityData &&
+    !!densityData.sigmaa_info &&
+    densityData.sigmaa_info !== '' &&
+    !densityData.sigmaa_info?.endsWith('None');
+
+  const isFoFcAvailable =
+    !!densityData &&
+    !!densityData.diff_info &&
+    densityData.diff_info !== '' &&
+    !densityData.diff_info?.endsWith('None');
+
+  const atLeastOneDensityChecked = checked.render_event || checked.render_2FoFc || checked.render_FoFc;
+  const disableColorPicker =
+    (checked.render_FoFc && !checked.render_2FoFc && !checked.render_event) || !atLeastOneDensityChecked;
+
   return (
     <div style={{ padding: 16, minWidth: 240 }}>
       <Typography variant="subtitle1">Density Customization</Typography>
-      {/* Density map checkboxes */}
+
       <Box mt={2} mb={1}>
         <FormLabel component="legend">Density Maps</FormLabel>
-        <FormGroup row>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={checked.render_event}
-                onChange={handleCheckbox('render_event')}
-                color="primary"
-                disabled={
-                  !densityData ||
-                  !densityData.event_info ||
-                  densityData.event_info === '' ||
-                  densityData.event_info?.endsWith('None')
-                }
+        <FormGroup>
+          <Box display="flex" alignItems="center" mb={1}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={checked.render_event}
+                  onChange={handleCheckbox('render_event')}
+                  color="primary"
+                  disabled={!isEventAvailable}
+                />
+              }
+              label="Event"
+            />
+            <Box ml={2} flexGrow={1}>
+              <Slider
+                value={contour.render_event}
+                onChange={handleContour('render_event')}
+                min={0.0}
+                max={3.0}
+                step={0.1}
+                valueLabelDisplay="auto"
+                disabled={!isEventAvailable || !checked.render_event}
               />
-            }
-            label="Event"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={checked.render_2FoFc}
-                onChange={handleCheckbox('render_2FoFc')}
-                color="primary"
-                disabled={
-                  !densityData ||
-                  !densityData.sigmaa_info ||
-                  densityData.sigmaa_info === '' ||
-                  densityData.sigmaa_info?.endsWith('None')
-                }
+            </Box>
+          </Box>
+
+          <Box display="flex" alignItems="center" mb={1}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={checked.render_2FoFc}
+                  onChange={handleCheckbox('render_2FoFc')}
+                  color="primary"
+                  disabled={!is2FoFcAvailable}
+                />
+              }
+              label="2FoFc"
+            />
+            <Box ml={2} flexGrow={1}>
+              <Slider
+                value={contour.render_2FoFc}
+                onChange={handleContour('render_2FoFc')}
+                min={0.0}
+                max={5.0}
+                step={0.1}
+                valueLabelDisplay="auto"
+                disabled={!is2FoFcAvailable || !checked.render_2FoFc}
               />
-            }
-            label="2FoFc"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={checked.render_FoFc}
-                onChange={handleCheckbox('render_FoFc')}
-                color="primary"
-                disabled={
-                  !densityData ||
-                  !densityData.diff_info ||
-                  densityData.diff_info === '' ||
-                  densityData.diff_info?.endsWith('None')
-                }
+            </Box>
+          </Box>
+
+          <Box display="flex" alignItems="center" mb={1}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={checked.render_FoFc}
+                  onChange={handleCheckbox('render_FoFc')}
+                  color="primary"
+                  disabled={!isFoFcAvailable}
+                />
+              }
+              label="FoFc"
+            />
+            <Box ml={2} flexGrow={1}>
+              <Slider
+                value={contour.render_FoFc}
+                onChange={handleContour('render_FoFc')}
+                min={2.0}
+                max={4.0}
+                step={0.1}
+                valueLabelDisplay="auto"
+                disabled={!isFoFcAvailable || !checked.render_FoFc}
               />
-            }
-            label="FoFc"
-          />
+            </Box>
+          </Box>
         </FormGroup>
       </Box>
-      {/* Mode radio buttons */}
+
       <Box mb={1}>
         <FormLabel component="legend">Display Mode</FormLabel>
         <RadioGroup row value={mode} onChange={handleMode}>
@@ -264,15 +360,34 @@ export const DensityButtonPopover = ({ mol }) => {
           <FormControlLabel value="wireframe" control={<Radio color="primary" />} label="Wireframe" />
         </RadioGroup>
       </Box>
-      {/* Contour slider */}
-      {/* <Box mb={1}>
-        <FormLabel component="legend">Contour Level</FormLabel>
-        <Slider value={contour} onChange={handleContour} min={0.1} max={3.0} step={0.05} valueLabelDisplay="auto" />
-      </Box> */}
-      {/* Color picker */}
+
       <Box mb={1}>
         <FormLabel component="legend">Map Color</FormLabel>
-        <SketchPicker color={color} onChange={throttledHandleColor} disableAlpha={true} presetColors={[]} />
+        <Box
+          mt={1}
+          style={{
+            width: 240,
+            height: 220,
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {disableColorPicker ? (
+            <Box p={2} color="grey">
+              {atLeastOneDensityChecked
+                ? `Color selection disabled for FoFc-only mode.`
+                : `Please select at least one density map to enable color selection.`}
+            </Box>
+          ) : (
+            <SketchPicker
+              color={color}
+              onChange={throttledHandleColor}
+              disableAlpha={true}
+              presetColors={[]}
+              disabled={checked.render_FoFc && !checked.render_2FoFc && !checked.render_event}
+            />
+          )}
+        </Box>
       </Box>
     </div>
   );

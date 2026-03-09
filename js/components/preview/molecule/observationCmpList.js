@@ -1060,7 +1060,7 @@ export const ObservationCmpList = memo(({}) => {
           if (!typeList?.length > 0) {
             addNewType(type, true, allMoleculesList);
           } else {
-            removeType(type, true, allMoleculesList);
+            removeSelectedType(type, true, allMoleculesList);
           }
         } else {
           dispatch(setSelectedAllByType(type, molecules));
@@ -1267,7 +1267,6 @@ export const ObservationCmpList = memo(({}) => {
                 [classes.contColButtonHalfSelected]: isLigandOn === null
               })}
               onClick={() => onButtonToggle('ligand')}
-              // disabled={groupNglControlButtonsDisabledState.ligand || allSelectedMolecules.length === 0}
             >
               L
             </Button>
@@ -1284,7 +1283,6 @@ export const ObservationCmpList = memo(({}) => {
                 }
               )}
               onClick={() => onButtonToggle('protein')}
-              // disabled={groupNglControlButtonsDisabledState.protein || allSelectedMolecules.length === 0}
             >
               P
             </Button>
@@ -1302,7 +1300,6 @@ export const ObservationCmpList = memo(({}) => {
                 }
               )}
               onClick={() => onButtonToggle('complex')}
-              // disabled={groupNglControlButtonsDisabledState.complex || allSelectedMolecules.length === 0}
             >
               C
             </Button>

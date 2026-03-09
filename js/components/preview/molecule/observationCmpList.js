@@ -961,13 +961,13 @@ export const ObservationCmpList = memo(({}) => {
   // TODO: so this could lead to inconsistend behaviour while scrolling
   // TODO: maybe change "currentMolecules.forEach" to "{type}List.forEach"
 
-  const removeSelectedType = (type, skipTracking = false) => {
+  const removeSelectedType = (type, skipTracking = false, moleculeList) => {
     if (type === 'ligand') {
-      allSelectedMolecules.forEach(molecule => {
+      moleculeList.forEach(molecule => {
         dispatch(removeType[type](majorViewStage, molecule, skipTracking));
       });
     } else {
-      allSelectedMolecules.forEach(molecule => {
+      moleculeList.forEach(molecule => {
         dispatch(removeType[type](majorViewStage, molecule, colourList[molecule.id % colourList.length], skipTracking));
       });
     }
@@ -989,16 +989,16 @@ export const ObservationCmpList = memo(({}) => {
     });
   };
 
-  const addNewType = (type, skipTracking = false) => {
+  const addNewType = (type, skipTracking = false, moleculeList) => {
     dispatch(
       withDisabledMoleculesNglControlButtons(
-        allSelectedMolecules.map(molecule => molecule.id),
+        moleculeList.map(molecule => molecule.id),
         type,
         async () => {
           const promises = [];
 
           if (type === 'ligand') {
-            allSelectedMolecules.forEach(molecule => {
+            moleculeList.forEach(molecule => {
               //selectMoleculeTags(molecule.tags_set);
 
               promises.push(
@@ -1015,7 +1015,7 @@ export const ObservationCmpList = memo(({}) => {
               );
             });
           } else {
-            allSelectedMolecules.forEach(molecule => {
+            moleculeList.forEach(molecule => {
               //selectMoleculeTags(molecule.tags_set);
               promises.push(
                 dispatch(
@@ -1049,14 +1049,27 @@ export const ObservationCmpList = memo(({}) => {
         let molecules = getSelectedMoleculesByType(type, true);
         if (molecules && molecules.length > 100) {
           setIsOpenLPCAlert(true);
+        } else if (!molecules?.lenght) {
+          const listByType = {
+            ligand: fragmentDisplayList,
+            protein: proteinList,
+            complex: complexList
+          };
+
+          const typeList = listByType[type];
+          if (!typeList?.length > 0) {
+            addNewType(type, true, allMoleculesList);
+          } else {
+            removeType(type, true, allMoleculesList);
+          }
         } else {
           dispatch(setSelectedAllByType(type, molecules));
-          addNewType(type, true);
+          addNewType(type, true, allSelectedMolecules);
         }
       } else {
         let molecules = getSelectedMoleculesByType(type, false);
         dispatch(setDeselectedAllByType(type, molecules));
-        removeSelectedType(type, true);
+        removeSelectedType(type, true, allSelectedMolecules);
       }
     }
   };
@@ -1254,7 +1267,7 @@ export const ObservationCmpList = memo(({}) => {
                 [classes.contColButtonHalfSelected]: isLigandOn === null
               })}
               onClick={() => onButtonToggle('ligand')}
-              disabled={groupNglControlButtonsDisabledState.ligand || allSelectedMolecules.length === 0}
+              // disabled={groupNglControlButtonsDisabledState.ligand || allSelectedMolecules.length === 0}
             >
               L
             </Button>
@@ -1271,7 +1284,7 @@ export const ObservationCmpList = memo(({}) => {
                 }
               )}
               onClick={() => onButtonToggle('protein')}
-              disabled={groupNglControlButtonsDisabledState.protein || allSelectedMolecules.length === 0}
+              // disabled={groupNglControlButtonsDisabledState.protein || allSelectedMolecules.length === 0}
             >
               P
             </Button>
@@ -1289,7 +1302,7 @@ export const ObservationCmpList = memo(({}) => {
                 }
               )}
               onClick={() => onButtonToggle('complex')}
-              disabled={groupNglControlButtonsDisabledState.complex || allSelectedMolecules.length === 0}
+              // disabled={groupNglControlButtonsDisabledState.complex || allSelectedMolecules.length === 0}
             >
               C
             </Button>

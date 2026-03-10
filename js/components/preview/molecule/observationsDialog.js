@@ -336,9 +336,9 @@ export const ObservationsDialog = memo(
       [moleculesToEditIds, observationsDataList]
     );
 
-    const isLigandOn = ligandList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
-    const isProteinOn = proteinList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
-    const isComplexOn = complexList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
+    const isLigandOn = ligandList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
+    const isProteinOn = proteinList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
+    const isComplexOn = complexList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
 
     // TODO: refactor from this line (duplicity in datasetMoleculeList.js)
     const isLigandOnForClassname = changeButtonClassname(
@@ -442,24 +442,25 @@ export const ObservationsDialog = memo(
       } else if (!calledFromSelectAll) {
         if (eval('is' + ucfirst(type) + 'On') === false) {
           let molecules = getSelectedMoleculesByType(type, true);
-          if (!molecules?.lenght) {
-              const listByType = {
-                ligand: ligandList,
-                protein: proteinList,
-                complex: complexList
-              };
-              const typeList = listByType[type];
-              if (!typeListContainIds(typeList)) {
-                addNewType(type, true, moleculeList);
-              } 
+          if (molecules?.length > 0) {
+            dispatch(setSelectedAllByType(type, molecules, true));
+            addNewType(type, true, allSelectedMolecules);
+              
           } else {
-              dispatch(setSelectedAllByType(type, molecules, true));
-              addNewType(type, true, allSelectedMolecules);
+            const listByType = {
+              ligand: ligandList,
+              protein: proteinList,
+              complex: complexList
+            };
+            const typeList = listByType[type];
+            if (!typeListContainIds(typeList)) {
+              addNewType(type, true, moleculeList);
+            } 
           }
         } else {
           let molecules = getSelectedMoleculesByType(type, false);
           dispatch(setDeselectedAllByType(type, molecules, true));
-          removeSelectedType(type, true, allSelectedMolecules.lenght ? allSelectedMolecules : moleculeList);
+          removeSelectedType(type, true, allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList);
         }
       }
     };

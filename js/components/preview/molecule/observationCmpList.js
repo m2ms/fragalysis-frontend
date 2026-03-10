@@ -1049,7 +1049,10 @@ export const ObservationCmpList = memo(({}) => {
         let molecules = getSelectedMoleculesByType(type, true);
         if (molecules && molecules.length > 100) {
           setIsOpenLPCAlert(true);
-        } else if (!molecules?.lenght) {
+        } else if (molecules?.length > 0) { //true if anything is selected
+          dispatch(setSelectedAllByType(type, molecules));
+          addNewType(type, true, allSelectedMolecules);
+        } else { //if nothing is selected
           const listByType = {
             ligand: fragmentDisplayList,
             protein: proteinList,
@@ -1062,9 +1065,6 @@ export const ObservationCmpList = memo(({}) => {
           } else {
             removeSelectedType(type, true, allMoleculesList);
           }
-        } else {
-          dispatch(setSelectedAllByType(type, molecules));
-          addNewType(type, true, allSelectedMolecules);
         }
       } else {
         let molecules = getSelectedMoleculesByType(type, false);

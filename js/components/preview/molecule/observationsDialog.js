@@ -443,10 +443,11 @@ export const ObservationsDialog = memo(
         if (eval('is' + ucfirst(type) + 'On') === false) {
           let molecules = getSelectedMoleculesByType(type, true);
           if (molecules?.length > 0) {
+            //if observations are selected
             dispatch(setSelectedAllByType(type, molecules, true));
             addNewType(type, true, allSelectedMolecules);
-              
           } else {
+            //if observations are not selected
             const listByType = {
               ligand: ligandList,
               protein: proteinList,
@@ -474,41 +475,7 @@ export const ObservationsDialog = memo(
       return false;
     };
 
-    const onButtonToggle1 = (type, calledFromSelectAll = false) => {
-        if (calledFromSelectAll === true && selectedAll.current === true) {
-          // REDO
-          if (eval('is' + ucfirst(type) + 'On') === false) {
-            addNewType(type, true);
-          }
-        } else if (calledFromSelectAll && selectedAll.current === false) {
-          removeSelectedType(type, true);
-        } else if (!calledFromSelectAll) {
-          if (eval('is' + ucfirst(type) + 'On') === false) {
-            let molecules = getSelectedMoleculesByType(type, true);
-            if (!molecules?.lenght) {
-              const listByType = {
-                ligand: ligandList,
-                protein: proteinList,
-                complex: complexList
-              };
-              console.log('all', moleculeList);
-              // const typeList = listByType[type];
-              // if (!typeList?.length > 0) {
-              //   addNewType(type, true, moleculeList);
-              // } else {
-              //   removeSelectedType(type, true, moleculeList);
-              // }
-            } else {
-              dispatch(setSelectedAllByType(type, molecules));
-              addNewType(type, true, allSelectedMolecules);
-            }
-          } else {
-            let molecules = getSelectedMoleculesByType(type, false);
-            dispatch(setDeselectedAllByType(type, molecules));
-            removeSelectedType(type, true, allSelectedMolecules);
-          }
-        }
-      };
+    
 
     const areAllMoleculesSelected = allSelectedMolecules.length === moleculeList.length;
 

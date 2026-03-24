@@ -17,6 +17,7 @@ export const INITIAL_STATE = {
   qualityList: [],
   informationList: [],
   vectorOnList: [],
+  artefactsChainList:[],
   mol_group_selection: [],
   object_selection: undefined,
   filter: undefined,
@@ -216,6 +217,21 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       let diminishedProteinList = new Set(state.proteinList);
       diminishedProteinList.delete(action.item.id);
       return Object.assign({}, state, { proteinList: [...diminishedProteinList] });
+
+    case constants.SET_ARTEFACTS_CHAIN_LIST:
+      let newArtefactsChainList = new Set();
+      action.artefactsChainList.forEach(f => {
+        newArtefactsChainList.add(f);
+      });
+      return Object.assign({}, state, { artefactsChainList: [...newArtefactsChainList] });
+
+    case constants.APPEND_ARTEFACTS_CHAIN_LIST:
+      return Object.assign({}, state, { newArtefactsChainList});
+
+    case constants.REMOVE_FROM_ARTEFACTS_CHAIN_LIST:
+      let diminishedArtefactsChainList = new Set(state.artefactsChainList);
+      diminishedArtefactsChainList.delete(action.item.id);
+      return Object.assign({}, state, { artefactsChainList: [...diminishedArtefactsChainList] });
 
     case constants.SET_COMPLEX_LIST:
       let newComplexList = new Set();

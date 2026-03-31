@@ -226,7 +226,7 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return Object.assign({}, state, { artefactsChainList: [...newArtefactsChainList] });
 
     case constants.APPEND_ARTEFACTS_CHAIN_LIST:
-      return Object.assign({}, state, { newArtefactsChainList });
+      return Object.assign({}, state, { artefactsChainList: [...state.artefactsChainList, action.item.id] });
 
     case constants.REMOVE_FROM_ARTEFACTS_CHAIN_LIST:
       let diminishedArtefactsChainList = new Set(state.artefactsChainList);

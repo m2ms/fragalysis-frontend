@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
 import {
-	appendArtefactsChainList,
+  appendArtefactsChainList,
   appendDensityList,
   appendQualityList,
   removeFromArtefactsChainList,
@@ -10,7 +10,11 @@ import {
   removeFromToBeDisplayedList,
   updateInToBeDisplayedList
 } from '../selection/actions';
-import { generateArtefactChains, generateDensityObject, generateMoleculeId } from '../../components/nglView/generatingObjects';
+import {
+  generateArtefactChains,
+  generateDensityObject,
+  generateMoleculeId
+} from '../../components/nglView/generatingObjects';
 import { VIEWS } from '../../constants/constants';
 import { NglContext } from '../../components/nglView/nglProvider';
 import { deleteObject, loadObject } from './dispatchActions';
@@ -30,7 +34,7 @@ export const useDisplayArtefactsChainsLHS = () => {
   const dispatch = useDispatch();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
-  const displayedArtefactsChains = useSelector(state => state.selectionReducers.artefactcChainList);
+  const displayedArtefactsChains = useSelector(state => state.selectionReducers.artefactsChainList);
   const allObservations = useSelector(state => state.apiReducers.all_mol_lists);
 
   const { getNglView } = useContext(NglContext);
@@ -39,25 +43,24 @@ export const useDisplayArtefactsChainsLHS = () => {
   const displayArtefactsChains = useCallback(
     async artefactsChainsData => {
       const obs = allObservations.find(obs => obs.id === artefactsChainsData.id);
-			console.log('data', obs)
       if (!obs) return;
-			const colourToggle = getRandomColor(obs);
+      const colourToggle = getRandomColor(obs);
 
+      dispatch(appendArtefactsChainList(generateMoleculeId(obs)));
+      const artefactsChainsObject = await dispatch(generateArtefactChains(obs, colourToggle));
+      const qualityInformation = dispatch(
+        readQualityInformation(artefactsChainsObject.name, artefactsChainsObject.sdf_info)
+      );
 
-			dispatch(appendArtefactsChainList(generateMoleculeId(obs)));
-			const artefactsChainsObject = await dispatch(generateArtefactChains(obs, colourToggle))
-			console.log('artefacts', artefactsChainsObject)
-			const qualityInformation = dispatch(readQualityInformation(artefactsChainsObject.name, artefactsChainsObject.sdf_info));
-    
-			let hasAdditionalInformation =
-				artefactsChainsData.withQuality === true &&
-				qualityInformation &&
-				qualityInformation.badproteinids &&
-				qualityInformation.badproteinids.length !== 0;
-			if (hasAdditionalInformation) {
-				dispatch(appendQualityList(generateMoleculeId(obs), true));
-			}
-			return dispatch(
+      let hasAdditionalInformation =
+        artefactsChainsData.withQuality === true &&
+        qualityInformation &&
+        qualityInformation.badproteinids &&
+        qualityInformation.badproteinids.length !== 0;
+      if (hasAdditionalInformation) {
+        dispatch(appendQualityList(generateMoleculeId(obs), true));
+      }
+      return dispatch(
         loadObject({
           target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, artefactsChainsObject),
           stage,
@@ -71,45 +74,46 @@ export const useDisplayArtefactsChainsLHS = () => {
         dispatch(updateInToBeDisplayedList({ id: obs.id, rendered: true, type: NGL_OBJECTS.ARTEFACTS }));
       });
     },
-		[allObservations, dispatch, stage]
+    [allObservations, dispatch, stage]
   );
 
   const removeArtefactsChains = useCallback(
     async artefactsChainsData => {
       const data = allObservations.find(obs => obs.id === artefactsChainsData.id);
-						if (!data) return;
-						const colourToggle = getRandomColor(data);
-						dispatch(
-							deleteObject(
-								Object.assign(
-									{ display_div: VIEWS.MAJOR_VIEW },
-									await dispatch(generateArtefactChains(data, colourToggle))
-								),
-								stage
-							)
-						);
-						dispatch(removeFromArtefactsChainList(generateMoleculeId(data)));
-						dispatch(removeFromToBeDisplayedList({ id: artefactsChainsData.id, type: NGL_OBJECTS.ARTEFACTS }));
-					},
-					[allObservations, dispatch, stage]
+      if (!data) return;
+      const colourToggle = getRandomColor(data);
+      dispatch(
+        deleteObject(
+          Object.assign({ display_div: VIEWS.MAJOR_VIEW }, await dispatch(generateArtefactChains(data, colourToggle))),
+          stage
+        )
+      );
+      dispatch(removeFromArtefactsChainList(generateMoleculeId(data)));
+      dispatch(removeFromToBeDisplayedList({ id: artefactsChainsData.id, type: NGL_OBJECTS.ARTEFACTS }));
+    },
+    [allObservations, dispatch, stage]
   );
 
   useEffect(() => {
-    const toBedisplayedArtefactsChains = getToBeDisplayedStructures(toBeDisplayedList, displayedArtefactsChains, NGL_OBJECTS.ARTEFACTS);
+    const toBedisplayedArtefactsChains = getToBeDisplayedStructures(
+      toBeDisplayedList,
+      displayedArtefactsChains,
+      NGL_OBJECTS.ARTEFACTS
+    );
+    console.log('toBedisplayedArtefactsChains', toBedisplayedArtefactsChains);
     toBedisplayedArtefactsChains?.forEach(data => {
       displayArtefactsChains(data);
     });
-
-    const toBeRemovedProteins = getToBeDisplayedStructures(
+    const toBeRemovedArtefactsChains = getToBeDisplayedStructures(
       toBeDisplayedList,
       displayedArtefactsChains,
       NGL_OBJECTS.ARTEFACTS,
       true
     );
-    toBeRemovedProteins?.forEach(data => {
+    toBeRemovedArtefactsChains?.forEach(data => {
       removeArtefactsChains(data);
     });
-  }, [toBeDisplayedList, displayArtefactsChains, dispatch, stage, removeArtefactsChains, displayedArtefactsChains]);
+  }, [toBeDisplayedList, displayedArtefactsChains, displayArtefactsChains, dispatch, stage, removeArtefactsChains]);
 
   return {};
 };

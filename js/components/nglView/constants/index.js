@@ -62,7 +62,6 @@ export const OBJECT_TYPE = {
   LIGAND: 'LIGAND',
   QUALITY: 'QUALITY',
   ARTEFACTS: 'ARTEFACTS'
-
 };
 
 export const SELECTION_TYPE = {
@@ -164,5 +163,6 @@ export const DENSITY_MAPS = {
 
 export const QUALITY_TYPES = {
   LIGAND: 'LIGAND',
-  HIT_PROTEIN: 'HIT_PROTEIN'
+  HIT_PROTEIN: 'HIT_PROTEIN',
+  ARTEFACTS: 'ARTEFACTS'
 };

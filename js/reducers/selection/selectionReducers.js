@@ -17,7 +17,7 @@ export const INITIAL_STATE = {
   qualityList: [],
   informationList: [],
   vectorOnList: [],
-  artefactsChainList:[],
+  artefactsChainList: [],
   mol_group_selection: [],
   object_selection: undefined,
   filter: undefined,
@@ -226,7 +226,7 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return Object.assign({}, state, { artefactsChainList: [...newArtefactsChainList] });
 
     case constants.APPEND_ARTEFACTS_CHAIN_LIST:
-      return Object.assign({}, state, { newArtefactsChainList});
+      return Object.assign({}, state, { newArtefactsChainList });
 
     case constants.REMOVE_FROM_ARTEFACTS_CHAIN_LIST:
       let diminishedArtefactsChainList = new Set(state.artefactsChainList);
@@ -389,6 +389,10 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       action.payload.vectorOnList.forEach(v => {
         newVectors.add(v);
       });
+      let newArtefactsChain = new Set();
+      action.payload.artefactsChainList.forEach(v => {
+        newArtefactsChain.add(v);
+      });
 
       return Object.assign({}, state, {
         ...action.payload,
@@ -397,7 +401,8 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
         complexList: [...newComplexes],
         surfaceList: [...newSurfaces],
         densityList: [...newDensities],
-        vectorOnList: [...newVectors]
+        vectorOnList: [...newVectors],
+        artefactsChainList: [...newArtefactsChain]
       });
 
     case constants.RESET_SELECTION_STATE:
@@ -412,6 +417,7 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
         densityListCustom,
         qualityList,
         vectorOnList,
+        artefactsChainList,
         informationList
       } = state;
       const newState = {
@@ -426,6 +432,7 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
         densityListCustom,
         qualityList,
         vectorOnList,
+        artefactsChainList,
         informationList
       };
       return newState;

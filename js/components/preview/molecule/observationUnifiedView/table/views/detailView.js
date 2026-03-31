@@ -25,7 +25,9 @@ import {
   removeLigand,
   getDensityMapData,
   withDisabledMoleculeNglControlButton,
-  getCategoryById
+  getCategoryById,
+  addArtefactChain,
+  removeArtefactChain
 } from '../../../redux/dispatchActions';
 import {
   setSelectedAll,
@@ -934,6 +936,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
     const selectedObs = getAllObservationsSelectedInList(proteinList);
     for (const obs of selectedObs) {
       dispatch(removeHitProtein(stage, obs, colourToggle, skipTracking));
+      dispatch(removeArtefactChain(stage, obs, colourToggle, skipTracking));
     }
     selectedAll.current = false;
   };
@@ -942,12 +945,20 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
     // if (selectMoleculeSite) {
     //   selectMoleculeSite(data.site);
     // }
+    const firstObs = getMainObservation();
     dispatch(
       withDisabledMoleculeNglControlButton(currentID, 'protein', async () => {
-        const firstObs = getMainObservation();
         if (firstObs) {
           const color = getRandomColor(firstObs);
           await dispatch(addHitProtein(stage, firstObs, color, true, skipTracking));
+        }
+      })
+    );
+    dispatch(
+      withDisabledMoleculeNglControlButton(currentID, 'artefact', async () => {
+        if (firstObs) {
+          const color = getRandomColor(firstObs);
+          await dispatch(addArtefactChain(stage, firstObs, color, true, skipTracking));
         }
       })
     );

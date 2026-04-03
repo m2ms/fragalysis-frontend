@@ -336,9 +336,9 @@ export const ObservationsDialog = memo(
       [moleculesToEditIds, observationsDataList]
     );
 
-    const isLigandOn = ligandList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
-    const isProteinOn = proteinList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
-    const isComplexOn = complexList.some(moleculeID => moleculeList.some(molecule => molecule.id === moleculeID));
+    const isLigandOn = ligandList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
+    const isProteinOn = proteinList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
+    const isComplexOn = complexList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
 
     // TODO: refactor from this line (duplicity in datasetMoleculeList.js)
     const isLigandOnForClassname = changeButtonClassname(
@@ -376,13 +376,13 @@ export const ObservationsDialog = memo(
       [dispatch, moleculeList, stage]
     );
 
-    const removeSelectedType = (type, skipTracking = false) => {
+    const removeSelectedType = (type, skipTracking = false, list) => {
       if (type === 'ligand') {
-        allSelectedMolecules.forEach(molecule => {
+        list.forEach(molecule => {
           dispatch(removeType[type](stage, molecule, skipTracking));
         });
       } else {
-        allSelectedMolecules.forEach(molecule => {
+        list.forEach(molecule => {
           dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
         });
       }
@@ -390,16 +390,16 @@ export const ObservationsDialog = memo(
       selectedAll.current = false;
     };
 
-    const addNewType = (type, skipTracking = false) => {
+    const addNewType = (type, skipTracking = false, list) => {
       dispatch(
         withDisabledMoleculesNglControlButtons(
-          allSelectedMolecules.map(molecule => molecule.id),
+          list.map(molecule => molecule.id),
           type,
           async () => {
             const promises = [];
 
             if (type === 'ligand') {
-              allSelectedMolecules.forEach(molecule => {
+              list.forEach(molecule => {
                 promises.push(
                   dispatch(
                     addType[type](
@@ -414,7 +414,7 @@ export const ObservationsDialog = memo(
                 );
               });
             } else {
-              allSelectedMolecules.forEach(molecule => {
+              list.forEach(molecule => {
                 promises.push(
                   dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking))
                 );
@@ -442,15 +442,40 @@ export const ObservationsDialog = memo(
       } else if (!calledFromSelectAll) {
         if (eval('is' + ucfirst(type) + 'On') === false) {
           let molecules = getSelectedMoleculesByType(type, true);
-          dispatch(setSelectedAllByType(type, molecules, true));
-          addNewType(type, true);
+          if (molecules?.length > 0) {
+            //if observations are selected
+            dispatch(setSelectedAllByType(type, molecules, true));
+            addNewType(type, true, allSelectedMolecules);
+          } else {
+            //if observations are not selected
+            const listByType = {
+              ligand: ligandList,
+              protein: proteinList,
+              complex: complexList
+            };
+            const typeList = listByType[type];
+            if (!typeListContainIds(typeList)) {
+              addNewType(type, true, moleculeList);
+            } 
+          }
         } else {
           let molecules = getSelectedMoleculesByType(type, false);
           dispatch(setDeselectedAllByType(type, molecules, true));
-          removeSelectedType(type, true);
+          removeSelectedType(type, true, allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList);
         }
       }
     };
+
+    const typeListContainIds = (typeList) => {
+      moleculeList.forEach(item => {
+        if (typeList.includes(item.id)) {
+        return true;
+        }
+      })
+      return false;
+    };
+
+    
 
     const areAllMoleculesSelected = allSelectedMolecules.length === moleculeList.length;
 
@@ -964,13 +989,10 @@ export const ObservationsDialog = memo(
                                   id="observations-all-ligands"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isLigandOnForClassname,
+                                    [classes.contColButtonSelected]: isLigandOnForClassname && allSelectedMolecules.length,
                                     [classes.contColButtonHalfSelected]: isLigandOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('ligand')}
-                                  disabled={
-                                    groupNglControlButtonsDisabledState.ligand || allSelectedMolecules.length < 1
-                                  }
                                 >
                                   L
                                 </Button>
@@ -982,13 +1004,10 @@ export const ObservationsDialog = memo(
                                   id="observations-all-sidechains"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isProteinOnForClassname,
+                                    [classes.contColButtonSelected]: isProteinOnForClassname && allSelectedMolecules.length,
                                     [classes.contColButtonHalfSelected]: isProteinOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('protein')}
-                                  disabled={
-                                    groupNglControlButtonsDisabledState.protein || allSelectedMolecules.length < 1
-                                  }
                                 >
                                   P
                                 </Button>
@@ -1001,13 +1020,10 @@ export const ObservationsDialog = memo(
                                   id="observations-all-interactions"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isComplexOnForClassname,
+                                    [classes.contColButtonSelected]: isComplexOnForClassname && allSelectedMolecules.length,
                                     [classes.contColButtonHalfSelected]: isComplexOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('complex')}
-                                  disabled={
-                                    groupNglControlButtonsDisabledState.complex || allSelectedMolecules.length < 1
-                                  }
                                 >
                                   C
                                 </Button>

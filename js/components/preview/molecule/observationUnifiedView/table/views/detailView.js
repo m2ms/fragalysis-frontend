@@ -53,6 +53,7 @@ import DensityButtonPopover from './DensityButtonPopover';
 import RichTooltip from '../../../../../tooltip/RichTooltip';
 import { tootlipProvider } from '../../../../../tooltip/resolver';
 import { TooltipPathProvider } from '../../../../../tooltip/TooltipPathContext';
+import ProteinButtonPopover from './ProteinButtonPopover';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -407,6 +408,8 @@ const useStyles = makeStyles(theme => ({
 export const DetailView = memo(({ data, index, handleRef, disableL, disableP, disableC, observations }) => {
   const [densityPopoverAnchor, setDensityPopoverAnchor] = useState(null);
   const [densityPopoverOpen, setDensityPopoverOpen] = useState(false);
+  const [proteinPopoverAnchor, setProteinPopoverAnchor] = useState(null);
+  const [proteinPopoverOpen, setProteinPopoverOpen] = useState(false);
 
   const handleDensityPopoverClose = () => {
     setDensityPopoverOpen(false);
@@ -414,14 +417,15 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   };
 
   const [densityTooltipOpen, setDensityTooltipOpen] = React.useState(false);
+  const [proteinTooltipOpen, setProteinTooltipOpen] = React.useState(false);
 
-  const handleTooltipOpen = () => {
+  const handleDensityTooltipOpen = () => {
     if (!densityPopoverOpen) {
       setDensityTooltipOpen(true);
     }
   };
 
-  const handleTooltipClose = () => {
+  const handleDensityTooltipClose = () => {
     setDensityTooltipOpen(false);
   };
 
@@ -432,6 +436,30 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
 
     setDensityPopoverAnchor(event.currentTarget);
     setDensityPopoverOpen(true);
+  };
+
+  const handleProteinButtonContextMenu = event => {
+    event.preventDefault();
+
+    setProteinTooltipOpen(false);
+
+    setProteinPopoverAnchor(event.currentTarget);
+    setProteinPopoverOpen(true);
+  };
+
+  const handleProteinPopoverClose = () => {
+    setProteinPopoverOpen(false);
+    setProteinPopoverAnchor(null);
+  };
+
+  const handleProteinTooltipOpen = () => {
+    if (!proteinPopoverOpen) {
+      setProteinTooltipOpen(true);
+    }
+  };
+
+  const handleProteinTooltipClose = () => {
+    setProteinTooltipOpen(false);
   };
 
   // const [countOfVectors, setCountOfVectors] = useState('-');
@@ -546,6 +574,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   const densityList = useSelector(state => state.selectionReducers.densityList);
   const qualityList = useSelector(state => state.selectionReducers.qualityList);
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
+  const artefactsChainList = useSelector(state => state.selectionReducers.artefactsChainList);
   // const currentTarget = useSelector(state => getCurrentTarget(state));
   const aliasOrder = useSelector(state => state.apiReducers.target_on_aliases);
 
@@ -555,6 +584,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
 
   const isLigandOn = isAtLeastOneObservationOnInList(fragmentDisplayList);
   const isProteinOn = isAtLeastOneObservationOnInList(proteinList);
+  const isArtefactsChainOn = isAtLeastOneObservationOnInList(artefactsChainList);
   // C stands for contacts now
   const isComplexOn = isAtLeastOneObservationOnInList(complexList);
   const isSurfaceOn = isAtLeastOneObservationOnInList(surfaceList);
@@ -562,8 +592,11 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   const isQualityOn = isAtLeastOneObservationOnInList(qualityList);
   const isVectorOn = isAtLeastOneObservationOnInList(vectorOnList);
 
-  const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn;
-  const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isComplexOn);
+  const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn && isArtefactsChainOn;
+  const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isArtefactsChainOn || isComplexOn);
+
+  const isFullProteinSelected = isProteinOn && isArtefactsChainOn;
+  const isHalfProteinSelected = isProteinOn !== isArtefactsChainOn;
 
   let isWireframeStyle = defaultMapRendering === MAP_RENDERING_MODES.WIREFRAME ? true : false;
 
@@ -936,9 +969,15 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
     const selectedObs = getAllObservationsSelectedInList(proteinList);
     for (const obs of selectedObs) {
       dispatch(removeHitProtein(stage, obs, colourToggle, skipTracking));
-      dispatch(removeArtefactChain(stage, obs, colourToggle, skipTracking));
     }
     selectedAll.current = false;
+  };
+
+  const removeSelectedArtefactsChain = (skipTracking = false) => {
+    const selectedObs = getAllObservationsSelectedInList(artefactsChainList);
+    for (const obs of selectedObs) {
+      dispatch(removeArtefactChain(stage, obs, colourToggle, skipTracking));
+    }
   };
 
   const addNewProtein = (skipTracking = false) => {
@@ -954,6 +993,10 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
         }
       })
     );
+  };
+
+  const addNewArtefactsChain = (skipTracking = false) => {
+    const firstObs = getMainObservation();
     dispatch(
       withDisabledMoleculeNglControlButton(currentID, 'artefact', async () => {
         if (firstObs) {
@@ -966,7 +1009,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
 
   const [loadingProtein, setLoadingProtein] = useState(false);
 
-  const onProtein = calledFromSelectAll => {
+  const onProtein = (calledFromSelectAll, type = 'both') => {
     setLoadingProtein(true);
     if (calledFromSelectAll === true && selectedAll.current === true) {
       if (isProteinOn === false) {
@@ -975,10 +1018,35 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
     } else if (calledFromSelectAll && selectedAll.current === false) {
       removeSelectedProtein(calledFromSelectAll);
     } else if (!calledFromSelectAll) {
-      if (isProteinOn === false) {
-        addNewProtein();
-      } else {
-        removeSelectedProtein();
+      switch (type) {
+        case 'protein':
+          if (!isProteinOn) {
+            addNewProtein(false);
+          } else {
+            removeSelectedProtein(false);
+          }
+          break;
+
+        case 'artefact':
+          if (!isArtefactsChainOn) {
+            addNewArtefactsChain();
+          } else {
+            removeSelectedArtefactsChain();
+          }
+          break;
+
+        case 'both':
+          if (!isProteinOn) {
+            addNewProtein(false);
+            addNewArtefactsChain();
+          } else {
+            removeSelectedProtein(false);
+            removeSelectedArtefactsChain();
+          }
+          break;
+
+        default:
+          break;
       }
     }
     setLoadingProtein(false);
@@ -1420,15 +1488,25 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                 </Button>
               </Grid>
             </RichTooltip>
-            <RichTooltip path="sidechains">
+            <RichTooltip
+              path="sidechains"
+              open={proteinTooltipOpen}
+              onOpen={handleProteinTooltipOpen}
+              onClose={handleProteinTooltipClose}
+              disableHoverListener={proteinPopoverOpen}
+              disableFocusListener={proteinPopoverOpen}
+              disableTouchListener={proteinPopoverOpen}
+            >
               <Grid item>
                 <Button
                   id={'detail-view-sidechains-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
-                    [classes.contColButtonSelected]: isProteinOn
+                    [classes.contColButtonHalfSelected]: isHalfProteinSelected,
+                    [classes.contColButtonSelected]: isFullProteinSelected
                   })}
                   onClick={() => onProtein()}
+                  onContextMenu={handleProteinButtonContextMenu}
                   disabled={disableP || disableMoleculeNglControlButtons.protein}
                 >
                   P
@@ -1440,6 +1518,15 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                     />
                   )}
                 </Button>
+                <Popover
+                  open={proteinPopoverOpen}
+                  anchorEl={proteinPopoverAnchor}
+                  onClose={handleProteinPopoverClose}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                >
+                  <ProteinButtonPopover currentID={currentID} toogleProtein={onProtein} />
+                </Popover>
               </Grid>
             </RichTooltip>
             <RichTooltip path="interactions">
@@ -1490,8 +1577,8 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip
               path="electronDensity"
               open={densityTooltipOpen}
-              onOpen={handleTooltipOpen}
-              onClose={handleTooltipClose}
+              onOpen={handleDensityTooltipOpen}
+              onClose={handleDensityTooltipClose}
               disableHoverListener={densityPopoverOpen}
               disableFocusListener={densityPopoverOpen}
               disableTouchListener={densityPopoverOpen}

@@ -100,7 +100,6 @@ export const useDisplayArtefactsChainsLHS = () => {
       displayedArtefactsChains,
       NGL_OBJECTS.ARTEFACTS
     );
-    console.log('toBedisplayedArtefactsChains', toBedisplayedArtefactsChains);
     toBedisplayedArtefactsChains?.forEach(data => {
       displayArtefactsChains(data);
     });

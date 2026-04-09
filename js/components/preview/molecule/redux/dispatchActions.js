@@ -510,7 +510,13 @@ export const initializeMolecules = majorView => (dispatch, getState) => {
       if (firstMolecule) {
         dispatch(addHitProtein(majorView, firstMolecule, colourList[firstMolecule.id % colourList.length], true)).then(
           () => {
-            dispatch(addLigand(majorView, firstMolecule, colourList[firstMolecule.id % colourList.length], true, true));
+            dispatch(
+              addArtefactChain(majorView, firstMolecule, colourList[firstMolecule.id % colourList.lenght], true, true)
+            ).then(() => {
+              dispatch(
+                addLigand(majorView, firstMolecule, colourList[firstMolecule.id % colourList.length], true, true)
+              );
+            });
           }
         );
       }

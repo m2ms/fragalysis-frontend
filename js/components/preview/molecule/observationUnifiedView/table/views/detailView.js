@@ -406,6 +406,11 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export const DetailView = memo(({ data, index, handleRef, disableL, disableP, disableC, observations }) => {
+  const [proteinSettings, setProteinSettings] = useState({
+    protein: true,
+    artefact: true
+  });
+
   const [densityPopoverAnchor, setDensityPopoverAnchor] = useState(null);
   const [densityPopoverOpen, setDensityPopoverOpen] = useState(false);
   const [proteinPopoverAnchor, setProteinPopoverAnchor] = useState(null);
@@ -1009,7 +1014,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
 
   const [loadingProtein, setLoadingProtein] = useState(false);
 
-  const onProtein = (calledFromSelectAll, type = 'both') => {
+  const onProtein = (calledFromSelectAll, type) => {
     setLoadingProtein(true);
     if (calledFromSelectAll === true && selectedAll.current === true) {
       if (isProteinOn === false) {
@@ -1020,28 +1025,39 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
     } else if (!calledFromSelectAll) {
       switch (type) {
         case 'protein':
-          if (!isProteinOn) {
-            addNewProtein(false);
-          } else {
+          if (isProteinOn) {
             removeSelectedProtein(false);
+          } else if (isArtefactsChainOn) {
+            addNewProtein(false);
           }
           break;
 
         case 'artefact':
-          if (!isArtefactsChainOn) {
-            addNewArtefactsChain();
-          } else {
+          if (isArtefactsChainOn) {
             removeSelectedArtefactsChain();
+          } else if (isProteinOn) {
+            addNewArtefactsChain();
           }
           break;
-
         case 'both':
-          if (!isProteinOn) {
+          if (proteinSettings.protein) {
+            if (!isProteinOn) {
+              addNewProtein(false);
+            } else {
+              removeSelectedProtein(false);
+            }
+          }
+          if (proteinSettings.artefact) {
+            if (!isArtefactsChainOn) {
+              addNewArtefactsChain();
+            } else {
+              removeSelectedArtefactsChain();
+            }
+          }
+          if (!proteinSettings.protein && !proteinSettings.artefact) {
+            setProteinSettings({ protein: true, artefact: true });
             addNewProtein(false);
             addNewArtefactsChain();
-          } else {
-            removeSelectedProtein(false);
-            removeSelectedArtefactsChain();
           }
           break;
 
@@ -1505,7 +1521,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                     [classes.contColButtonHalfSelected]: isHalfProteinSelected,
                     [classes.contColButtonSelected]: isFullProteinSelected
                   })}
-                  onClick={() => onProtein()}
+                  onClick={() => onProtein(undefined, 'both')}
                   onContextMenu={handleProteinButtonContextMenu}
                   disabled={disableP || disableMoleculeNglControlButtons.protein}
                 >
@@ -1525,7 +1541,11 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                   anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
                   transformOrigin={{ vertical: 'center', horizontal: 'left' }}
                 >
-                  <ProteinButtonPopover currentID={currentID} toogleProtein={onProtein} />
+                  <ProteinButtonPopover
+                    proteinSettings={proteinSettings}
+                    setProteinSettings={setProteinSettings}
+                    toogleProtein={onProtein}
+                  />
                 </Popover>
               </Grid>
             </RichTooltip>

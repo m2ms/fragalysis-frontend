@@ -1,23 +1,15 @@
-import { Box, FormControlLabel, FormGroup, Typography } from '@material-ui/core';
+import { FormControlLabel, FormGroup, Typography } from '@material-ui/core';
 import Checkbox from '@material-ui/core/Checkbox';
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useDispatch } from 'react-redux';
 
 export const ProteinButtonPopover = props => {
-  const { currentID, toogleProtein } = props;
+  const { toogleProtein, proteinSettings, setProteinSettings } = props;
   const dispatch = useDispatch();
 
-  const proteinList = useSelector(state => state.selectionReducers.proteinList);
-  const artefactsChainList = useSelector(state => state.selectionReducers.artefactsChainList);
-
-  const [checked, setChecked] = useState({
-    protein: proteinList.includes(currentID),
-    artefact: artefactsChainList.includes(currentID)
-  });
-
   const onToggleProtein = type => event => {
-    toogleProtein(false, type);
-    setChecked(prev => ({ ...prev, [type]: event.target.checked }));
+    toogleProtein(undefined, type);
+    setProteinSettings(prev => ({ ...prev, [type]: event.target.checked }));
   };
 
   return (
@@ -25,12 +17,14 @@ export const ProteinButtonPopover = props => {
       <Typography variant="subtitle1">Protein settings</Typography>
       <FormGroup>
         <FormControlLabel
-          control={<Checkbox checked={checked.protein} onChange={onToggleProtein('protein')} color="primary" />}
+          control={<Checkbox checked={proteinSettings.protein} onChange={onToggleProtein('protein')} color="primary" />}
           label="Show sidechains"
         ></FormControlLabel>
         <FormControlLabel
-          control={<Checkbox checked={checked.artefact} onChange={onToggleProtein('artefact')} color="primary" />}
-          label="Show artefacts chains"
+          control={
+            <Checkbox checked={proteinSettings.artefact} onChange={onToggleProtein('artefact')} color="primary" />
+          }
+          label="Show artefacts chain"
         ></FormControlLabel>
       </FormGroup>
     </div>

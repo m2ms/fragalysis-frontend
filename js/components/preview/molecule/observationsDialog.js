@@ -255,6 +255,7 @@ export const ObservationsDialog = memo(
     const densityList = useSelector(state => state.selectionReducers.densityList);
     const qualityList = useSelector(state => state.selectionReducers.qualityList);
     const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
+    const artefactsChainList = useSelector(state => state.selectionReducers.artefactsChainList);
     const informationList = useSelector(state => state.selectionReducers.informationList);
     const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
     const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
@@ -1100,7 +1101,12 @@ export const ObservationsDialog = memo(
                       </Grid>
                       <RichTooltip path={expandView ? 'expandView.classic' : 'expandView.expanded'}>
                         <Grid item className={classes.popoutIcon}>
-                          <IconButton id="observations-change-view" color="inherit" size="small" onClick={() => setExpandView(!expandView)}>
+                          <IconButton
+                            id="observations-change-view"
+                            color="inherit"
+                            size="small"
+                            onClick={() => setExpandView(!expandView)}
+                          >
                             {expandView ? <ArrowLeft /> : <ArrowRight />}
                           </IconButton>
                         </Grid>
@@ -1137,6 +1143,7 @@ export const ObservationsDialog = memo(
                             D={densityList.some(d => d.id === molecule.id)}
                             Q={qualityList.includes(molecule.id)}
                             V={vectorOnList.includes(molecule.id)}
+                            A={artefactsChainList.includes(molecule.id)}
                             I={informationList.includes(data.id)}
                             selected={selected}
                             isTagEditorInvokedByMolecule={molForTagEditId.some(mid => mid === data.id)}

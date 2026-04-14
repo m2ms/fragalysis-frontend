@@ -725,3 +725,27 @@ export const setSphereRendered = isRendered => {
     isRendered
   };
 };
+
+export const setProteinSettings = (item, skipTracking = false) => {
+  return {
+    type: constants.SET_PROTEIN_SETTINGS,
+    item: item,
+    skipTracking
+  };
+};
+
+export const appendProteinSettings = (item, skipTracking = false) => {
+  return {
+    type: constants.APPEND_PROTEIN_SETTINGS,
+    item: item,
+    skipTracking
+  };
+};
+
+export const removeProteinSettings = (item, skipTracking = false) => {
+  return {
+    type: constants.REMOVE_FROM_PROTEIN_SETTINGS,
+    item: item,
+    skipTracking
+  };
+};

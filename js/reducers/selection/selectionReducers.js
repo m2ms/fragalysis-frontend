@@ -87,7 +87,8 @@ export const INITIAL_STATE = {
   coordinateFilterResults: [],
   sphereCoordinates: null,
   coordinateRadius: 5, // in Angstroms,
-  sphereRendered: false
+  sphereRendered: false,
+  proteinSettings: []
 };
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
@@ -632,6 +633,21 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
         ...state,
         sphereRendered: action.isRendered
       };
+
+    case constants.SET_PROTEIN_SETTINGS:
+      let newProteinSettings = new Set();
+      console.log('action', action.item);
+      action.item.forEach(item => {
+        newProteinSettings.add(item);
+      });
+      return Object.assign({}, state, { proteinSettings: [...newProteinSettings] });
+
+    case constants.APPEND_PROTEIN_SETTINGS:
+      return Object.assign({}, state, { proteinSettings: [...state.proteinSettings, action.item] });
+
+    case constants.REMOVE_FROM_PROTEIN_SETTINGS:
+      let filteredProteinSettings = state.proteinSettings.filter(item => item.id !== action.item.id);
+      return Object.assign({}, state, { proteinSettings: [...filteredProteinSettings] });
 
     // Cases like: @@redux/INIT
     default:

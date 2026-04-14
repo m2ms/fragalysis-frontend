@@ -35,7 +35,8 @@ import {
   setMoleculeForTagEdit,
   setTagEditorOpen,
   setObservationsForLHSCmp,
-  setIsLHSCmpTagEdit
+  setIsLHSCmpTagEdit,
+  removeProteinSettings
 } from '../../../../../../reducers/selection/actions';
 import { centerOnLigandByMoleculeID } from '../../../../../../reducers/ngl/dispatchActions';
 import { getRandomColor } from '../../../utils/color';
@@ -600,9 +601,6 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   const hasAllValuesOn = isLigandOn && isProteinOn && isComplexOn && isArtefactsChainOn;
   const hasSomeValuesOn = !hasAllValuesOn && (isLigandOn || isProteinOn || isArtefactsChainOn || isComplexOn);
 
-  const isFullProteinSelected = isProteinOn && isArtefactsChainOn;
-  const isHalfProteinSelected = isProteinOn !== isArtefactsChainOn;
-
   let isWireframeStyle = defaultMapRendering === MAP_RENDERING_MODES.WIREFRAME ? true : false;
 
   const disableMoleculeNglControlButtons =
@@ -1003,7 +1001,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   const addNewArtefactsChain = (skipTracking = false) => {
     const firstObs = getMainObservation();
     dispatch(
-      withDisabledMoleculeNglControlButton(currentID, 'artefact', async () => {
+      withDisabledMoleculeNglControlButton(currentID, 'protein', async () => {
         if (firstObs) {
           const color = getRandomColor(firstObs);
           await dispatch(addArtefactChain(stage, firstObs, color, true, skipTracking));
@@ -1055,6 +1053,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             }
           }
           if (!proteinSettings.protein && !proteinSettings.artefact) {
+            dispatch(removeProteinSettings({ id: getMainObservation()?.id }));
             setProteinSettings({ protein: true, artefact: true });
             addNewProtein(false);
             addNewArtefactsChain();
@@ -1149,6 +1148,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
   };
 
   const addNewDensity = async densityObject => {
+    console.log('id', currentID);
     dispatch(
       withDisabledMoleculeNglControlButton(currentID, 'ligand', async () => {
         await dispatch(
@@ -1518,8 +1518,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                   id={'detail-view-sidechains-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
-                    [classes.contColButtonHalfSelected]: isHalfProteinSelected,
-                    [classes.contColButtonSelected]: isFullProteinSelected
+                    [classes.contColButtonSelected]: isProteinOn || isArtefactsChainOn
                   })}
                   onClick={() => onProtein(undefined, 'both')}
                   onContextMenu={handleProteinButtonContextMenu}
@@ -1542,9 +1541,11 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
                   transformOrigin={{ vertical: 'center', horizontal: 'left' }}
                 >
                   <ProteinButtonPopover
+                    moleculeId={getMainObservation()?.id}
                     proteinSettings={proteinSettings}
-                    setProteinSettings={setProteinSettings}
+                    setProteinSettingsState={setProteinSettings}
                     toogleProtein={onProtein}
+                    disabled={disableP || disableMoleculeNglControlButtons.protein}
                   />
                 </Popover>
               </Grid>

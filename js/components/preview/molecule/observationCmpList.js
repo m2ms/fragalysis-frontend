@@ -49,7 +49,9 @@ import {
   selectAllHits,
   autoHideTagEditorDialogsOnScroll,
   selectAllVisibleObservations,
-  searchForObservations
+  searchForObservations,
+  addArtefactChain,
+  removeArtefactChain
 } from './redux/dispatchActions';
 import { DEFAULT_FILTER, PREDEFINED_FILTERS } from '../../../reducers/selection/constants';
 import { Edit, FilterList } from '@material-ui/icons';
@@ -67,7 +69,8 @@ import {
   setObservationDialogAction,
   setSearchSettingsDialogOpen,
   setLHSIsFullyRendered,
-  addToastMessage
+  addToastMessage,
+  removeProteinSettings
 } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import * as listType from '../../../constants/listTypes';
@@ -315,11 +318,13 @@ export const ObservationCmpList = memo(({}) => {
   const densityList = useSelector(state => state.selectionReducers.densityList);
   const qualityList = useSelector(state => state.selectionReducers.qualityList);
   const vectorOnList = useSelector(state => state.selectionReducers.vectorOnList);
+  const artefactsChainList = useSelector(state => state.selectionReducers.artefactsChainList);
   const informationList = useSelector(state => state.selectionReducers.informationList);
   const isTagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
   const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
   const moleculesToEditIds = useSelector(state => state.selectionReducers.moleculesToEdit);
   const isGlobalEdit = useSelector(state => state.selectionReducers.isGlobalEdit);
+  const proteinSettingsList = useSelector(state => state.selectionReducers.proteinSettings);
 
   const dataAreDownloaded = useSelector(state => state.apiReducers.dataAreDownloaded);
   const errorOccuredDuringDownload = useSelector(state => state.apiReducers.errorOccuredDuringDownload);
@@ -875,23 +880,33 @@ export const ObservationCmpList = memo(({}) => {
 
   const joinedGivenMatch = useCallback(
     givenList => {
-      return givenList.filter(element => allSelectedMolecules.filter(element2 => element2.id === element).length > 0)
-        .length;
+      return givenList.filter(
+        element =>
+          (allSelectedMolecules.length > 0 ? allSelectedMolecules : allMoleculesList).filter(
+            element2 => element2.id === element
+          ).length > 0
+      ).length;
     },
-    [allSelectedMolecules]
+    [allSelectedMolecules, allMoleculesList]
   );
 
   const joinedLigandMatchLength = useMemo(() => joinedGivenMatch(fragmentDisplayList), [
     fragmentDisplayList,
     joinedGivenMatch
   ]);
-  const joinedProteinMatchLength = useMemo(() => joinedGivenMatch(proteinList), [proteinList, joinedGivenMatch]);
+  const joinedProteinMatchLength = useMemo(
+    () => joinedGivenMatch([...new Set([...proteinList, ...artefactsChainList])]),
+    [proteinList, artefactsChainList, joinedGivenMatch]
+  );
   const joinedComplexMatchLength = useMemo(() => joinedGivenMatch(complexList), [complexList, joinedGivenMatch]);
 
   const changeButtonClassname = (givenList = [], matchListLength) => {
+    console.log('lengh sele', allSelectedMolecules);
     if (!matchListLength) {
       return false;
-    } else if (allSelectedMolecules.length === matchListLength) {
+    } else if (
+      (allSelectedMolecules.length > 0 ? allSelectedMolecules.length : allMoleculesList.length) === matchListLength
+    ) {
       return true;
     }
     return null;
@@ -944,7 +959,8 @@ export const ObservationCmpList = memo(({}) => {
     surface: addSurface,
     quality: addQuality,
     density: addDensity,
-    vector: addVector
+    vector: addVector,
+    artefact: addArtefactChain
   };
 
   const removeType = {
@@ -954,7 +970,8 @@ export const ObservationCmpList = memo(({}) => {
     surface: removeSurface,
     quality: removeQuality,
     density: removeDensity,
-    vector: removeVector
+    vector: removeVector,
+    artefact: removeArtefactChain
   };
 
   // TODO: "currentMolecules" do not need to correspondent to selections in {type}List
@@ -965,6 +982,13 @@ export const ObservationCmpList = memo(({}) => {
     if (type === 'ligand') {
       moleculeList.forEach(molecule => {
         dispatch(removeType[type](majorViewStage, molecule, skipTracking));
+      });
+    } else if (type === 'protein') {
+      moleculeList.forEach(molecule => {
+        dispatch(removeType[type](majorViewStage, molecule, colourList[molecule.id % colourList.length], skipTracking));
+        dispatch(
+          removeType['artefact'](majorViewStage, molecule, colourList[molecule.id % colourList.length], skipTracking)
+        );
       });
     } else {
       moleculeList.forEach(molecule => {
@@ -1014,6 +1038,49 @@ export const ObservationCmpList = memo(({}) => {
                 )
               );
             });
+          } else if (type === 'protein') {
+            moleculeList.forEach(molecule => {
+              const setting = proteinSettingsList.find(item => item.id === molecule.id);
+              if (setting?.protein) {
+                promises.push(
+                  dispatch(
+                    addType[type](majorViewStage, molecule, colourList[molecule.id % colourList.length], skipTracking)
+                  )
+                );
+              }
+              if (setting?.artefact) {
+                promises.push(
+                  dispatch(
+                    addType['artefact'](
+                      majorViewStage,
+                      molecule,
+                      colourList[molecule.id % colourList.length],
+                      skipTracking
+                    )
+                  )
+                );
+              }
+              if (!setting?.protein && !setting?.artefact) {
+                promises.push(
+                  dispatch(
+                    addType[type](majorViewStage, molecule, colourList[molecule.id % colourList.length], skipTracking)
+                  )
+                );
+                promises.push(
+                  dispatch(
+                    addType['artefact'](
+                      majorViewStage,
+                      molecule,
+                      colourList[molecule.id % colourList.length],
+                      skipTracking
+                    )
+                  )
+                );
+                if (setting) {
+                  dispatch(removeProteinSettings({ id: molecule.id }));
+                }
+              }
+            });
           } else {
             moleculeList.forEach(molecule => {
               //selectMoleculeTags(molecule.tags_set);
@@ -1049,10 +1116,12 @@ export const ObservationCmpList = memo(({}) => {
         let molecules = getSelectedMoleculesByType(type, true);
         if (molecules && molecules.length > 100) {
           setIsOpenLPCAlert(true);
-        } else if (molecules?.length > 0) { //true if anything is selected
+        } else if (molecules?.length > 0) {
+          //true if anything is selected
           dispatch(setSelectedAllByType(type, molecules));
           addNewType(type, true, allSelectedMolecules);
-        } else { //if nothing is selected
+        } else {
+          //if nothing is selected
           const listByType = {
             ligand: fragmentDisplayList,
             protein: proteinList,
@@ -1069,7 +1138,7 @@ export const ObservationCmpList = memo(({}) => {
       } else {
         let molecules = getSelectedMoleculesByType(type, false);
         dispatch(setDeselectedAllByType(type, molecules));
-        removeSelectedType(type, true, allSelectedMolecules);
+        removeSelectedType(type, true, allSelectedMolecules.lenght > 0 ? allSelectedMolecules : allMoleculesList);
       }
     }
   };
@@ -1403,7 +1472,13 @@ export const ObservationCmpList = memo(({}) => {
         </Grid>
         <RichTooltip path={ascending ? 'sortOrder.ascending' : 'sortOrder.descending'}>
           <Grid style={{ marginTop: '4px' }}>
-            <Checkbox id="hit-navigator-sorting-checkbox" checked={ascending} onChange={handleAscendingChecked} size="small" style={{ padding: 0 }} />
+            <Checkbox
+              id="hit-navigator-sorting-checkbox"
+              checked={ascending}
+              onChange={handleAscendingChecked}
+              size="small"
+              style={{ padding: 0 }}
+            />
             <Typography variant="caption">
               {(selectAllHitsPressed && hitNavigatorWidth > 508) || (!selectAllHitsPressed && hitNavigatorWidth > 491)
                 ? 'Ascending'

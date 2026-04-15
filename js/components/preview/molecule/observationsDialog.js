@@ -8,6 +8,7 @@ import { NglContext } from '../../nglView/nglProvider';
 import { PLURAL_TO_SINGULAR, VIEWS, XCA_TAG_CATEGORIES } from '../../../constants/constants';
 import { changeButtonClassname } from '../../datasets/helpers';
 import {
+  addArtefactChain,
   addComplex,
   addHitProtein,
   addLigand,
@@ -18,6 +19,7 @@ import {
   getAllCompatiblePoses,
   getCategoryById,
   prepareEmptyPoseDTO,
+  removeArtefactChain,
   removeComplex,
   removeHitProtein,
   removeLigand,
@@ -33,6 +35,7 @@ import { colourList } from './utils/color';
 import {
   appendToMolListToEdit,
   removeFromMolListToEdit,
+  removeProteinSettings,
   setDeselectedAllByType,
   setObservationDialogAction,
   setObservationsForLHSCmp,
@@ -263,6 +266,7 @@ export const ObservationsDialog = memo(
     // const tagList = useSelector(state => state.apiReducers.tagList);
     const tagList = useSelector(state => state.apiReducers.moleculeTags);
     const targetId = useSelector(state => state.apiReducers.target_on);
+    const proteinSettingsList = useSelector(state => state.selectionReducers.proteinSettings);
 
     const searchSettings = useSelector(state => state.selectionReducers.searchSettings);
 
@@ -337,36 +341,65 @@ export const ObservationsDialog = memo(
       [moleculesToEditIds, observationsDataList]
     );
 
-    const isLigandOn = ligandList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
-    const isProteinOn = proteinList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
-    const isComplexOn = complexList.some(moleculeID => (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList ).some(molecule => molecule.id === moleculeID));
+    const isLigandOn = ligandList.some(moleculeID =>
+      (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList).some(
+        molecule => molecule.id === moleculeID
+      )
+    );
+    const isProteinOn = [...new Set([...proteinList, ...artefactsChainList])].some(moleculeID =>
+      (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList).some(
+        molecule => molecule.id === moleculeID
+      )
+    );
+    const isComplexOn = complexList.some(moleculeID =>
+      (allSelectedMolecules.length > 0 ? allSelectedMolecules : moleculeList).some(
+        molecule => molecule.id === moleculeID
+      )
+    );
 
     // TODO: refactor from this line (duplicity in datasetMoleculeList.js)
     const isLigandOnForClassname = changeButtonClassname(
-      ligandList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
-      allSelectedMolecules
+      ligandList.filter(
+        moleculeID =>
+          (allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList).find(
+            molecule => molecule.id === moleculeID
+          ) !== undefined
+      ),
+      allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList
     );
     const isProteinOnForClassname = changeButtonClassname(
-      proteinList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
-      allSelectedMolecules
+      [...new Set([...proteinList, ...artefactsChainList])].filter(
+        moleculeID =>
+          (allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList).find(
+            molecule => molecule.id === moleculeID
+          ) !== undefined
+      ),
+      allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList
     );
     const isComplexOnForClassname = changeButtonClassname(
-      complexList.filter(moleculeID => allSelectedMolecules.find(molecule => molecule.id === moleculeID) !== undefined),
-      allSelectedMolecules
+      complexList.filter(
+        moleculeID =>
+          (allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList).find(
+            molecule => molecule.id === moleculeID
+          ) !== undefined
+      ),
+      allSelectedMolecules?.length > 0 ? allSelectedMolecules : moleculeList
     );
 
     const addType = {
       ligand: addLigand,
       protein: addHitProtein,
       complex: addComplex,
-      surface: addSurface
+      surface: addSurface,
+      artefact: addArtefactChain
     };
 
     const removeType = {
       ligand: removeLigand,
       protein: removeHitProtein,
       complex: removeComplex,
-      surface: removeSurface
+      surface: removeSurface,
+      artefact: removeArtefactChain
     };
 
     const removeSelectedTypes = useCallback(
@@ -381,6 +414,11 @@ export const ObservationsDialog = memo(
       if (type === 'ligand') {
         list.forEach(molecule => {
           dispatch(removeType[type](stage, molecule, skipTracking));
+        });
+      } else if (type === 'protein') {
+        moleculeList.forEach(molecule => {
+          dispatch(removeType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
+          dispatch(removeType['artefact'](stage, molecule, colourList[molecule.id % colourList.length], skipTracking));
         });
       } else {
         list.forEach(molecule => {
@@ -413,6 +451,35 @@ export const ObservationsDialog = memo(
                     )
                   )
                 );
+              });
+            } else if (type === 'protein') {
+              list.forEach(molecule => {
+                const setting = proteinSettingsList.find(item => item.id === molecule.id);
+                if (setting?.protein) {
+                  promises.push(
+                    dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking))
+                  );
+                }
+                if (setting?.artefact) {
+                  promises.push(
+                    dispatch(
+                      addType['artefact'](stage, molecule, colourList[molecule.id % colourList.length], skipTracking)
+                    )
+                  );
+                }
+                if (!setting?.protein && !setting?.artefact) {
+                  promises.push(
+                    dispatch(addType[type](stage, molecule, colourList[molecule.id % colourList.length], skipTracking))
+                  );
+                  promises.push(
+                    dispatch(
+                      addType['artefact'](stage, molecule, colourList[molecule.id % colourList.length], skipTracking)
+                    )
+                  );
+                  if (setting) {
+                    dispatch(removeProteinSettings({ id: molecule.id }));
+                  }
+                }
               });
             } else {
               list.forEach(molecule => {
@@ -457,7 +524,7 @@ export const ObservationsDialog = memo(
             const typeList = listByType[type];
             if (!typeListContainIds(typeList)) {
               addNewType(type, true, moleculeList);
-            } 
+            }
           }
         } else {
           let molecules = getSelectedMoleculesByType(type, false);
@@ -467,16 +534,14 @@ export const ObservationsDialog = memo(
       }
     };
 
-    const typeListContainIds = (typeList) => {
+    const typeListContainIds = typeList => {
       moleculeList.forEach(item => {
         if (typeList.includes(item.id)) {
-        return true;
+          return true;
         }
-      })
+      });
       return false;
     };
-
-    
 
     const areAllMoleculesSelected = allSelectedMolecules.length === moleculeList.length;
 
@@ -990,7 +1055,7 @@ export const ObservationsDialog = memo(
                                   id="observations-all-ligands"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isLigandOnForClassname && allSelectedMolecules.length,
+                                    [classes.contColButtonSelected]: isLigandOnForClassname,
                                     [classes.contColButtonHalfSelected]: isLigandOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('ligand')}
@@ -1005,7 +1070,7 @@ export const ObservationsDialog = memo(
                                   id="observations-all-sidechains"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isProteinOnForClassname && allSelectedMolecules.length,
+                                    [classes.contColButtonSelected]: isProteinOnForClassname,
                                     [classes.contColButtonHalfSelected]: isProteinOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('protein')}
@@ -1021,7 +1086,7 @@ export const ObservationsDialog = memo(
                                   id="observations-all-interactions"
                                   variant="outlined"
                                   className={classNames(classes.contColButton, {
-                                    [classes.contColButtonSelected]: isComplexOnForClassname && allSelectedMolecules.length,
+                                    [classes.contColButtonSelected]: isComplexOnForClassname,
                                     [classes.contColButtonHalfSelected]: isComplexOnForClassname === null
                                   })}
                                   onClick={() => onButtonToggle('complex')}

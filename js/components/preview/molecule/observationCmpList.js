@@ -1121,19 +1121,7 @@ export const ObservationCmpList = memo(({}) => {
           dispatch(setSelectedAllByType(type, molecules));
           addNewType(type, true, allSelectedMolecules);
         } else {
-          //if nothing is selected
-          const listByType = {
-            ligand: fragmentDisplayList,
-            protein: proteinList,
-            complex: complexList
-          };
-
-          const typeList = listByType[type];
-          if (!typeList?.length > 0) {
-            addNewType(type, true, allMoleculesList);
-          } else {
-            removeSelectedType(type, true, allMoleculesList);
-          }
+          addNewType(type, true, allMoleculesList);
         }
       } else {
         let molecules = getSelectedMoleculesByType(type, false);

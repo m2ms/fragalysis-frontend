@@ -516,15 +516,8 @@ export const ObservationsDialog = memo(
             addNewType(type, true, allSelectedMolecules);
           } else {
             //if observations are not selected
-            const listByType = {
-              ligand: ligandList,
-              protein: proteinList,
-              complex: complexList
-            };
-            const typeList = listByType[type];
-            if (!typeListContainIds(typeList)) {
-              addNewType(type, true, moleculeList);
-            }
+
+            addNewType(type, true, moleculeList);
           }
         } else {
           let molecules = getSelectedMoleculesByType(type, false);
@@ -533,16 +526,6 @@ export const ObservationsDialog = memo(
         }
       }
     };
-
-    const typeListContainIds = typeList => {
-      moleculeList.forEach(item => {
-        if (typeList.includes(item.id)) {
-          return true;
-        }
-      });
-      return false;
-    };
-
     const areAllMoleculesSelected = allSelectedMolecules.length === moleculeList.length;
 
     const handleSelectAllObservations = () => {

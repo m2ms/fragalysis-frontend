@@ -70,6 +70,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   const [displayName, setDisplayName] = useState('');
   const [shortName, setShortName] = useState('');
   const [longName, setLongName] = useState('');
+  const [alias, setAlias] = useState('');
   const [organism, setOrganism] = useState('');
   const [externalURL, setExternalURL] = useState('');
   const [externalURLName, setExternalURLName] = useState('');
@@ -133,6 +134,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
     setDisplayName(targetName);
     setShortName(target.short_name);
     setLongName(target.long_name);
+    setAlias(target.alias);
     setOrganism(target.organism);
     setExternalURL(target.external_url);
     setExternalURLName(target.external_url_display_name);
@@ -176,6 +178,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
           display_name: displayName,
           short_name: shortName,
           long_name: longName,
+          alias: alias,
           organism: organism,
           external_url: externalURL,
           external_url_display_name: externalURLName,
@@ -202,6 +205,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
             currentTarget.display_name = displayName;
             currentTarget.short_name = shortName;
             currentTarget.long_name = longName;
+            currentTarget.alias = alias;
             currentTarget.organism = organism;
             currentTarget.external_url = externalURL;
             currentTarget.external_url_display_name = externalURLName;
@@ -298,6 +302,25 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
                 />
               ) : (
                 <Typography variant="body1">{longName}</Typography>
+              )}
+            </Grid>
+          </Grid>
+          <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+            <Grid item xs>
+              <Typography variant="body1">Alias</Typography>
+            </Grid>
+            {console.log('alias', alias)}
+
+            <Grid item xs>
+              {editable ? (
+                <TextField
+                  value={alias ?? ''}
+                  placeholder="enter alias"
+                  onChange={e => setAlias(e.target.value)}
+                  disabled={!editable || alias === null}
+                />
+              ) : (
+                <Typography variant="body1">{alias}</Typography>
               )}
             </Grid>
           </Grid>

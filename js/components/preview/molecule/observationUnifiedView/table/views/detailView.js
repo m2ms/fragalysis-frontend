@@ -223,12 +223,19 @@ const useStyles = makeStyles(theme => ({
     fontSize: '0.9rem',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis'
+    textOverflow: 'ellipsis',
+    width: '100%'
   },
   moleculeTitleLabelSub: {
     overflow: 'hidden',
     whiteSpace: 'nowrap',
-    textOverflow: 'ellipsis'
+    textOverflow: 'ellipsis',
+    width: '100%'
+  },
+  moleculeTitleBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%'
   },
   checkbox: {
     padding: 0
@@ -1253,16 +1260,18 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
           }}
           className={classes.moleculeTitleLabel}
         >
-          <RichTooltip
-            path="code"
-            values={{ code: getMainObservation()?.code?.replaceAll(`${target_on_name}-`, '') || '' }}
-          >
-            <span className={classes.moleculeTitleLabelMain}>{getMainObservation()?.code || ''}</span>
-          </RichTooltip>
-          <br />
-          <RichTooltip path="displayName" values={{ displayName: getDisplayName() || '' }}>
-            <span className={classes.moleculeTitleLabelSub}>{getDisplayName()}</span>
-          </RichTooltip>
+          <div className={classes.moleculeTitleBox}>
+            <RichTooltip
+              path="code"
+              values={{ code: getMainObservation()?.code?.replaceAll(`${target_on_name}-`, '') || '' }}
+            >
+              <span className={classes.moleculeTitleLabelMain}>{getMainObservation()?.code || ''}</span>
+            </RichTooltip>
+            <RichTooltip path="displayName" values={{ displayName: getDisplayName() || '' }}>
+              <span className={classes.moleculeTitleLabelSub}>{getDisplayName()}</span>
+            </RichTooltip>
+          </div>
+
           <IconButton
             className={popoverOpen ? classes.posePropertiesTableIconActive : classes.posePropertiesTableIcon}
             onMouseEnter={handleTablePopoverOpen}
@@ -1322,7 +1331,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip path="centerOn">
               <Grid item>
                 <Button
-                  id={"detail-view-center-on-" + index}
+                  id={'detail-view-center-on-' + index}
                   variant="outlined"
                   className={classes.myLocationButton}
                   onClick={() => {
@@ -1337,7 +1346,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip path="all">
               <Grid item>
                 <Button
-                  id={"detail-view-all-" + index}
+                  id={'detail-view-all-' + index}
                   variant="outlined"
                   className={classNames(
                     classes.contColButton,
@@ -1381,7 +1390,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             >
               <Grid item>
                 <Button
-                  id={"detail-view-ligand-" + index}
+                  id={'detail-view-ligand-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isLigandOn
@@ -1403,7 +1412,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip path="sidechains">
               <Grid item>
                 <Button
-                  id={"detail-view-sidechains-" + index}
+                  id={'detail-view-sidechains-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isProteinOn
@@ -1426,7 +1435,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
               <Grid item>
                 {/* C stands for contacts now */}
                 <Button
-                  id={"detail-view-interactions-" + index}
+                  id={'detail-view-interactions-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isComplexOn
@@ -1448,7 +1457,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip path="surface">
               <Grid item>
                 <Button
-                  id={"detail-view-surface-" + index}
+                  id={'detail-view-surface-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isSurfaceOn
@@ -1478,7 +1487,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             >
               <Grid item>
                 <Button
-                  id={"detail-view-electron-density-" + index}
+                  id={'detail-view-electron-density-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isDensityOn
@@ -1511,7 +1520,7 @@ export const DetailView = memo(({ data, index, handleRef, disableL, disableP, di
             <RichTooltip path="vectors">
               <Grid item>
                 <Button
-                  id={"detail-view-vectors-" + index}
+                  id={'detail-view-vectors-' + index}
                   variant="outlined"
                   className={classNames(classes.contColButton, {
                     [classes.contColButtonSelected]: isVectorOn

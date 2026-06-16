@@ -10,7 +10,9 @@
 # - Job Templates exist
 # - The repository has environment-based secrets under the name 'awx/fragalysis-developer'
 #   That are named: -
-#   - AWX_USER_PASSWORD
+#   - AWX_E2E_USER_PASSWORD
+#
+# This workflow only runs if vars.TEST_E2E_ENABLED is set to "yes"
 
 name: test stack e2e
 

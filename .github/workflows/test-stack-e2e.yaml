@@ -1,0 +1,55 @@
+---
+# This is a CI workflow that is designed to test the end-to-end behaviour
+# of a stack deployed to the designated installation (a Kubernetes cluster).
+# The tests rely on Ansible "Job Templates" that are available on
+# a designates AWX server.
+#
+# The test assumes: -
+#
+# - The cluster exists
+# - Job Templates exist
+# - The repository has environment-based secrets under the name 'awx/fragalysis-developer'
+#   That are named: -
+#   - AWX_USER_PASSWORD
+
+name: test stack e2e
+
+on: push
+
+env:
+  # AWX host and user.
+  # Password is provided in an environment secret (AWX_E2E_USER_PASSWORD)
+  AWX_HOST: https://awx.xchem-dev.diamond.ac.uk
+  AWX_E2E_USER: simona
+  # Job Template names
+  AWX_E2E_JT_NAME_WIPE: User (Simona) Developer Fragalysis Stack [WIPE]
+  AWX_E2E_JT_NAME_DEPLOY: User (Simona) Developer Fragalysis Stack
+  AWX_E2E_STACK_IMAGE_TAG: latest
+
+jobs:
+  wipe:
+    runs-on: ubuntu-latest
+    environment: awx/fragalysis-developer
+    steps:
+      - name: Wipe the test stack
+        uses: informaticsmatters/trigger-awx-action@v4
+        with:
+          template: ${{ env.AWX_E2E_JT_NAME_WIPE }}
+          template-host: ${{ env.AWX_HOST }}
+          template-user: ${{ env.AWX_E2E_USER }}
+          template-user-password: ${{ secrets.AWX_E2E_USER_PASSWORD }}
+
+  deploy:
+    needs: wipe
+    runs-on: ubuntu-latest
+    environment: awx/fragalysis-developer
+    steps:
+      - name: Deploy the (clean) test stack
+        uses: informaticsmatters/trigger-awx-action@v4
+        with:
+          template: ${{ env.AWX_E2E_JT_NAME_DEPLOY }}
+          template-host: ${{ env.AWX_HOST }}
+          template-user: ${{ env.AWX_E2E_USER }}
+          template-user-password: ${{ secrets.AWX_E2E_USER_PASSWORD }}
+          template-var: stack_image_tag
+          template-var-value: ${{ env.AWX_E2E_STACK_IMAGE_TAG }}

@@ -67,6 +67,9 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     continue-on-error: true
+    env:
+      CYPRESS_LOGIN: ${{ secrets.AWX_E2E_CYPRESS_LOGIN }}
+      CYPRESS_PASSWORD: ${{ secrets.AWX_E2E_CYPRESS_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

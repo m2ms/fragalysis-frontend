@@ -27,7 +27,14 @@ env:
   AWX_E2E_STACK_IMAGE_TAG: latest
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    if: ${{ vars.TEST_E2E_ENABLED == 'yes' }}
+    steps:
+      - run: echo "Enabled"
+
   wipe:
+    needs: gate
     runs-on: ubuntu-latest
     environment: awx/fragalysis-developer
     steps:
@@ -53,3 +60,38 @@ jobs:
           template-user-password: ${{ secrets.AWX_E2E_USER_PASSWORD }}
           template-var: stack_image_tag
           template-var-value: ${{ env.AWX_E2E_STACK_IMAGE_TAG }}
+
+  test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Cypress run
+        uses: cypress-io/github-action@v7
+        with:
+          build: npm run build
+          start: npm start
+          # browser: chrome
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+      - name: Upload videos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore
+      - name: Upload junit reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-reports
+          path: report*.xml
+          if-no-files-found: ignore

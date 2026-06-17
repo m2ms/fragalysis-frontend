@@ -239,6 +239,8 @@ By default, the tests run against the remote URL defined in cypress.config.ts - 
 You can run the Cypress tests in two modes:
 UI Mode - Opens the Cypress Test Runner interface.
 `npm run runner`
-Headless Mode
+Headless Mode 
 Runs the tests in the terminal without opening the UI.
 `npx cypress run --e2e`
+
+The E2E test workflow is triggered automatically after a commit is pushed to the branch.

@@ -144,7 +144,7 @@ const renderArtefactChains = (ol, representations, orientationMatrix) => {
     colorScheme: 'element',
     colorValue: colour,
     sele: '/0',
-    linewidth: 7
+    linewidth: 2
   });
 
   const reprArray = representations || createRepresentationsArray([repr3]);

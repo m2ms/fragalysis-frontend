@@ -170,7 +170,6 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   };
 
   const onSubmitForm = async () => {
-    console.log('submit form', currentTarget);
     currentTarget &&
       api({
         url: `${base_url}/api/targets/${currentTarget.id}/`,

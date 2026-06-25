@@ -170,6 +170,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   };
 
   const onSubmitForm = async () => {
+    console.log('submit form', currentTarget);
     currentTarget &&
       api({
         url: `${base_url}/api/targets/${currentTarget.id}/`,
@@ -205,7 +206,6 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
             currentTarget.display_name = displayName;
             currentTarget.short_name = shortName;
             currentTarget.long_name = longName;
-            currentTarget.alias = alias;
             currentTarget.organism = organism;
             currentTarget.external_url = externalURL;
             currentTarget.external_url_display_name = externalURLName;
@@ -223,6 +223,22 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
         })
         .catch(err => {
           dispatch(addToastMessage({ text: 'Error updated target', level: TOAST_LEVELS.ERROR }));
+        });
+    // update project alias
+    currentTarget.project &&
+      api({
+        url: `${base_url}/api/projects/${currentTarget.project.id}/`,
+        method: METHOD.PATCH,
+        data: {
+          alias: alias?.length > 0 ? alias : null
+        }
+      })
+        .then(resp => {
+          currentTarget.project.alias = alias;
+          dispatch(replaceTarget(currentTarget));
+        })
+        .catch(err => {
+          dispatch(addToastMessage({ text: 'Error updated project alias', level: TOAST_LEVELS.ERROR }));
         });
   };
 

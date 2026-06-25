@@ -324,15 +324,13 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
             <Grid item xs>
               <Typography variant="body1">Alias</Typography>
             </Grid>
-            {console.log('alias', alias)}
-
             <Grid item xs>
               {editable ? (
                 <TextField
                   value={alias ?? ''}
                   placeholder="enter alias"
                   onChange={e => setAlias(e.target.value)}
-                  disabled={!editable || alias === null}
+                  disabled={!editable}
                 />
               ) : (
                 <Typography variant="body1">{alias}</Typography>

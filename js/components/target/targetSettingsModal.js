@@ -134,7 +134,7 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
     setDisplayName(targetName);
     setShortName(target.short_name);
     setLongName(target.long_name);
-    setAlias(target.alias);
+    setAlias(target.project.alias);
     setOrganism(target.organism);
     setExternalURL(target.external_url);
     setExternalURLName(target.external_url_display_name);

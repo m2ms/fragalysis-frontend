@@ -272,7 +272,9 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
       case 'target':
         return target.display_name.toLowerCase().includes(filterValue.toLowerCase());
       case 'tas':
-        return target.project.target_access_string.toLowerCase().includes(filterValue.toLowerCase());
+        return target.project.alias
+          ? target.project.alias.toLowerCase().includes(filterValue.toLowerCase())
+          : target.project.target_access_string.toLowerCase().includes(filterValue.toLowerCase());
       case 'initDate':
         const initDate = moment(target.project.init_date).format('YYYY-MM-DD');
         const initDateFrom = filterValue[0].length > 0 ? filterValue[0] <= initDate : true;
@@ -302,7 +304,10 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
       case 'target':
         return a.display_name.toLowerCase() < b.display_name.toLowerCase() ? -1 : 1;
       case 'tas':
-        return a.project.target_access_string.toLowerCase() < b.project.target_access_string.toLowerCase() ? -1 : 1;
+        return (a.project.alias ? a.project.alias.toLowerCase() : a.project.target_access_string.toLowerCase()) <
+          (b.project.alias ? b.project.alias.toLowerCase() : b.project.target_access_string.toLowerCase())
+          ? -1
+          : 1;
       case 'initDate':
         return a.project.init_date < b.project.init_date ? -1 : 1;
       case 'lastUpdatedDate':

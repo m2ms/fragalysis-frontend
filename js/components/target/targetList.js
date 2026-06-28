@@ -450,7 +450,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
               style={{ padding: '0px', margin: '0px' }}
               id={targetTitleId + '-tas-' + index}
             >
-              {target.project.target_access_string}
+              {target.project.alias ? target.project.alias : target.project.target_access_string}
             </TableCell>,
             <TableCell key={'13'} style={{ width: '2px', padding: '0px', margin: '0px' }}></TableCell>,
             <TableCell

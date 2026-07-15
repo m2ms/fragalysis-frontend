@@ -4,10 +4,19 @@ const express = require('express');
 const config = require('./webpack.config-dev');
 const { MOORHEN_ASSET_DIR, MOORHEN_ASSET_URL } = require('./scripts/moorhen-assets');
 const { setCrossOriginIsolationHeaders, setMoorhenAssetHeaders } = require('./serverHeaders');
+const { MOORHEN_PROOF_PATHS, getMainBundleName, renderMoorhenProofPage } = require('./devProofPage');
 const PORT = Number(process.env.DEV_SERVER_PORT || 3030);
 
 const app = express();
 const compiler = webpack(config);
+let latestStats;
+
+compiler.hooks.compile.tap('MoorhenProofPage', () => {
+  latestStats = undefined;
+});
+compiler.hooks.done.tap('MoorhenProofPage', stats => {
+  latestStats = stats;
+});
 
 app.use(setCrossOriginIsolationHeaders);
 
@@ -33,6 +42,24 @@ app.use(
 );
 
 app.use(require('webpack-hot-middleware')(compiler));
+
+app.get(MOORHEN_PROOF_PATHS, function(req, res, next) {
+  try {
+    if (!latestStats) {
+      return res.status(503).send('The frontend bundle is still compiling.');
+    }
+
+    const mainBundleName = getMainBundleName(latestStats);
+    return res.type('html').send(
+      renderMoorhenProofPage({
+        mainBundleUrl: `${config.output.publicPath}${mainBundleName}`,
+        moorhenAssetUrl: MOORHEN_ASSET_URL
+      })
+    );
+  } catch (error) {
+    return next(error);
+  }
+});
 
 app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, 'index.html'));

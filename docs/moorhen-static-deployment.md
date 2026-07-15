@@ -67,8 +67,9 @@ assuming an annotation was accepted.
 ## External Resources
 
 `Cross-Origin-Embedder-Policy: require-corp` blocks cross-origin subresources unless they opt in through CORS or a
-compatible Cross-Origin-Resource-Policy. The RDKit script request now uses anonymous CORS. Backend API/media hosts,
-fonts, images, scripts, and future worker URLs must remain same-origin or return suitable CORS/CORP headers.
+compatible Cross-Origin-Resource-Policy. The RDKit script request now uses anonymous CORS. The Moorhen worker URL
+must remain same-origin with the document; backend API/media hosts, fonts, images, and other scripts must remain
+same-origin or return suitable CORS/CORP headers.
 Top-level links and downloads opened as navigations are not embedded resources and do not need CORP.
 
 ## Deployment Check

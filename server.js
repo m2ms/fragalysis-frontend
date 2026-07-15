@@ -2,10 +2,14 @@ const path = require('path');
 const webpack = require('webpack');
 const express = require('express');
 const config = require('./webpack.config-dev');
+const { MOORHEN_ASSET_DIR, MOORHEN_ASSET_URL } = require('./scripts/moorhen-assets');
+const { setCrossOriginIsolationHeaders, setMoorhenAssetHeaders } = require('./serverHeaders');
 const PORT = Number(process.env.DEV_SERVER_PORT || 3030);
 
 const app = express();
 const compiler = webpack(config);
+
+app.use(setCrossOriginIsolationHeaders);
 
 // Enable CORS for all methods
 app.use(function(req, res, next) {
@@ -13,6 +17,13 @@ app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
+
+app.use(
+  MOORHEN_ASSET_URL,
+  express.static(MOORHEN_ASSET_DIR, {
+    setHeaders: setMoorhenAssetHeaders
+  })
+);
 
 app.use(
   require('webpack-dev-middleware')(compiler, {

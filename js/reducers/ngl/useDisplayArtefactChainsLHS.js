@@ -5,6 +5,7 @@ import {
   appendArtefactsChainList,
   appendQualityList,
   removeFromArtefactsChainList,
+  removeFromQualityList,
   removeFromToBeDisplayedList,
   updateInToBeDisplayedList
 } from '../selection/actions';
@@ -12,7 +13,7 @@ import { generateArtefactChains, generateMoleculeId } from '../../components/ngl
 import { VIEWS } from '../../constants/constants';
 import { NglContext } from '../../components/nglView/nglProvider';
 import { getRandomColor } from '../../components/preview/molecule/utils/color';
-import { readQualityInformation } from '../../components/nglView/renderingHelpers';
+import { readQualityInformation } from '../../viewer/qualityInformation';
 import { deleteObject, loadObject } from './dispatchActions';
 import { getToBeDisplayedStructures } from './utils';
 
@@ -33,32 +34,40 @@ export const useDisplayArtefactChainsLHS = () => {
       const colourToggle = getRandomColor(data);
 
       const molId = generateMoleculeId(data);
-      dispatch(appendArtefactsChainList(molId));
       const artefactChainObject = await dispatch(generateArtefactChains(data, colourToggle));
-      const qualityInformation = dispatch(readQualityInformation(artefactChainObject.name, artefactChainObject.sdf_info));
+      const qualityInformation = dispatch(
+        readQualityInformation(artefactChainObject.name, artefactChainObject.sdf_info)
+      );
 
       let hasAdditionalInformation =
         artefactChainData.withQuality === true &&
         qualityInformation &&
         qualityInformation.badproteinids &&
         qualityInformation.badproteinids.length !== 0;
+      dispatch(appendArtefactsChainList(molId));
       if (hasAdditionalInformation) {
         dispatch(appendQualityList(molId, true));
       }
 
-      return dispatch(
-        loadObject({
-          target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, artefactChainObject),
-          stage,
-          previousRepresentations: artefactChainData.representations,
-          orientationMatrix: null,
-          loadQuality: hasAdditionalInformation,
-          quality: qualityInformation,
-          preserveColour: artefactChainData.preserveColour
-        })
-      ).then(() => {
+      try {
+        await dispatch(
+          loadObject({
+            target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, artefactChainObject),
+            stage,
+            previousRepresentations: artefactChainData.representations,
+            orientationMatrix: null,
+            loadQuality: hasAdditionalInformation,
+            quality: qualityInformation,
+            preserveColour: artefactChainData.preserveColour
+          })
+        );
         dispatch(updateInToBeDisplayedList({ id: data.id, rendered: true, type: NGL_OBJECTS.ARTEFACTS }));
-      });
+      } catch (error) {
+        console.error(`Unable to display artefact chain for observation ${data.id}`, error);
+        dispatch(removeFromArtefactsChainList(molId));
+        dispatch(removeFromQualityList(molId));
+        dispatch(removeFromToBeDisplayedList({ id: data.id, type: NGL_OBJECTS.ARTEFACTS }));
+      }
     },
     [allObservations, dispatch, stage]
   );
@@ -68,7 +77,7 @@ export const useDisplayArtefactChainsLHS = () => {
       const data = allObservations.find(obs => obs.id === artefactChainData.id);
       if (!data) return;
       const colourToggle = getRandomColor(data);
-      dispatch(
+      await dispatch(
         deleteObject(
           Object.assign({ display_div: VIEWS.MAJOR_VIEW }, await dispatch(generateArtefactChains(data, colourToggle))),
           stage

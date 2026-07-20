@@ -5,7 +5,7 @@
 import React, { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from '@mui/material';
 import { makeStyles } from '../../ui/styles';
-import NGLView from '../nglView/nglView';
+import ViewerView from '../moorhenView/ViewerView';
 import HitNavigator from './molecule/hitNavigator';
 import { TagDetailsLHS } from './tags/details/tagDetailsLHS';
 import { withUpdatingTarget } from '../target/withUpdatingTarget';
@@ -378,7 +378,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
         </ReactGridLayout>
       </div>
       <InPortal node={nglPortal}>
-        <NGLView div_id={VIEWS.MAJOR_VIEW} />
+        <ViewerView div_id={VIEWS.MAJOR_VIEW} />
       </InPortal>
       <NewSnapshotModal />
       <ModalShareSnapshot />

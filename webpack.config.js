@@ -53,7 +53,6 @@ module.exports = {
   plugins: [
     new LegacyBundleTrackerPlugin({ path: __dirname }),
     new webpack.DefinePlugin({
-      __FRAGALYSIS_VIEWER_ENGINE__: JSON.stringify(process.env.VIEWER_ENGINE || ''),
       __FRAGALYSIS_MOORHEN_PROOF_ENABLED__: JSON.stringify(process.env.MOORHEN_PROOF_ENABLED || ''),
       __FRAGALYSIS_MOORHEN_ASSET_URL__: JSON.stringify(process.env.MOORHEN_ASSET_URL || '')
     }),

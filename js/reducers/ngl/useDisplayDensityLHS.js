@@ -47,26 +47,26 @@ export const useDisplayDensityLHS = () => {
       const prepParams = dispatch(getDensityChangedParams(densitySettingsObject));
       const densityObject = await dispatch(generateDensityObject(obs, densitySettingsObject));
       const combinedObject = { ...prepParams, ...densityObject };
-      dispatch(
-        loadObject({
-          target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, combinedObject),
-          stage,
-          previousRepresentations: densityData.representations,
-          orientationMatrix: null
-        })
-      ).then(() => {
+      try {
+        await dispatch(
+          loadObject({
+            target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, combinedObject),
+            stage,
+            previousRepresentations: densityData.representations,
+            orientationMatrix: null
+          })
+        );
         if (!obs.proteinData) {
-          dispatch(getProteinData(obs)).then(i => {
-            const proteinData = i;
-            obs.proteinData = proteinData;
-
-            dispatch(appendDensityList(densitySettingsObject));
-          });
+          obs.proteinData = await dispatch(getProteinData(obs));
+          dispatch(appendDensityList(densitySettingsObject));
         } else {
           dispatch(appendDensityList(densitySettingsObject));
         }
         dispatch(updateInToBeDisplayedList({ id: obs.id, rendered: true, type: NGL_OBJECTS.DENSITY }));
-      });
+      } catch {
+        dispatch(removeFromToBeDisplayedList({ id: obs.id, type: NGL_OBJECTS.DENSITY }));
+        dispatch(removeFromToBeDisplayedList({ id: obs.id, type: NGL_OBJECTS.DENSITY_CUSTOM }));
+      }
     },
     [allObservations, dispatch, stage]
   );

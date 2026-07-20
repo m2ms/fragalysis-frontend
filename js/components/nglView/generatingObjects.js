@@ -2,8 +2,6 @@ import { MOL_REPRESENTATION, OBJECT_TYPE, SELECTION_TYPE } from './constants';
 import * as listTypes from '../../constants/listTypes';
 import { getLigandData } from '../preview/tags/redux/dispatchActions';
 
-export { defaultFocus } from '../../viewer/ngl/representationHelpers';
-
 export const generateProteinObject = data => {
   // Now deal with this target
   const prot_to_load = data.template_protein;

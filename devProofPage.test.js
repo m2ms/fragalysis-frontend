@@ -29,6 +29,7 @@ describe('Moorhen proof development page', () => {
 
     expect(page).toContain("moorhen_asset_url: '/bundles/moorhen'");
     expect(page).toContain('src="http://localhost:3031/bundles/main-123.js"');
+    expect(page).toContain('href="/bundles/moorhen/baby-gru/favicon.ico"');
     expect(page).toContain('id="app"');
   });
 });

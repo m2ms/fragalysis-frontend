@@ -62,37 +62,40 @@ export default memo(({ open, onClose }) => {
 
     hideShapeRepresentations(representationElement, viewerAdapter, parentKey);
   };
-  const changeMolecularRepresentation = (representation, parentKey, e) => {
+  const changeMolecularRepresentation = async (representation, parentKey, e) => {
     const newRepresentationType = e.target.value;
     const oldRepresentation = JSON.parse(JSON.stringify(representation));
     const viewerAdapter = getViewerAdapter(objectsInView[parentKey].display_div);
     const component = viewerAdapter.getObject(parentKey);
 
-    // add representation to NGL
-    const newRepresentation = viewerAdapter.createRepresentation(
-      component,
-      newRepresentationType,
-      oldRepresentation.params,
-      oldRepresentation.lastKnownID
-    );
-    // add new representation to redux
-    dispatch(addComponentRepresentation(parentKey, newRepresentation, true));
-
-    // remove previous representation from NGL
-    removeRepresentation(representation, parentKey, true);
-
-    dispatch(changeComponentRepresentation(parentKey, oldRepresentation, newRepresentation));
+    try {
+      const newRepresentation = viewerAdapter.createRepresentation(
+        component,
+        newRepresentationType,
+        oldRepresentation.params,
+        oldRepresentation.lastKnownID
+      );
+      await newRepresentation.ready;
+      dispatch(addComponentRepresentation(parentKey, newRepresentation, true));
+      removeRepresentation(representation, parentKey, true);
+      dispatch(changeComponentRepresentation(parentKey, oldRepresentation, newRepresentation));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const addMolecularRepresentation = (parentKey, e) => {
+  const addMolecularRepresentation = async (parentKey, e) => {
     e.stopPropagation();
     const viewerAdapter = getViewerAdapter(objectsInView[parentKey].display_div);
     const component = viewerAdapter.getObject(parentKey);
 
-    // add representation to NGL
-    const newRepresentation = viewerAdapter.createRepresentation(component, MOL_REPRESENTATION.axes);
-    // add new representation to redux
-    dispatch(addComponentRepresentation(parentKey, newRepresentation));
+    try {
+      const newRepresentation = viewerAdapter.createRepresentation(component, MOL_REPRESENTATION.axes);
+      await newRepresentation.ready;
+      dispatch(addComponentRepresentation(parentKey, newRepresentation));
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const removeRepresentation = (representation, parentKey, skipTracking) => {
@@ -239,10 +242,7 @@ export default memo(({ open, onClose }) => {
 
   return (
     <Drawer title="Display controls" open={open} onClose={onClose}>
-      <SimpleTreeView
-        className={classes.root}
-        slots={{ collapseIcon: ExpandMore, expandIcon: ChevronRight }}
-      >
+      <SimpleTreeView className={classes.root} slots={{ collapseIcon: ExpandMore, expandIcon: ChevronRight }}>
         {Object.keys(objectsInView)
           .filter(
             item =>

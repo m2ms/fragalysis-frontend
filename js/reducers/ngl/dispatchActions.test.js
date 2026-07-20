@@ -17,6 +17,7 @@ import {
   removeFromVectorOnList
 } from '../selection/actions';
 import { VIEWS } from '../../constants/constants';
+import ViewerAdapter from '../../viewer/ViewerAdapter';
 const { fn } = jest;
 
 describe("testing ngl reducer's async actions", () => {
@@ -37,18 +38,16 @@ describe("testing ngl reducer's async actions", () => {
       property: { a: 'sdff' }
     };
 
-    const stage = {
-      loadFile: fn(() =>
-        Promise.resolve({
-          addRepresentation: fn(() => ({
-            uuid: null,
-            getParameters: fn(() => {}),
-            repr: { parameters: {} }
-          })),
-          autoView: fn()
-        })
-      )
-    };
+    const stage = new ViewerAdapter();
+    stage.loadObject = fn(() =>
+      Promise.resolve([
+        {
+          uuid: null,
+          getParameters: fn(() => {}),
+          repr: { parameters: {} }
+        }
+      ])
+    );
 
     // eslint-disable-next-line jest/no-test-return-statement
     return store
@@ -63,6 +62,33 @@ describe("testing ngl reducer's async actions", () => {
         expect(await getAction(store, incrementCountOfPendingNglObjects)).not.toBeNull();
         expect(await getAction(store, decrementCountOfPendingNglObjects)).not.toBeNull();
       });
+  });
+
+  it('should propagate object loading failures and clear the pending counter', async () => {
+    expect.hasAssertions();
+    const store = mockStore({
+      nglReducers: {
+        objectsInViewStash: {}
+      }
+    });
+    const target = {
+      name: 'Broken protein',
+      OBJECT_TYPE: OBJECT_TYPE.PROTEIN,
+      display_div: VIEWS.MAJOR_VIEW
+    };
+    const error = new Error('Moorhen failed to load molecule');
+    const stage = new ViewerAdapter();
+    stage.loadObject = fn(() => Promise.reject(error));
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await expect(store.dispatch(loadObject({ target, stage }))).rejects.toBe(error);
+      expect(await getAction(store, incrementCountOfPendingNglObjects)).not.toBeNull();
+      expect(await getAction(store, decrementCountOfPendingNglObjects)).not.toBeNull();
+      expect(await getAction(store, loadNglObject)).toBeNull();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('should delete object', async () => {
@@ -85,22 +111,9 @@ describe("testing ngl reducer's async actions", () => {
       moleculeId: 4
     };
 
-    const stage = {
-      loadFile: fn(() =>
-        Promise.resolve({
-          addRepresentation: fn(() => ({
-            uuid: null,
-            getParameters: fn(() => {}),
-            repr: { parameters: {} }
-          })),
-          autoView: fn()
-        })
-      ),
-      getComponentsByName: fn(() => ({
-        list: [1, 2, 3]
-      })),
-      removeComponent: fn(() => {})
-    };
+    const stage = new ViewerAdapter();
+    stage.getObjects = fn(() => [1, 2, 3]);
+    stage.removeObject = fn();
 
     await store.dispatch(deleteObject(targetLigand, stage, true));
     expect(await getAction(store, removeFromFragmentDisplayList)).not.toBeNull();
@@ -120,6 +133,7 @@ describe("testing ngl reducer's async actions", () => {
 
     await store.dispatch(deleteObject(targetLigand, stage, false));
     expect(await getAction(store, deleteNglObject)).not.toBeNull();
+    expect(stage.removeObject).toHaveBeenCalledTimes(15);
   });
 
   it('should set orientation', async () => {
@@ -176,5 +190,4 @@ describe("testing ngl reducer's async actions", () => {
     await storeWithNotAllOrientations.dispatch(setOrientation(div_id, orientation));
     expect(await getAction(storeWithNotAllOrientations, setNglOrientation)).not.toBeNull();
   });
-
 });

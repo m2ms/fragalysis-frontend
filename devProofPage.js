@@ -20,6 +20,7 @@ const renderMoorhenProofPage = ({ mainBundleUrl, moorhenAssetUrl }) => `<!doctyp
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="data:text/css," />
+    <link rel="icon" href="${moorhenAssetUrl}/baby-gru/favicon.ico" />
     <title>Fragalysis Moorhen Proof</title>
   </head>
   <body>

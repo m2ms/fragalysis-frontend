@@ -18,9 +18,10 @@ root must be on the same origin as the top-level page because Moorhen starts a c
 
 ## Proof Data
 
-After the Coot worker and user preferences initialize, the route loads Moorhen's bundled tutorial structure and MTZ
-map. The on-screen status changes to `Moorhen ready: 1 molecule, 1 map` only after both objects are present in
-Moorhen's Redux store. An initialization or asset error is displayed in the same status area.
+After the host-side CCP4/Gemmi WASM module, Coot worker, and user preferences initialize, the route loads Moorhen's
+bundled tutorial structure and MTZ map. The on-screen status changes to `Moorhen ready: 1 molecule, 1 map` only after
+both objects are present in Moorhen's Redux store. An initialization or asset error is displayed in the same status
+area.
 
 ## Quick Manual Check
 
@@ -28,8 +29,8 @@ Moorhen's Redux store. An initialization or asset error is displayed in the same
    proof-only page with the required isolation headers and same-origin Moorhen assets.
 2. Wait for the bottom-left status to report `Moorhen ready: 1 molecule, 1 map`. Rotate the visible structure and
    confirm the map contours remain visible.
-3. In DevTools, confirm `CootWorker.js`, `moorhen.wasm`, the tutorial `.pdb`, and the tutorial `.mtz` return HTTP 200,
-   and check that `window.crossOriginIsolated` is `true`.
+3. In DevTools, confirm `CootWorker.js`, the selected `moorhen.js`/`moorhen64.js` and WASM file, the tutorial `.pdb`,
+   and the tutorial `.mtz` return HTTP 200, and check that `window.crossOriginIsolated` is `true`.
 4. Open a normal preview route and confirm its existing NGL viewer still loads.
 
 The document response must include the COOP/COEP headers described in

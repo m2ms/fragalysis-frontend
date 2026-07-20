@@ -59,18 +59,19 @@ services:
       start_period: 10s
   web:
     container_name: web_dock
-    # image: xchem/fragalysis-stack:latest
+    image: xchem/fragalysis-stack:latest
     # image: xchem/fragalysis-backend:m2ms-1649-refresh-fix
     # image: boriskovarm2ms/fragalysis-stack:experiment2
     # image: kaliif/fragalysis-backend:density-ui-1598
     # image: kaliif/fragalysis-backend:coordinate-filter
-    image: kaliif/fragalysis-backend:unified-lhs-rhs
+    # image: kaliif/fragalysis-backend:unified-lhs-rhs
     command: /bin/bash /code/launch-stack.sh
     volumes:
       - ../data/logs:/code/logs/
       - ../data/media:/code/media/
       - ../fragalysis-frontend:/code/frontend
       - ../data/target:/code/target
+      - ./docker/nginx/moorhen-isolation.conf:/etc/nginx/conf.d/00-moorhen-isolation.conf:ro
     ports:
       - "8080:80"
     environment:
@@ -82,7 +83,6 @@ services:
       POSTGRESQL_PORT: 5432
       NEO4J_AUTH: neo4j/test123
       # DISCOURSE_API_KEY: ${DISCOURSE_API_KEY}
-      FRAGALYSIS_BACKEND_SENTRY_DNS: https://27fa0675f555431aa02ca552e93d8cfb@o194333.ingest.sentry.io/1298290
       ISPYB_FLAG: "False"
       # DISCOURSE_DEV_POST_SUFFIX: '-boris-local'
       # DISCOURSE_HOST: 'https://discourse.xchem-dev.diamond.ac.uk'
@@ -149,8 +149,8 @@ services:
     # image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
     # image: kaliif/fragalysis-backend:download-task
     # image: kaliif/fragalysis-backend:density-ui-1598
-    # image: xchem/fragalysis-stack:latest
-    image: kaliif/fragalysis-backend:unified-lhs-rhs
+    image: xchem/fragalysis-stack:latest
+    # image: kaliif/fragalysis-backend:unified-lhs-rhs
     restart: on-failure
     volumes:
       - ../data/logs:/code/logs/
@@ -168,8 +168,7 @@ services:
       INFECTIONS: ""
       # Celery tasks need to run synchronously
       CELERY_TASK_ALWAYS_EAGER: "False"
-      # Error reporting and default/root log-level
-      FRAGALYSIS_BACKEND_SENTRY_DNS: ${FRAGALYSIS_BACKEND_SENTRY_DNS}
+      # Default/root log-level
       LOGGING_FRAMEWORK_ROOT_LEVEL: ${LOGGING_FRAMEWORK_ROOT_LEVEL:-INFO}
       # Keycloak configuration
       OIDC_KEYCLOAK_REALM: ${OIDC_KEYCLOAK_REALM}
@@ -209,7 +208,7 @@ services:
       - .env
     # image: ${BE_NAMESPACE:-xchem}/fragalysis-backend:${BE_IMAGE_TAG:-latest}
     # image: kaliif/fragalysis-backend:download-task
-    # image: xchem/fragalysis-stack:latest
+    image: xchem/fragalysis-stack:latest
     # image: kaliif/fragalysis-backend:density-ui-1598
-    image: kaliif/fragalysis-backend:unified-lhs-rhs
+    # image: kaliif/fragalysis-backend:unified-lhs-rhs
     restart: on-failure

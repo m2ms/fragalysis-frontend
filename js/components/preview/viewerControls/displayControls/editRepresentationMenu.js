@@ -38,18 +38,22 @@ export const EditRepresentationMenu = memo(
     const openColorMenu = (menuKey, anchorEl, previousColor) =>
       setColorMenus({ ...colorMenus, [menuKey]: { menu: anchorEl, previousColor } });
 
-    const handleRepresentationPropertyChange = throttle((key, value) => {
+    const handleRepresentationPropertyChange = throttle(async (key, value) => {
       const representationElement = viewerAdapter.getRepresentation(component, representation);
       if (representationElement) {
         let oldValue = oldRepresentation.params[key];
         let change = { key, value, oldValue };
 
-        // update in ngl
-        viewerAdapter.setRepresentationParameters(representationElement, { [key]: value });
-        //update in redux
-        oldRepresentation.params[key] = value;
-
-        dispatch(updateComponentRepresentation(parentKey, oldRepresentation.uuid, oldRepresentation, change));
+        try {
+          const updatedRepresentation = viewerAdapter.setRepresentationParameters(representationElement, {
+            [key]: value
+          });
+          await updatedRepresentation.ready;
+          oldRepresentation.params[key] = value;
+          dispatch(updateComponentRepresentation(parentKey, oldRepresentation.uuid, oldRepresentation, change));
+        } catch (error) {
+          console.error(error);
+        }
       }
     }, 250);
 
@@ -148,7 +152,8 @@ export const EditRepresentationMenu = memo(
           );
           break;
         case 'color':
-          const color = `#${representationItem.toString(16)}` || `#000`;
+          const numericColor = Number.isFinite(Number(representationItem)) ? Number(representationItem) : 0;
+          const color = `#${numericColor.toString(16).padStart(6, '0')}`;
           representationComponent = (
             <Fragment>
               <Box

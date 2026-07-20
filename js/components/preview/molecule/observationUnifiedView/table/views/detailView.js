@@ -1197,24 +1197,16 @@ export const DetailView = memo(
             }
             break;
           case 'both':
-            if (proteinSettings.protein) {
-              if (isProteinOn) {
-                removeSelectedProtein();
-              } else {
-                addNewProtein();
-              }
-            }
-            if (proteinSettings.artefact) {
-              if (isArtefactChainOn) {
-                removeSelectedArtefactChain();
-              } else {
-                addNewArtefactChain();
-              }
-            }
-            if (!proteinSettings.protein && !proteinSettings.artefact) {
+            if (isProteinOn || isArtefactChainOn) {
+              if (isProteinOn) removeSelectedProtein();
+              if (isArtefactChainOn) removeSelectedArtefactChain();
+            } else if (!proteinSettings.protein && !proteinSettings.artefact) {
               dispatch(removeProteinSettings({ id: getMainObservation()?.id }));
               setProteinSettings(DEFAULT_PROTEIN_SETTINGS);
               addNewProtein(false);
+            } else {
+              if (proteinSettings.protein) addNewProtein();
+              if (proteinSettings.artefact) addNewArtefactChain();
             }
             break;
           default:

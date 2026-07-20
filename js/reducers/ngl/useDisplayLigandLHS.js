@@ -13,7 +13,7 @@ import { generateMoleculeId, generateMoleculeObject } from '../../components/ngl
 import { VIEWS } from '../../constants/constants';
 import { NglContext } from '../../components/nglView/nglProvider';
 import { getRandomColor } from '../../components/preview/molecule/utils/color';
-import { readQualityInformation } from '../../components/nglView/renderingHelpers';
+import { readQualityInformation } from '../../viewer/qualityInformation';
 import { deleteObject, loadObject } from './dispatchActions';
 import { removeVector } from '../../components/preview/molecule/redux/dispatchActions';
 import { getToBeDisplayedStructures } from './utils';
@@ -38,7 +38,6 @@ export const useDisplayLigandLHS = () => {
       if (!data) return;
       const colourToggle = getRandomColor(data);
       const molId = generateMoleculeId(data);
-      dispatch(appendFragmentDisplayList(molId));
 
       let moleculeObject = await dispatch(generateMoleculeObject(data, colourToggle));
       let qualityInformation = dispatch(readQualityInformation(moleculeObject.name, moleculeObject.sdf_info));
@@ -48,26 +47,32 @@ export const useDisplayLigandLHS = () => {
         qualityInformation &&
         qualityInformation.badids &&
         qualityInformation.badids.length !== 0;
+      dispatch(appendFragmentDisplayList(molId));
       if (hasAdditionalInformation) {
         dispatch(appendQualityList(molId));
       }
 
-      return dispatch(
-        loadObject({
-          target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, moleculeObject),
-          stage,
-          previousRepresentations: ligandData.representations,
-          loadQuality: hasAdditionalInformation,
-          quality: qualityInformation,
-          center: ligandData.center
-        })
-      ).then(() => {
+      try {
+        await dispatch(
+          loadObject({
+            target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, moleculeObject),
+            stage,
+            previousRepresentations: ligandData.representations,
+            loadQuality: hasAdditionalInformation,
+            quality: qualityInformation,
+            center: ligandData.center
+          })
+        );
         if (ligandData.center) {
           const currentOrientation = viewerAdapter.getOrientation();
           dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
         }
         dispatch(updateInToBeDisplayedList({ id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND }));
-      });
+      } catch {
+        dispatch(removeFromFragmentDisplayList(molId));
+        dispatch(removeFromQualityList(molId));
+        dispatch(removeFromToBeDisplayedList({ id: data.id, type: NGL_OBJECTS.LIGAND }));
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [allObservations, dispatch, stage, viewerAdapter] //skipOrientationChange and isLoadingCurrentSnapshot are not included in the dependencies by desing

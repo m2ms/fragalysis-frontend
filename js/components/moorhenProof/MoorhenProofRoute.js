@@ -6,9 +6,9 @@ import { Provider } from 'react-redux';
 import {
   MoorhenContainer,
   MoorhenReduxStore,
-  autoOpenFiles,
   emptyMaps,
   emptyMolecules,
+  emptyVectors,
   resetBackupSettings,
   resetGeneralStates,
   resetHoveringStates,
@@ -17,6 +17,8 @@ import {
 } from 'moorhen';
 import { moorhenProofConfig } from '../../config/moorhenProof';
 import { assertMoorhenTutorialLoaded, fetchMoorhenTutorialFiles } from './moorhenProofResources';
+import { initializeMoorhenCcp4Module } from './moorhenCcp4';
+import MoorhenViewerAdapter from '../../viewer/MoorhenViewerAdapter';
 
 const MOORHEN_NAVBAR_HEIGHT = 48;
 
@@ -45,6 +47,7 @@ const resetMoorhenStore = store => {
   [
     emptyMolecules,
     emptyMaps,
+    emptyVectors,
     resetGeneralStates,
     resetSceneSettings,
     resetBackupSettings,
@@ -55,7 +58,7 @@ const resetMoorhenStore = store => {
 
 const MoorhenProofStatus = ({ status, counts, error }) => {
   const statusContent = {
-    initializing: { icon: <CircularProgress size={18} color="inherit" />, label: 'Starting Moorhen worker...' },
+    initializing: { icon: <CircularProgress size={18} color="inherit" />, label: 'Starting Moorhen runtimes...' },
     loading: { icon: <CircularProgress size={18} color="inherit" />, label: 'Loading tutorial structure and map...' },
     ready: {
       icon: <CheckCircleOutlineIcon fontSize="small" />,
@@ -109,17 +112,40 @@ const MoorhenProofViewer = () => {
   const activeMapRef = useRef(null);
   const lastHoveredAtomRef = useRef(null);
   const videoRecorderRef = useRef(null);
+  const viewerAdapterRef = useRef(null);
   const loadStartedRef = useRef(false);
   const backupStorageRef = useRef(createMemoryStorage());
   const [status, setStatus] = useState('initializing');
   const [counts, setCounts] = useState({ molecules: 0, maps: 0 });
   const [error, setError] = useState('');
+  const [ccp4ModuleReady, setCcp4ModuleReady] = useState(false);
   const isMoorhenInitialized = useSyncExternalStore(
     MoorhenReduxStore.subscribe,
     getMoorhenInitializationState,
     getMoorhenInitializationState
   );
   const monomerLibraryPath = `${moorhenProofConfig.assetUrl}/baby-gru/monomers`;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    initializeMoorhenCcp4Module({ assetUrl: moorhenProofConfig.assetUrl })
+      .then(() => {
+        if (isMounted) {
+          setCcp4ModuleReady(true);
+        }
+      })
+      .catch(moduleError => {
+        if (isMounted) {
+          setError(moduleError instanceof Error ? moduleError.message : String(moduleError));
+          setStatus('error');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const getMoorhenDimensions = useCallback(() => {
     const width = containerRef.current ? containerRef.current.clientWidth : window.innerWidth;
@@ -129,7 +155,7 @@ const MoorhenProofViewer = () => {
   }, []);
 
   useEffect(() => {
-    if (!isMoorhenInitialized || loadStartedRef.current) {
+    if (!ccp4ModuleReady || !isMoorhenInitialized || loadStartedRef.current) {
       return undefined;
     }
 
@@ -150,18 +176,19 @@ const MoorhenProofViewer = () => {
           return;
         }
 
-        const state = MoorhenReduxStore.getState();
-        await autoOpenFiles(
-          files,
+        viewerAdapterRef.current = new MoorhenViewerAdapter({
           commandCentre,
           glRef,
-          MoorhenReduxStore,
+          store: MoorhenReduxStore,
           monomerLibraryPath,
-          state.sceneSettings.backgroundColor,
-          state.sceneSettings.defaultBondSmoothness,
-          timeCapsuleRef,
-          MoorhenReduxStore.dispatch
-        );
+          containerElement: containerRef
+        });
+        await viewerAdapterRef.current.loadMolecule(files[0], {
+          name: files[0].name,
+          representation: 'CRs',
+          center: true
+        });
+        await viewerAdapterRef.current.loadMap(files[1], { name: files[1].name, ext: 'mtz', autoRead: true });
         const loadedCounts = assertMoorhenTutorialLoaded(MoorhenReduxStore);
 
         if (isMounted) {
@@ -182,7 +209,16 @@ const MoorhenProofViewer = () => {
       isMounted = false;
       abortController.abort();
     };
-  }, [isMoorhenInitialized, monomerLibraryPath]);
+  }, [ccp4ModuleReady, isMoorhenInitialized, monomerLibraryPath]);
+
+  useEffect(
+    () => () => {
+      viewerAdapterRef.current
+        ?.destroy()
+        .catch(cleanupError => console.error('Unable to clean up Moorhen proof adapter', cleanupError));
+    },
+    []
+  );
 
   return (
     <Box

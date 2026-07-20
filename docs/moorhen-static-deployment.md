@@ -1,7 +1,24 @@
-# Moorhen Static Asset Deployment
+# Moorhen Backend And Static Deployment Requirements
 
-Stage 15 installs Moorhen without enabling it as a viewer. NGL remains the only runtime viewer, but Moorhen's worker,
-WASM, monomer, and supporting assets are prepared for the proof route in Stage 16.
+Moorhen is the application's only molecular viewer. Its threaded WebAssembly runtime requires the page to be
+cross-origin isolated. Frontend JavaScript cannot enable this after the HTML document has loaded, so the backend or
+edge proxy serving Fragalysis owns part of the runtime contract.
+
+## Backend And Platform Owner Checklist
+
+1. Add `Cross-Origin-Opener-Policy: same-origin` to every Fragalysis HTML response.
+2. Add `Cross-Origin-Embedder-Policy: require-corp` to every Fragalysis HTML response.
+3. Apply both headers to redirects and error responses using nginx/ingress `always` behavior or outermost Django
+   middleware.
+4. Preserve the headers through every CDN, ingress, reverse proxy, and WAF layer.
+5. Serve Moorhen `.wasm` files as `application/wasm`.
+6. When Moorhen assets are on another origin, return `Access-Control-Allow-Origin` and
+   `Cross-Origin-Resource-Policy: cross-origin` from that static origin.
+7. Verify the deployed Preview page reports `window.crossOriginIsolated === true` before enabling user traffic.
+
+The frontend contains blob bridges for development deployments where Django and the Webpack asset server use
+different origins. Those bridges solve browser worker URL restrictions; they do not remove the top-level
+COOP/COEP requirement.
 
 ## Generated Assets
 
@@ -34,7 +51,11 @@ Cross-Origin-Resource-Policy: cross-origin
 ```
 
 The local Express server sets all three headers and serves `.wasm` as `application/wasm`. The Django development
-response and the production proxy must mirror the two isolation headers on the document response.
+response and the production proxy must mirror the two isolation headers on the document response. The frontend
+development compose file mounts `docker/nginx/moorhen-isolation.conf` into its backend container as a local-only
+workaround. The current backend image already emits COOP, so this file deliberately adds only the missing COEP/CORP
+headers to avoid an invalid duplicate COOP policy. Production infrastructure must configure its own equivalent
+policy and ensure each policy header occurs exactly once.
 
 For Django, use response middleware at the outer application boundary so error responses are covered too:
 
@@ -67,20 +88,21 @@ assuming an annotation was accepted.
 ## External Resources
 
 `Cross-Origin-Embedder-Policy: require-corp` blocks cross-origin subresources unless they opt in through CORS or a
-compatible Cross-Origin-Resource-Policy. The RDKit script request now uses anonymous CORS. The Moorhen worker URL
-must remain same-origin with the document; backend API/media hosts, fonts, images, and other scripts must remain
-same-origin or return suitable CORS/CORP headers.
+compatible Cross-Origin-Resource-Policy. The RDKit script request now uses anonymous CORS. Backend API/media hosts,
+fonts, images, and other scripts must remain same-origin or return suitable CORS/CORP headers.
 Top-level links and downloads opened as navigations are not embedded resources and do not need CORP.
 
 ## Deployment Check
 
 After deploying, verify representative responses:
 
-```text
-GET <static-root>/bundles/moorhen/CootWorker.js
-GET <static-root>/bundles/moorhen/moorhen.wasm
-GET <static-root>/bundles/moorhen/baby-gru/monomers/a/ALA.cif
+```bash
+curl -I <fragalysis-origin>/viewer/react/preview/target/<target>/tas/<project>
+curl -I <static-root>/bundles/moorhen/CootWorker.js
+curl -I <static-root>/bundles/moorhen/moorhen.wasm
+curl -I <static-root>/bundles/moorhen/baby-gru/monomers/a/ALA.cif
 ```
 
-All three must return HTTP 200. The WASM response must use `Content-Type: application/wasm`, and the browser console
-must show `window.crossOriginIsolated === true` on the Fragalysis page before Stage 16 initializes Moorhen.
+The document response must contain COOP and COEP. All three asset responses must return HTTP 200, the WASM response
+must use `Content-Type: application/wasm`, and the browser console must show `window.crossOriginIsolated === true` on
+the Fragalysis page before Moorhen initializes.

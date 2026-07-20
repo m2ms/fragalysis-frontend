@@ -117,16 +117,17 @@ export const loadObject = ({
       })
       .catch(error => {
         console.error(error);
+        throw error;
       })
       .finally(() => dispatch(decrementCountOfPendingNglObjects(versionFixedTarget.display_div)));
   }
   return Promise.reject('Instance of NGL View is missing');
 };
 
-export const deleteObject = (target, stage, deleteFromSelections) => dispatch => {
+export const deleteObject = (target, stage, deleteFromSelections) => async dispatch => {
   const viewerAdapter = asViewerAdapter(stage);
   if (viewerAdapter && target) {
-    viewerAdapter.getObjects(target.name).forEach(component => viewerAdapter.removeObject(component));
+    await Promise.all(viewerAdapter.getObjects(target.name).map(component => viewerAdapter.removeObject(component)));
 
     if (deleteFromSelections === true && target && target.selectionType && target.moleculeId) {
       const objectId = { id: target.moleculeId };

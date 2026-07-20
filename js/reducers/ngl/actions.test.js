@@ -28,6 +28,29 @@ describe("testing ngl reducer's actions", () => {
     expect(result.objectsInView).toHaveProperty(target2.name);
   });
 
+  it('should preserve circular viewer handles while updating objects in view', () => {
+    expect.hasAssertions();
+    const target = { name: 'Moorhen target' };
+    const secondTarget = { name: 'Second target' };
+    const representation = { uuid: 'moorhen-representation' };
+    representation.nativeRepresentation = representation;
+
+    let result = nglReducers(initialState, actions.loadNglObject(target, [representation]));
+    result = nglReducers(result, actions.loadNglObject(secondTarget, []));
+
+    expect(result.objectsInView[target.name].representations[0]).toBe(representation);
+
+    const replacement = { uuid: representation.uuid };
+    replacement.parentObject = replacement;
+    result = nglReducers(result, actions.updateComponentRepresentation(target.name, representation.uuid, replacement));
+
+    expect(result.objectsInView[target.name].representations[0]).toBe(replacement);
+
+    result = nglReducers(result, actions.deleteNglObject(target));
+
+    expect(result.objectsInViewStash[target.name].representations[0]).toBe(replacement);
+  });
+
   it('should update component representation', () => {
     expect.hasAssertions();
     const objectInViewID = '88-ui-ab';

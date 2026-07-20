@@ -31,22 +31,27 @@ export const useDisplayLigandRHS = () => {
       if (!data) return;
       const colourToggle = getRandomColor(data);
       const datasetID = ligandData.datasetID;
+      const moleculeId = generateMoleculeCompoundId(data);
 
-      dispatch(appendLigandList(datasetID, generateMoleculeCompoundId(data)));
       console.count(`Grabbed orientation before loading dataset ligand`);
       const ligandDataText = await dispatch(generateMoleculeObject(data, colourToggle, datasetID));
-      return dispatch(
-        loadObject({
-          target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText),
-          stage,
-          previousRepresentations: ligandData.representations,
-          markAsRightSideLigand: true
-        })
-      ).then(() => {
+      dispatch(appendLigandList(datasetID, moleculeId));
+      try {
+        await dispatch(
+          loadObject({
+            target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText),
+            stage,
+            previousRepresentations: ligandData.representations,
+            markAsRightSideLigand: true
+          })
+        );
         dispatch(
           updateInToBeDisplayedListForDataset(datasetID, { id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND })
         );
-      });
+      } catch {
+        dispatch(removeFromLigandList(datasetID, moleculeId));
+        dispatch(removeFromToBeDisplayedListForDataset(datasetID, { id: data.id, type: NGL_OBJECTS.LIGAND }));
+      }
     },
     [allCompounds, dispatch, stage]
   );

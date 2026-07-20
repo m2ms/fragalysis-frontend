@@ -2,12 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 const jsRoot = path.resolve(__dirname, '..');
-const implementationFiles = new Set([
-  'components/nglView/renderingHelpers.js',
-  'components/nglView/renderingObjects.js',
-  'viewer/NglViewerAdapter.js',
-  'viewer/ngl/representationHelpers.js'
-]);
+const implementationFiles = new Set(['viewer/MoorhenViewerAdapter.js']);
 
 const getJavaScriptFiles = directory =>
   fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -24,16 +19,15 @@ const stripLineComments = source => source.replace(/\/\/.*$/gm, '');
 describe('viewer adapter boundary', () => {
   const files = getJavaScriptFiles(jsRoot);
 
-  it('keeps direct NGL imports inside the NGL implementation', () => {
+  it('does not import the removed NGL package', () => {
     const violations = files
       .filter(filePath => /from\s+['"]ngl['"]/.test(fs.readFileSync(filePath, 'utf8')))
-      .map(toRelativePath)
-      .filter(filePath => !implementationFiles.has(filePath));
+      .map(toRelativePath);
 
     expect(violations).toEqual([]);
   });
 
-  it('keeps direct viewer API calls inside the NGL implementation', () => {
+  it('keeps direct viewer API calls inside viewer implementations', () => {
     const directViewerApi = [
       /\b(?:stage|newStage)\.(?:loadFile|addComponentFromObject|removeComponent|removeAllComponents|getComponentsByName|setParameters|handleResize|makeImage|dispose)\s*\(/,
       /(?:\.stage|\bstage)\.(?:viewerControls|animationControls|tasks|compList)\b/,

@@ -6761,70 +6761,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/browser@npm:^5.7.1":
-  version: 5.30.0
-  resolution: "@sentry/browser@npm:5.30.0"
-  dependencies:
-    "@sentry/core": "npm:5.30.0"
-    "@sentry/types": "npm:5.30.0"
-    "@sentry/utils": "npm:5.30.0"
-    tslib: "npm:^1.9.3"
-  checksum: 10c0/6793e1b49a8cdb1f025115bcc591bf67c97b6515f62a33ffcbb7b1ab66e459ebc471797d02e471be1ebf14092b56eb25ed914f043962388cc224bc961e334a17
-  languageName: node
-  linkType: hard
-
-"@sentry/core@npm:5.30.0":
-  version: 5.30.0
-  resolution: "@sentry/core@npm:5.30.0"
-  dependencies:
-    "@sentry/hub": "npm:5.30.0"
-    "@sentry/minimal": "npm:5.30.0"
-    "@sentry/types": "npm:5.30.0"
-    "@sentry/utils": "npm:5.30.0"
-    tslib: "npm:^1.9.3"
-  checksum: 10c0/6407b9c2a6a56f90c198f5714b3257df24d89d1b4ca6726bd44760d0adabc25798b69fef2c88ccea461c7e79e3c78861aaebfd51fd3cb892aee656c3f7e11801
-  languageName: node
-  linkType: hard
-
-"@sentry/hub@npm:5.30.0":
-  version: 5.30.0
-  resolution: "@sentry/hub@npm:5.30.0"
-  dependencies:
-    "@sentry/types": "npm:5.30.0"
-    "@sentry/utils": "npm:5.30.0"
-    tslib: "npm:^1.9.3"
-  checksum: 10c0/386c91d06aa44be0465fc11330d748a113e464d41cd562a9e1d222a682cbcb14e697a3e640953e7a0239997ad8a02b223a0df3d9e1d8816cb823fd3613be3e2f
-  languageName: node
-  linkType: hard
-
-"@sentry/minimal@npm:5.30.0":
-  version: 5.30.0
-  resolution: "@sentry/minimal@npm:5.30.0"
-  dependencies:
-    "@sentry/hub": "npm:5.30.0"
-    "@sentry/types": "npm:5.30.0"
-    tslib: "npm:^1.9.3"
-  checksum: 10c0/34ec05503de46d01f98c94701475d5d89cc044892c86ccce30e01f62f28344eb23b718e7cf573815e46f30a4ac9da3129bed9b3d20c822938acfb40cbe72437b
-  languageName: node
-  linkType: hard
-
-"@sentry/types@npm:5.30.0":
-  version: 5.30.0
-  resolution: "@sentry/types@npm:5.30.0"
-  checksum: 10c0/99c6e55c0a82c8ca95be2e9dbb35f581b29e4ff7af74b23bc62b690de4e35febfa15868184a2303480ef86babd4fea5273cf3b5ddf4a27685b841a72f13a0c88
-  languageName: node
-  linkType: hard
-
-"@sentry/utils@npm:5.30.0":
-  version: 5.30.0
-  resolution: "@sentry/utils@npm:5.30.0"
-  dependencies:
-    "@sentry/types": "npm:5.30.0"
-    tslib: "npm:^1.9.3"
-  checksum: 10c0/ca8eebfea7ac7db6d16f6c0b8a66ac62587df12a79ce9d0d8393f4d69880bb8d40d438f9810f7fb107a9880fe0d68bbf797b89cbafd113e89a0829eb06b205f8
-  languageName: node
-  linkType: hard
-
 "@sinclair/typebox@npm:^0.34.0":
   version: 0.34.50
   resolution: "@sinclair/typebox@npm:0.34.50"
@@ -13009,7 +12945,6 @@ __metadata:
     "@rjsf/mui": "npm:6.6.2"
     "@rjsf/utils": "npm:6.6.2"
     "@rjsf/validator-ajv8": "npm:6.6.2"
-    "@sentry/browser": "npm:^5.7.1"
     "@testing-library/dom": "npm:10.4.1"
     "@testing-library/jest-dom": "npm:6.9.1"
     "@testing-library/react": "npm:16.3.2"
@@ -13055,7 +12990,6 @@ __metadata:
     moment: "npm:^2.24.0"
     moment-timezone: "npm:^0.5.34"
     moorhen: "npm:0.22.7"
-    ngl: "npm:2.0.0-dev.37"
     notistack: "npm:3.0.2"
     pixelmatch: "npm:^7.1.0"
     plotly.js-dist-min: "npm:^3.1.1"
@@ -13084,7 +13018,6 @@ __metadata:
     resize-observer-polyfill: "npm:^1.5.1"
     style-loader: "npm:^3.3.4"
     terser-webpack-plugin: "npm:^5.6.1"
-    three.js: "npm:^0.77.1"
     tss-react: "npm:4.9.21"
     typeface-roboto: "npm:^0.0.75"
     typescript: "npm:^3.7.2"
@@ -16951,13 +16884,6 @@ __metadata:
   version: 1.0.0
   resolution: "nested-worker@https://github.com/johanholmerin/nested-worker.git#commit=ab3b06c721a61d789678a9458584c55c89ee36ca"
   checksum: 10c0/94400badd98e2cfe7600efe82a0d97f9d22349b38e9016e4e089fc2acb430f8c43720347ff54446d824ed4e985425fd2e5c2c6ba0dd4ada90a54eaa596d8ab54
-  languageName: node
-  linkType: hard
-
-"ngl@npm:2.0.0-dev.37":
-  version: 2.0.0-dev.37
-  resolution: "ngl@npm:2.0.0-dev.37"
-  checksum: 10c0/fa55bcf3b0a5369e9a52059727dcbbe6d35f820e523eccdd233d8f648c2960611a25ac82c303c43a53463adaac51917139ce08f6807596033898f5439b0561b0
   languageName: node
   linkType: hard
 
@@ -20840,22 +20766,6 @@ __metadata:
   peerDependencies:
     tslib: ^2
   checksum: 10c0/6357247872cfd0ef5407455eab2724ccbf591f0b1a56a230c66ab139dc0a8bb4acaf85c177af0eee7a49740a4674c424529eca3e573b439eb256afed4e433fac
-  languageName: node
-  linkType: hard
-
-"three.js@npm:^0.77.1":
-  version: 0.77.1
-  resolution: "three.js@npm:0.77.1"
-  dependencies:
-    three: "npm:0.77.0"
-  checksum: 10c0/eb8750377552209d6618745d17af7702867082c274e1c1b9b43d209396f7461bef181a063900901cb02c7a8783bec05ce7213ed7790b4737b22a506713c48137
-  languageName: node
-  linkType: hard
-
-"three@npm:0.77.0":
-  version: 0.77.0
-  resolution: "three@npm:0.77.0"
-  checksum: 10c0/f5c5f4e6d58f8661aadf97dac927ce10e960f9648acf7cc4d3eac21666e0019d96a8dc1f99cb30f175484100f46a39a008f658119c4ebe1b200e291b0bf9ac9b
   languageName: node
   linkType: hard
 

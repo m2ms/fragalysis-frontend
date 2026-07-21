@@ -55,6 +55,7 @@
     "@mui/icons-material": "7.3.11",
     "@mui/material": "7.3.11",
     "@mui/system": "7.3.11",
+    "@mui/x-charts": "^9.10.0",
     "@mui/x-tree-view": "8.29.2",
     "@redux-devtools/extension": "4.0.0",
     "@rjsf/core": "6.6.2",

@@ -13,7 +13,7 @@ import { withDisabledMoleculeNglControlButton } from '../../../redux/dispatchAct
 
 export const DEFAULT_PROTEIN_SETTINGS = {
   protein: true,
-  artefact: false
+  artefact: true
 };
 
 const normalizeProteinSettings = settings => ({
@@ -23,9 +23,7 @@ const normalizeProteinSettings = settings => ({
 
 const isDefaultProteinSettings = settings => {
   const normalizedSettings = normalizeProteinSettings(settings);
-  return Object.keys(DEFAULT_PROTEIN_SETTINGS).every(
-    key => normalizedSettings[key] === DEFAULT_PROTEIN_SETTINGS[key]
-  );
+  return Object.keys(DEFAULT_PROTEIN_SETTINGS).every(key => normalizedSettings[key] === DEFAULT_PROTEIN_SETTINGS[key]);
 };
 
 export const ProteinButtonPopover = ({

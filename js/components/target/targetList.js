@@ -11,6 +11,7 @@ import {
   TableCell,
   TableRow,
   TablePagination,
+  TableFooter,
   IconButton,
   InputAdornment,
   TextField,
@@ -48,7 +49,6 @@ import { Panel } from '../common';
 import RichTooltip from '../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
 import { Collapse } from '@mui/material';
-import { StackedLineChartOutlined } from '@mui/icons-material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import {
   downloadStructuresZip,
@@ -87,22 +87,6 @@ const useStyles = makeStyles(theme => ({
     // minWidth: 430,
     tableLayout: 'auto'
     // marginTop: '8px'
-  },
-  listContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    minHeight: 0
-  },
-  tableScroll: {
-    flex: 1,
-    minHeight: 0,
-    overflow: 'auto'
-  },
-  pagination: {
-    flexShrink: 0,
-    borderTop: '1px solid #e6e8ef',
-    backgroundColor: '#ffffff'
   },
   tableHeader: {
     padding: 0,
@@ -768,7 +752,6 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
   };
 
   const renderStaticDropdown = target => {
-    console.log('renderStaticDropdown target', target);
     const settings = target.settings ? target.settings : null;
     const renderChart =
       settings?.measured_compounds &&
@@ -776,12 +759,6 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
       settings?.bound_compounds &&
       settings?.associated_affinity_measurements;
 
-    const seriesLabels = {
-      crystallographicEvents: 'Binding events',
-      boundCompounds: 'Bound compounds',
-      affinityMeasurements: 'Affinity measurements',
-      measuredCompounds: 'Measured compounds'
-    };
     return (
       <div className={classes.dropdownContent}>
         <div className={classes.dropdownImage} />
@@ -862,26 +839,6 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
               }
             }}
             borderRadius={4}
-            // xAxis={[
-            //   {
-            //     data: [
-            //       'crystallographic binding events',
-            //       'bound compounds',
-            //       'associated affinity measurements',
-            //       'measured compounds'
-            //     ]
-            //   }
-            // ]}
-            // series={[
-            //   {
-            //     data: [
-            //       settings?.crystallographic_binding_events,
-            //       settings?.bound_compounds,
-            //       settings?.associated_affinity_measurements,
-            //       settings?.measured_compounds
-            //     ]
-            //   }
-            // ]}
           />
         )}
       </div>
@@ -1081,9 +1038,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
           ]
         }
       >
-        <div className={classes.listContent}>
-          <div className={classes.tableScroll}>
-            <Table stickyHeader className={classes.table} aria-label={`${title} table`}>
+        <Table className={classes.table} aria-label="a dense table">
           <TableHead>
             <TableRow>
               <TableCell
@@ -1434,26 +1389,26 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
               )}
             </TableRow>
           </TableHead>
-              <TableBody>{itemsToRender()}</TableBody>
-            </Table>
-          </div>
-          <TablePagination
-            className={classes.pagination}
-            component="div"
-            rowsPerPageOptions={defaultRowsPerPageOptions}
-            count={targetList.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            slotProps={{
-              select: {
-                inputProps: { 'aria-label': 'rows per page' },
-                native: true
-              }
-            }}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </div>
+          <TableBody>{itemsToRender()}</TableBody>
+          <TableFooter>
+            <TableRow>
+              <TablePagination
+                rowsPerPageOptions={defaultRowsPerPageOptions}
+                count={targetList.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                slotProps={{
+                  select: {
+                    inputProps: { 'aria-label': 'rows per page' },
+                    native: true
+                  }
+                }}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+              />
+            </TableRow>
+          </TableFooter>
+        </Table>
         {filterDialogOpen && (
           <TooltipPathProvider path="sortFilterDialog">
             <TargetListSortFilterDialog

@@ -64,6 +64,10 @@ import { getDefaultComputedInspirations, getFilteredComputedInspirations } from 
 import { TAG_META_CATEGORIES } from '../tags/utils/tagUtils';
 import { setIsOpenCrossReferenceDialog } from '../../datasets/redux/actions';
 import { createRhsPoseTransferConfig } from './rhsPoseTransferConfig';
+import { POSE_TRANSFER_ORDERS } from './poseTransfer';
+
+// Change this one value to switch the injected RHS pose-transfer sequencing strategy.
+const RHS_POSE_TRANSFER_ORDER = POSE_TRANSFER_ORDERS.REMOVE_FIRST;
 
 const RHS_LIGAND_REPRESENTATIONS = [
   {
@@ -502,6 +506,7 @@ export const PoseListRHS = memo(({ expandHandler }) => {
       createRhsPoseTransferConfig({
         getComputedInspirations,
         ligandRepresentations: RHS_LIGAND_REPRESENTATIONS,
+        transferOrder: RHS_POSE_TRANSFER_ORDER,
         dialogs: {
           capture: ({ state, sourcePose }) => ({
             transferInspirations:
@@ -539,6 +544,20 @@ export const PoseListRHS = memo(({ expandHandler }) => {
               transferDispatch(setIsObsInspirationDialogOpen(false));
               transferDispatch(setObsInspirationDialogObsIds([]));
               transferDispatch(setObsInspirationDialogPoseId(0));
+            }
+          },
+          onTransferFailure: ({
+            dispatch: transferDispatch,
+            dialogState,
+            sourcePose,
+            sourceInspirationIds,
+            requestAnchor
+          }) => {
+            if (dialogState?.transferInspirations) {
+              transferDispatch(setObsInspirationDialogObsIds(sourceInspirationIds));
+              transferDispatch(setObsInspirationDialogPoseId(sourcePose.id));
+              transferDispatch(setIsObsInspirationDialogOpen(true));
+              requestAnchor(sourcePose.id);
             }
           }
         }

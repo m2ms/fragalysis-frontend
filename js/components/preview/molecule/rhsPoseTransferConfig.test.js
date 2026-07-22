@@ -158,4 +158,115 @@ describe('rhs pose transfer configuration', () => {
       })
     );
   });
+
+  it('requires both the rendered queue marker and a matching NGL object for structure readiness', () => {
+    expect.hasAssertions();
+    const config = createConfig();
+    const ligand = config.inspirationControls.find(control => control.key === 'ligand');
+    const item = { id: 41, code: 'rendered-ligand' };
+    const state = createState({
+      selectionReducers: {
+        fragmentDisplayList: [item.id],
+        toBeDisplayedList: [
+          {
+            id: item.id,
+            type: 'LIGAND',
+            display: true,
+            rendered: true
+          }
+        ]
+      },
+      nglReducers: {
+        countOfPendingNglObjects: { major_view: 0 },
+        objectsInView: {
+          rendered_ligand: {
+            moleculeId: item.id,
+            OBJECT_TYPE: 'LIGAND',
+            representations: []
+          }
+        }
+      }
+    });
+
+    expect(ligand.isRendered({ state, item })).toBe(true);
+
+    state.nglReducers.countOfPendingNglObjects.major_view = 1;
+    expect(ligand.isRendered({ state, item })).toBe(false);
+
+    state.nglReducers.countOfPendingNglObjects.major_view = 0;
+    state.nglReducers.objectsInView = {};
+    expect(ligand.isRendered({ state, item })).toBe(false);
+  });
+
+  it('treats destination-specific protein and density ids as equal customization', () => {
+    expect.hasAssertions();
+    const config = createConfig();
+    const protein = config.inspirationControls.find(control => control.key === 'protein');
+    const density = config.inspirationControls.find(control => control.key === 'density');
+
+    expect(
+      protein.matchesSnapshot({
+        currentSnapshot: {
+          activeState: { protein: true, artefact: false },
+          customization: {
+            proteinRepresentations: [{ type: 'cartoon' }],
+            settings: { id: 51, protein: true, artefact: false, opacity: 0.6 }
+          }
+        },
+        snapshot: {
+          activeState: { protein: true, artefact: false },
+          customization: {
+            proteinRepresentations: [{ type: 'cartoon' }],
+            settings: { id: 52, protein: true, artefact: false, opacity: 0.6 }
+          }
+        }
+      })
+    ).toBe(true);
+
+    expect(
+      density.matchesSnapshot({
+        currentSnapshot: {
+          activeState: { id: 61, color: '#abcdef', contour_event: 1.5 },
+          customization: {
+            densityObject: { id: 61, color: '#abcdef', contour_event: 1.5 },
+            representations: [{ type: 'surface' }]
+          }
+        },
+        snapshot: {
+          activeState: { id: 62, color: '#abcdef', contour_event: 1.5 },
+          customization: {
+            densityObject: { id: 62, color: '#abcdef', contour_event: 1.5 },
+            representations: [{ type: 'surface' }]
+          }
+        }
+      })
+    ).toBe(true);
+  });
+
+  it('removes a ligand without implicitly removing a separately retained vector', async () => {
+    expect.hasAssertions();
+    const config = createConfig();
+    const ligand = config.inspirationControls.find(control => control.key === 'ligand');
+    const state = createState({
+      selectionReducers: {
+        fragmentDisplayList: [71],
+        toBeDisplayedList: [{ id: 71, type: 'LIGAND', display: true }]
+      }
+    });
+    const actions = [];
+    const dispatch = action => {
+      if (typeof action === 'function') {
+        return action(dispatch, () => state);
+      }
+      actions.push(action);
+      return action;
+    };
+
+    await ligand.remove({ dispatch, stage: {}, selectedItem: { id: 71 }, state });
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0].item).toStrictEqual(
+      expect.objectContaining({ id: 71, type: 'LIGAND', display: false, withVector: false })
+    );
+  });
 });

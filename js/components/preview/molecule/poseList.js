@@ -1107,6 +1107,18 @@ export const PoseList = memo(
             })
           );
         } catch (error) {
+          await Promise.resolve(
+            poseTransferConfig.dialogs?.onTransferFailure?.({
+              dispatch,
+              dialogState: error.poseTransferContext?.dialogState,
+              sourcePose,
+              destinationPose,
+              sourceInspirationIds: error.poseTransferContext?.sourceInspirationIds || [],
+              requestAnchor: setPendingDialogAnchorPoseId,
+              error
+            })
+          ).catch(() => undefined);
+
           handlers.addToastMessage?.({
             text: `Unable to transfer pose display settings: ${error.message || error}`,
             level: TOAST_LEVELS.ERROR

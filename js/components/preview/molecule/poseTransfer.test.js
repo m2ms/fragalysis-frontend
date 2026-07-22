@@ -4,7 +4,8 @@ import {
   executePoseTransfer,
   getAdjacentPoses,
   getFirstEligiblePoseTransfers,
-  hasPoseTransferState
+  hasPoseTransferState,
+  POSE_TRANSFER_ORDERS
 } from './poseTransfer';
 
 const createControl = key => ({
@@ -233,5 +234,171 @@ describe('pose transfer helpers', () => {
     );
     expect(result.destinationInspirationIds).toStrictEqual(['inspirationC', 'inspirationD']);
     expect(result.dialogState).toStrictEqual({ transferInspirations: true });
+  });
+
+  it('can render the destination before removing stale structures and retains an identical overlap', async () => {
+    expect.hasAssertions();
+    const events = [];
+    const state = {
+      active: {
+        ligand: {
+          shared: { value: 'shared-settings' },
+          stale: { value: 'remove-me' }
+        }
+      }
+    };
+    const ligand = {
+      ...createControl('ligand'),
+      remove: ({ selectedItem }) => {
+        events.push(`remove:${selectedItem.id}`);
+        delete state.active.ligand[selectedItem.id];
+      },
+      apply: ({ target, customization }) => {
+        events.push(`apply:${target.id}`);
+        state.active.ligand[target.id] = {
+          value: customization.value
+        };
+      },
+      isRendered: ({ state: currentState, item }) => Boolean(currentState.active.ligand[item.id])
+    };
+    const sourcePose = {
+      id: 'source',
+      inspirationItems: [{ id: 'shared' }]
+    };
+    const destinationPose = {
+      id: 'destination',
+      inspirationItems: [{ id: 'shared' }, { id: 'new' }]
+    };
+    const config = {
+      transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
+      poseControls: [],
+      inspirationControls: [ligand],
+      getPoseItems: () => [],
+      getPoseTargets: () => [],
+      getInspirationItems: ({ pose }) => pose.inspirationItems
+    };
+    const getState = () => state;
+    const dispatch = action => (typeof action === 'function' ? action(dispatch, getState) : action);
+
+    await executePoseTransfer({ config, sourcePose, destinationPose, stage: {} })(dispatch, getState);
+
+    expect(events).toStrictEqual(['apply:new', 'remove:stale']);
+    expect(state.active.ligand.shared).toStrictEqual({ value: 'shared-settings' });
+    expect(state.active.ligand.new).toStrictEqual({ value: 'shared-settings' });
+    expect(state.active.ligand.stale).toBeUndefined();
+  });
+
+  it('refreshes changed shared inspirations only after other destination structures render', async () => {
+    expect.hasAssertions();
+    const events = [];
+    const state = {
+      active: {
+        ligand: {
+          sourceInspiration: { value: 'blue' },
+          shared: { value: 'red' }
+        }
+      }
+    };
+    const ligand = {
+      ...createControl('ligand'),
+      remove: ({ selectedItem }) => {
+        events.push(`remove:${selectedItem.id}`);
+        delete state.active.ligand[selectedItem.id];
+      },
+      apply: ({ target, customization }) => {
+        events.push(`apply:${target.id}:${customization.value}`);
+        state.active.ligand[target.id] = { value: customization.value };
+      },
+      isRendered: ({ state: currentState, item }) => Boolean(currentState.active.ligand[item.id])
+    };
+    const sourcePose = {
+      id: 'source',
+      inspirationItems: [{ id: 'sourceInspiration' }, { id: 'shared' }]
+    };
+    const destinationPose = {
+      id: 'destination',
+      inspirationItems: [{ id: 'shared' }, { id: 'new' }]
+    };
+    const config = {
+      transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
+      poseControls: [],
+      inspirationControls: [ligand],
+      getPoseItems: () => [],
+      getPoseTargets: () => [],
+      getInspirationItems: ({ pose }) => pose.inspirationItems
+    };
+    const getState = () => state;
+    const dispatch = action => (typeof action === 'function' ? action(dispatch, getState) : action);
+
+    await executePoseTransfer({ config, sourcePose, destinationPose, stage: {} })(dispatch, getState);
+
+    expect(events.indexOf('apply:new:blue')).toBeLessThan(events.indexOf('remove:shared'));
+    expect(events).toStrictEqual([
+      'apply:new:blue',
+      'remove:shared',
+      'apply:shared:blue',
+      'remove:sourceInspiration'
+    ]);
+    expect(state.active.ligand).toStrictEqual({
+      shared: { value: 'blue' },
+      new: { value: 'blue' }
+    });
+  });
+
+  it('rolls back newly added structures when destination rendering times out', async () => {
+    expect.hasAssertions();
+    const events = [];
+    const state = {
+      active: {
+        ligand: {
+          source: { value: 'old-settings' },
+          unrelated: { value: 'keep-until-success' }
+        }
+      }
+    };
+    const ligand = {
+      ...createControl('ligand'),
+      remove: ({ selectedItem }) => {
+        events.push(`remove:${selectedItem.id}`);
+        delete state.active.ligand[selectedItem.id];
+      },
+      apply: ({ target, customization }) => {
+        events.push(`apply:${target.id}`);
+        state.active.ligand[target.id] = { value: customization.value };
+      },
+      isRendered: ({ item }) => item.id !== 'destination'
+    };
+    const sourcePose = { id: 'source-pose', poseItems: [{ id: 'source' }] };
+    const destinationPose = { id: 'destination-pose', poseTargets: [{ id: 'destination' }] };
+    const config = {
+      transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
+      renderTimeout: 1,
+      poseControls: [ligand],
+      inspirationControls: [],
+      getPoseItems: ({ pose }) => pose.poseItems || [],
+      getPoseTargets: ({ pose }) => pose.poseTargets || [],
+      getInspirationItems: () => [],
+      dialogs: {
+        capture: () => ({ transferInspirations: true })
+      }
+    };
+    const getState = () => state;
+    const dispatch = action => (typeof action === 'function' ? action(dispatch, getState) : action);
+
+    await expect(
+      executePoseTransfer({ config, sourcePose, destinationPose, stage: {} })(dispatch, getState)
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('destination structures'),
+      poseTransferContext: {
+        dialogState: { transferInspirations: true },
+        sourceInspirationIds: []
+      }
+    });
+
+    expect(events).toStrictEqual(['apply:destination', 'remove:destination']);
+    expect(state.active.ligand).toStrictEqual({
+      source: { value: 'old-settings' },
+      unrelated: { value: 'keep-until-success' }
+    });
   });
 });

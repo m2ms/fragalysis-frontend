@@ -1,4 +1,4 @@
-import { cloneDeep } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import {
   addArtefactChain,
   addComplex,
@@ -20,6 +20,7 @@ import { colourList } from './utils/color';
 import { getRepresentationsByType, getRepresentationsForDensities } from '../../nglView/generatingObjects';
 import { OBJECT_TYPE } from '../../nglView/constants';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
+import { VIEWS } from '../../../constants/constants';
 
 const getMainObservation = pose =>
   pose?.associatedObs?.find(observation => observation.id === pose?.main_site_observation) ||
@@ -30,6 +31,31 @@ const getLatestQueueItem = (state, id, type) =>
   [...(state.selectionReducers.toBeDisplayedList || [])]
     .reverse()
     .find(item => item.id === id && item.type === type && item.display !== false);
+
+const isQueueItemRendered = (state, id, type) => getLatestQueueItem(state, id, type)?.rendered === true;
+
+const hasRenderedNglObject = (state, id, objectTypes) =>
+  Object.values(state.nglReducers.objectsInView || {}).some(
+    object => object.moleculeId === id && objectTypes.includes(object.OBJECT_TYPE)
+  );
+
+const areNglLoadsComplete = state =>
+  (state.nglReducers.countOfPendingNglObjects?.[VIEWS.MAJOR_VIEW] ?? 0) === 0;
+
+const isStructureRendered = (state, id, queueType, objectTypes) =>
+  isQueueItemRendered(state, id, queueType) &&
+  areNglLoadsComplete(state) &&
+  hasRenderedNglObject(state, id, objectTypes);
+
+const omitId = value => {
+  const copy = cloneDeep(value);
+
+  if (copy && typeof copy === 'object') {
+    delete copy.id;
+  }
+
+  return copy;
+};
 
 const getRepresentations = (state, item, objectType, queueType) => {
   const renderedRepresentations = getRepresentationsByType(
@@ -74,8 +100,8 @@ const ligandControl = fallbackRepresentations => ({
     };
   },
   remove: ({ dispatch, stage, selectedItem, state }) => {
-    ensureRemovalQueued({ dispatch, state, id: selectedItem.id, type: NGL_OBJECTS.LIGAND, extra: { withVector: true } });
-    return dispatch(removeLigand(stage, selectedItem, true));
+    ensureRemovalQueued({ dispatch, state, id: selectedItem.id, type: NGL_OBJECTS.LIGAND, extra: { withVector: false } });
+    return dispatch(removeLigand(stage, selectedItem, true, false));
   },
   apply: ({ dispatch, stage, target, customization }) =>
     dispatch(
@@ -88,7 +114,10 @@ const ligandControl = fallbackRepresentations => ({
         true,
         cloneDeep(customization?.representations || fallbackRepresentations)
       )
-    )
+    ),
+  isRendered: ({ state, item }) =>
+    state.selectionReducers.fragmentDisplayList.includes(item.id) &&
+    isStructureRendered(state, item.id, NGL_OBJECTS.LIGAND, [OBJECT_TYPE.LIGAND])
 });
 
 const proteinControl = {
@@ -109,6 +138,14 @@ const proteinControl = {
         artefact: artefactIds.has(id)
       }
     }));
+  },
+  isSelectedItemActive: ({ state, selectedItem }) => {
+    const activeState = selectedItem.activeState || {};
+
+    return (
+      (activeState.protein && state.selectionReducers.proteinList.includes(selectedItem.id)) ||
+      (activeState.artefact && state.selectionReducers.artefactsChainList.includes(selectedItem.id))
+    );
   },
   captureCustomization: ({ state, item, activeState }) => {
     const proteinQueueItem = getLatestQueueItem(state, item.id, NGL_OBJECTS.PROTEIN);
@@ -142,6 +179,25 @@ const proteinControl = {
 
     return Promise.all(promises);
   },
+  matchesSnapshot: ({ currentSnapshot, snapshot }) =>
+    isEqual(currentSnapshot.activeState, snapshot.activeState) &&
+    isEqual(
+      {
+        ...currentSnapshot.customization,
+        settings: omitId(currentSnapshot.customization?.settings)
+      },
+      {
+        ...snapshot.customization,
+        settings: omitId(snapshot.customization?.settings)
+      }
+    ),
+  isRendered: ({ state, item, activeState }) =>
+    (!activeState.protein ||
+      (state.selectionReducers.proteinList.includes(item.id) &&
+        isStructureRendered(state, item.id, NGL_OBJECTS.PROTEIN, [OBJECT_TYPE.HIT_PROTEIN]))) &&
+    (!activeState.artefact ||
+      (state.selectionReducers.artefactsChainList.includes(item.id) &&
+        isStructureRendered(state, item.id, NGL_OBJECTS.ARTEFACTS, [OBJECT_TYPE.ARTEFACTS]))),
   apply: ({ dispatch, stage, target, activeState, customization }) => {
     const colour = colourList[target.id % colourList.length];
     const promises = [];
@@ -214,7 +270,10 @@ const createStructureControl = ({ key, listKey, queueType, objectType, add, remo
         cloneDeep(customization?.representations),
         false
       )
-    )
+    ),
+  isRendered: ({ state, item }) =>
+    state.selectionReducers[listKey].includes(item.id) &&
+    isStructureRendered(state, item.id, queueType, [objectType])
 });
 
 const complexControl = createStructureControl({
@@ -273,6 +332,18 @@ const densityControl = {
     };
   },
   isAvailable: ({ item, snapshot }) => hasAvailableDensityMap(item, snapshot.customization?.densityObject),
+  matchesSnapshot: ({ currentSnapshot, snapshot }) =>
+    isEqual(omitId(currentSnapshot.activeState), omitId(snapshot.activeState)) &&
+    isEqual(
+      {
+        ...currentSnapshot.customization,
+        densityObject: omitId(currentSnapshot.customization?.densityObject)
+      },
+      {
+        ...snapshot.customization,
+        densityObject: omitId(snapshot.customization?.densityObject)
+      }
+    ),
   remove: ({ dispatch, stage, selectedItem, state }) => {
     ensureRemovalQueued({
       dispatch,
@@ -298,7 +369,10 @@ const densityControl = {
     };
 
     return dispatch(addDensity(target, densityObject, cloneDeep(customization?.representations)));
-  }
+  },
+  isRendered: ({ state, item }) =>
+    state.selectionReducers.densityList.some(density => density.id === item.id) &&
+    isStructureRendered(state, item.id, NGL_OBJECTS.DENSITY, [OBJECT_TYPE.DENSITY])
 };
 
 const vectorControl = {
@@ -309,10 +383,20 @@ const vectorControl = {
     ensureRemovalQueued({ dispatch, state, id: selectedItem.id, type: NGL_OBJECTS.VECTOR });
     return dispatch(removeVector(stage, selectedItem, true));
   },
-  apply: ({ dispatch, stage, target }) => dispatch(addVector(stage, target, true))
+  apply: ({ dispatch, stage, target }) => dispatch(addVector(stage, target, true)),
+  isRendered: ({ state, item }) =>
+    state.selectionReducers.vectorOnList.includes(item.id) &&
+    isQueueItemRendered(state, item.id, NGL_OBJECTS.VECTOR) &&
+    areNglLoadsComplete(state)
 };
 
-export const createRhsPoseTransferConfig = ({ getComputedInspirations, ligandRepresentations, dialogs }) => {
+export const createRhsPoseTransferConfig = ({
+  getComputedInspirations,
+  ligandRepresentations,
+  dialogs,
+  transferOrder,
+  renderTimeout
+}) => {
   const ligand = ligandControl(ligandRepresentations);
   const poseControls = [ligand, proteinControl, complexControl, surfaceControl];
   const inspirationControls = [...poseControls, densityControl, vectorControl];
@@ -341,6 +425,8 @@ export const createRhsPoseTransferConfig = ({ getComputedInspirations, ligandRep
     getInspirationIds,
     getInspirationStateItems,
     getInspirationItems,
-    dialogs
+    dialogs,
+    transferOrder,
+    renderTimeout
   };
 };

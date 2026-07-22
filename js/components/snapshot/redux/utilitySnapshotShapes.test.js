@@ -3,6 +3,11 @@ import {
   mergeSnapshotStateWithCurrentData,
   prepareSwitchingSnapshotRenderState
 } from './utilitySnapshotShapes';
+import {
+  DEFAULT_RHS_POSE_NAVIGATION_CONFIG,
+  POSE_TRANSFER_ORDERS,
+  POSE_TRANSFER_SCHEDULING
+} from '../../../constants/poseNavigation';
 
 const createBaseState = () => ({
   apiReducers: {
@@ -66,7 +71,12 @@ const createBaseState = () => ({
     lhsIsFullyRendered: true,
     rhsIsFullyRendered: true,
     toBeDisplayedList: [{ id: 101, type: 'ligand', center: true, rendered: true }],
-    filter: { active: true }
+    filter: { active: true },
+    rhsPoseNavigationConfig: {
+      transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
+      transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
+      centerOnDestinationLigandAfterTransfer: true
+    }
   },
   datasetsReducers: {
     datasets: [{ id: 'dataset-1' }],
@@ -131,6 +141,11 @@ describe('utilitySnapshotShapes', () => {
     expect(snapshotState.selectionReducers.vectorOnList).toStrictEqual([]);
     expect(snapshotState.selectionReducers.lhsIsFullyRendered).toBe(false);
     expect(snapshotState.selectionReducers.rhsIsFullyRendered).toBe(false);
+    expect(snapshotState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual({
+      transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
+      transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
+      centerOnDestinationLigandAfterTransfer: true
+    });
     expect(snapshotState.datasetsReducers.ligandLists).toStrictEqual({});
     expect(snapshotState.datasetsReducers.proteinLists).toStrictEqual({});
     expect(snapshotState.datasetsReducers.complexLists).toStrictEqual({});
@@ -174,6 +189,7 @@ describe('utilitySnapshotShapes', () => {
         densityListType: [{ id: 885, sigma: 'fofc' }],
         qualityList: [884],
         vectorOnList: [883],
+        rhsPoseNavigationConfig: { ...DEFAULT_RHS_POSE_NAVIGATION_CONFIG },
         toBeDisplayedList: [{ id: 999, type: 'ligand', center: true, rendered: true }]
       },
       datasetsReducers: {
@@ -215,6 +231,9 @@ describe('utilitySnapshotShapes', () => {
     expect(mergedState.selectionReducers.lhsIsFullyRendered).toBe(true);
     expect(mergedState.selectionReducers.rhsIsFullyRendered).toBe(true);
     expect(mergedState.selectionReducers.filter).toStrictEqual({ active: false });
+    expect(mergedState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual(
+      DEFAULT_RHS_POSE_NAVIGATION_CONFIG
+    );
     expect(mergedState.datasetsReducers.ligandLists).toStrictEqual({ 'dataset-1': [501] });
     expect(mergedState.datasetsReducers.proteinLists).toStrictEqual({ 'dataset-1': [502] });
     expect(mergedState.datasetsReducers.complexLists).toStrictEqual({ 'dataset-1': [503] });
@@ -228,6 +247,22 @@ describe('utilitySnapshotShapes', () => {
     expect(mergedState.datasetsReducers.toBeDisplayedList).toStrictEqual({
       'dataset-1': [{ id: 777, type: 'ligand', center: false, rendered: false }]
     });
+  });
+
+  it('uses navigation defaults when restoring a legacy snapshot without configuration', () => {
+    expect.hasAssertions();
+    const currentState = createBaseState();
+    const legacySnapshotState = createBaseState();
+    delete legacySnapshotState.selectionReducers.rhsPoseNavigationConfig;
+
+    const mergedState = mergeSnapshotStateWithCurrentData(currentState, legacySnapshotState);
+
+    expect(currentState.selectionReducers.rhsPoseNavigationConfig).not.toStrictEqual(
+      DEFAULT_RHS_POSE_NAVIGATION_CONFIG
+    );
+    expect(mergedState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual(
+      DEFAULT_RHS_POSE_NAVIGATION_CONFIG
+    );
   });
 
   it('counts only actual new render work during in-place snapshot switches', () => {

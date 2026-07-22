@@ -21,6 +21,7 @@ import { getRepresentationsByType, getRepresentationsForDensities } from '../../
 import { OBJECT_TYPE } from '../../nglView/constants';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
 import { VIEWS } from '../../../constants/constants';
+import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
 
 const getMainObservation = pose =>
   pose?.associatedObs?.find(observation => observation.id === pose?.main_site_observation) ||
@@ -395,6 +396,8 @@ export const createRhsPoseTransferConfig = ({
   ligandRepresentations,
   dialogs,
   transferOrder,
+  transferScheduling,
+  centerOnDestinationLigandAfterTransfer = false,
   renderTimeout
 }) => {
   const ligand = ligandControl(ligandRepresentations);
@@ -425,8 +428,25 @@ export const createRhsPoseTransferConfig = ({
     getInspirationIds,
     getInspirationStateItems,
     getInspirationItems,
+    getTransferItem: ({ state, selectedItem }) =>
+      (state.apiReducers.all_mol_lists || []).find(item => item.id === selectedItem.id) || selectedItem,
+    postTransferFocus: {
+      enabled: centerOnDestinationLigandAfterTransfer,
+      getTarget: ({ destinationPoseItems }) => destinationPoseItems[0] || null,
+      isEligible: ({ state, target }) =>
+        state.selectionReducers.fragmentDisplayList.includes(target.id),
+      apply: async ({ dispatch, stage, target }) => {
+        const centered = await dispatch(centerOnLigandByMoleculeID(stage, target.id));
+
+        if (!centered) {
+          throw new Error('The destination ligand could not be found in the NGL view.');
+        }
+      },
+      failureMessage: 'Pose settings were transferred, but the destination ligand could not be centered.'
+    },
     dialogs,
     transferOrder,
+    transferScheduling,
     renderTimeout
   };
 };

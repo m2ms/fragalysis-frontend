@@ -1,13 +1,16 @@
 import { cloneDeep, isEqual } from 'lodash';
+import {
+  POSE_TRANSFER_ORDERS,
+  POSE_TRANSFER_SCHEDULING
+} from '../../../constants/poseNavigation';
+
+export { POSE_TRANSFER_ORDERS, POSE_TRANSFER_SCHEDULING } from '../../../constants/poseNavigation';
 
 const DEFAULT_CLEAR_TIMEOUT = 10000;
 const DEFAULT_RENDER_TIMEOUT = 60000;
 const CLEAR_POLL_INTERVAL = 25;
 
-export const POSE_TRANSFER_ORDERS = Object.freeze({
-  REMOVE_FIRST: 'remove-first',
-  ADD_FIRST: 'add-first'
-});
+export const DEFAULT_POSE_TRANSFER_SCHEDULING = POSE_TRANSFER_SCHEDULING.OVERLAPPED;
 
 export const getAdjacentPoses = (orderedPoses = [], poseId) => {
   const index = orderedPoses.findIndex(pose => pose.id === poseId);
@@ -259,6 +262,28 @@ const mergeApplyOperations = (...operationGroups) => {
   return [...operationsByKey.values()];
 };
 
+const createDestinationOperations = ({
+  state,
+  config,
+  snapshot,
+  destinationPoseItems,
+  destinationInspirationItems
+}) =>
+  mergeApplyOperations(
+    createApplyOperations({
+      state,
+      controls: config.poseControls,
+      snapshots: snapshot.pose,
+      targets: destinationPoseItems
+    }),
+    createApplyOperations({
+      state,
+      controls: config.inspirationControls,
+      snapshots: snapshot.inspirations,
+      targets: destinationInspirationItems
+    })
+  );
+
 const captureItemSnapshot = (state, item, control) => {
   const activeState = control.getActiveState(state, item);
 
@@ -402,6 +427,48 @@ const restoreOperations = ({ operations }) =>
     snapshot: operation.originalSnapshot
   }));
 
+const captureSelectedEntryOperation = ({ config, state, entry }) => {
+  const target =
+    entry.control.getTransferItem?.({ state, selectedItem: entry.selectedItem }) ||
+    config.getTransferItem?.({
+      state,
+      selectedItem: entry.selectedItem,
+      control: entry.control
+    }) ||
+    entry.selectedItem;
+  const snapshot = captureItemSnapshot(state, target, entry.control);
+
+  if (!snapshot) {
+    return null;
+  }
+
+  return {
+    control: entry.control,
+    key: entry.key,
+    snapshot,
+    target
+  };
+};
+
+const restoreMissingOperations = async ({
+  dispatch,
+  getState,
+  stage,
+  operations,
+  renderTimeout
+}) => {
+  const missingOperations = operations.filter(
+    operation => !operation.control.getActiveState(getState(), operation.target)
+  );
+
+  await applyOperations({ dispatch, getState, stage, operations: missingOperations });
+  await waitForOperationsToRender({
+    getState,
+    operations: missingOperations,
+    timeout: renderTimeout
+  });
+};
+
 const rollbackAddFirstTransfer = async ({
   dispatch,
   getState,
@@ -487,20 +554,13 @@ const executeAddFirstTransfer = async ({
 }) => {
   const initialState = getState();
   const controls = uniqueControls([...(config.poseControls || []), ...(config.inspirationControls || [])]);
-  const desiredOperations = mergeApplyOperations(
-    createApplyOperations({
-      state: initialState,
-      controls: config.poseControls,
-      snapshots: snapshot.pose,
-      targets: destinationPoseItems
-    }),
-    createApplyOperations({
-      state: initialState,
-      controls: config.inspirationControls,
-      snapshots: snapshot.inspirations,
-      targets: destinationInspirationItems
-    })
-  );
+  const desiredOperations = createDestinationOperations({
+    state: initialState,
+    config,
+    snapshot,
+    destinationPoseItems,
+    destinationInspirationItems
+  });
   const desiredKeys = new Set(desiredOperations.map(operation => operation.key));
   const newOperations = [];
   const retainedOperations = [];
@@ -564,10 +624,186 @@ const executeAddFirstTransfer = async ({
   await waitForSelectedEntriesToClear({ getState, entries: staleEntries, timeout: clearTimeout });
 };
 
+const refreshOperation = async ({ dispatch, getState, stage, operation, clearTimeout, renderTimeout }) => {
+  await removeOperations({
+    dispatch,
+    getState,
+    stage,
+    operations: [operation],
+    timeout: clearTimeout
+  });
+  await applyOperations({ dispatch, getState, stage, operations: [operation] });
+  await waitForOperationsToRender({ getState, operations: [operation], timeout: renderTimeout });
+};
+
+const executeOverlappedTransfer = async ({
+  config,
+  dispatch,
+  getState,
+  stage,
+  snapshot,
+  destinationPoseItems,
+  destinationInspirationItems
+}) => {
+  const initialState = getState();
+  const controls = uniqueControls([...(config.poseControls || []), ...(config.inspirationControls || [])]);
+  const desiredOperations = createDestinationOperations({
+    state: initialState,
+    config,
+    snapshot,
+    destinationPoseItems,
+    destinationInspirationItems
+  });
+  const desiredKeys = new Set(desiredOperations.map(operation => operation.key));
+  const initialEntries = getSelectedEntries(initialState, controls);
+  const staleEntries = initialEntries.filter(entry => !desiredKeys.has(entry.key));
+  const staleOperations = staleEntries
+    .map(entry => captureSelectedEntryOperation({ config, state: initialState, entry }))
+    .filter(Boolean);
+  const newOperations = [];
+  const retainedOperations = [];
+  const changedOverlapOperations = [];
+
+  desiredOperations.forEach(operation => {
+    const currentSnapshot = captureItemSnapshot(initialState, operation.target, operation.control);
+
+    if (!currentSnapshot) {
+      newOperations.push(operation);
+    } else if (!operationMatchesCurrent({ state: initialState, operation, currentSnapshot })) {
+      changedOverlapOperations.push({ ...operation, originalSnapshot: currentSnapshot });
+    } else {
+      retainedOperations.push(operation);
+    }
+  });
+
+  const renderTimeout = config.renderTimeout ?? DEFAULT_RENDER_TIMEOUT;
+  const clearTimeout = config.clearTimeout ?? DEFAULT_CLEAR_TIMEOUT;
+  const startAdditions = () =>
+    (async () => {
+      await applyOperations({ dispatch, getState, stage, operations: newOperations });
+      await waitForOperationsToRender({ getState, operations: newOperations, timeout: renderTimeout });
+    })();
+  const startRemovals = () => [
+    (async () => {
+      await removeSelectedEntries({ dispatch, getState, stage, entries: staleEntries });
+      await waitForSelectedEntriesToClear({ getState, entries: staleEntries, timeout: clearTimeout });
+    })(),
+    ...changedOverlapOperations.map(operation =>
+      refreshOperation({
+        dispatch,
+        getState,
+        stage,
+        operation,
+        clearTimeout,
+        renderTimeout
+      })
+    )
+  ];
+  const operationTasks =
+    config.transferOrder === POSE_TRANSFER_ORDERS.ADD_FIRST
+      ? [startAdditions(), ...startRemovals()]
+      : [...startRemovals(), startAdditions()];
+  const tasks = [
+    ...operationTasks,
+    waitForOperationsToRender({
+      getState,
+      operations: retainedOperations,
+      timeout: renderTimeout
+    })
+  ];
+  const taskErrors = await Promise.all(
+    tasks.map(task => Promise.resolve(task).then(() => null, error => error))
+  );
+  const transferError = taskErrors.find(Boolean);
+
+  if (transferError) {
+    await rollbackAddFirstTransfer({
+      dispatch,
+      getState,
+      stage,
+      newOperations,
+      refreshedOperations: changedOverlapOperations,
+      clearTimeout,
+      renderTimeout
+    });
+
+    try {
+      await restoreMissingOperations({
+        dispatch,
+        getState,
+        stage,
+        operations: staleOperations,
+        renderTimeout
+      });
+    } catch (rollbackError) {
+      // Preserve the transfer error; the UI will report it after best-effort rollback.
+    }
+
+    throw transferError;
+  }
+};
+
 const addTransferContext = (error, context) => {
   const transferError = error instanceof Error ? error : new Error(String(error));
   transferError.poseTransferContext = context;
   return transferError;
+};
+
+const executePostTransferFocus = async ({
+  config,
+  dispatch,
+  getState,
+  stage,
+  destinationPose,
+  destinationPoseItems,
+  destinationInspirationItems,
+  destinationOperations
+}) => {
+  const focus = config.postTransferFocus;
+
+  if (!focus?.enabled) {
+    return null;
+  }
+
+  await waitForOperationsToRender({
+    getState,
+    operations: destinationOperations,
+    timeout: config.renderTimeout ?? DEFAULT_RENDER_TIMEOUT
+  });
+
+  try {
+    const state = getState();
+    const target = focus.getTarget
+      ? focus.getTarget({
+          state,
+          destinationPose,
+          destinationPoseItems,
+          destinationInspirationItems
+        })
+      : destinationPoseItems[0];
+
+    if (
+      !target ||
+      focus.isEligible?.({ state, target, destinationPose, destinationPoseItems }) === false
+    ) {
+      return null;
+    }
+
+    await Promise.resolve(
+      focus.apply({
+        dispatch,
+        getState,
+        stage,
+        state,
+        target,
+        destinationPose,
+        destinationPoseItems
+      })
+    );
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
 };
 
 export const executePoseTransfer = ({ config, sourcePose, destinationPose, stage }) => async (
@@ -590,6 +826,14 @@ export const executePoseTransfer = ({ config, sourcePose, destinationPose, stage
   const sourceInspirationIds = config.getInspirationIds
     ? config.getInspirationIds({ state: initialState, pose: sourcePose })
     : sourceInspirationItems.map(item => item.id);
+  const destinationOperations = createDestinationOperations({
+    state: initialState,
+    config,
+    snapshot,
+    destinationPoseItems,
+    destinationInspirationItems
+  });
+  let postTransferError = null;
 
   try {
     await Promise.resolve(
@@ -601,7 +845,22 @@ export const executePoseTransfer = ({ config, sourcePose, destinationPose, stage
       })
     );
 
-    if (config.transferOrder === POSE_TRANSFER_ORDERS.ADD_FIRST) {
+    const transferScheduling = config.transferScheduling || DEFAULT_POSE_TRANSFER_SCHEDULING;
+
+    // In OVERLAPPED mode transferOrder controls attempted launch priority only. The second group
+    // starts immediately without awaiting the first, so additions and removals still overlap.
+    // Changed shared objects always retain their safe per-object remove-then-add sequence.
+    if (transferScheduling === POSE_TRANSFER_SCHEDULING.OVERLAPPED) {
+      await executeOverlappedTransfer({
+        config,
+        dispatch,
+        getState,
+        stage,
+        snapshot,
+        destinationPoseItems,
+        destinationInspirationItems
+      });
+    } else if (config.transferOrder === POSE_TRANSFER_ORDERS.ADD_FIRST) {
       await executeAddFirstTransfer({
         config,
         dispatch,
@@ -622,6 +881,17 @@ export const executePoseTransfer = ({ config, sourcePose, destinationPose, stage
         destinationInspirationItems
       });
     }
+
+    postTransferError = await executePostTransferFocus({
+      config,
+      dispatch,
+      getState,
+      stage,
+      destinationPose,
+      destinationPoseItems,
+      destinationInspirationItems,
+      destinationOperations
+    });
   } catch (error) {
     throw addTransferContext(error, {
       dialogState,
@@ -632,6 +902,7 @@ export const executePoseTransfer = ({ config, sourcePose, destinationPose, stage
   return {
     dialogState,
     snapshot,
+    postTransferError,
     destinationInspirationIds: destinationInspirationItems.map(item => item.id)
   };
 };

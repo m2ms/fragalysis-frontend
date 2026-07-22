@@ -50,7 +50,8 @@ import {
   setObsInspirationDialogObsIds,
   setObsInspirationDialogPoseId,
   updateMoleculeInLHSObservations,
-  addToastMessage
+  addToastMessage,
+  setRhsPoseNavigationConfig
 } from '../../../reducers/selection/actions';
 import { initializeFilter } from '../../../reducers/selection/dispatchActions';
 import { setSortDialogOpen, setSearchStringOfHitNavigator } from './redux/actions';
@@ -64,10 +65,6 @@ import { getDefaultComputedInspirations, getFilteredComputedInspirations } from 
 import { TAG_META_CATEGORIES } from '../tags/utils/tagUtils';
 import { setIsOpenCrossReferenceDialog } from '../../datasets/redux/actions';
 import { createRhsPoseTransferConfig } from './rhsPoseTransferConfig';
-import { POSE_TRANSFER_ORDERS } from './poseTransfer';
-
-// Change this one value to switch the injected RHS pose-transfer sequencing strategy.
-const RHS_POSE_TRANSFER_ORDER = POSE_TRANSFER_ORDERS.REMOVE_FIRST;
 
 const RHS_LIGAND_REPRESENTATIONS = [
   {
@@ -205,6 +202,7 @@ export const PoseListRHS = memo(({ expandHandler }) => {
   const observationsForLHSCmp = useSelector(state => state.selectionReducers.observationsForLHSCmp);
   const proteinsHasLoaded = useSelector(state => state.nglReducers.proteinsHasLoaded);
   const searchSettings = useSelector(state => state.selectionReducers.searchSettings);
+  const rhsPoseNavigationConfig = useSelector(state => state.selectionReducers.rhsPoseNavigationConfig);
 
   // When rhs_compounds_list is empty but the dataset molecule list is not, generate virtual poses.
   // This is a fallback for when poses were not populated by loadMoleculesAndTagsNew.
@@ -506,7 +504,10 @@ export const PoseListRHS = memo(({ expandHandler }) => {
       createRhsPoseTransferConfig({
         getComputedInspirations,
         ligandRepresentations: RHS_LIGAND_REPRESENTATIONS,
-        transferOrder: RHS_POSE_TRANSFER_ORDER,
+        transferOrder: rhsPoseNavigationConfig.transferOrder,
+        transferScheduling: rhsPoseNavigationConfig.transferScheduling,
+        centerOnDestinationLigandAfterTransfer:
+          rhsPoseNavigationConfig.centerOnDestinationLigandAfterTransfer,
         dialogs: {
           capture: ({ state, sourcePose }) => ({
             transferInspirations:
@@ -562,7 +563,15 @@ export const PoseListRHS = memo(({ expandHandler }) => {
           }
         }
       }),
-    [getComputedInspirations]
+    [getComputedInspirations, rhsPoseNavigationConfig]
+  );
+
+  const poseNavigationConfig = useMemo(
+    () => ({
+      value: rhsPoseNavigationConfig,
+      onChange: changes => dispatch(setRhsPoseNavigationConfig(changes))
+    }),
+    [dispatch, rhsPoseNavigationConfig]
   );
 
   return (
@@ -603,6 +612,7 @@ export const PoseListRHS = memo(({ expandHandler }) => {
         viewConfig={viewConfig}
         getComputedInspirations={getComputedInspirations}
         poseTransferConfig={poseTransferConfig}
+        poseNavigationConfig={poseNavigationConfig}
         ligandRepresentations={RHS_LIGAND_REPRESENTATIONS}
         isTagEditorForCurrentSide={isTagEditorForCurrentSide}
         handlers={handlers}

@@ -1,7 +1,16 @@
 /**
  * Created by abradley on 14/03/2018.
  */
-import { GridLegacy as Grid, CircularProgress, Typography, IconButton, Select, MenuItem, Checkbox } from '@mui/material';
+import {
+  GridLegacy as Grid,
+  CircularProgress,
+  Typography,
+  IconButton,
+  Select,
+  MenuItem,
+  Checkbox,
+  Popover
+} from '@mui/material';
 import { makeStyles } from '../../../ui/styles';
 import React, { useState, useEffect, useCallback, memo, useRef, useContext, useMemo } from 'react';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
@@ -33,6 +42,7 @@ import ObservationUnifiedViewWrapper from './observationUnifiedView/observationU
 import RichTooltip from '../../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../../tooltip/TooltipPathContext';
 import { executePoseTransfer, getFirstEligiblePoseTransfers } from './poseTransfer';
+import PoseNavigationConfigPopover from './poseNavigationConfigPopover';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -358,6 +368,7 @@ export const PoseList = memo(
     viewConfig,
     getComputedInspirations = undefined,
     poseTransferConfig = undefined,
+    poseNavigationConfig = undefined,
     ligandRepresentations = undefined,
     isTagEditorForCurrentSide = false,
     handlers = {},
@@ -381,6 +392,7 @@ export const PoseList = memo(
     const [poseTransferResetKey, setPoseTransferResetKey] = useState(0);
     const [pendingDialogAnchorPoseId, setPendingDialogAnchorPoseId] = useState(null);
     const [orderedPoseTransferIds, setOrderedPoseTransferIds] = useState([]);
+    const [poseNavigationConfigAnchor, setPoseNavigationConfigAnchor] = useState(null);
 
     const selectedAll = useRef(false);
     const poseTransferInProgressRef = useRef(false);
@@ -1106,6 +1118,17 @@ export const PoseList = memo(
               requestAnchor: setPendingDialogAnchorPoseId
             })
           );
+
+          if (result.postTransferError) {
+            handlers.addToastMessage?.({
+              text:
+                poseTransferConfig.postTransferFocus?.failureMessage ||
+                `Pose settings were transferred, but the destination could not be focused: ${
+                  result.postTransferError.message || result.postTransferError
+                }`,
+              level: TOAST_LEVELS.ERROR
+            });
+          }
         } catch (error) {
           await Promise.resolve(
             poseTransferConfig.dialogs?.onTransferFailure?.({
@@ -1709,6 +1732,38 @@ export const PoseList = memo(
                 >
                   <ArrowDownward />
                 </IconButton>
+              </Grid>
+            )}
+            {poseNavigationConfig && (
+              <Grid item className={classes.toolbarSmallButtons}>
+                <RichTooltip path="navConfig.button">
+                  <Button
+                    id="hit-navigator-pose-navigation-config"
+                    variant="outlined"
+                    className={classes.contColButton}
+                    aria-haspopup="dialog"
+                    aria-expanded={Boolean(poseNavigationConfigAnchor)}
+                    onClick={event =>
+                      setPoseNavigationConfigAnchor(
+                        poseNavigationConfigAnchor ? null : event.currentTarget
+                      )
+                    }
+                  >
+                    Nav config
+                  </Button>
+                </RichTooltip>
+                <Popover
+                  open={Boolean(poseNavigationConfigAnchor)}
+                  anchorEl={poseNavigationConfigAnchor}
+                  onClose={() => setPoseNavigationConfigAnchor(null)}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                >
+                  <PoseNavigationConfigPopover
+                    value={poseNavigationConfig.value}
+                    onChange={poseNavigationConfig.onChange}
+                  />
+                </Popover>
               </Grid>
             )}
           </Grid>

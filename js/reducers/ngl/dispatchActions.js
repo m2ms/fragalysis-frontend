@@ -227,8 +227,11 @@ export const centerOnLigandByMoleculeID = (stage, moleculeID, datasetId = null) 
       }
       const currentOrientation = viewerAdapter.getOrientation();
       dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
+      return Boolean(component);
     }
   }
+
+  return false;
 };
 
 export const setNglBckGrndColor = (color, major) => (dispatch, getState) => {

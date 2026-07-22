@@ -25,13 +25,27 @@ const createState = overrides => ({
   }
 });
 
-const createConfig = () =>
+const createConfig = (overrides = {}) =>
   createRhsPoseTransferConfig({
     getComputedInspirations: ({ data }) => data.computed_inspirations || [],
-    ligandRepresentations: [{ type: 'licorice' }]
+    ligandRepresentations: [{ type: 'licorice' }],
+    ...overrides
   });
 
 describe('rhs pose transfer configuration', () => {
+  it('keeps post-transfer ligand centering disabled by default and makes it injectable', () => {
+    expect.hasAssertions();
+    const defaultConfig = createConfig();
+    const enabledConfig = createConfig({ centerOnDestinationLigandAfterTransfer: true });
+    const target = { id: 9 };
+    const state = createState({ selectionReducers: { fragmentDisplayList: [target.id] } });
+
+    expect(defaultConfig.postTransferFocus.enabled).toBe(false);
+    expect(enabledConfig.postTransferFocus.enabled).toBe(true);
+    expect(enabledConfig.postTransferFocus.getTarget({ destinationPoseItems: [target] })).toBe(target);
+    expect(enabledConfig.postTransferFocus.isEligible({ state, target })).toBe(true);
+  });
+
   it('captures ligand representations and the quality-rendering flag', () => {
     expect.hasAssertions();
     const config = createConfig();

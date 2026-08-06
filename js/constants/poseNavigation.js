@@ -11,7 +11,7 @@ export const POSE_TRANSFER_SCHEDULING = Object.freeze({
 export const DEFAULT_RHS_POSE_NAVIGATION_CONFIG = Object.freeze({
   transferOrder: POSE_TRANSFER_ORDERS.REMOVE_FIRST,
   transferScheduling: POSE_TRANSFER_SCHEDULING.OVERLAPPED,
-  centerOnDestinationLigandAfterTransfer: false
+  centerOnDestinationLigandAfterTransfer: true
 });
 
 export const normalizeRhsPoseNavigationConfig = config => ({

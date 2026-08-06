@@ -78,7 +78,7 @@ export const PoseNavigationConfigPopover = ({ value, onChange }) => (
                 }
               />
             }
-            label="Center on destination ligand"
+            label="Center on design pose/virtual observation ligand"
           />
         </RichTooltip>
       </Box>

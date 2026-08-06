@@ -21,11 +21,15 @@ describe('pose navigation config popover', () => {
 
     expect(screen.getByRole('radio', { name: 'Remove first' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Overlapped' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Center on destination ligand' })).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Center on design pose/virtual observation ligand' })
+    ).toBeChecked();
 
     fireEvent.click(screen.getByRole('radio', { name: 'Add first' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Phased' }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Center on destination ligand' }));
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'Center on design pose/virtual observation ligand' })
+    );
 
     expect(onChange).toHaveBeenNthCalledWith(1, {
       transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST
@@ -34,7 +38,7 @@ describe('pose navigation config popover', () => {
       transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED
     });
     expect(onChange).toHaveBeenNthCalledWith(3, {
-      centerOnDestinationLigandAfterTransfer: true
+      centerOnDestinationLigandAfterTransfer: false
     });
   });
 });

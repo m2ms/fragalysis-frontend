@@ -592,7 +592,13 @@ describe('pose transfer helpers', () => {
         isRendered: ({ state: currentState, item }) => Boolean(currentState.active.ligand[item.id])
       };
       const sourcePose = { id: 'source-pose', poseItems: [{ id: 'source' }] };
-      const destinationPose = { id: 'destination-pose', poseTargets: [{ id: 'destination' }] };
+      const destinationInspiration = { id: 'destination-inspiration' };
+      const destinationPose = {
+        id: 'destination-pose',
+        poseTargets: [{ id: 'destination' }],
+        inspirationItems: [destinationInspiration]
+      };
+      const focus = jest.fn(({ target }) => events.push(`focus:${target.id}`));
       const config = {
         transferOrder: POSE_TRANSFER_ORDERS.REMOVE_FIRST,
         transferScheduling,
@@ -600,13 +606,13 @@ describe('pose transfer helpers', () => {
         inspirationControls: [],
         getPoseItems: ({ pose }) => pose.poseItems || [],
         getPoseTargets: ({ pose }) => pose.poseTargets || [],
-        getInspirationItems: () => [],
+        getInspirationItems: ({ pose }) => pose.inspirationItems || [],
         postTransferFocus: {
           enabled: true,
           getTarget: ({ destinationPoseItems }) => destinationPoseItems[0],
           isEligible: ({ state: currentState, target }) =>
             Boolean(currentState.active.ligand[target.id]),
-          apply: ({ target }) => events.push(`focus:${target.id}`)
+          apply: focus
         }
       };
       const getState = () => state;
@@ -618,6 +624,9 @@ describe('pose transfer helpers', () => {
       );
 
       expect(events.at(-1)).toBe('focus:destination');
+      expect(focus).toHaveBeenCalledWith(
+        expect.objectContaining({ destinationInspirationItems: [destinationInspiration] })
+      );
       expect(result.postTransferError).toBeNull();
     }
   );

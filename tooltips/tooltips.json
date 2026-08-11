@@ -181,7 +181,11 @@
             "overlapped": "Run independent addition and removal work concurrently. Transfer order controls which operation group is attempted first, without waiting before launching the second group.",
             "phased": "Complete the selected first phase before starting the second phase. This gives strict add-first or remove-first behavior but may feel slower."
           },
-          "centerAfterTransfer": "After all destination structures finish rendering, center the NGL view on the ligand of the destination design pose/virtual observation, just like using its target icon."
+          "centering": {
+            "none": "Leave the NGL camera unchanged after the destination structures finish rendering.",
+            "designLigand": "After rendering, center the NGL view on the ligand of the destination design pose/virtual observation, just like using its target icon. If that ligand is not displayed, do nothing.",
+            "visibleLigandCentroid": "After rendering, center the NGL view on the equally weighted average of the individual centers of the displayed destination design and inspiration ligands. If only one group is displayed, center on that group; if no destination ligand is displayed, do nothing."
+          }
         },
         "filterSettings": {
           "closeEditor": "Close editor",

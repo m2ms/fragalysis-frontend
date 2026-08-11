@@ -2,6 +2,7 @@ import { selectionReducers as selectionReducer, INITIAL_STATE } from './selectio
 import * as selectionActions from './actions';
 import {
   DEFAULT_RHS_POSE_NAVIGATION_CONFIG,
+  POSE_TRANSFER_CENTERING_MODES,
   POSE_TRANSFER_ORDERS,
   POSE_TRANSFER_SCHEDULING
 } from '../../constants/poseNavigation';
@@ -53,14 +54,14 @@ describe("testing selection reducer's actions", () => {
       addFirstState,
       selectionActions.setRhsPoseNavigationConfig({
         transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
-        centerOnDestinationLigandAfterTransfer: true
+        postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
       })
     );
 
     expect(configuredState.rhsPoseNavigationConfig).toStrictEqual({
       transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
       transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
-      centerOnDestinationLigandAfterTransfer: true
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
     });
   });
 

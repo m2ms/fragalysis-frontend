@@ -506,8 +506,7 @@ export const PoseListRHS = memo(({ expandHandler }) => {
         ligandRepresentations: RHS_LIGAND_REPRESENTATIONS,
         transferOrder: rhsPoseNavigationConfig.transferOrder,
         transferScheduling: rhsPoseNavigationConfig.transferScheduling,
-        centerOnDestinationLigandAfterTransfer:
-          rhsPoseNavigationConfig.centerOnDestinationLigandAfterTransfer,
+        postTransferCenteringMode: rhsPoseNavigationConfig.postTransferCenteringMode,
         dialogs: {
           capture: ({ state, sourcePose }) => ({
             transferInspirations:

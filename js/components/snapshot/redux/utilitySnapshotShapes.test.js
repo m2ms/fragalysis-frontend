@@ -5,6 +5,7 @@ import {
 } from './utilitySnapshotShapes';
 import {
   DEFAULT_RHS_POSE_NAVIGATION_CONFIG,
+  POSE_TRANSFER_CENTERING_MODES,
   POSE_TRANSFER_ORDERS,
   POSE_TRANSFER_SCHEDULING
 } from '../../../constants/poseNavigation';
@@ -75,7 +76,7 @@ const createBaseState = () => ({
     rhsPoseNavigationConfig: {
       transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
       transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
-      centerOnDestinationLigandAfterTransfer: true
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
     }
   },
   datasetsReducers: {
@@ -144,7 +145,7 @@ describe('utilitySnapshotShapes', () => {
     expect(snapshotState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual({
       transferOrder: POSE_TRANSFER_ORDERS.ADD_FIRST,
       transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED,
-      centerOnDestinationLigandAfterTransfer: true
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
     });
     expect(snapshotState.datasetsReducers.ligandLists).toStrictEqual({});
     expect(snapshotState.datasetsReducers.proteinLists).toStrictEqual({});
@@ -263,6 +264,28 @@ describe('utilitySnapshotShapes', () => {
     expect(mergedState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual(
       DEFAULT_RHS_POSE_NAVIGATION_CONFIG
     );
+  });
+
+  it.each([
+    [true, POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND],
+    [false, POSE_TRANSFER_CENTERING_MODES.NONE]
+  ])('migrates legacy snapshot centering value %s', (legacyValue, expectedMode) => {
+    expect.hasAssertions();
+    const currentState = createBaseState();
+    const legacySnapshotState = createBaseState();
+    legacySnapshotState.selectionReducers.rhsPoseNavigationConfig = {
+      transferOrder: POSE_TRANSFER_ORDERS.REMOVE_FIRST,
+      transferScheduling: POSE_TRANSFER_SCHEDULING.OVERLAPPED,
+      centerOnDestinationLigandAfterTransfer: legacyValue
+    };
+
+    const mergedState = mergeSnapshotStateWithCurrentData(currentState, legacySnapshotState);
+
+    expect(mergedState.selectionReducers.rhsPoseNavigationConfig).toStrictEqual({
+      transferOrder: POSE_TRANSFER_ORDERS.REMOVE_FIRST,
+      transferScheduling: POSE_TRANSFER_SCHEDULING.OVERLAPPED,
+      postTransferCenteringMode: expectedMode
+    });
   });
 
   it('counts only actual new render work during in-place snapshot switches', () => {

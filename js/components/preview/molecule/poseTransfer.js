@@ -782,9 +782,17 @@ const executePostTransferFocus = async ({
         })
       : destinationPoseItems[0];
 
+    const usesTarget = Boolean(focus.getTarget || focus.isEligible);
+
     if (
-      !target ||
-      focus.isEligible?.({ state, target, destinationPose, destinationPoseItems }) === false
+      (usesTarget && !target) ||
+      focus.isEligible?.({
+        state,
+        target,
+        destinationPose,
+        destinationPoseItems,
+        destinationInspirationItems
+      }) === false
     ) {
       return null;
     }
@@ -797,7 +805,8 @@ const executePostTransferFocus = async ({
         state,
         target,
         destinationPose,
-        destinationPoseItems
+        destinationPoseItems,
+        destinationInspirationItems
       })
     );
     return null;

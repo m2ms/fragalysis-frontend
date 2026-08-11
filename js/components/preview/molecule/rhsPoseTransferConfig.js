@@ -21,12 +21,41 @@ import { getRepresentationsByType, getRepresentationsForDensities } from '../../
 import { OBJECT_TYPE } from '../../nglView/constants';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
 import { VIEWS } from '../../../constants/constants';
-import { centerOnLigandByMoleculeID } from '../../../reducers/ngl/dispatchActions';
+import {
+  centerOnLigandByMoleculeID,
+  centerOnLigandsByMoleculeIDs
+} from '../../../reducers/ngl/dispatchActions';
+import { POSE_TRANSFER_CENTERING_MODES } from '../../../constants/poseNavigation';
 
 const getMainObservation = pose =>
   pose?.associatedObs?.find(observation => observation.id === pose?.main_site_observation) ||
   pose?.associatedObs?.[0] ||
   null;
+
+export const getPostTransferCenterLigandIds = ({
+  state,
+  postTransferCenteringMode,
+  destinationPoseItems,
+  destinationInspirationItems
+}) => {
+  const displayedLigandIds = new Set(state.selectionReducers.fragmentDisplayList || []);
+  const designLigand = destinationPoseItems[0] || null;
+
+  if (postTransferCenteringMode === POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND) {
+    return designLigand && displayedLigandIds.has(designLigand.id) ? [designLigand.id] : [];
+  }
+  if (postTransferCenteringMode !== POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      [designLigand, ...(destinationInspirationItems || [])]
+        .filter(item => item && displayedLigandIds.has(item.id))
+        .map(item => item.id)
+    )
+  ];
+};
 
 const getLatestQueueItem = (state, id, type) =>
   [...(state.selectionReducers.toBeDisplayedList || [])]
@@ -397,7 +426,7 @@ export const createRhsPoseTransferConfig = ({
   dialogs,
   transferOrder,
   transferScheduling,
-  centerOnDestinationLigandAfterTransfer = false,
+  postTransferCenteringMode = POSE_TRANSFER_CENTERING_MODES.NONE,
   renderTimeout
 }) => {
   const ligand = ligandControl(ligandRepresentations);
@@ -431,18 +460,36 @@ export const createRhsPoseTransferConfig = ({
     getTransferItem: ({ state, selectedItem }) =>
       (state.apiReducers.all_mol_lists || []).find(item => item.id === selectedItem.id) || selectedItem,
     postTransferFocus: {
-      enabled: centerOnDestinationLigandAfterTransfer,
-      getTarget: ({ destinationPoseItems }) => destinationPoseItems[0] || null,
-      isEligible: ({ state, target }) =>
-        state.selectionReducers.fragmentDisplayList.includes(target.id),
-      apply: async ({ dispatch, stage, target }) => {
-        const centered = await dispatch(centerOnLigandByMoleculeID(stage, target.id));
+      enabled: postTransferCenteringMode !== POSE_TRANSFER_CENTERING_MODES.NONE,
+      apply: async ({
+        dispatch,
+        stage,
+        state,
+        destinationPoseItems,
+        destinationInspirationItems
+      }) => {
+        const ligandIds = getPostTransferCenterLigandIds({
+          state,
+          postTransferCenteringMode,
+          destinationPoseItems,
+          destinationInspirationItems
+        });
+
+        if (!ligandIds.length) {
+          return;
+        }
+
+        const designLigandId = destinationPoseItems[0]?.id;
+        const centered =
+          ligandIds.length === 1 && ligandIds[0] === designLigandId
+            ? await dispatch(centerOnLigandByMoleculeID(stage, designLigandId))
+            : await dispatch(centerOnLigandsByMoleculeIDs(stage, ligandIds));
 
         if (!centered) {
-          throw new Error('The destination ligand could not be found in the NGL view.');
+          throw new Error('The destination ligands could not be found in the NGL view.');
         }
       },
-      failureMessage: 'Pose settings were transferred, but the destination ligand could not be centered.'
+      failureMessage: 'Pose settings were transferred, but the destination ligands could not be centered.'
     },
     dialogs,
     transferOrder,

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { PoseNavigationConfigPopover } from './poseNavigationConfigPopover';
 import {
   DEFAULT_RHS_POSE_NAVIGATION_CONFIG,
+  POSE_TRANSFER_CENTERING_MODES,
   POSE_TRANSFER_ORDERS,
   POSE_TRANSFER_SCHEDULING
 } from '../../../constants/poseNavigation';
@@ -21,14 +22,19 @@ describe('pose navigation config popover', () => {
 
     expect(screen.getByRole('radio', { name: 'Remove first' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Overlapped' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Do not center' })).not.toBeChecked();
     expect(
-      screen.getByRole('checkbox', { name: 'Center on design pose/virtual observation ligand' })
+      screen.getByRole('radio', { name: 'Center on design pose/virtual observation ligand' })
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('radio', { name: 'Center between design and inspiration ligands' })
     ).toBeChecked();
 
     fireEvent.click(screen.getByRole('radio', { name: 'Add first' }));
     fireEvent.click(screen.getByRole('radio', { name: 'Phased' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Do not center' }));
     fireEvent.click(
-      screen.getByRole('checkbox', { name: 'Center on design pose/virtual observation ligand' })
+      screen.getByRole('radio', { name: 'Center on design pose/virtual observation ligand' })
     );
 
     expect(onChange).toHaveBeenNthCalledWith(1, {
@@ -38,7 +44,10 @@ describe('pose navigation config popover', () => {
       transferScheduling: POSE_TRANSFER_SCHEDULING.PHASED
     });
     expect(onChange).toHaveBeenNthCalledWith(3, {
-      centerOnDestinationLigandAfterTransfer: false
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.NONE
+    });
+    expect(onChange).toHaveBeenNthCalledWith(4, {
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND
     });
   });
 });

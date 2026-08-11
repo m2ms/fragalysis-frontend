@@ -1,5 +1,18 @@
 import { captureControlSnapshots } from './poseTransfer';
-import { createRhsPoseTransferConfig } from './rhsPoseTransferConfig';
+import {
+  createRhsPoseTransferConfig,
+  getPostTransferCenterLigandIds
+} from './rhsPoseTransferConfig';
+import { POSE_TRANSFER_CENTERING_MODES } from '../../../constants/poseNavigation';
+import {
+  centerOnLigandByMoleculeID,
+  centerOnLigandsByMoleculeIDs
+} from '../../../reducers/ngl/dispatchActions';
+
+jest.mock('../../../reducers/ngl/dispatchActions', () => ({
+  centerOnLigandByMoleculeID: jest.fn((stage, id) => ({ type: 'CENTER_ONE', stage, id })),
+  centerOnLigandsByMoleculeIDs: jest.fn((stage, ids) => ({ type: 'CENTER_MANY', stage, ids }))
+}));
 
 const createState = overrides => ({
   selectionReducers: {
@@ -33,17 +46,104 @@ const createConfig = (overrides = {}) =>
   });
 
 describe('rhs pose transfer configuration', () => {
-  it('keeps post-transfer ligand centering disabled by default and makes it injectable', () => {
+  it('keeps post-transfer centering disabled when no mode is injected', () => {
     expect.hasAssertions();
     const defaultConfig = createConfig();
-    const enabledConfig = createConfig({ centerOnDestinationLigandAfterTransfer: true });
-    const target = { id: 9 };
-    const state = createState({ selectionReducers: { fragmentDisplayList: [target.id] } });
+    const enabledConfig = createConfig({
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND
+    });
 
     expect(defaultConfig.postTransferFocus.enabled).toBe(false);
     expect(enabledConfig.postTransferFocus.enabled).toBe(true);
-    expect(enabledConfig.postTransferFocus.getTarget({ destinationPoseItems: [target] })).toBe(target);
-    expect(enabledConfig.postTransferFocus.isEligible({ state, target })).toBe(true);
+  });
+
+  it('selects active destination ligand ids for each post-transfer centering mode', () => {
+    expect.hasAssertions();
+    const design = { id: 9 };
+    const firstInspiration = { id: 10 };
+    const secondInspiration = { id: 11 };
+    const state = createState({
+      selectionReducers: { fragmentDisplayList: [design.id, firstInspiration.id, secondInspiration.id] }
+    });
+    const context = {
+      state,
+      destinationPoseItems: [design],
+      destinationInspirationItems: [firstInspiration, firstInspiration, secondInspiration]
+    };
+
+    expect(
+      getPostTransferCenterLigandIds({
+        ...context,
+        postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.NONE
+      })
+    ).toStrictEqual([]);
+    expect(
+      getPostTransferCenterLigandIds({
+        ...context,
+        postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND
+      })
+    ).toStrictEqual([design.id]);
+    expect(
+      getPostTransferCenterLigandIds({
+        ...context,
+        postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
+      })
+    ).toStrictEqual([design.id, firstInspiration.id, secondInspiration.id]);
+  });
+
+  it('falls back to whichever destination ligand group is visible in centroid mode', () => {
+    expect.hasAssertions();
+    const design = { id: 9 };
+    const inspirations = [{ id: 10 }, { id: 11 }];
+    const getIds = fragmentDisplayList =>
+      getPostTransferCenterLigandIds({
+        state: createState({ selectionReducers: { fragmentDisplayList } }),
+        postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID,
+        destinationPoseItems: [design],
+        destinationInspirationItems: inspirations
+      });
+
+    expect(getIds([design.id])).toStrictEqual([design.id]);
+    expect(getIds(inspirations.map(item => item.id))).toStrictEqual(inspirations.map(item => item.id));
+    expect(getIds([])).toStrictEqual([]);
+  });
+
+  it('uses target-icon centering for a lone design ligand and multi-ligand centering otherwise', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    const stage = { id: 'stage' };
+    const design = { id: 9 };
+    const inspirations = [{ id: 10 }, { id: 11 }];
+    const dispatch = jest.fn(() => true);
+    const designConfig = createConfig({
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND
+    });
+    const centroidConfig = createConfig({
+      postTransferCenteringMode: POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID
+    });
+
+    await designConfig.postTransferFocus.apply({
+      dispatch,
+      stage,
+      state: createState({ selectionReducers: { fragmentDisplayList: [design.id] } }),
+      destinationPoseItems: [design],
+      destinationInspirationItems: inspirations
+    });
+    expect(centerOnLigandByMoleculeID).toHaveBeenCalledWith(stage, design.id);
+
+    await centroidConfig.postTransferFocus.apply({
+      dispatch,
+      stage,
+      state: createState({
+        selectionReducers: { fragmentDisplayList: inspirations.map(item => item.id) }
+      }),
+      destinationPoseItems: [design],
+      destinationInspirationItems: inspirations
+    });
+    expect(centerOnLigandsByMoleculeIDs).toHaveBeenCalledWith(
+      stage,
+      inspirations.map(item => item.id)
+    );
   });
 
   it('captures ligand representations and the quality-rendering flag', () => {

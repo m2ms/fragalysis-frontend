@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Checkbox,
   FormControlLabel,
   FormLabel,
   Radio,
@@ -9,6 +8,7 @@ import {
   Typography
 } from '@mui/material';
 import {
+  POSE_TRANSFER_CENTERING_MODES,
   POSE_TRANSFER_ORDERS,
   POSE_TRANSFER_SCHEDULING
 } from '../../../constants/poseNavigation';
@@ -67,20 +67,33 @@ export const PoseNavigationConfigPopover = ({ value, onChange }) => (
       </Box>
 
       <Box mt={2}>
-        <RichTooltip path="centerAfterTransfer" placement="right">
-          <FormControlLabel
-            control={
-              <Checkbox
-                color="primary"
-                checked={value.centerOnDestinationLigandAfterTransfer}
-                onChange={event =>
-                  onChange({ centerOnDestinationLigandAfterTransfer: event.target.checked })
-                }
-              />
-            }
-            label="Center on design pose/virtual observation ligand"
-          />
-        </RichTooltip>
+        <FormLabel component="legend">Center after transfer</FormLabel>
+        <RadioGroup
+          value={value.postTransferCenteringMode}
+          onChange={event => onChange({ postTransferCenteringMode: event.target.value })}
+        >
+          <RichTooltip path="centering.none" placement="right">
+            <FormControlLabel
+              value={POSE_TRANSFER_CENTERING_MODES.NONE}
+              control={<Radio color="primary" />}
+              label="Do not center"
+            />
+          </RichTooltip>
+          <RichTooltip path="centering.designLigand" placement="right">
+            <FormControlLabel
+              value={POSE_TRANSFER_CENTERING_MODES.DESIGN_LIGAND}
+              control={<Radio color="primary" />}
+              label="Center on design pose/virtual observation ligand"
+            />
+          </RichTooltip>
+          <RichTooltip path="centering.visibleLigandCentroid" placement="right">
+            <FormControlLabel
+              value={POSE_TRANSFER_CENTERING_MODES.VISIBLE_LIGAND_CENTROID}
+              control={<Radio color="primary" />}
+              label="Center between design and inspiration ligands"
+            />
+          </RichTooltip>
+        </RadioGroup>
       </Box>
     </Box>
   </TooltipPathProvider>

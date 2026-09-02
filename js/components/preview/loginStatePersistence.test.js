@@ -1,5 +1,7 @@
 import {
   buildLoginRedirectUrl,
+  buildAuthRedirectUrl,
+  getTargetFromPathname,
   isPreviewPath,
   capturePreviewStateForLogin,
   readStoredPreviewState,
@@ -9,23 +11,45 @@ import {
 import { URLS } from '../routes/constants';
 import { saveStore } from '../helpers/globalStore';
 
-describe('buildLoginRedirectUrl / isPreviewPath', () => {
-  test('preview path appends encoded next param to the login url', () => {
-    const previewPath = '/viewer/react/preview/target/my-target/project-a';
+describe('buildAuthRedirectUrl / buildLoginRedirectUrl / isPreviewPath', () => {
+  const previewPath = '/viewer/react/preview/target/my-target/project-a';
+
+  test('login: preview path appends encoded next param to the login url', () => {
     expect(isPreviewPath(previewPath)).toBe(true);
-    expect(buildLoginRedirectUrl(previewPath)).toBe(
-      `${URLS.login}?next=${encodeURIComponent(previewPath)}`
+    expect(buildLoginRedirectUrl(previewPath)).toBe(`${URLS.login}?next=${encodeURIComponent(previewPath)}`);
+    expect(buildAuthRedirectUrl(URLS.login, previewPath)).toBe(`${URLS.login}?next=${encodeURIComponent(previewPath)}`);
+  });
+
+  test('logout: preview path appends encoded next param to the logout url', () => {
+    expect(buildAuthRedirectUrl(URLS.logout, previewPath)).toBe(
+      `${URLS.logout}?next=${encodeURIComponent(previewPath)}`
     );
   });
 
-  test('non-preview path returns the plain login url (Django falls back to landing)', () => {
-    expect(isPreviewPath('/viewer/react/landing/')).toBe(false);
-    expect(buildLoginRedirectUrl('/viewer/react/landing/')).toBe(URLS.login);
+  test('non-preview path returns the plain url for both login and logout (Django falls back to landing)', () => {
+    const landing = '/viewer/react/landing/';
+    expect(isPreviewPath(landing)).toBe(false);
+    expect(buildAuthRedirectUrl(URLS.login, landing)).toBe(URLS.login);
+    expect(buildAuthRedirectUrl(URLS.logout, landing)).toBe(URLS.logout);
   });
 
   test('guards against non-string input', () => {
     expect(isPreviewPath(undefined)).toBe(false);
     expect(isPreviewPath(null)).toBe(false);
+    expect(buildAuthRedirectUrl(URLS.login, undefined)).toBe(URLS.login);
+  });
+});
+
+describe('getTargetFromPathname', () => {
+  test('extracts the target segment from a preview path', () => {
+    expect(getTargetFromPathname('/viewer/react/preview/target/my-target/project-a')).toBe('my-target');
+    expect(getTargetFromPathname('/viewer/react/preview/target/solo-target/')).toBe('solo-target');
+  });
+
+  test('returns null for non-preview paths or missing target', () => {
+    expect(getTargetFromPathname('/viewer/react/landing/')).toBeNull();
+    expect(getTargetFromPathname(URLS.target)).toBeNull();
+    expect(getTargetFromPathname(undefined)).toBeNull();
   });
 });
 

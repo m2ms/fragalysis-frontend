@@ -2,7 +2,7 @@
  * Created by ricgillams on 14/06/2018.
  */
 
-import React, { Fragment, memo } from 'react';
+import React, { Fragment, memo, useEffect } from 'react';
 import { connect, useSelector } from 'react-redux';
 import { Button } from '../common';
 import * as apiActions from '../../reducers/api/actions';
@@ -12,6 +12,7 @@ import { Modal } from '../common/Modal';
 import { URLS } from '../routes/constants';
 import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { useHistory } from 'react-router-dom';
+import { getTargetFromPathname, clearStoredPreviewState } from '../preview/loginStatePersistence';
 
 export const HandleUnrecognisedTarget = memo(() => {
   const targetUnrecognised = useSelector(state => state.apiReducers.targetUnrecognised);
@@ -20,6 +21,19 @@ export const HandleUnrecognisedTarget = memo(() => {
   const target_data_loading_in_progress = useSelector(state => state.apiReducers.target_data_loading_in_progress);
 
   let history = useHistory();
+
+  // If the target could not be loaded (e.g. an anonymous user has no access to it after logout),
+  // clear any saved selection for that target so a stale view cannot be resurrected by a later
+  // login to the same target. The restore path only ever fires for an accessible target, so this
+  // is the safe point at which "inaccessible" is known.
+  useEffect(() => {
+    if (targetUnrecognised) {
+      const target = getTargetFromPathname(window.location.pathname);
+      if (target) {
+        clearStoredPreviewState(target);
+      }
+    }
+  }, [targetUnrecognised]);
   // const closeModal = () => {
   //   dispatchEvent(apiActions.setTargetUnrecognised(false));
   // };

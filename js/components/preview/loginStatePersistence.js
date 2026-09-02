@@ -18,16 +18,30 @@ export const isPreviewPath = pathname => {
   return pathname.startsWith(URLS.target);
 };
 
-// Build the login URL. When we are on a preview page, append Django's `next` param so
-// that after a successful login the browser returns to this exact preview URL instead of
-// the default landing page. On any other page (e.g. landing) we keep the plain login URL,
-// which lets Django fall back to its default redirect.
-export const buildLoginRedirectUrl = pathname => {
-  if (isPreviewPath(pathname)) {
-    return `${URLS.login}?next=${encodeURIComponent(pathname)}`;
-  }
-  return URLS.login;
+// Extract the target segment from a preview pathname (/viewer/react/preview/target/<target>/...).
+// Returns null when the path is not a preview path or has no target segment. Used to clear a
+// saved view for the target the user was on when it turned out to be inaccessible (e.g. after
+// logout), so a stale selection cannot be resurrected by a later login to that target.
+export const getTargetFromPathname = pathname => {
+  if (!isPreviewPath(pathname)) return null;
+  const rest = pathname.slice(URLS.target.length);
+  const firstSegment = rest.split('/')[0];
+  return firstSegment || null;
 };
+
+// Build an auth redirect URL (login or logout). When we are on a preview page, append Django's
+// `next` param so that after the auth round-trip the browser returns to this exact preview URL
+// instead of the default landing page. On any other page (e.g. landing) we keep the plain URL,
+// which lets Django fall back to its default redirect.
+export const buildAuthRedirectUrl = (urlBase, pathname) => {
+  if (isPreviewPath(pathname)) {
+    return `${urlBase}?next=${encodeURIComponent(pathname)}`;
+  }
+  return urlBase;
+};
+
+// Convenience wrapper for the login flow (kept so existing callers/tests stay valid).
+export const buildLoginRedirectUrl = pathname => buildAuthRedirectUrl(URLS.login, pathname);
 
 // Capture the scoped "what is selected / visible" state so it can be restored after the
 // login round-trip reload. Mirrors the snapshot-save shape (toBeDisplayedList, orientation,

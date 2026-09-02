@@ -49,7 +49,7 @@ import { api, METHOD } from '../../utils/api';
 import { QualityStatusService } from '../preview/molecule/moleculeView/qualityStatus/QualityStatusService';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
 import RichTooltip from '../tooltip/RichTooltip';
-import { buildLoginRedirectUrl, capturePreviewStateForLogin, isPreviewPath } from '../preview/loginStatePersistence';
+import { buildAuthRedirectUrl, capturePreviewStateForLogin, isPreviewPath } from '../preview/loginStatePersistence';
 
 const { version } = packageMetadata;
 
@@ -236,7 +236,7 @@ export const Header = memo(
             if (isPreviewPath(pathname)) {
               capturePreviewStateForLogin();
             }
-            window.location.replace(buildLoginRedirectUrl(pathname));
+            window.location.replace(buildAuthRedirectUrl(URLS.login, pathname));
           }}
         >
           <ListItemIcon>
@@ -250,7 +250,11 @@ export const Header = memo(
         <ListItemButton
           id="logout-button-id"
           onClick={() => {
-            window.location.replace(URLS.logout);
+            const pathname = window.location.pathname;
+            if (isPreviewPath(pathname)) {
+              capturePreviewStateForLogin();
+            }
+            window.location.replace(buildAuthRedirectUrl(URLS.logout, pathname));
           }}
         >
           <ListItemIcon>

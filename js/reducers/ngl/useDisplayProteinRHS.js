@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NglContext } from '../../components/nglView/nglProvider';
@@ -17,6 +18,7 @@ import { base_url } from '../../components/routes/constants';
 
 export const useDisplayProteinRHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.datasetsReducers.toBeDisplayedList);
   const displayedProteins = useSelector(state => state.datasetsReducers.proteinLists);
@@ -67,7 +69,7 @@ export const useDisplayProteinRHS = () => {
       const datasetID = proteinData.datasetID;
       const colourToggle = getRandomColor(data);
 
-      dispatch(
+      await dispatch(
         deleteObject(
           Object.assign(
             { display_div: VIEWS.MAJOR_VIEW },
@@ -91,7 +93,7 @@ export const useDisplayProteinRHS = () => {
       true
     );
     toBeRemovedProteins?.forEach(data => {
-      removeProtein(data);
+      runStructureOperation(data, removeProtein);
     });
     const toBeDisplayedProteins = getToBeDisplayedStructuresDataset(
       toBeDisplayedList,
@@ -99,9 +101,9 @@ export const useDisplayProteinRHS = () => {
       NGL_OBJECTS.PROTEIN
     );
     toBeDisplayedProteins?.forEach(data => {
-      displayProtein(data);
+      runStructureOperation(data, displayProtein);
     });
-  }, [toBeDisplayedList, displayedProteins, displayProtein, dispatch, stage, removeProtein]);
+  }, [runStructureOperation, toBeDisplayedList, displayedProteins, displayProtein, dispatch, stage, removeProtein]);
 
   return {};
 };

@@ -3,6 +3,7 @@ import {
   mergeSnapshotStateWithCurrentData,
   prepareSwitchingSnapshotRenderState
 } from './utilitySnapshotShapes';
+import { DEFAULT_RHS_POSE_NAVIGATION_CONFIG } from '../../../constants/poseNavigation';
 
 const createBaseState = () => ({
   apiReducers: {
@@ -102,6 +103,32 @@ const createBaseState = () => ({
 });
 
 describe('utilitySnapshotShapes', () => {
+  it.each([
+    [undefined, DEFAULT_RHS_POSE_NAVIGATION_CONFIG],
+    [{ centerOnDestinationLigandAfterTransfer: false }, { ...DEFAULT_RHS_POSE_NAVIGATION_CONFIG, postTransferCenteringMode: 'none' }],
+    [{ centerOnDestinationLigandAfterTransfer: true }, { ...DEFAULT_RHS_POSE_NAVIGATION_CONFIG, postTransferCenteringMode: 'design-ligand' }]
+  ])('restores legacy navigation settings independently of the current configuration: %s', (saved, expected) => {
+    const current = createBaseState();
+    current.selectionReducers.rhsPoseNavigationConfig = {
+      transferOrder: 'add-first', transferScheduling: 'phased', postTransferCenteringMode: 'none'
+    };
+    const snapshot = createBaseState();
+    snapshot.selectionReducers.rhsPoseNavigationConfig = saved;
+    expect(mergeSnapshotStateWithCurrentData(current, snapshot).selectionReducers.rhsPoseNavigationConfig)
+      .toStrictEqual(expected);
+    expect(current.selectionReducers.rhsPoseNavigationConfig.transferOrder).toBe('add-first');
+  });
+
+  it('keeps navigation settings in saved snapshots and restores them', () => {
+    const state = createBaseState();
+    state.selectionReducers.rhsPoseNavigationConfig = {
+      transferOrder: 'add-first', transferScheduling: 'phased', postTransferCenteringMode: 'none'
+    };
+    const saved = createSnapshotStateForSaving(state);
+    expect(saved.selectionReducers.rhsPoseNavigationConfig).toStrictEqual(state.selectionReducers.rhsPoseNavigationConfig);
+    expect(mergeSnapshotStateWithCurrentData(createBaseState(), saved).selectionReducers.rhsPoseNavigationConfig)
+      .toStrictEqual(state.selectionReducers.rhsPoseNavigationConfig);
+  });
   it('removes downloaded data from saved snapshots and normalizes render flags', () => {
     expect.hasAssertions();
 

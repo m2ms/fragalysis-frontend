@@ -127,7 +127,7 @@ export const loadObject = ({
 export const deleteObject = (target, stage, deleteFromSelections) => async dispatch => {
   const viewerAdapter = asViewerAdapter(stage);
   if (viewerAdapter && target) {
-    await Promise.all(viewerAdapter.getObjects(target.name).map(component => viewerAdapter.removeObject(component)));
+    await viewerAdapter.removeObjects(target.name);
 
     if (deleteFromSelections === true && target && target.selectionType && target.moleculeId) {
       const objectId = { id: target.moleculeId };
@@ -224,12 +224,28 @@ export const centerOnLigandByMoleculeID = (stage, moleculeID, datasetId = null) 
       }
       const component = viewerAdapter.getObject(obsObject.name);
       if (component) {
-        viewerAdapter.centerOn(component);
+        await viewerAdapter.centerOn(component);
+        dispatch(setNglOrientation(viewerAdapter.getOrientation(), VIEWS.MAJOR_VIEW));
+        return true;
       }
-      const currentOrientation = viewerAdapter.getOrientation();
-      dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
     }
   }
+  return false;
+};
+
+export const centerOnLigandsByMoleculeIDs = (stage, moleculeIDs = []) => async (dispatch, getState) => {
+  const viewerAdapter = asViewerAdapter(stage);
+  if (!viewerAdapter) return false;
+
+  const ids = new Set(moleculeIDs);
+  const objects = Object.entries(getState().nglReducers.objectsInView || {})
+    .filter(([, object]) => object.OBJECT_TYPE === OBJECT_TYPE.LIGAND && ids.has(object.moleculeId))
+    .map(([name]) => viewerAdapter.getObject(name))
+    .filter(Boolean);
+
+  const centered = await viewerAdapter.centerOnObjects(objects);
+  if (centered) dispatch(setNglOrientation(viewerAdapter.getOrientation(), VIEWS.MAJOR_VIEW));
+  return Boolean(centered);
 };
 
 export const setNglBckGrndColor = (color, major) => (dispatch, getState) => {

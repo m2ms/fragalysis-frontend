@@ -1,7 +1,7 @@
 /**
  * Created by abradley on 14/03/2018.
  */
-import { GridLegacy as Grid, CircularProgress, Typography, IconButton, Select, MenuItem, Checkbox } from '@mui/material';
+import { GridLegacy as Grid, CircularProgress, Typography, IconButton, Select, MenuItem, Checkbox, Popover } from '@mui/material';
 import { makeStyles } from '../../../ui/styles';
 import React, { useState, useEffect, useCallback, memo, useRef, useContext, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -32,6 +32,9 @@ import { FilterSettingsModal } from './observationUnifiedView/table';
 import ObservationUnifiedViewWrapper from './observationUnifiedView/observationUnifiedViewWrapper';
 import RichTooltip from '../../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../../tooltip/TooltipPathContext';
+import { usePoseTransferNavigation } from './usePoseTransferNavigation';
+import { PoseTransferButtons } from './poseTransferButtons';
+import PoseNavigationConfigPopover from './poseNavigationConfigPopover';
 
 const useStyles = makeStyles(theme => ({
   container: {
@@ -337,6 +340,8 @@ export const PoseList = memo(
     searchSettings,
     viewConfig,
     getComputedInspirations = undefined,
+    poseTransferConfig = undefined,
+    poseNavigationConfig = undefined,
     ligandRepresentations = undefined,
     isTagEditorForCurrentSide = false,
     handlers = {},
@@ -355,6 +360,7 @@ export const PoseList = memo(
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsToBeDisplayed, setItemsToBeDisplayed] = useState([]);
     const [sortSettingsChanged, setSortSettingsChanged] = useState(false);
+    const [navigationConfigAnchor, setNavigationConfigAnchor] = useState(null);
     const [visuallyReadyPoseIds, setVisuallyReadyPoseIds] = useState(() => new Set());
 
     const selectedAll = useRef(false);
@@ -959,7 +965,7 @@ export const PoseList = memo(
       return compounds;
     }, [joinedMoleculeLists, lhsCompoundsList, sortOptions, sortOption, ascending]);
 
-    const { addMoleculeViewRef, registeredMoleculeViewCount } = useScrollToSelectedPose({
+    const { addMoleculeViewRef, registeredMoleculeViewCount, setScrollToMoleculeId, getNode } = useScrollToSelectedPose({
       poses: filteredLHSCompoundsList,
       moleculesPerPage,
       setCurrentPage,
@@ -975,6 +981,18 @@ export const PoseList = memo(
       surfaceIds: surfaceList,
       densityList,
       vectorIds: vectorOnList
+    });
+
+    const poseNavigation = usePoseTransferNavigation({
+      config: poseTransferConfig,
+      poses: filteredLHSCompoundsList,
+      stage: majorViewStage,
+      moleculesPerPage,
+      setCurrentPage,
+      setScrollToMoleculeId,
+      getNode,
+      setAnchor: setTagEditorAnchorEl,
+      addToastMessage: handlers.addToastMessage
     });
 
     useEffect(() => {
@@ -1035,7 +1053,7 @@ export const PoseList = memo(
       if (isObservationDialogOpen && observationsForLHSCmp?.length > 0 && lhsDataIsLoaded) {
         const cmpId = observationsForLHSCmp[0].cmpd;
         const cmp = filteredLHSCompoundsList.find(c => c.compound === cmpId);
-        if (cmp && observationsDialogSide !== instanceSide) {
+        if (cmp && observationsDialogSide === null) {
           dispatch(setObservationsDialogSide(instanceSide));
         }
       } else if (!isObservationDialogOpen && observationsDialogSide === instanceSide) {
@@ -1525,6 +1543,40 @@ export const PoseList = memo(
                 </Typography>
               </Grid>
             </RichTooltip>
+            {poseTransferConfig && (
+              <Grid item className={classes.toolbarSmallButtons}>
+                <PoseTransferButtons
+                  toolbar
+                  previous={poseNavigation.toolbarTransfers.previous}
+                  next={poseNavigation.toolbarTransfers.next}
+                  busy={poseNavigation.busy}
+                  onTransfer={poseNavigation.onTransfer}
+                />
+              </Grid>
+            )}
+            {poseNavigationConfig && (
+              <Grid item className={classes.toolbarSmallButtons}>
+                <RichTooltip path="navConfig.button">
+                  <Button
+                    id="hit-navigator-pose-navigation-config"
+                    variant="outlined"
+                    className={classes.contColButton}
+                    aria-haspopup="dialog"
+                    aria-expanded={Boolean(navigationConfigAnchor)}
+                    onClick={event => setNavigationConfigAnchor(navigationConfigAnchor ? null : event.currentTarget)}
+                  >Nav config</Button>
+                </RichTooltip>
+                <Popover
+                  open={Boolean(navigationConfigAnchor)}
+                  anchorEl={navigationConfigAnchor}
+                  onClose={() => setNavigationConfigAnchor(null)}
+                  anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'center', horizontal: 'left' }}
+                >
+                  <PoseNavigationConfigPopover value={poseNavigationConfig.value} onChange={poseNavigationConfig.onChange} />
+                </Popover>
+              </Grid>
+            )}
           </Grid>
           <Grid container spacing={1} direction="column" justifyContent="flex-start" className={classes.container}>
             <Grid item>
@@ -1573,6 +1625,12 @@ export const PoseList = memo(
                       viewConfig={viewConfig}
                       ligandRepresentations={ligandRepresentations}
                       items={itemsToBeDisplayed}
+                      navigationItems={filteredLHSCompoundsList}
+                      poseTransferConfig={poseTransferConfig}
+                      poseTransferInProgress={poseNavigation.busy}
+                      poseTransferResetKey={poseNavigation.resetKey}
+                      onPoseTransfer={poseNavigation.onTransfer}
+                      onPoseTransferNavigationItemsChange={poseTransferConfig ? poseNavigation.onNavigationItemsChange : undefined}
                       allSelectedMolecules={allSelectedMolecules}
                       addMoleculeViewRef={addMoleculeViewRef}
                       onPoseVisuallyReady={handlePoseVisuallyReady}

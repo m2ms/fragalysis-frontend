@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
@@ -21,6 +22,7 @@ import { setNglOrientation } from './actions';
 
 export const useDisplayLigandLHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedLigands = useSelector(state => state.selectionReducers.fragmentDisplayList);
@@ -83,7 +85,7 @@ export const useDisplayLigandLHS = () => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
       if (!data) return;
       const ligandDataText = await dispatch(generateMoleculeObject(data));
-      dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText), stage));
+      await dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText), stage));
       dispatch(removeFromFragmentDisplayList(generateMoleculeId(data)));
       dispatch(removeFromQualityList(generateMoleculeId(data)));
       if (ligandData.withVector === true) {
@@ -104,13 +106,13 @@ export const useDisplayLigandLHS = () => {
       true
     );
     toBeRemovedLigands?.forEach(data => {
-      removeLigand(data);
+      runStructureOperation(data, removeLigand);
     });
     const toBeDisplayedLigands = getToBeDisplayedStructures(toBeDisplayedList, displayedLigands, NGL_OBJECTS.LIGAND);
     toBeDisplayedLigands?.forEach(data => {
-      displayLigand(data);
+      runStructureOperation(data, displayLigand);
     });
-  }, [toBeDisplayedList, displayedLigands, displayLigand, dispatch, stage, removeLigand]);
+  }, [runStructureOperation, toBeDisplayedList, displayedLigands, displayLigand, dispatch, stage, removeLigand]);
 
   return {};
 };

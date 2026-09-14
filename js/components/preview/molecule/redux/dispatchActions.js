@@ -371,13 +371,11 @@ export const removeDensity = (
 
 export const deleteDensityObject = (data, stage, densitySettingsObject) => async dispatch => {
   const densityObject = await dispatch(generateDensityObject(data, densitySettingsObject));
-  dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, densityObject), stage));
-
-  let sigmaDensityObject = Object.assign({ ...densityObject, name: densityObject.name + DENSITY_MAPS.SIGMAA });
-  dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, sigmaDensityObject), stage));
-
-  let diffDensityObject = Object.assign({ ...densityObject, name: densityObject.name + DENSITY_MAPS.DIFF });
-  dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, diffDensityObject), stage));
+  await Promise.all(
+    ['', DENSITY_MAPS.SIGMAA, DENSITY_MAPS.DIFF].map(suffix =>
+      dispatch(deleteObject({ ...densityObject, display_div: VIEWS.MAJOR_VIEW, name: densityObject.name + suffix }, stage))
+    )
+  );
 
   return densityObject;
 };

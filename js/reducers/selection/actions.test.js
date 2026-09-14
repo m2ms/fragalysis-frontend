@@ -1,5 +1,6 @@
 import { selectionReducers as selectionReducer, INITIAL_STATE } from './selectionReducers';
 import * as selectionActions from './actions';
+import { DEFAULT_RHS_POSE_NAVIGATION_CONFIG } from '../../constants/poseNavigation';
 
 describe("testing selection reducer's actions", () => {
   let initialState = selectionReducer(INITIAL_STATE, {});
@@ -129,7 +130,10 @@ describe("testing selection reducer's actions", () => {
     };
 
     let result = selectionReducer(
-      Object.assign({}, initialState, { vectorOnList: ['aaaaa'], complexList: 'bbbb' }),
+      Object.assign({}, initialState, {
+        vectorOnList: ['aaaaa'], complexList: 'bbbb',
+        rhsPoseNavigationConfig: { transferOrder: 'add-first', transferScheduling: 'phased', postTransferCenteringMode: 'none' }
+      }),
       selectionActions.reloadSelectionReducer(savedSelectionReducers)
     );
 
@@ -142,6 +146,7 @@ describe("testing selection reducer's actions", () => {
     expect(result.densityList).toStrictEqual(savedSelectionReducers.densityList);
     expect(result.proteinSettings).toStrictEqual(savedSelectionReducers.proteinSettings);
     expect(result.vectorOnList).toStrictEqual(savedSelectionReducers.vectorOnList);
+    expect(result.rhsPoseNavigationConfig).toStrictEqual(DEFAULT_RHS_POSE_NAVIGATION_CONFIG);
   });
 
   it('should reset selection state', () => {

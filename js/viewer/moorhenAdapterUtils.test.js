@@ -21,6 +21,7 @@ describe('Moorhen adapter translations', () => {
   it('maps NGL representation styles and common selections', () => {
     expect(getMoorhenRepresentationStyle('cartoon')).toBe('CRs');
     expect(getMoorhenRepresentationStyle('surface')).toBe('MolecularSurface');
+    expect(getMoorhenRepresentationStyle('contact')).toBe('allHBonds');
     expect(nglSelectionToMoorhenCid('LIG')).toBe('/*/*/(LIG)/*');
     expect(nglSelectionToMoorhenCid('polymer')).toBe('/*/*/*/*');
   });

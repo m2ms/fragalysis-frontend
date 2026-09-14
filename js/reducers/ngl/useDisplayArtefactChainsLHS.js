@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
@@ -19,6 +20,7 @@ import { getToBeDisplayedStructures } from './utils';
 
 export const useDisplayArtefactChainsLHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedArtefactChains = useSelector(state => state.selectionReducers.artefactsChainList);
@@ -96,7 +98,7 @@ export const useDisplayArtefactChainsLHS = () => {
       NGL_OBJECTS.ARTEFACTS
     );
     toBeDisplayedArtefactChains?.forEach(data => {
-      displayArtefactChains(data);
+      runStructureOperation(data, displayArtefactChains);
     });
 
     const toBeRemovedArtefactChains = getToBeDisplayedStructures(
@@ -106,9 +108,9 @@ export const useDisplayArtefactChainsLHS = () => {
       true
     );
     toBeRemovedArtefactChains?.forEach(data => {
-      removeArtefactChains(data);
+      runStructureOperation(data, removeArtefactChains);
     });
-  }, [toBeDisplayedList, displayedArtefactChains, displayArtefactChains, dispatch, stage, removeArtefactChains]);
+  }, [runStructureOperation, toBeDisplayedList, displayedArtefactChains, displayArtefactChains, dispatch, stage, removeArtefactChains]);
 
   return {};
 };

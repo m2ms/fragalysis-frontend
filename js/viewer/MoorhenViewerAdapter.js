@@ -1,4 +1,5 @@
 import ViewerAdapter from './ViewerAdapter';
+import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from './moorhenMapUtils';
 import {
   MoorhenMap,
   MoorhenMolecule,
@@ -18,6 +19,7 @@ import {
   setContourLevel,
   setFogEnd,
   setFogStart,
+  setHeight,
   setMapAlpha,
   setMapColours,
   setMapRadius,
@@ -26,6 +28,7 @@ import {
   setOrigin,
   setPositiveMapColours,
   setQuat,
+  setWidth,
   setZoom,
   setZoomWheelSensitivityFactor,
   showMap,
@@ -36,6 +39,7 @@ import {
   createSpherePdb,
   getMoorhenRepresentationStyle,
   getMoorhenRepresentationTemplate,
+  getMoorhenLigandFocus,
   nglSelectionToMoorhenCid,
   normaliseMoorhenColour,
   normaliseMoorhenOrientation
@@ -150,6 +154,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.monomerLibraryPath = monomerLibraryPath;
     this.containerElement = containerElement;
     this.objectsByName = new Map();
+    this.objectOperations = new Map();
+    this.objectRemovals = new WeakMap();
+    this.mapRendering = new WeakMap();
     this.representationsByObject = new WeakMap();
     this.centerZoomScaleByObject = new WeakMap();
     this.pickHandlers = new Map();
@@ -184,6 +191,33 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     const handles = Array.isArray(representations) ? representations : [representations].filter(Boolean);
     this.representationsByObject.set(object, handles);
     return object;
+  }
+
+  // Registration happens after native loading. Keep loads and deletion ordered
+  // by name so concurrent requests cannot overwrite an uncollected molecule.
+  runObjectOperation(name, operation) {
+    const previous = this.objectOperations.get(name);
+    let resolve;
+    let reject;
+    const pending = new Promise((onResolve, onReject) => {
+      resolve = onResolve;
+      reject = onReject;
+    });
+    this.objectOperations.set(name, pending);
+    const clear = () => {
+      if (this.objectOperations.get(name) === pending) this.objectOperations.delete(name);
+    };
+    pending.then(clear, clear);
+    const start = () => {
+      try {
+        resolve(operation());
+      } catch (error) {
+        reject(error);
+      }
+    };
+    if (previous) previous.then(start, start);
+    else start();
+    return pending;
   }
 
   createRepresentationHandle(object, nativeRepresentation, type, parameters = {}, lastKnownID) {
@@ -242,10 +276,11 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (objectType === 'HIT_PROTEIN' || objectType === 'ARTEFACTS') {
       const linewidth = objectType === 'ARTEFACTS' ? 1.2 : 2.4;
       const source = objectType === 'ARTEFACTS' ? target.artefacts_url : target.prot_url;
-      const pdbData = await this.getPdbWithoutLigand(source, options.fetchOptions);
-      const molecule = await this.loadMolecule(pdbData, {
+      const molecule = await this.loadMolecule(source, {
         name: options.object_name || target.name,
         fromString: true,
+        stripLigand: true,
+        fetchOptions: options.fetchOptions,
         representation: 'line',
         representations: options.representations || [
           {
@@ -468,12 +503,17 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
     const focusRequestId = options.center === true ? ++this.focusRequestSequence : null;
     const name = getObjectName(source, options, `molecule-${this.objectsByName.size + 1}`);
+    return this.runObjectOperation(name, () => this.loadMoleculeNow(source, options, name, focusRequestId));
+  }
+
+  async loadMoleculeNow(source, options, name, focusRequestId) {
     const existingObject = this.getObject(name);
     if (existingObject) {
-      await this.removeObject(existingObject);
+      await this.removeObjectNow(existingObject);
     }
 
-    const molecule = await this.createNativeMolecule(source, name, options);
+    const coordinates = options.stripLigand ? await this.getPdbWithoutLigand(source, options.fetchOptions) : source;
+    const molecule = await this.createNativeMolecule(coordinates, name, options);
     this.store.dispatch(addMolecule(molecule));
     this.store.dispatch(showMolecule(molecule));
     const registeredMolecule = this.registerObject(molecule, name);
@@ -516,7 +556,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       }
       return registeredMolecule;
     } catch (error) {
-      await this.removeObject(registeredMolecule);
+      await this.removeObjectNow(registeredMolecule);
       throw error;
     }
   }
@@ -537,10 +577,28 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   ) {
     this.assertActive();
     const name = options.object_name || target.name;
-    const existingObject = this.getObject(name);
-    if (existingObject) await this.removeObject(existingObject);
-
     const focusRequestId = options.center === true ? ++this.focusRequestSequence : null;
+    return this.runObjectOperation(name, () =>
+      this.loadProteinLigandCompositeNow(
+        target,
+        options,
+        { source, fallbackType, fallbackParameters, linewidth, centerSelection },
+        name,
+        focusRequestId
+      )
+    );
+  }
+
+  async loadProteinLigandCompositeNow(
+    target,
+    options,
+    { source, fallbackType, fallbackParameters, linewidth, centerSelection },
+    name,
+    focusRequestId
+  ) {
+    const existingObject = this.getObject(name);
+    if (existingObject) await this.removeObjectNow(existingObject);
+
     const protein = await this.createNativeMolecule(source, name);
     let ligand;
     try {
@@ -590,7 +648,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       if (focusRequestId === this.focusRequestSequence) await this.centerOn(protein, centerSelection);
       return protein;
     } catch (error) {
-      await this.removeObject(protein);
+      await this.removeObjectNow(protein);
       throw error;
     }
   }
@@ -602,74 +660,155 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
 
     const name = getObjectName(source, options, `map-${this.objectsByName.size + 1}`);
+    return this.runObjectOperation(name, () => this.loadMapNow(source, options, name));
+  }
+
+  async loadMapNow(source, options, name) {
     const existingObject = this.getObject(name);
     if (existingObject) {
-      await this.removeObject(existingObject);
+      await this.removeObjectNow(existingObject);
     }
     const map = new MoorhenMap(this.commandCentre, this.glRef, this.store);
     const ext = (options.ext || '').toLowerCase();
     const isMtz = ext === 'mtz' || options.selectedColumns;
+    let metadata = null;
 
     if (isMtz && isFileLike(source) && (!options.selectedColumns || options.autoRead === true)) {
       const maps = await MoorhenMap.autoReadMtz(source, this.commandCentre, this.glRef, this.store);
       if (!maps.length) {
         throw new Error(`Moorhen failed to auto-read map ${name}`);
       }
-      maps.forEach((loadedMap, index) => {
-        this.store.dispatch(addMap(loadedMap));
-        this.store.dispatch(showMap(loadedMap));
-        if (index === 0) this.store.dispatch(setActiveMap(loadedMap));
-        const mapName = loadedMap.name || `${name}-${index}`;
-        const handle = this.createRepresentationHandle(
-          loadedMap,
-          null,
-          'surface',
-          options.parameters || {},
-          options.lastKnownID
+      try {
+        for (const [index, loadedMap] of maps.entries()) {
+          this.prepareMapRendering(loadedMap);
+          this.store.dispatch(addMap(loadedMap));
+          this.store.dispatch(showMap(loadedMap));
+          if (index === 0) this.store.dispatch(setActiveMap(loadedMap));
+          const mapName = loadedMap.name || `${name}-${index}`;
+          const handle = this.createRepresentationHandle(
+            loadedMap,
+            null,
+            'surface',
+            options.parameters || {},
+            options.lastKnownID
+          );
+          this.registerObject(loadedMap, mapName, [handle]);
+          this.applyMapRepresentationParameters(handle, handle.params);
+        }
+        await Promise.all(maps.flatMap(loadedMap => this.getRepresentations(loadedMap).map(handle => handle.ready)));
+        return maps[0];
+      } catch (error) {
+        await Promise.allSettled(maps.map(loadedMap => this.removeObjectNow(loadedMap)));
+        throw error;
+      }
+    } else if (!isMtz) {
+      let data;
+      if (isUrl(source)) {
+        const response = await fetch(source, { credentials: 'same-origin', ...options.fetchOptions });
+        if (!response.ok) throw new Error(`Unable to load density map from ${source} (${response.status})`);
+        data = new Uint8Array(await response.arrayBuffer());
+      } else {
+        const buffer = typeof source.arrayBuffer === 'function' ? await source.arrayBuffer() : source;
+        data = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
+      }
+      if (options.decompress || (data[0] === 31 && data[1] === 139)) {
+        data = new Uint8Array(
+          await new Response(
+            new Blob([data]).stream().pipeThrough(new window.DecompressionStream('gzip'))
+          ).arrayBuffer()
         );
-        this.registerObject(loadedMap, mapName, [handle]);
-        this.applyMapRepresentationParameters(handle, handle.params);
-      });
-      return maps[0];
+      }
+      metadata = readCcp4MapMetadata(data);
+      if (metadata) {
+        // Keep the exact fractional ORIGIN for the contour mesh. Integer grid
+        // starts cannot represent it without moving or resampling the density.
+        data = new Uint8Array(data);
+        const header = new DataView(data.buffer);
+        [49, 50, 51].forEach(word => header.setFloat32(word * 4, 0, metadata.littleEndian));
+      }
+      await map.loadToCootFromMapData(data, name, options.isDifference === true);
     } else if (isUrl(source)) {
-      if (isMtz) {
-        await map.loadToCootFromMtzURL(source, name, options.selectedColumns, options.fetchOptions);
-      } else {
-        await map.loadToCootFromMapURL(
-          source,
-          name,
-          options.isDifference === true,
-          options.decompress === true,
-          options.fetchOptions
-        );
-      }
+      await map.loadToCootFromMtzURL(source, name, options.selectedColumns, options.fetchOptions);
     } else if (isFileLike(source)) {
-      if (isMtz) {
-        await map.loadToCootFromMtzFile(source, options.selectedColumns);
-      } else {
-        await map.loadToCootFromMapFile(source, options.isDifference === true, options.decompress === true);
-      }
+      await map.loadToCootFromMtzFile(source, options.selectedColumns);
     } else {
       const sourceData = source && typeof source.arrayBuffer === 'function' ? await source.arrayBuffer() : source;
       const data = sourceData instanceof ArrayBuffer ? new Uint8Array(sourceData) : sourceData;
-      if (isMtz) {
-        await map.loadToCootFromMtzData(data, name, options.selectedColumns);
-      } else {
-        await map.loadToCootFromMapData(data, name, options.isDifference === true);
-      }
+      await map.loadToCootFromMtzData(data, name, options.selectedColumns);
     }
 
     if (map.molNo == null || map.molNo === -1) {
       throw new Error(`Moorhen failed to load map ${name}`);
     }
 
+    this.prepareMapRendering(map, metadata);
     this.store.dispatch(addMap(map));
     this.store.dispatch(showMap(map));
     this.store.dispatch(setActiveMap(map));
     const handle = this.createRepresentationHandle(map, null, 'surface', options.parameters || {}, options.lastKnownID);
     const registeredMap = this.registerObject(map, name, [handle]);
-    this.applyMapRepresentationParameters(handle, handle.params);
-    return registeredMap;
+    try {
+      this.applyMapRepresentationParameters(handle, handle.params);
+      await handle.ready;
+      return registeredMap;
+    } catch (error) {
+      await this.removeObjectNow(map);
+      throw error;
+    }
+  }
+
+  prepareMapRendering(map, metadata = null) {
+    // The native manager otherwise replaces application settings on mount with
+    // EM-map suggestions (including a small radius around an unrelated peak).
+    map.showOnLoad = false;
+    map.isOriginLocked = false;
+    if (metadata) map.mapCentre = metadata.centre.map((value, axis) => -value - metadata.origin[axis]);
+    const rendering = { metadata, pending: Promise.resolve(), disposing: false, visible: true };
+    this.mapRendering.set(map, rendering);
+    const contour = map.doCootContour.bind(map);
+    const setupBuffers = map.setupContourBuffers.bind(map);
+    const hideContour = map.hideMapContour.bind(map);
+    // Moorhen 0.22.7 updates its buffer store without repainting the canvas.
+    // Draw after each buffer change so maps appear/disappear without a mouse move.
+    map.hideMapContour = (...args) => {
+      hideContour(...args);
+      this.glRef.current?.drawScene?.();
+    };
+    map.setupContourBuffers = (objects, ...args) => {
+      if (!rendering.disposing && rendering.visible) {
+        setupBuffers(
+          objects.map(mesh => transformCcp4MapMesh(mesh, metadata)),
+          ...args
+        );
+        this.glRef.current?.drawScene?.();
+      }
+    };
+    // Native managers can schedule redraws during edits and camera movement.
+    // Serialize them and drain them before deletion, including delayed callbacks.
+    map.doCootContour = (x, y, z, radius, level, style) => {
+      if (rendering.disposing || !rendering.visible) return Promise.resolve();
+      rendering.pending = rendering.pending
+        .catch(() => undefined)
+        .then(async () => {
+          if (rendering.disposing || !rendering.visible) return;
+          const parameters = this.getRepresentations(map)[0]?.params || {};
+          const wholeMap = metadata && Number(parameters.boxSize) === 0;
+          const centre = wholeMap
+            ? metadata.centre
+            : [x, y, z].map((value, axis) => value - (metadata?.origin[axis] || 0));
+          const requestedRadius = Number(parameters.boxSize ?? parameters.radius);
+          const nativeRadius = wholeMap ? metadata.radius + 0.001 : requestedRadius > 0 ? requestedRadius : radius;
+          const nativeLevel = parameters.isolevel == null ? level : getAbsoluteMapContour(parameters, metadata, map);
+          const nativeStyle =
+            parameters.contour == null && parameters.wireframe == null
+              ? style
+              : (parameters.contour ?? parameters.wireframe) === false
+              ? 'solid'
+              : 'lines';
+          await contour(...centre, nativeRadius, nativeLevel, nativeStyle);
+        });
+      return rendering.pending;
+    };
   }
 
   async applyMoleculeRepresentationParameters(handle, parameters = {}) {
@@ -748,12 +887,19 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   applyMapRepresentationParameters(handle, parameters = {}) {
     const map = handle.parentObject;
     const molNo = map.molNo;
-    const contourLevel = Number(parameters.isolevel);
-    const radius = Number(parameters.boxSize ?? parameters.radius);
+    const metadata = this.mapRendering.get(map)?.metadata;
+    const contourLevel = getAbsoluteMapContour(parameters, metadata, map);
+    const requestedRadius = Number(parameters.boxSize ?? parameters.radius);
+    const radius =
+      metadata && requestedRadius === 0
+        ? metadata.radius + 0.001
+        : requestedRadius > 0
+        ? requestedRadius
+        : map.suggestedRadius || 15;
     const alpha = Number(parameters.opacity);
 
     if (Number.isFinite(contourLevel)) {
-      this.store.dispatch(setContourLevel({ molNo, contourLevel: Math.abs(contourLevel) }));
+      this.store.dispatch(setContourLevel({ molNo, contourLevel }));
     }
     if (Number.isFinite(radius) && radius > 0) {
       this.store.dispatch(setMapRadius({ molNo, radius }));
@@ -782,8 +928,15 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
 
     const visible = parameters.visible !== false && alpha !== 0;
+    const rendering = this.mapRendering.get(map);
+    if (rendering) rendering.visible = visible;
     this.store.dispatch(visible ? showMap(map) : hideMap(map));
     handle.visible = visible;
+    if (visible) {
+      const origin = this.store.getState().glRef.origin || [0, 0, 0];
+      const style = (parameters.contour ?? parameters.wireframe) === false ? 'solid' : 'lines';
+      handle.ready = map.doCootContour(...origin.map(value => -value), radius, contourLevel, style);
+    }
     return handle;
   }
 
@@ -848,6 +1001,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     const object = representation?.parentObject || renderable;
 
     if (object?.type === 'map') {
+      const rendering = this.mapRendering.get(object);
+      if (rendering) rendering.visible = visible;
       this.store.dispatch(visible ? showMap(object) : hideMap(object));
     } else if (object?.type === 'molecule') {
       if (representation) {
@@ -1034,6 +1189,22 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
   }
 
+  async centerOnObjects(components = []) {
+    const molecules = [...new Set(components.filter(component => component?.type === 'molecule'))];
+    if (!molecules.length) return false;
+    if (molecules.length === 1) {
+      await this.centerOn(molecules[0]);
+      return true;
+    }
+
+    const atoms = await Promise.all(molecules.map(molecule => molecule.gemmiAtomsForCid('/*/*/*/*')));
+    const canvas = this.getRendererElement();
+    const orientation = getMoorhenLigandFocus(atoms, this.getOrientation().quat4, canvas?.width / canvas?.height);
+    if (!orientation) return false;
+    this.setOrientation(orientation);
+    return true;
+  }
+
   setOrientation(orientation) {
     const { origin, quat4, zoom } = normaliseMoorhenOrientation(orientation);
 
@@ -1071,9 +1242,19 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
   resize() {
     const element = this.containerElement?.current || this.containerElement;
-    if (element && this.glRef.current?.resize) {
-      this.glRef.current.resize(Math.max(element.clientWidth, 1), Math.max(element.clientHeight, 1));
-    }
+    const width = element?.clientWidth;
+    const height = element?.clientHeight;
+    // A reverse portal may briefly be detached while the layout changes. Keep
+    // its last usable size until it is attached to a visible panel again.
+    if (!(width > 0 && height > 0) || !this.glRef.current?.resize) return;
+
+    // The native host and 2D overlays read these dimensions from its own store.
+    // Resizing only WebGL lets a later native render restore stale dimensions.
+    const scene = this.store.getState().sceneSettings;
+    if (scene.width !== width) this.store.dispatch(setWidth(width));
+    if (scene.height !== height) this.store.dispatch(setHeight(height));
+    this.glRef.current.resize(width, height);
+    this.glRef.current.drawScene?.();
   }
 
   getRendererElement() {
@@ -1170,22 +1351,54 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   async removeObject(component) {
     component = await Promise.resolve(component);
     if (!component) return;
+    return this.runObjectOperation(component.name, () => this.removeObjectNow(component));
+  }
+
+  removeObjects(name) {
+    // Resolve the name after earlier loads finish, including loads that have not
+    // registered yet. An empty registry at request time does not mean no work.
+    return this.runObjectOperation(name, async () => {
+      for (const object of this.getObjects(name)) await this.removeObjectNow(object);
+    });
+  }
+
+  removeObjectNow(component) {
+    if (this.objectRemovals.has(component)) return this.objectRemovals.get(component);
+    const removal = this.disposeObject(component);
+    this.objectRemovals.set(component, removal);
+    removal.catch(() => this.objectRemovals.delete(component));
+    return removal;
+  }
+
+  async disposeObject(component) {
+    const mapRendering = this.mapRendering.get(component);
+    if (mapRendering) {
+      mapRendering.disposing = true;
+      this.store.dispatch(hideMap(component));
+      await Promise.allSettled([mapRendering.pending]);
+    }
+    // A late representation redraw can recreate buffers after native delete.
+    // Finish pending representation work before deleting the molecule.
+    await Promise.allSettled(this.getRepresentations(component).map(handle => handle.ready));
     if (component.linkedObjects) {
-      for (const linkedObject of component.linkedObjects) await this.removeObject(linkedObject);
+      for (const linkedObject of component.linkedObjects) await this.removeObjectNow(linkedObject);
     }
     if (component.type === 'vector') {
       if (component.visible !== false) this.store.dispatch(removeVector(component.vector));
     } else {
       await component.delete?.();
       this.store.dispatch(component.type === 'map' ? removeMap(component) : removeMolecule(component));
+      if (component.type === 'map') this.glRef.current?.drawScene?.();
     }
     for (const [name, object] of this.objectsByName.entries()) {
       if (object === component) this.objectsByName.delete(name);
     }
     this.representationsByObject.delete(component);
+    this.mapRendering.delete(component);
   }
 
   async removeAll() {
+    await Promise.allSettled([...this.objectOperations.values()]);
     for (const object of Array.from(new Set(this.objectsByName.values()))) {
       await this.removeObject(object);
     }
@@ -1200,6 +1413,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
   async destroy() {
     if (this.destroyed) return;
+    this.destroyed = true;
     await this.removeAll();
     Array.from(this.pickHandlers.keys()).forEach(handler => this.removePickHandler(handler));
     Array.from(this.clickHandlers.keys()).forEach(handler => this.removeClickHandler(handler));
@@ -1209,7 +1423,6 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (this.runtime.viewerAdapter === this) {
       delete this.runtime.viewerAdapter;
     }
-    this.destroyed = true;
   }
 }
 

@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NglContext } from '../../components/nglView/nglProvider';
@@ -17,6 +18,7 @@ import { base_url } from '../../components/routes/constants';
 
 export const useDisplaySurfaceRHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.datasetsReducers.toBeDisplayedList);
   const displayedSurfaces = useSelector(state => state.datasetsReducers.surfaceLists);
@@ -67,7 +69,7 @@ export const useDisplaySurfaceRHS = () => {
       const datasetID = surfaceData.datasetID;
       const colourToggle = getRandomColor(data);
 
-      dispatch(
+      await dispatch(
         deleteObject(
           Object.assign(
             { display_div: VIEWS.MAJOR_VIEW },
@@ -91,7 +93,7 @@ export const useDisplaySurfaceRHS = () => {
       true
     );
     toBeRemovedSurfaces?.forEach(data => {
-      removeSurface(data);
+      runStructureOperation(data, removeSurface);
     });
     const toBeDisplayedSurfaces = getToBeDisplayedStructuresDataset(
       toBeDisplayedList,
@@ -99,9 +101,9 @@ export const useDisplaySurfaceRHS = () => {
       NGL_OBJECTS.SURFACE
     );
     toBeDisplayedSurfaces?.forEach(data => {
-      displaySurface(data);
+      runStructureOperation(data, displaySurface);
     });
-  }, [toBeDisplayedList, displayedSurfaces, displaySurface, dispatch, stage, removeSurface]);
+  }, [runStructureOperation, toBeDisplayedList, displayedSurfaces, displaySurface, dispatch, stage, removeSurface]);
 
   return {};
 };

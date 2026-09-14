@@ -2,7 +2,7 @@
  * Row in Hit navigator
  */
 
-import React, { memo, forwardRef, useCallback, useMemo, useState } from 'react';
+import React, { memo, forwardRef, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { makeStyles } from '../../../../ui/styles';
 import { useSelector } from 'react-redux';
@@ -15,6 +15,7 @@ import RichTooltip from '../../../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../../../tooltip/TooltipPathContext';
 import { LHS_OBSERVATION_VIEW_CONFIG } from './viewConfigs';
 import { COLUMN_TYPES } from './table';
+import { getAdjacentPoses } from '../poseTransfer';
 
 const useStyles = makeStyles(theme => ({
   table: {
@@ -141,6 +142,12 @@ const ObservationUnifiedViewWrapper = memo(
         vectorOnList,
         informationList,
         items,
+        navigationItems = items,
+        poseTransferConfig,
+        poseTransferInProgress = false,
+        poseTransferResetKey = 0,
+        onPoseTransfer,
+        onPoseTransferNavigationItemsChange,
         allSelectedMolecules,
         addMoleculeViewRef,
         onPoseVisuallyReady,
@@ -180,10 +187,11 @@ const ObservationUnifiedViewWrapper = memo(
 
           return Math.max(maxWidth, Math.max(codeWidth, displayNameWidth) + DETAIL_TEXT_ACTION_BUFFER);
         }, 0);
-        const controlsWidth = DETAIL_CONTROLS_WIDTH[viewConfig.kind] || DETAIL_CONTROLS_WIDTH.lhs;
+        const controlsWidth = (DETAIL_CONTROLS_WIDTH[viewConfig.kind] || DETAIL_CONTROLS_WIDTH.lhs) +
+          (poseTransferConfig?.controlsWidth || 0);
 
         return Math.ceil(maxTextWidth + controlsWidth + DETAIL_WIDTH_BUFFER);
-      }, [aliasOrder, items, viewConfig]);
+      }, [aliasOrder, items, poseTransferConfig, viewConfig]);
 
       const { columns, handleColumnResize, getColumnWidth } = useColumns(
         50,
@@ -191,7 +199,16 @@ const ObservationUnifiedViewWrapper = memo(
         availableWidth,
         preferredDetailWidth
       );
-      const { filteredItems, getColumnFilter } = useFilters(items, columns, viewConfig);
+      const { filteredItems, getColumnFilter, applyFiltersAndSort } = useFilters(items, columns, viewConfig);
+      const orderedNavigationItems = useMemo(() => applyFiltersAndSort(navigationItems), [applyFiltersAndSort, navigationItems]);
+      const reportedIds = useRef(null);
+      useEffect(() => {
+        if (!onPoseTransferNavigationItemsChange) return;
+        const ids = orderedNavigationItems.map(item => item.id);
+        if (reportedIds.current?.length === ids.length && ids.every((id, index) => reportedIds.current[index] === id)) return;
+        reportedIds.current = ids;
+        onPoseTransferNavigationItemsChange(orderedNavigationItems);
+      }, [orderedNavigationItems, onPoseTransferNavigationItemsChange]);
       const waitsForMoleculeImage = columns?.some(column => column.visible && column.type === COLUMN_TYPES.MOLECULE);
       const handleDetailHeightChange = useCallback((rowId, height) => {
         if (rowId === undefined || rowId === null) {
@@ -292,6 +309,7 @@ const ObservationUnifiedViewWrapper = memo(
           <TableBody>
             {filteredItems?.map((data, index) => {
               const molsForCmp = data.associatedObs;
+              const { previousPose, nextPose } = getAdjacentPoses(orderedNavigationItems, data.id);
               const selected = allSelectedMolecules?.some(molecule =>
                 data.associatedObs.some(obs => obs.id === molecule.id)
               );
@@ -328,6 +346,12 @@ const ObservationUnifiedViewWrapper = memo(
                   onDetailHeightChange={handleDetailHeightChange}
                   viewConfig={viewConfig}
                   getComputedInspirations={getComputedInspirations}
+                  previousPose={previousPose}
+                  nextPose={nextPose}
+                  poseTransferConfig={poseTransferConfig}
+                  poseTransferInProgress={poseTransferInProgress}
+                  poseTransferResetKey={poseTransferResetKey}
+                  onPoseTransfer={onPoseTransfer}
                 />
               );
             })}

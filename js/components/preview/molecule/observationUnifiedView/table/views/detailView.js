@@ -35,7 +35,6 @@ import {
   setDeselectedAll,
   setMoleculeForTagEdit,
   setTagEditorOpen,
-  setObservationsForLHSCmp,
   setIsLHSCmpTagEdit,
   removeProteinSettings
 } from '../../../../../../reducers/selection/actions';
@@ -65,6 +64,8 @@ import {
 import { isCompoundFromVectorSelector } from '../../../../compounds/redux/dispatchActions';
 import { LHS_OBSERVATION_VIEW_CONFIG } from '../../viewConfigs';
 import { getDefaultComputedInspirations } from '../../../utils/computedInspirations';
+import { hasPoseTransferStateForPose } from '../../../poseTransfer';
+import { PoseTransferButtons } from '../../../poseTransferButtons';
 
 const DETAIL_TEXT_ACTION_BUFFER = 28;
 const DETAIL_SINGLE_CONTROL_WIDTH = 24;
@@ -542,7 +543,13 @@ export const DetailView = memo(
     observations,
     ligandRepresentations = undefined,
     viewConfig = LHS_OBSERVATION_VIEW_CONFIG,
-    getComputedInspirations = undefined
+    getComputedInspirations = undefined,
+    previousPose = null,
+    nextPose = null,
+    poseTransferConfig,
+    poseTransferInProgress = false,
+    poseTransferResetKey = 0,
+    onPoseTransfer
   }) => {
     const [proteinSettings, setProteinSettings] = useState(DEFAULT_PROTEIN_SETTINGS);
     const [densityPopoverAnchor, setDensityPopoverAnchor] = useState(null);
@@ -626,8 +633,6 @@ export const DetailView = memo(
     const tagEditorOpen = useSelector(state => state.selectionReducers.tagEditorOpened);
     const molForTagEditId = useSelector(state => state.selectionReducers.molForTagEdit);
 
-    const isObservationDialogOpen = useSelector(state => state.selectionReducers.isObservationDialogOpen);
-
     // True only when the tag editor was opened specifically for this row
     const isRowTagEditorOpen =
       tagEditorOpen && (molForTagEditId || []).some(id => observations.some(obs => obs.id === id));
@@ -636,15 +641,6 @@ export const DetailView = memo(
 
     const { getNglView } = useContext(NglContext);
     const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
-
-    const poseIdForObservationsDialog = useSelector(state => state.selectionReducers.poseIdForObservationsDialog);
-
-    useEffect(() => {
-      if (isObservationDialogOpen && poseIdForObservationsDialog === currentID) {
-        dispatch(setObservationsForLHSCmp(observations));
-        handleRef();
-      }
-    }, [observations, isObservationDialogOpen, dispatch, poseIdForObservationsDialog, currentID, handleRef]);
 
     const getMainObservation = useCallback(() => {
       let result = null;
@@ -736,6 +732,9 @@ export const DetailView = memo(
     }, [data, getComputedInspirations, observations]);
 
     const isAnyInspirationOn = useSelector(state => isAnyInspirationTurnedOn(state, computedInspirations));
+    const hasTransferableState = useSelector(state =>
+      hasPoseTransferStateForPose({ state, pose: data, config: poseTransferConfig })
+    );
     const isFromVectorSelector = isCompoundFromVectorSelector(data);
 
     const activeTarget = useSelector(state => getCurrentTarget(state));
@@ -1496,8 +1495,9 @@ export const DetailView = memo(
         widths.push(DETAIL_CONTROL_BUTTON_WIDTH);
       }
 
+      if (poseTransferConfig) widths.push(19, 19);
       return widths;
-    }, [hideFButton, shouldRenderDetailTrailingButtons, showCrossReferenceModal]);
+    }, [hideFButton, poseTransferConfig, shouldRenderDetailTrailingButtons, showCrossReferenceModal]);
 
     const detailLayout = useMemo(() => {
       const availableWidth = Number(detailWidth) || 0;
@@ -1505,7 +1505,8 @@ export const DetailView = memo(
       const codeWidth = measureTextWidth(mainObservation?.code || '', '700 14.4px Roboto, Arial, sans-serif');
       const displayNameWidth = measureTextWidth(getDisplayName() || '', '400 12.8px Roboto, Arial, sans-serif');
       const preferredTextWidth = Math.ceil(Math.max(codeWidth, displayNameWidth) + DETAIL_TEXT_ACTION_BUFFER);
-      const fullControlsWidth = DETAIL_CONTROLS_WIDTH[viewConfig.kind] || DETAIL_CONTROLS_WIDTH.lhs;
+      const fullControlsWidth = (DETAIL_CONTROLS_WIDTH[viewConfig.kind] || DETAIL_CONTROLS_WIDTH.lhs) +
+        (poseTransferConfig?.controlsWidth || 0);
 
       if (!availableWidth) {
         return {
@@ -1527,9 +1528,20 @@ export const DetailView = memo(
         controlsWidth: Math.ceil(controlsWidth),
         textColumnWidth: Math.max(DETAIL_MIN_TEXT_WIDTH, Math.min(preferredTextWidth, availableWidth - controlsWidth))
       };
-    }, [detailWidth, getDisplayName, getMainObservation, viewConfig.kind, visibleControlButtonWidths]);
+    }, [detailWidth, getDisplayName, getMainObservation, poseTransferConfig, viewConfig.kind, visibleControlButtonWidths]);
 
     const [anchorElTable, setAnchorElTable] = useState(null);
+    useEffect(() => {
+      if (!poseTransferResetKey) return;
+      setDensityPopoverOpen(false);
+      setDensityPopoverAnchor(null);
+      setDensityTooltipOpen(false);
+      setProteinPopoverOpen(false);
+      setProteinPopoverAnchor(null);
+      setProteinTooltipOpen(false);
+      setTagPopoverOpen(null);
+      setAnchorElTable(null);
+    }, [poseTransferResetKey]);
     const handleTablePopoverOpen = event => {
       setAnchorElTable(anchorElTable ? null : event.currentTarget);
     };
@@ -1954,6 +1966,16 @@ export const DetailView = memo(
                 </Grid>
               </RichTooltip>
               {generateLastButtons()}
+              {poseTransferConfig && hasTransferableState && (
+                <Grid item>
+                  <PoseTransferButtons
+                    previous={previousPose ? { sourcePose: data, destinationPose: previousPose } : null}
+                    next={nextPose ? { sourcePose: data, destinationPose: nextPose } : null}
+                    busy={poseTransferInProgress}
+                    onTransfer={onPoseTransfer}
+                  />
+                </Grid>
+              )}
             </Grid>
           </Grid>
           {generateTagPopover()}

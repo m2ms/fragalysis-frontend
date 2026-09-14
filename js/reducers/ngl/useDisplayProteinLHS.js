@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
@@ -20,6 +21,7 @@ import { getToBeDisplayedStructures } from './utils';
 
 export const useDisplayProteinLHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedProteins = useSelector(state => state.selectionReducers.proteinList);
@@ -94,7 +96,7 @@ export const useDisplayProteinLHS = () => {
   useEffect(() => {
     const toBeDisplayedProteins = getToBeDisplayedStructures(toBeDisplayedList, displayedProteins, NGL_OBJECTS.PROTEIN);
     toBeDisplayedProteins?.forEach(data => {
-      displayProtein(data);
+      runStructureOperation(data, displayProtein);
     });
 
     const toBeRemovedProteins = getToBeDisplayedStructures(
@@ -104,9 +106,9 @@ export const useDisplayProteinLHS = () => {
       true
     );
     toBeRemovedProteins?.forEach(data => {
-      removeProtein(data);
+      runStructureOperation(data, removeProtein);
     });
-  }, [toBeDisplayedList, displayProtein, dispatch, stage, removeProtein, displayedProteins]);
+  }, [runStructureOperation, toBeDisplayedList, displayProtein, dispatch, stage, removeProtein, displayedProteins]);
 
   return {};
 };

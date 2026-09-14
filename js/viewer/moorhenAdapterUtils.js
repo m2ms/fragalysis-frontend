@@ -19,7 +19,9 @@ const REPRESENTATION_STYLES = Object.freeze({
   base: 'DishyBases',
   buffer: 'CBs',
   cartoon: 'CRs',
-  contact: 'contact_dots',
+  // Fragalysis contacts are atom-to-atom interaction lines. Native contact_dots
+  // is a ligand validation display (overlap dots/spikes), not that representation.
+  contact: 'allHBonds',
   distance: 'allHBonds',
   helixorient: 'Calpha',
   hyperball: 'VdwSpheres',
@@ -145,6 +147,60 @@ export const createSpherePdb = center => {
   return `HETATM    1  C   SPH A   1    ${coordinate(x)}${coordinate(y)}${coordinate(
     z
   )}  1.00 20.00           C\nEND\n`;
+};
+
+const multiplyQuaternions = ([ax, ay, az, aw], [bx, by, bz, bw]) => [
+  aw * bx + ax * bw + ay * bz - az * by,
+  aw * by - ax * bz + ay * bw + az * bx,
+  aw * bz + ax * by - ay * bx + az * bw,
+  aw * bw - ax * bx - ay * by - az * bz
+];
+
+const normalizeQuaternion = quaternion => {
+  const length = Math.hypot(...quaternion);
+  return length > 0 && Number.isFinite(length) ? quaternion.map(value => value / length) : [0, 0, 0, 1];
+};
+
+// Geometry is collected per molecule so a larger ligand does not outweigh a smaller one.
+export const getMoorhenLigandFocus = (atomGroups, currentQuaternion, aspectRatio = 1) => {
+  const groups = atomGroups
+    .map(atoms => atoms.filter(atom => [atom.x, atom.y, atom.z].every(Number.isFinite)))
+    .filter(atoms => atoms.length);
+  if (!groups.length) return null;
+
+  const centers = groups.map(atoms =>
+    ['x', 'y', 'z'].map(axis => atoms.reduce((sum, atom) => sum + atom[axis], 0) / atoms.length)
+  );
+  const center = [0, 1, 2].map(axis => centers.reduce((sum, point) => sum + point[axis], 0) / centers.length);
+  let widest = [0, 0, 0];
+  for (let first = 0; first < centers.length; first++) {
+    for (let second = first + 1; second < centers.length; second++) {
+      const axis = centers[second].map((value, index) => value - centers[first][index]);
+      if (Math.hypot(...axis) > Math.hypot(...widest)) widest = axis;
+    }
+  }
+
+  let quat4 = normalizeQuaternion(currentQuaternion || [0, 0, 0, 1]);
+  const length = Math.hypot(...widest);
+  if (length > 1e-4) {
+    const vector = [...widest.map(value => value / length), 0];
+    const inverse = [-quat4[0], -quat4[1], -quat4[2], quat4[3]];
+    const [x, y, z] = multiplyQuaternions(multiplyQuaternions(quat4, vector), inverse);
+    // Smallest additional rotation from the current separation to screen-horizontal.
+    const adjustment = x < -0.999999 ? [0, 1, 0, 0] : normalizeQuaternion([0, z, -y, 1 + x]);
+    quat4 = normalizeQuaternion(multiplyQuaternions(adjustment, quat4));
+  }
+
+  const radius = groups.reduce(
+    (maximum, atoms) => atoms.reduce(
+      (value, atom) => Math.max(value, Math.hypot(atom.x - center[0], atom.y - center[1], atom.z - center[2])),
+      maximum
+    ),
+    0
+  );
+  // Moorhen fits a full molecule using diameter / 40. Include a margin and narrow canvases.
+  const aspect = Number.isFinite(aspectRatio) && aspectRatio > 0 ? Math.min(1, aspectRatio) : 1;
+  return { origin: center.map(value => -value), quat4, zoom: Math.max(0.05, (2 * radius * 1.1) / (40 * aspect)) };
 };
 
 const quaternionFromRotationMatrix = elements => {

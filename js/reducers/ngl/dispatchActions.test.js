@@ -1,6 +1,6 @@
 import configureStore from 'redux-mock-store';
 import { thunk } from 'redux-thunk';
-import { deleteObject, loadObject, setOrientation } from './dispatchActions';
+import { centerOnLigandsByMoleculeIDs, deleteObject, loadObject, setOrientation } from './dispatchActions';
 import { getAction } from '../../utils/testUtils';
 import {
   decrementCountOfPendingNglObjects,
@@ -23,6 +23,27 @@ const { fn } = jest;
 describe("testing ngl reducer's async actions", () => {
   const middlewares = [thunk]; // add your middlewares like `redux-thunk`
   const mockStore = configureStore(middlewares);
+
+  it('waits for native multi-ligand focusing before recording the camera', async () => {
+    const store = mockStore({ nglReducers: { objectsInView: {
+      first: { moleculeId: 1, OBJECT_TYPE: OBJECT_TYPE.LIGAND },
+      protein: { moleculeId: 1, OBJECT_TYPE: OBJECT_TYPE.PROTEIN },
+      second: { moleculeId: 2, OBJECT_TYPE: OBJECT_TYPE.LIGAND }
+    } } });
+    const adapter = new ViewerAdapter();
+    const objects = { first: {}, second: {} };
+    adapter.getObject = jest.fn(name => objects[name]);
+    let finish;
+    adapter.centerOnObjects = jest.fn(() => new Promise(resolve => { finish = resolve; }));
+    const orientation = { elements: [0, 0, 0, 1, -5, 0, 0, 0.5] };
+    adapter.getOrientation = jest.fn(() => orientation);
+    const pending = store.dispatch(centerOnLigandsByMoleculeIDs(adapter, [1, 2, 2]));
+    expect(adapter.centerOnObjects).toHaveBeenCalledWith([objects.first, objects.second]);
+    expect(store.getActions()).toStrictEqual([]);
+    finish(true);
+    expect(await pending).toBe(true);
+    expect(store.getActions()).toContainEqual(setNglOrientation(orientation, VIEWS.MAJOR_VIEW));
+  });
 
   it('should load object', () => {
     expect.hasAssertions();

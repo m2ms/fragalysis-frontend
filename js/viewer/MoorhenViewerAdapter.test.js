@@ -1,5 +1,14 @@
 import { MoorhenViewerAdapter } from './MoorhenViewerAdapter';
 import { asViewerAdapter } from './viewerAdapterFactory';
+import { getMoorhenLigandFocus } from './moorhenAdapterUtils';
+import { copyRepresentationSettingsList } from './representationState';
+import { createCcp4Map } from './fixtures/ccp4Map';
+import fs from 'fs';
+import { runInNewContext } from 'vm';
+import ts from 'typescript';
+import { loadNglObject, updateComponentRepresentation, deleteNglObject } from '../reducers/ngl/actions';
+import nglReducers from '../reducers/ngl/nglReducers';
+import { loadObject as loadViewerObject, deleteObject as deleteViewerObject } from '../reducers/ngl/dispatchActions';
 import {
   MoorhenMap,
   MoorhenMolecule,
@@ -11,6 +20,7 @@ import {
   removeMolecule,
   removeVector,
   setBackgroundColor,
+  setHeight,
   setActiveMap,
   setContourLevel,
   setMapAlpha,
@@ -21,6 +31,7 @@ import {
   setOrigin,
   setPositiveMapColours,
   setQuat,
+  setWidth,
   setZoom,
   setZoomWheelSensitivityFactor,
   showMap,
@@ -51,6 +62,7 @@ jest.mock('moorhen', () => {
     setContourLevel: action('moorhen/setContourLevel'),
     setFogEnd: action('moorhen/setFogEnd'),
     setFogStart: action('moorhen/setFogStart'),
+    setHeight: action('moorhen/setHeight'),
     setMapAlpha: action('moorhen/setMapAlpha'),
     setMapColours: action('moorhen/setMapColours'),
     setMapRadius: action('moorhen/setMapRadius'),
@@ -59,6 +71,7 @@ jest.mock('moorhen', () => {
     setOrigin: action('moorhen/setOrigin'),
     setPositiveMapColours: action('moorhen/setPositiveMapColours'),
     setQuat: action('moorhen/setQuat'),
+    setWidth: action('moorhen/setWidth'),
     setZoom: action('moorhen/setZoom'),
     setZoomWheelSensitivityFactor: action('moorhen/setZoomWheelSensitivityFactor'),
     showMap: action('moorhen/showMap'),
@@ -67,6 +80,28 @@ jest.mock('moorhen', () => {
 });
 
 const originalFetch = global.fetch;
+
+// Exercise cleanup from the installed package. A mock delete that clears a Set
+// cannot catch the difference between removing buffers and repainting the canvas.
+const installedMapCleanup = () => {
+  const bundle = fs.readFileSync(require.resolve('moorhen'), 'utf8');
+  const marker = bundle.lastIndexOf('sourceMappingURL=data:');
+  const sourceMap = JSON.parse(Buffer.from(bundle.slice(bundle.indexOf('base64,', marker) + 7), 'base64').toString());
+  const source =
+    sourceMap.sourcesContent[sourceMap.sources.findIndex(name => name.endsWith('/src/utils/MoorhenMap.ts'))];
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2019 }
+  });
+  const exports = {};
+  const dependencies = name =>
+    name.endsWith('/glRefSlice')
+      ? { setDisplayBuffers: payload => ({ type: 'glRef/setDisplayBuffers', payload }) }
+      : {};
+  // The installed class is trusted application code; its unrelated dependencies
+  // are unused by these three cleanup methods.
+  runInNewContext(compiled.outputText, { require: dependencies, exports });
+  return exports.MoorhenMap.prototype;
+};
 
 const createStore = () => {
   const state = {
@@ -143,6 +178,11 @@ const createMap = (molNo = 2) => ({
   molNo: null,
   name: 'unnamed',
   isDifference: false,
+  showOnLoad: true,
+  isOriginLocked: true,
+  doCootContour: jest.fn(() => Promise.resolve()),
+  setupContourBuffers: jest.fn(),
+  hideMapContour: jest.fn(),
   centreOnMap: jest.fn(() => Promise.resolve()),
   delete: jest.fn(() => Promise.resolve()),
   loadToCootFromMapData: jest.fn(function(data, name, isDifference) {
@@ -211,6 +251,46 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     expect(asViewerAdapter(adapter)).toBe(adapter);
     expect(store.dispatch).toHaveBeenCalledWith(setBackgroundColor([0, 0, 0, 1]));
     expect(store.dispatch).toHaveBeenCalledWith(setZoomWheelSensitivityFactor(8));
+  });
+
+  it('keeps native scene and canvas dimensions in sync as Designs opens and closes without changing the camera', () => {
+    expect.hasAssertions();
+    const { adapter, store, glRef } = createAdapter();
+    const dimensions = { clientWidth: 1400, clientHeight: 900 };
+    adapter.containerElement = { current: dimensions };
+    const camera = adapter.getOrientation();
+    const drawScene = jest.fn();
+    Object.assign(glRef.current, { drawScene });
+    store.dispatch.mockImplementation(action => {
+      if (action.type === setWidth().type) store.state.sceneSettings.width = action.payload;
+      if (action.type === setHeight().type) store.state.sceneSettings.height = action.payload;
+    });
+
+    [
+      [1400, 900],
+      [950, 900],
+      [1400, 900],
+      [1200, 760]
+    ].forEach(([width, height]) => {
+      Object.assign(dimensions, { clientWidth: width, clientHeight: height });
+      adapter.resize();
+      expect(store.state.sceneSettings).toMatchObject({ width, height });
+      expect(glRef.current.resize).toHaveBeenLastCalledWith(width, height);
+      expect(adapter.getOrientation()).toStrictEqual(camera);
+    });
+    expect(drawScene).toHaveBeenCalledTimes(4);
+
+    store.dispatch.mockClear();
+    adapter.resize();
+    expect(store.dispatch).not.toHaveBeenCalled();
+    // A portal move can briefly detach the panel; do not overwrite the usable
+    // dimensions with a 1x1 canvas or change the projection during that interval.
+    Object.assign(dimensions, { clientWidth: 0, clientHeight: 0 });
+    adapter.resize();
+    expect(store.dispatch).not.toHaveBeenCalled();
+    expect(glRef.current.resize).toHaveBeenCalledTimes(5);
+    expect(drawScene).toHaveBeenCalledTimes(5);
+    expect(store.state.sceneSettings).toMatchObject({ width: 1200, height: 760 });
   });
 
   it('loads protein and ligand molecules with mapped styles and selections', async () => {
@@ -410,7 +490,8 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
     expect(protein.molecule.mergeMolecules).toHaveBeenCalledWith([ligand.molecule], false, false);
     expect(ligand.molecule.delete).toHaveBeenCalledTimes(1);
-    expect(protein.molecule.addRepresentation).toHaveBeenCalledWith('contact_dots', '/*/*/*/*');
+    expect(protein.molecule.addRepresentation).toHaveBeenCalledWith('allHBonds', '/*/*/*/*');
+    expect(protein.molecule.centreOn).not.toHaveBeenCalled();
     expect(representations).toHaveLength(1);
   });
 
@@ -478,12 +559,162 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     expect(store.dispatch).toHaveBeenCalledWith(setPositiveMapColours({ molNo: 2, rgb: { r: 0, g: 255, b: 255 } }));
   });
 
+  it('retains CCP4 origins and full-map settings when the native map manager mounts', async () => {
+    expect.hasAssertions();
+    const map = createMap();
+    map.suggestedRadius = 3.74;
+    map.suggestedContourLevel = 1.208;
+    const nativeDraw = map.doCootContour;
+    const nativeSetup = map.setupContourBuffers;
+    const { adapter, store } = createAdapter({ map });
+    const bytes = createCcp4Map();
+    const original = bytes.slice();
+    global.fetch = jest.fn(async () => ({ ok: true, arrayBuffer: async () => bytes.buffer }));
+    nativeDraw.mockImplementation(function() {
+      this.setupContourBuffers([{
+        prim_types: [['LINES']],
+        vert_tri: [[new Float32Array([13, 8.5, 10, 13, 9, 10])]],
+        idx_tri: [[new Uint32Array([0, 1])]]
+      }]);
+      return Promise.resolve();
+    });
+
+    await adapter.loadMap('/sigmaa.ccp4', { name: 'sigmaa', parameters: { isolevel: 1.2, boxSize: 0, contour: true } });
+
+    expect(global.fetch).toHaveBeenCalledWith('/sigmaa.ccp4', { credentials: 'same-origin' });
+    expect(bytes).toStrictEqual(original);
+    const nativeBytes = map.loadToCootFromMapData.mock.calls[0][0];
+    expect(new DataView(nativeBytes.buffer).getFloat32(49 * 4, true)).toBe(0);
+    expect(map.showOnLoad).toBe(false);
+    expect(map.isOriginLocked).toBe(false);
+    expect(nativeDraw.mock.calls[0][0]).toBeCloseTo(9.5);
+    expect(nativeDraw.mock.calls[0][1]).toBeCloseTo(8);
+    expect(nativeDraw.mock.calls[0][2]).toBeCloseTo(8.25);
+    expect(nativeDraw.mock.calls[0][3]).toBeCloseTo(Math.hypot(9.5, 8, 8.25) + 0.001);
+    expect(nativeDraw.mock.calls[0][4]).toBeCloseTo(0.411044554);
+    const positions = nativeSetup.mock.calls[0][0][0].vert_tri[0][0];
+    expect(positions[0]).toBeCloseTo(7.137);
+    expect(positions[1]).toBeCloseTo(12.977);
+    expect(positions[2]).toBeCloseTo(4.649);
+    expect(adapter.getRepresentations(map)[0].params).toMatchObject({ isolevel: 1.2, boxSize: 0 });
+    expect(map.mapCentre[0]).toBeCloseTo(-3.637);
+
+    // A delayed native manager draw must retain the selected level and full map.
+    await map.doCootContour(100, 200, 300, 3.74, 1.208, 'lines');
+    expect(nativeDraw.mock.calls[1]).toStrictEqual(nativeDraw.mock.calls[0]);
+    const handle = adapter.getRepresentations(map)[0];
+    adapter.setRepresentationParameters(handle, { boxSize: 5, isolevel: 2 });
+    await handle.ready;
+    const draw = nativeDraw.mock.calls[2];
+    expect(draw[0]).toBeCloseTo(-store.state.glRef.origin[0] + 5.863);
+    expect(draw[1]).toBeCloseTo(-store.state.glRef.origin[1] - 4.477);
+    expect(draw[2]).toBeCloseTo(-store.state.glRef.origin[2] + 5.351);
+    expect(draw[3]).toBe(5);
+    expect(draw[4]).toBeCloseTo(-0.0257808287 + 2 * 0.3640211523);
+  });
+
+  it('drains native map redraws and prevents delayed callbacks recreating deleted buffers', async () => {
+    expect.hasAssertions();
+    const map = createMap();
+    const nativeDraw = map.doCootContour;
+    const buffers = new Set();
+    map.setupContourBuffers.mockImplementation(() => buffers.add('density'));
+    map.delete.mockImplementation(async () => buffers.clear());
+    nativeDraw.mockImplementation(function() { this.setupContourBuffers([]); return Promise.resolve(); });
+    const { adapter } = createAdapter({ map });
+    await adapter.loadMap(new Uint8Array([1]), { name: 'density' });
+    expect(buffers.size).toBe(1);
+    let finish;
+    nativeDraw.mockImplementationOnce(async function() {
+      await new Promise(resolve => { finish = resolve; });
+      this.setupContourBuffers([]);
+    });
+    const redraw = map.doCootContour(0, 0, 0, 10, 1, 'lines');
+    await Promise.resolve();
+    await Promise.resolve();
+    const removal = adapter.removeObject(map);
+    await Promise.resolve();
+    expect(map.delete).not.toHaveBeenCalled();
+    finish();
+    await Promise.all([redraw, removal]);
+    const drawCount = nativeDraw.mock.calls.length;
+    await map.doCootContour(0, 0, 0, 10, 1, 'lines');
+    expect(nativeDraw).toHaveBeenCalledTimes(drawCount);
+    expect(buffers.size).toBe(0);
+    expect(adapter.getObject('density')).toBeUndefined();
+    expect(map.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['observation_DENSITY', 'observation_DENSITY_MAP_sigmaa', 'observation_DENSITY_MAP_diff'])(
+    'repaints the canvas after native deletion of %s, retaining unrelated buffers',
+    async name => {
+      expect.hasAssertions();
+      const { adapter, map, store, commandCentre, glRef } = createAdapter();
+      const native = installedMapCleanup();
+      map.delete = native.delete;
+      map.hideMapContour = native.hideMapContour;
+      map.clearBuffersOfStyle = native.clearBuffersOfStyle;
+      map.store = store;
+      map.commandCentre = commandCentre;
+      map.displayObjects = { Coot: [] };
+      Object.assign(commandCentre.current, { cootCommand: jest.fn(() => Promise.resolve()) });
+      const proteinBuffer = { id: 'protein' };
+      const densityBuffer = { id: name, clearBuffers: jest.fn(), parentMap: map };
+      store.state.glRef.displayBuffers = [proteinBuffer];
+      store.dispatch.mockImplementation(action => {
+        if (action.type === 'glRef/setDisplayBuffers') store.state.glRef.displayBuffers = action.payload;
+      });
+      map.setupContourBuffers.mockImplementation(() => {
+        map.displayObjects.Coot = [densityBuffer];
+        store.state.glRef.displayBuffers = [proteinBuffer, densityBuffer];
+      });
+      map.doCootContour.mockImplementation(async () => map.setupContourBuffers([]));
+      let frame;
+      Object.assign(glRef.current, {
+        drawScene: jest.fn(() => {
+          frame = store.state.glRef.displayBuffers.map(buffer => buffer.id);
+        })
+      });
+      await adapter.loadMap(new Uint8Array([1]), { name });
+      expect(frame).toStrictEqual(['protein', name]);
+
+      // The native map manager uses this same method for visibility/opacity edits.
+      map.hideMapContour();
+      expect(frame).toStrictEqual(['protein']);
+      expect(store.state.glRef.displayBuffers).toStrictEqual([proteinBuffer]);
+      await map.doCootContour(0, 0, 0, 15, 1, 'lines');
+      expect(frame).toStrictEqual(['protein', name]);
+
+      await adapter.removeObjects(name);
+
+      expect(densityBuffer.clearBuffers).toHaveBeenCalledTimes(2);
+      expect(map.displayObjects.Coot).toStrictEqual([]);
+      expect(store.state.glRef.displayBuffers).toStrictEqual([proteinBuffer]);
+      expect(adapter.getObject(name)).toBeUndefined();
+      expect(frame).toStrictEqual(['protein']);
+      await adapter.removeObjects(name);
+      expect(commandCentre.current.cootCommand).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('propagates contour failures and disposes the partially loaded native map', async () => {
+    expect.hasAssertions();
+    const map = createMap();
+    const error = new Error('Native contour failed');
+    map.doCootContour.mockRejectedValueOnce(error);
+    const { adapter } = createAdapter({ map });
+    await expect(adapter.loadMap(new Uint8Array([1]), { name: 'failed-map' })).rejects.toBe(error);
+    expect(map.delete).toHaveBeenCalledTimes(1);
+    expect(adapter.getObject('failed-map')).toBeUndefined();
+  });
+
   it('removes maps already loaded when a density batch partially fails', async () => {
     const sigmaaMap = createMap(19);
     const differenceMap = createMap(20);
     const { adapter, store } = createAdapter();
     const error = new Error('difference map failed');
-    differenceMap.loadToCootFromMapURL.mockRejectedValueOnce(error);
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, arrayBuffer: async () => new Uint8Array([1]).buffer }));
+    differenceMap.loadToCootFromMapData.mockRejectedValueOnce(error);
     MoorhenMap.mockImplementationOnce(() => sigmaaMap).mockImplementationOnce(() => differenceMap);
 
     await expect(
@@ -521,7 +752,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
     expect(molecule.molecule.addRepresentation.mock.calls).toEqual([
       ['CRs', '/*/*/*/*'],
-      ['contact_dots', '/*/*/(LIG)/*'],
+      ['allHBonds', '/*/*/(LIG)/*'],
       ['ligands', '/*/*/(LIG)/*']
     ]);
     expect(map.loadToCootFromMapData).toHaveBeenCalledWith(expect.any(Uint8Array), 'event_EVENT_MAP', true);
@@ -684,6 +915,231 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     });
     expect(pickHandler).toHaveBeenCalledWith(adapter, expect.objectContaining({ kind: 'atom' }));
     await expect(adapter.captureImage()).resolves.toBe('data:image/png');
+  });
+
+  it('centres a deduplicated group with equal ligand weights and fits its full extent', async () => {
+    const { adapter, store } = createAdapter();
+    store.dispatch.mockClear();
+    const first = createMolecule().molecule;
+    const second = createMolecule(2).molecule;
+    first.gemmiAtomsForCid = jest.fn(async () => [{ x: -1, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }]);
+    second.gemmiAtomsForCid = jest.fn(async () => [{ x: 10, y: 0, z: 0 }]);
+
+    expect(await adapter.centerOnObjects([first, second, first])).toBe(true);
+    expect(first.gemmiAtomsForCid).toHaveBeenCalledTimes(1);
+    expect(store.dispatch).toHaveBeenCalledWith(setOrigin([-5, -0, -0]));
+    expect(store.dispatch).toHaveBeenCalledWith(setZoom(12 * 1.1 / 40));
+    expect(first.centreOn).not.toHaveBeenCalled();
+  });
+
+  it('removes every native buffer when concurrent loads use the same object name', async () => {
+    const { adapter } = createAdapter();
+    const visibleBuffers = new Set();
+    const molecules = [createMolecule(101), createMolecule(102)];
+    for (const { molecule, representation } of molecules) {
+      molecule.addRepresentation.mockImplementation(async () => {
+        visibleBuffers.add(representation);
+        molecule.representations.push(representation);
+        return representation;
+      });
+      molecule.delete.mockImplementation(async () => { visibleBuffers.delete(representation); });
+      MoorhenMolecule.mockImplementationOnce(() => molecule);
+    }
+    await Promise.all([
+      adapter.loadMolecule('ATOM first', { name: 'same-ligand', fromString: true }),
+      adapter.loadMolecule('ATOM second', { name: 'same-ligand', fromString: true })
+    ]);
+    await adapter.removeObject(adapter.getObject('same-ligand'));
+
+    expect(adapter.getObjects('same-ligand')).toEqual([]);
+    expect(visibleBuffers.size).toBe(0);
+    for (const { molecule } of molecules) expect(molecule.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['LIGAND', 'HIT_PROTEIN', 'DENSITY'])('honors %s deletion requested before native registration', async objectType => {
+    const { adapter, molecule, map } = createAdapter();
+    let release;
+    const coordinates = new Promise(resolve => { release = resolve; });
+    const target = { name: 'pending', OBJECT_TYPE: objectType };
+    if (objectType === 'LIGAND') {
+      target.sdf_info = { text: () => coordinates };
+    } else if (objectType === 'HIT_PROTEIN') {
+      target.prot_url = '/protein.pdb';
+      global.fetch = jest.fn(() => coordinates.then(() => ({ ok: true, text: async () => 'ATOM\n' })));
+    } else {
+      target.render_event = true;
+      target.event_url = '/event.map';
+      global.fetch = jest.fn(() => coordinates.then(() => ({ ok: true, arrayBuffer: async () => new Uint8Array([1]).buffer })));
+    }
+    const loading = adapter.loadObject({ target });
+    expect(adapter.getObject(target.name)).toBeUndefined();
+    const removal = adapter.removeObjects(target.name);
+    release('ATOM\n');
+    await Promise.all([loading, removal]);
+
+    expect(adapter.getObjects(target.name)).toEqual([]);
+    expect((objectType === 'DENSITY' ? map : molecule).delete).toHaveBeenCalledTimes(1);
+    expect(adapter.objectOperations.size).toBe(0);
+  });
+
+  it('keeps Redux empty when deletion arrives before the native load completes', async () => {
+    const { adapter, molecule } = createAdapter();
+    let state = { nglReducers: nglReducers(undefined, {}) };
+    const dispatch = action => {
+      if (typeof action === 'function') return action(dispatch, () => state);
+      state = { nglReducers: nglReducers(state.nglReducers, action) };
+      return action;
+    };
+    let release;
+    molecule.loadToCootFromString.mockImplementation(() => new Promise(resolve => {
+      release = () => { molecule.molNo = 1; resolve(molecule); };
+    }));
+    const target = { name: 'pending', OBJECT_TYPE: 'LIGAND', sdf_info: 'sdf', display_div: 'major_view' };
+    const loading = dispatch(loadViewerObject({ target, stage: adapter }));
+    const removal = dispatch(deleteViewerObject(target, adapter));
+    release();
+    await Promise.all([loading, removal]);
+    expect(state.nglReducers.objectsInView).toEqual({});
+    expect(state.nglReducers.countOfPendingNglObjects.major_view).toBe(0);
+    expect(adapter.getObjects('pending')).toEqual([]);
+    expect(molecule.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['complex', 'map'])('does not orphan concurrently loaded %s objects', async kind => {
+    const { adapter } = createAdapter();
+    const active = new Set();
+    const objects = [1, 2].map(id => kind === 'map' ? createMap(id) : createMolecule(id).molecule);
+    for (const object of objects) {
+      if (kind === 'map') {
+        object.loadToCootFromMapData.mockImplementation(async () => { object.molNo = active.size + 1; active.add(object); return object; });
+        MoorhenMap.mockImplementationOnce(() => object);
+      } else {
+        const addRepresentation = object.addRepresentation.getMockImplementation();
+        object.addRepresentation.mockImplementation(async (...args) => { active.add(object); return addRepresentation.apply(object, args); });
+      }
+      object.delete.mockImplementation(async () => { active.delete(object); });
+    }
+    if (kind === 'complex') {
+      // Composite loads have a temporary ligand which is deleted after merging.
+      adapter.createNativeMolecule = jest.fn(async (source, name) =>
+        name.endsWith('-ligand') ? createMolecule(10).molecule : objects.shift()
+      );
+    }
+    const load = kind === 'map'
+      ? () => adapter.loadMap(new Uint8Array([1]), { name: 'same-map' })
+      : () => adapter.loadComplex({ name: 'same-complex', prot_url: 'ATOM\n', sdf_info: 'sdf' });
+    await Promise.all([load(), load()]);
+    expect(active.size).toBe(1);
+    await adapter.removeObjects(`same-${kind}`);
+    expect(active.size).toBe(0);
+  });
+
+  it('waits for pending redraws before removing buffers and closes a molecule only once', async () => {
+    const { adapter, molecule } = createAdapter();
+    await adapter.loadMolecule('ATOM\n', { name: 'edited', fromString: true });
+    const [handle] = adapter.getRepresentations(molecule);
+    const visibleBuffers = new Set([handle.nativeRepresentation]);
+    let release;
+    let started;
+    const drawing = new Promise(resolve => { started = resolve; });
+    handle.nativeRepresentation.redraw.mockImplementation(async () => {
+      started();
+      await new Promise(resolve => { release = resolve; });
+      visibleBuffers.add(handle.nativeRepresentation);
+    });
+    molecule.delete.mockImplementation(async () => { visibleBuffers.delete(handle.nativeRepresentation); });
+    adapter.setRepresentationParameters(handle, { opacity: 0.5 });
+    await drawing;
+    const firstRemoval = adapter.removeObjects('edited');
+    const repeatedRemoval = adapter.removeObject(molecule);
+    expect(molecule.delete).not.toHaveBeenCalled();
+    release();
+    await Promise.all([firstRemoval, repeatedRemoval]);
+    expect(visibleBuffers.size).toBe(0);
+    expect(molecule.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it('drains pending loads during teardown instead of leaving newly registered structures behind', async () => {
+    const { adapter, molecule } = createAdapter();
+    let release;
+    const source = { text: () => new Promise(resolve => { release = resolve; }) };
+    const loading = adapter.loadMolecule(source, { name: 'pending', fromString: true });
+    const destroying = adapter.destroy();
+    release('ATOM\n');
+    await Promise.all([loading, destroying]);
+    expect(molecule.delete).toHaveBeenCalledTimes(1);
+    expect(adapter.getObjects('pending')).toEqual([]);
+    await expect(adapter.loadMolecule('ATOM\n')).rejects.toThrow('has been destroyed');
+  });
+
+  it('keeps native buffers out of state across repeated loads, representation edits and deletion', async () => {
+    const { adapter, glRef } = createAdapter();
+    let state = nglReducers(undefined, {});
+    let settings = [{ type: 'licorice', params: { colorValue: 0x123456, opacity: 0.4, visible: true } }];
+    for (let index = 1; index <= 12; index++) {
+      const { molecule, representation } = createMolecule(index);
+      // Model the native graph absent from the original lightweight test doubles.
+      representation.parentMolecule = molecule;
+      representation.glRef = glRef;
+      representation.buffers = [new Float32Array(32768)];
+      MoorhenMolecule.mockImplementation(() => molecule);
+      const target = { name: `ligand-${index}`, OBJECT_TYPE: 'LIGAND', sdf_info: 'sdf' };
+      const handles = await adapter.loadObject({ target, representations: settings });
+      state = nglReducers(state, loadNglObject(target, handles));
+      const descriptor = state.objectsInView[target.name].representations[0];
+      const live = adapter.getRepresentation(molecule, descriptor);
+      expect(live).toBe(handles[0]);
+      expect(live.nativeRepresentation).toBe(representation);
+
+      adapter.setRepresentationParameters(live, { opacity: 0.7 });
+      await live.ready;
+      state = nglReducers(state, updateComponentRepresentation(target.name, descriptor.uuid, live));
+      expect(descriptor.params.opacity).toBe(0.4);
+      expect(state.objectsInView[target.name].representations[0].params.opacity).toBe(0.7);
+      await adapter.setVisibility(live, false);
+      expect(representation.hide).toHaveBeenCalled();
+
+      settings = copyRepresentationSettingsList([descriptor]);
+      await adapter.removeObject(molecule);
+      state = nglReducers(state, deleteNglObject(target));
+      expect(molecule.delete).toHaveBeenCalledTimes(1);
+      expect(adapter.getObject(target.name)).toBeUndefined();
+      expect(adapter.getRepresentations(molecule)).toEqual([]);
+      expect(adapter.getRepresentation(molecule, descriptor)).toBeUndefined();
+    }
+    expect(Object.keys(state.objectsInView)).toHaveLength(0);
+    expect(Object.keys(state.objectsInViewStash)).toHaveLength(12);
+    const saved = JSON.stringify(state.objectsInViewStash);
+    expect(saved.length).toBeLessThan(12000);
+    expect(saved).not.toMatch(/nativeRepresentation|parentObject|buffers|ready/);
+  });
+
+  it('awaits single-ligand focusing and leaves an empty selection unchanged', async () => {
+    const { adapter, store } = createAdapter();
+    store.dispatch.mockClear();
+    const molecule = createMolecule().molecule;
+    let complete;
+    molecule.centreOn.mockReturnValue(new Promise(resolve => { complete = resolve; }));
+    const focused = jest.fn();
+    const pending = adapter.centerOnObjects([molecule]).then(focused);
+    expect(focused).not.toHaveBeenCalled();
+    complete();
+    await pending;
+    expect(focused).toHaveBeenCalledWith(true);
+    expect(await adapter.centerOnObjects([])).toBe(false);
+    expect(store.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('presents depth-separated ligands horizontally and expands fitting for a narrow viewport', () => {
+    const atoms = [[{ x: 0, y: 0, z: 0 }], [{ x: 0, y: 0, z: 10 }]];
+    const focus = getMoorhenLigandFocus(atoms, [0, 0, 0, 1]);
+    expect(focus.origin).toStrictEqual([-0, -0, -5]);
+    expect(focus.quat4[0]).toBeCloseTo(0);
+    expect(focus.quat4[1]).toBeCloseTo(Math.SQRT1_2);
+    expect(focus.quat4[2]).toBeCloseTo(0);
+    expect(focus.quat4[3]).toBeCloseTo(Math.SQRT1_2);
+    expect(getMoorhenLigandFocus(atoms, [0, 0, 0, 1], 0.5).zoom).toBeCloseTo(focus.zoom * 2);
+    expect(getMoorhenLigandFocus([[{ x: NaN, y: 0, z: 0 }]], [0, 0, 0, 1])).toBeNull();
   });
 
   it('centres objects, reports completed work and cleans every owned object', async () => {

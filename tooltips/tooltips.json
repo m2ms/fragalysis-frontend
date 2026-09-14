@@ -171,6 +171,22 @@
           "ascending": "Ascending",
           "descending": "Descending"
         },
+        "navConfig": {
+          "button": "Configure how the pose navigation arrows transfer displayed structures and settings.",
+          "transferOrder": {
+            "removeFirst": "Start removing the old structures first. Phased scheduling completes removal before adding the destination; overlapped scheduling starts independent additions immediately.",
+            "addFirst": "Start adding the destination structures first. Phased scheduling waits for rendering before removing old structures; overlapped scheduling starts independent removals immediately. Shared structures with changed settings always remove before being re-added."
+          },
+          "scheduling": {
+            "overlapped": "Run independent additions and removals concurrently. Transfer order chooses which group starts first.",
+            "phased": "Complete the first phase before starting the second, following the selected transfer order."
+          },
+          "centering": {
+            "none": "Keep the viewer camera unchanged after transfer.",
+            "designLigand": "After rendering, center on the destination design ligand, as with its target icon. If it is not displayed, keep the camera unchanged.",
+            "visibleLigandCentroid": "After rendering, center between the displayed destination design and inspiration ligands, giving each ligand equal weight. Fit the group and show its widest separation horizontally. If only one ligand is displayed, focus it; if none are displayed, keep the camera unchanged."
+          }
+        },
         "filterSettings": {
           "closeEditor": "Close editor",
           "dragAndDrop": "Drag and drop to reorder"

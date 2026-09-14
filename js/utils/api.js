@@ -2,6 +2,15 @@ import axios from 'axios';
 import { isRemoteDebugging } from '../components/routes/constants';
 
 const CancelToken = axios.CancelToken;
+let cacheBustSequence = 0;
+
+const withNoCacheHeaders = headers => {
+  const result = { ...headers };
+  Object.keys(result).forEach(name => {
+    if (['cache-control', 'pragma'].includes(name.toLowerCase())) delete result[name];
+  });
+  return { ...result, 'Cache-Control': 'no-cache, no-store, max-age=0', Pragma: 'no-cache' };
+};
 
 const getCookie = name => {
   if (!document.cookie) {
@@ -21,13 +30,16 @@ export const getCsrfToken = () => getCookie('csrftoken');
 
 export const METHOD = { GET: 'GET', POST: 'POST', PUT: 'PUT', DELETE: 'DELETE', PATCH: 'PATCH', HEAD: 'HEAD' };
 
-export const api = ({ url, method, headers, data, cancel }) => {
+export const api = ({ url, method, headers, data, cancel, params }) => {
   // url && console.log(`${url}`);
   // data && console.log(`${data}`);
+  const requestMethod = method !== undefined ? method : METHOD.GET;
+  const isRead = [METHOD.GET, METHOD.HEAD].includes(String(requestMethod).toUpperCase());
   return axios({
-    url,
-    method: method !== undefined ? method : METHOD.GET,
-    headers:
+    url: typeof url === 'string' ? url : url.toString(),
+    method: requestMethod,
+    params: isRead ? { ...params, __cacheBust: `${Date.now()}-${cacheBustSequence++}` } : params,
+    headers: withNoCacheHeaders(
       headers !== undefined
         ? headers
         : isRemoteDebugging
@@ -43,7 +55,8 @@ export const api = ({ url, method, headers, data, cancel }) => {
             'content-type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
             'X-CSRFToken': getCsrfToken()
-          },
+          }
+    ),
     data,
     cancelToken: new CancelToken(function executor(c) {
       // An executor function receives a cancel function as a parameter

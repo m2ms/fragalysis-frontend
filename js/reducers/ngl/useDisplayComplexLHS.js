@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
@@ -17,6 +18,7 @@ import { getToBeDisplayedStructures } from './utils';
 
 export const useDisplayComplexLHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedComplexes = useSelector(state => state.selectionReducers.complexList);
@@ -62,7 +64,7 @@ export const useDisplayComplexLHS = () => {
       if (!data) return;
       const colourToggle = getRandomColor(data);
 
-      dispatch(
+      await dispatch(
         deleteObject(
           Object.assign(
             { display_div: VIEWS.MAJOR_VIEW },
@@ -85,7 +87,7 @@ export const useDisplayComplexLHS = () => {
       NGL_OBJECTS.COMPLEX
     );
     toBeDisplayedComplexes?.forEach(data => {
-      displayComplex(data);
+      runStructureOperation(data, displayComplex);
     });
 
     const toBeRemovedComplexes = getToBeDisplayedStructures(
@@ -95,9 +97,9 @@ export const useDisplayComplexLHS = () => {
       true
     );
     toBeRemovedComplexes?.forEach(data => {
-      removeComplex(data);
+      runStructureOperation(data, removeComplex);
     });
-  }, [toBeDisplayedList, displayComplex, dispatch, stage, removeComplex, displayedComplexes]);
+  }, [runStructureOperation, toBeDisplayedList, displayComplex, dispatch, stage, removeComplex, displayedComplexes]);
 
   return {};
 };

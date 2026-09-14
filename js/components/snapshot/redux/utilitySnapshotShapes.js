@@ -1,5 +1,6 @@
 import { deepClone, deepMergeWithPriority, deepMergeWithPriorityAndBlackList } from '../../../utils/objectUtils';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
+import { normalizeRhsPoseNavigationConfig } from '../../../constants/poseNavigation';
 
 const BLACKLIST_FLAG = true;
 const BLACKLIST_COUNTER = 1;
@@ -236,6 +237,9 @@ export const normalizeSnapshotRenderState = snapshotState => {
   const normalizedSnapshotState = deepClone(snapshotState);
 
   normalizedSnapshotState.selectionReducers = normalizedSnapshotState.selectionReducers || {};
+  normalizedSnapshotState.selectionReducers.rhsPoseNavigationConfig = normalizeRhsPoseNavigationConfig(
+    normalizedSnapshotState.selectionReducers.rhsPoseNavigationConfig
+  );
   normalizedSnapshotState.datasetsReducers = normalizedSnapshotState.datasetsReducers || {};
   normalizedSnapshotState.nglReducers = normalizedSnapshotState.nglReducers || {};
 

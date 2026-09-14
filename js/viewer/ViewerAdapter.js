@@ -95,6 +95,10 @@ export class ViewerAdapter {
     return notImplemented('centerOn');
   }
 
+  centerOnObjects() {
+    return notImplemented('centerOnObjects');
+  }
+
   setOrientation() {
     return notImplemented('setOrientation');
   }
@@ -153,6 +157,10 @@ export class ViewerAdapter {
 
   removeObject() {
     return notImplemented('removeObject');
+  }
+
+  async removeObjects(name) {
+    await Promise.all(this.getObjects(name).map(object => this.removeObject(object)));
   }
 
   removeAll() {

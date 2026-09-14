@@ -42,6 +42,12 @@ import {
   setSelectedAllByType,
   setDeselectedAllByType,
   setTagEditorOpen,
+  setTagEditorOpenObs,
+  setMoleculeForTagEdit,
+  setIsObsInspirationDialogOpen,
+  setObsInspirationDialogObsIds,
+  setObsInspirationDialogPoseId,
+  setRhsPoseNavigationConfig,
   setIsTagGlobalEdit,
   setIsLHSCmpTagEdit,
   updateMoleculeInLHSObservations,
@@ -57,6 +63,40 @@ import { TooltipPathProvider } from '../../tooltip/TooltipPathContext';
 import { MOL_REPRESENTATION } from '../../nglView/constants';
 import { getDefaultComputedInspirations, getFilteredComputedInspirations } from './utils/computedInspirations';
 import { TAG_META_CATEGORIES } from '../tags/utils/tagUtils';
+import { setIsOpenCrossReferenceDialog } from '../../datasets/redux/actions';
+import { createRhsPoseTransferConfig } from './rhsPoseTransferConfig';
+
+const restoreInspirationDialog = ({ dispatch, pose, ids, requestAnchor }) => {
+  dispatch(setObsInspirationDialogObsIds(ids));
+  dispatch(setObsInspirationDialogPoseId(pose.id));
+  dispatch(setIsObsInspirationDialogOpen(true));
+  requestAnchor(pose.id);
+};
+
+const RHS_TRANSFER_DIALOGS = {
+  capture: ({ state, sourcePose }) => ({
+    transferInspirations: state.selectionReducers.isObsInspirationDialogOpen &&
+      state.selectionReducers.obsInspirationDialogPoseId === sourcePose.id
+  }),
+  beforeTransfer: ({ dispatch }) => {
+    [
+      setTagEditorOpen(false), setTagEditorOpenObs(false), setMoleculeForTagEdit([]), setIsTagGlobalEdit(false),
+      setObservationsForLHSCmp([]), setOpenObservationsDialog(false), setPoseIdForObservationsDialog(0),
+      setIsOpenCrossReferenceDialog(false), setSearchSettingsDialogOpen(false), setSortDialogOpen(false),
+      setIsObsInspirationDialogOpen(false), setObsInspirationDialogObsIds([]), setObsInspirationDialogPoseId(0)
+    ].forEach(action => dispatch(action));
+  },
+  afterTransfer: ({ dispatch, dialogState, destinationPose, destinationInspirationIds, requestAnchor }) => {
+    if (dialogState?.transferInspirations) {
+      restoreInspirationDialog({ dispatch, pose: destinationPose, ids: destinationInspirationIds, requestAnchor });
+    }
+  },
+  onTransferFailure: ({ dispatch, dialogState, sourcePose, sourceInspirationIds, requestAnchor }) => {
+    if (dialogState?.transferInspirations) {
+      restoreInspirationDialog({ dispatch, pose: sourcePose, ids: sourceInspirationIds, requestAnchor });
+    }
+  }
+};
 
 const RHS_LIGAND_REPRESENTATIONS = [
   {
@@ -194,6 +234,7 @@ export const PoseListRHS = memo(({ expandHandler }) => {
   const observationsForLHSCmp = useSelector(state => state.selectionReducers.observationsForLHSCmp);
   const proteinsHasLoaded = useSelector(state => state.nglReducers.proteinsHasLoaded);
   const searchSettings = useSelector(state => state.selectionReducers.searchSettings);
+  const rhsPoseNavigationConfig = useSelector(state => state.selectionReducers.rhsPoseNavigationConfig);
 
   // When rhs_compounds_list is empty but the dataset molecule list is not, generate virtual poses.
   // This is a fallback for when poses were not populated by loadMoleculesAndTagsNew.
@@ -490,6 +531,17 @@ export const PoseListRHS = memo(({ expandHandler }) => {
     [rhsSelectedTags]
   );
 
+  const poseTransferConfig = useMemo(() => createRhsPoseTransferConfig({
+    getComputedInspirations,
+    ligandRepresentations: RHS_LIGAND_REPRESENTATIONS,
+    ...rhsPoseNavigationConfig,
+    dialogs: RHS_TRANSFER_DIALOGS
+  }), [getComputedInspirations, rhsPoseNavigationConfig]);
+  const poseNavigationConfig = useMemo(() => ({
+    value: rhsPoseNavigationConfig,
+    onChange: changes => dispatch(setRhsPoseNavigationConfig(changes))
+  }), [dispatch, rhsPoseNavigationConfig]);
+
   return (
     <TooltipPathProvider absolute path="fragalysis.preview.hitnavigator">
       <PoseList
@@ -527,6 +579,8 @@ export const PoseListRHS = memo(({ expandHandler }) => {
         searchSettings={searchSettings}
         viewConfig={viewConfig}
         getComputedInspirations={getComputedInspirations}
+        poseTransferConfig={poseTransferConfig}
+        poseNavigationConfig={poseNavigationConfig}
         ligandRepresentations={RHS_LIGAND_REPRESENTATIONS}
         isTagEditorForCurrentSide={isTagEditorForCurrentSide}
         handlers={handlers}

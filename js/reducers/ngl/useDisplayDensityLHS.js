@@ -1,5 +1,7 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
+import { isEqual } from 'lodash';
 import { NGL_OBJECTS } from './constants';
 import {
   appendDensityList,
@@ -23,6 +25,8 @@ import {
 
 export const useDisplayDensityLHS = () => {
   const dispatch = useDispatch();
+  const store = useStore();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedDensities = useSelector(state => state.selectionReducers.densityList);
@@ -62,7 +66,14 @@ export const useDisplayDensityLHS = () => {
         } else {
           dispatch(appendDensityList(densitySettingsObject));
         }
-        dispatch(updateInToBeDisplayedList({ id: obs.id, rendered: true, type: NGL_OBJECTS.DENSITY }));
+        dispatch((dispatch, getState) => {
+          const intent = getState().selectionReducers.toBeDisplayedList.find(
+            item => item.id === obs.id && item.type === NGL_OBJECTS.DENSITY
+          );
+          if (isEqual(intent?.densityObject, densitySettingsObject)) {
+            dispatch(updateInToBeDisplayedList({ id: obs.id, rendered: true, type: NGL_OBJECTS.DENSITY }));
+          }
+        });
       } catch {
         dispatch(removeFromToBeDisplayedList({ id: obs.id, type: NGL_OBJECTS.DENSITY }));
         dispatch(removeFromToBeDisplayedList({ id: obs.id, type: NGL_OBJECTS.DENSITY_CUSTOM }));
@@ -72,34 +83,64 @@ export const useDisplayDensityLHS = () => {
   );
 
   const removeDensity = useCallback(
-    densityData => {
+    async (densityData, preserveDisplayIntent = false) => {
       const data = allObservations.find(obs => obs.id === densityData.id);
       const densitySettingsObject = densityData.densityObject;
 
       const colourToggle = densitySettingsObject.color;
 
       dispatch(toggleDensityWireframe(densitySettingsObject.isWireframeStyle));
-      dispatch(deleteDensityObject(data, stage, densitySettingsObject));
+      await dispatch(deleteDensityObject(data, stage, densitySettingsObject));
 
       dispatch(removeFromDensityList(densitySettingsObject));
       if (data.proteinData.render_quality) {
         dispatch(removeQuality(stage, data, colourToggle, true));
       }
 
-      dispatch(removeFromToBeDisplayedList({ id: densityData.id, type: NGL_OBJECTS.DENSITY }));
-      dispatch(removeFromToBeDisplayedList({ id: densityData.id, type: NGL_OBJECTS.DENSITY_CUSTOM }));
+      if (!preserveDisplayIntent) {
+        dispatch(removeFromToBeDisplayedList({ id: densityData.id, type: NGL_OBJECTS.DENSITY }));
+        dispatch(removeFromToBeDisplayedList({ id: densityData.id, type: NGL_OBJECTS.DENSITY_CUSTOM }));
+      }
     },
     [allObservations, dispatch, stage]
   );
 
+  const updateDensity = useCallback(
+    async densityData => {
+      // Settings can change during fetching, rendering or deletion. Keep the
+      // latest intent in Redux and reconcile it under the same per-item claim.
+      while (true) {
+        const selection = store.getState().selectionReducers;
+        const intent = selection.toBeDisplayedList.find(
+          item => item.id === densityData.id && item.type === NGL_OBJECTS.DENSITY
+        );
+        if (!intent?.display) return;
+        const displayed = selection.densityList.find(item => item.id === densityData.id);
+        if (displayed) {
+          if (isEqual(displayed, intent.densityObject)) return;
+          await removeDensity({ ...intent, densityObject: displayed }, true);
+        } else {
+          await displayDensity(intent);
+          // Missing observations/settings and failed loads must not spin here.
+          if (!store.getState().selectionReducers.densityList.some(item => item.id === densityData.id)) return;
+        }
+      }
+    },
+    [displayDensity, removeDensity, store]
+  );
+
   useEffect(() => {
-    const toBeDisplayedDensities = getToBeDisplayedStructuresDensity(
-      toBeDisplayedList,
-      displayedDensities,
-      NGL_OBJECTS.DENSITY
+    const toBeDisplayedDensities = toBeDisplayedList.filter(
+      data =>
+        data.type === NGL_OBJECTS.DENSITY &&
+        data.display &&
+        !isEqual(
+          displayedDensities.find(item => item.id === data.id),
+          data.densityObject
+        )
     );
     toBeDisplayedDensities?.forEach(data => {
-      displayDensity(data);
+      runStructureOperation(data, updateDensity);
     });
 
     const toBeRemovedDensities = getToBeDisplayedStructuresDensity(
@@ -109,9 +150,9 @@ export const useDisplayDensityLHS = () => {
       true
     );
     toBeRemovedDensities?.forEach(data => {
-      removeDensity(data);
+      runStructureOperation(data, removeDensity);
     });
-  }, [toBeDisplayedList, displayDensity, dispatch, stage, removeDensity, displayedDensities]);
+  }, [runStructureOperation, toBeDisplayedList, updateDensity, stage, removeDensity, displayedDensities]);
 
   return {};
 };

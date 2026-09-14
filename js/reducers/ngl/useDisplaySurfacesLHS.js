@@ -1,3 +1,4 @@
+import { useStructureOperationQueue } from './useStructureOperationQueue';
 import { useCallback, useContext, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NGL_OBJECTS } from './constants';
@@ -17,6 +18,7 @@ import { getToBeDisplayedStructures } from './utils';
 
 export const useDisplaySurfaceLHS = () => {
   const dispatch = useDispatch();
+  const runStructureOperation = useStructureOperationQueue();
 
   const toBeDisplayedList = useSelector(state => state.selectionReducers.toBeDisplayedList);
   const displayedSurfaces = useSelector(state => state.selectionReducers.surfaceList);
@@ -62,7 +64,7 @@ export const useDisplaySurfaceLHS = () => {
       if (!data) return;
       const colourToggle = getRandomColor(data);
 
-      dispatch(
+      await dispatch(
         deleteObject(
           Object.assign(
             { display_div: VIEWS.MAJOR_VIEW },
@@ -81,7 +83,7 @@ export const useDisplaySurfaceLHS = () => {
   useEffect(() => {
     const toBeDisplayedSurfaces = getToBeDisplayedStructures(toBeDisplayedList, displayedSurfaces, NGL_OBJECTS.SURFACE);
     toBeDisplayedSurfaces?.forEach(data => {
-      displaySurface(data);
+      runStructureOperation(data, displaySurface);
     });
 
     const toBeRemovedSurfaces = getToBeDisplayedStructures(
@@ -91,9 +93,9 @@ export const useDisplaySurfaceLHS = () => {
       true
     );
     toBeRemovedSurfaces?.forEach(data => {
-      removeSurface(data);
+      runStructureOperation(data, removeSurface);
     });
-  }, [toBeDisplayedList, displaySurface, dispatch, stage, removeSurface, displayedSurfaces]);
+  }, [runStructureOperation, toBeDisplayedList, displaySurface, dispatch, stage, removeSurface, displayedSurfaces]);
 
   return {};
 };

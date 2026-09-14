@@ -185,6 +185,14 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
     let adapter;
     let handlePick;
     let handleOrientationChanged;
+    let resizeObserver;
+    let resizeFrame = null;
+    let observingSize = true;
+    const stopObservingSize = () => {
+      observingSize = false;
+      resizeObserver?.disconnect();
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+    };
 
     try {
       adapter = new MoorhenViewerAdapter({
@@ -199,11 +207,23 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
       handleOrientationChanged = () => dispatchAppAction(setOrientationByInteraction(div_id, adapter.getOrientation()));
       adapter.addPickHandler(handlePick);
       adapter.addOrientationChangeHandler(handleOrientationChanged);
+      const resize = () => {
+        if (!observingSize || resizeFrame !== null) return;
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = null;
+          adapter.resize();
+        });
+      };
+      // Panel toggles, divider drags and portal moves do not resize the window.
+      resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(containerRef.current);
+      resize();
       initializationFinishedRef.current = true;
       clearInitializationTimeout();
       initializationTelemetryRef.current.ready({ phase: 'adapter-registration' });
       setStatus('Moorhen ready');
     } catch (initializationError) {
+      stopObservingSize();
       if (adapter) {
         if (handlePick) adapter.removePickHandler(handlePick);
         if (handleOrientationChanged) adapter.removeOrientationChangeHandler(handleOrientationChanged);
@@ -215,6 +235,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
     }
 
     return () => {
+      stopObservingSize();
       adapter.removePickHandler(handlePick);
       adapter.removeOrientationChangeHandler(handleOrientationChanged);
       unregisterNglView(div_id);
@@ -240,7 +261,21 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
         ref={containerRef}
         id={div_id}
         data-viewer-engine="moorhen"
-        sx={{ position: 'relative', width: '100%', height: '100%', minHeight: 1, overflow: 'hidden', bgcolor: '#000' }}
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          minHeight: 1,
+          overflow: 'hidden',
+          bgcolor: '#000',
+          '& > .baby-gru': { width: '100%', maxWidth: 'none', margin: 0, padding: 0 },
+          '& .baby-gru > div > .row': { margin: 0 },
+          // Moorhen's figure has default margins and a literal trailing ";".
+          // Zero text metrics suppress that stray text and the canvas baseline
+          // gap, while the native canvas overlays keep their own drawing fonts.
+          '& #moorhen-canvas-background > figure': { margin: 0, fontSize: 0, lineHeight: 0 },
+          '& #moorhen-canvas-background > figure > canvas': { display: 'block' }
+        }}
       >
         {workerBridgeReady && (
           <MoorhenContainer

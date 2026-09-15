@@ -1228,6 +1228,29 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return Promise.resolve();
   }
 
+  // Only used before Preview reveals its first scene. MoorhenWebMG animates
+  // store camera updates asynchronously, after the load promises have resolved.
+  prepareInitialView() {
+    const renderer = this.glRef.current;
+    if (this.destroyed || !renderer || renderer.animating || this.objectOperations.size > 0 || this.getTaskCount() > 0) {
+      return false;
+    }
+
+    const { origin, quat4, zoom } = this.getOrientation();
+    const matches = (actual, expected) =>
+      actual?.length === expected.length && expected.every((value, index) => Math.abs(actual[index] - value) < 1e-5);
+    if (matches(renderer.origin, origin) && matches(renderer.myQuat, quat4) && Math.abs(renderer.zoom - zoom) < 1e-5) {
+      return true;
+    }
+
+    // A new camera request can arrive during an earlier native animation, which
+    // Moorhen ignores while animating. Apply the latest destination before reveal.
+    renderer.setZoom(zoom, false);
+    renderer.setOrigin(origin, false, false);
+    renderer.setQuat(quat4);
+    return false;
+  }
+
   setParameters(parameters = {}) {
     if (parameters.backgroundColor != null) {
       const { rgb } = normaliseMoorhenColour(parameters.backgroundColor, '#000000');

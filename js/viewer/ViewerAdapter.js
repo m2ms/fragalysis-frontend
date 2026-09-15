@@ -111,6 +111,10 @@ export class ViewerAdapter {
     return notImplemented('animateOrientation');
   }
 
+  prepareInitialView() {
+    return notImplemented('prepareInitialView');
+  }
+
   setParameters() {
     return notImplemented('setParameters');
   }

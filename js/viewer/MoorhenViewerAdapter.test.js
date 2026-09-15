@@ -103,6 +103,33 @@ const installedMapCleanup = () => {
   return exports.MoorhenMap.prototype;
 };
 
+// Use the installed renderer's frame scheduling: its animation outlives a
+// resolved molecule load and ignores new destinations while already animating.
+const installedCameraAnimation = requestFrame => {
+  const bundle = fs.readFileSync(require.resolve('moorhen'), 'utf8');
+  const marker = bundle.lastIndexOf('sourceMappingURL=data:');
+  const sourceMap = JSON.parse(Buffer.from(bundle.slice(bundle.indexOf('base64,', marker) + 7), 'base64').toString());
+  const source = sourceMap.sourcesContent[sourceMap.sources.findIndex(name => name.endsWith('/mgWebGL.tsx'))];
+  const methods = source.slice(
+    source.indexOf('    setOriginOrientationAndZoomFrame('),
+    source.indexOf('    calculateOriginDelta(')
+  );
+  const compiled = ts.transpileModule(`export class Camera { ${methods} }`, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2019 }
+  });
+  const exports = {};
+  runInNewContext(compiled.outputText, {
+    exports,
+    requestAnimationFrame: requestFrame,
+    document,
+    CustomEvent,
+    // These fixtures only translate/zoom; both quaternion endpoints are equal.
+    quatSlerp: (oldQuat, newQuat) => newQuat,
+    quat4: { create: () => [0, 0, 0, -1], set: (out, ...values) => values.forEach((value, i) => { out[i] = value; }) }
+  });
+  return new exports.Camera();
+};
+
 const createStore = () => {
   const state = {
     sceneSettings: { backgroundColor: [0, 0, 0, 1], defaultBondSmoothness: 2 },
@@ -241,6 +268,55 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+  });
+
+  it('prepares the first view only after native animation and pending loads finish, using the latest camera', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef, store, commandCentre } = createAdapter();
+    const frames = [];
+    const renderer = installedCameraAnimation(callback => frames.push(callback));
+    Object.assign(renderer, {
+      origin: [1, 2, 3], myQuat: [0, 0, 0, -1], zoom: 0.5,
+      drawScene: jest.fn(), handleOriginUpdated: jest.fn(),
+      setOrigin: jest.fn(function(origin) { this.origin = origin; }),
+      setZoom: jest.fn(function(zoom) { this.zoom = zoom; }),
+      setQuat: jest.fn(function(quat) { this.myQuat = quat; this.drawScene(); })
+    });
+    glRef.current = renderer;
+    store.state.glRef.origin = [10, 20, 30];
+    renderer.setOriginOrientationAndZoomAnimated([10, 20, 30], [0, 0, 0, -1], 0.5);
+    expect(adapter.prepareInitialView()).toBe(false);
+    expect(renderer.setOrigin).not.toHaveBeenCalled();
+
+    // The ligand's fitted camera supersedes the protein while its tween runs.
+    store.state.glRef.origin = [40, 50, 60];
+    store.state.glRef.zoom = 0.2;
+    renderer.setOriginOrientationAndZoomAnimated([40, 50, 60], [0, 0, 0, -1], 0.2);
+    for (let i = 0; i < 14; i += 1) {
+      frames.shift()();
+      expect(adapter.prepareInitialView()).toBe(false);
+    }
+    frames.shift()();
+    expect(renderer.animating).toBe(false);
+    expect(renderer.origin).toEqual([10, 20, 30]);
+
+    let finishLoad;
+    const pending = adapter.runObjectOperation('late-map', () => new Promise(resolve => { finishLoad = resolve; }));
+    expect(adapter.prepareInitialView()).toBe(false);
+    finishLoad();
+    await pending;
+    commandCentre.current.activeMessages.push({ id: 'contour' });
+    expect(adapter.prepareInitialView()).toBe(false);
+    commandCentre.current.activeMessages = [];
+    expect(adapter.prepareInitialView()).toBe(false);
+    expect(renderer.setOrigin).toHaveBeenCalledWith([40, 50, 60], false, false);
+    expect(renderer.zoom).toBe(0.2);
+    expect(renderer.drawScene).toHaveBeenCalled();
+    expect(adapter.prepareInitialView()).toBe(true);
+    expect(frames).toHaveLength(0);
+    expect(renderer.setOrigin).toHaveBeenCalledTimes(1);
+    adapter.destroyed = true;
+    expect(adapter.prepareInitialView()).toBe(false);
   });
 
   it('requires a runtime and is recovered by the generic adapter factory', () => {

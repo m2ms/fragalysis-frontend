@@ -226,3 +226,36 @@ Validation:
 - NOT RUN: live browser visual acceptance. Browser discovery returned no connected browser. After reloading, repeat
   Designs show/hide and divider drags at several window sizes, change layouts, rotate/pick near the canvas edges,
   and save/restore/switch snapshots. Check full-area drawing, no semicolon, stable scene/camera and clean removal.
+
+## Initial scene presentation (2026-09-15)
+
+Molecule load promises resolve before the installed MoorhenWebMG camera effect finishes its 15-frame animation.
+The adapter writes the destination to Moorhen's store; that does not immediately position the rendered camera.
+The native animator also ignores a new destination while an earlier animation is running. These details qualify
+the guide's description of `animateOrientation` applying the final orientation immediately.
+
+Preview now keeps the mounted native container transparent, with a visible "Preparing view..." status, until its
+initial selection, coordinate/render queue and saved snapshot camera are ready. The adapter waits for native
+operations and camera animation to finish, synchronizes any newer camera destination, and the host reveals the
+scene after two settled frames. This can delay the first visible structure until the rest of the initial scene is
+ready. The canvas retains its dimensions and native resources throughout preparation.
+
+The reveal is local to the mounted Preview and happens once. Subsequent snapshot switches, toggles and layout
+portal moves retain the visible scene and existing camera transitions. Snapshot payloads, incremental command
+queues, display/removal acknowledgements and camera compatibility conversion are unchanged.
+
+Validation:
+
+- PASS: 46 Jest suites / 307 tests, including snapshot, transfer, native adapter, queue and host coverage.
+- PASS: the new adapter test executes the installed renderer's animation methods across all 15 frames, models a
+  newer destination during an active animation, and waits for pending loads/native commands before preparation.
+- PASS: initial selection and delayed-render readiness, LHS density/RHS structures, saved-camera readiness, empty
+  scenes, queue entries removed after failure, Strict Mode, cancellation, and one-time reveal tests.
+- PASS: the host test keeps the same canvas and adapter visible across modeled snapshot loads and portal moves.
+- PASS: production build and legacy backend stats validation; the existing two bundle-size warnings remain.
+- PASS: Moorhen asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: live browser visual acceptance; no browser is connected. Hard reload a normal target and a saved snapshot
+  (including a legacy NGL camera), and check that the first visible structures are already positioned. Then rotate,
+  toggle LHS/RHS structures and maps, resize/change layouts, save/restore, switch snapshots repeatedly, and navigate
+  poses. Confirm no preparation overlay or canvas disappearance after the initial reveal, smooth transitions,
+  incremental removals, and no blocking-dialog flashes. Automated tests do not establish GPU/visual parity.

@@ -22,6 +22,7 @@ import { setOrientationByInteraction } from '../../reducers/ngl/dispatchActions'
 import { VIEWER_ENGINE, viewerConfig } from '../../config/viewer';
 import { createViewerInitializationTelemetry } from '../../viewer/viewerTelemetry';
 import { installMoorhenWorkerBridge } from './moorhenWorkerBridge';
+import { useInitialViewerPresentation } from './useInitialViewerPresentation';
 
 const MOORHEN_INITIALIZATION_TIMEOUT_MS = 30000;
 let moorhenStorePrepared = false;
@@ -58,7 +59,7 @@ const resetMoorhenStore = () => {
   ].forEach(createAction => MoorhenReduxStore.dispatch(createAction()));
 };
 
-const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailure }) => {
+const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailure, sceneVisible }) => {
   const { getViewerAdapter, registerNglView, unregisterNglView } = useContext(NglContext);
   const containerRef = useRef(null);
   const glRef = useRef(null);
@@ -261,6 +262,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
         ref={containerRef}
         id={div_id}
         data-viewer-engine="moorhen"
+        data-initial-view-status={sceneVisible ? 'ready' : 'preparing'}
         sx={{
           position: 'relative',
           width: '100%',
@@ -268,7 +270,14 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
           minHeight: 1,
           overflow: 'hidden',
           bgcolor: '#000',
-          '& > .baby-gru': { width: '100%', maxWidth: 'none', margin: 0, padding: 0 },
+          '& > .baby-gru': {
+            width: '100%',
+            maxWidth: 'none',
+            margin: 0,
+            padding: 0,
+            opacity: sceneVisible ? 1 : 0,
+            pointerEvents: sceneVisible ? 'auto' : 'none'
+          },
           '& .baby-gru > div > .row': { margin: 0 },
           // Moorhen's figure has default margins and a literal trailing ";".
           // Zero text metrics suppress that stray text and the canvas baseline
@@ -315,9 +324,9 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
             pointerEvents: 'none'
           }}
         >
-          {!error && status !== 'Moorhen ready' && <CircularProgress size={16} color="inherit" />}
+          {!error && (status !== 'Moorhen ready' || !sceneVisible) && <CircularProgress size={16} color="inherit" />}
           <Typography variant="caption" sx={{ color: 'inherit' }}>
-            {error || status}
+            {error || (status === 'Moorhen ready' && !sceneVisible ? 'Preparing view...' : status)}
           </Typography>
         </Box>
       </Box>
@@ -327,8 +336,9 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
 
 MoorhenMainView.displayName = 'MoorhenMainView';
 
-const MoorhenView = memo(({ div_id, onInitializationFailure }) => {
+const MoorhenView = memo(({ div_id, onInitializationFailure, deferInitialPresentation = false }) => {
   const dispatchAppAction = useDispatch();
+  const sceneVisible = useInitialViewerPresentation(div_id, deferInitialPresentation);
 
   if (!moorhenStorePrepared) {
     resetMoorhenStore();
@@ -340,6 +350,7 @@ const MoorhenView = memo(({ div_id, onInitializationFailure }) => {
       div_id={div_id}
       dispatchAppAction={dispatchAppAction}
       onInitializationFailure={onInitializationFailure}
+      sceneVisible={sceneVisible}
     />
   );
 });

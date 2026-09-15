@@ -378,7 +378,7 @@ const Preview = memo(({ isStateLoaded, hideProjects, isSnapshot = false }) => {
         </ReactGridLayout>
       </div>
       <InPortal node={nglPortal}>
-        <ViewerView div_id={VIEWS.MAJOR_VIEW} />
+        <ViewerView div_id={VIEWS.MAJOR_VIEW} deferInitialPresentation />
       </InPortal>
       <NewSnapshotModal />
       <ModalShareSnapshot />

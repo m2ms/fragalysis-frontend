@@ -23,6 +23,7 @@ jest.mock('../../viewer/MoorhenViewerAdapter', () => ({
     addOrientationChangeHandler: jest.fn(),
     removePickHandler: jest.fn(),
     removeOrientationChangeHandler: jest.fn(),
+    prepareInitialView: jest.fn(() => true),
     resize: jest.fn(),
     destroy: jest.fn(async () => {})
   }))
@@ -95,15 +96,28 @@ describe('embedded Moorhen viewport', () => {
       })
     );
     const portal = createHtmlPortalNode();
-    const context = { registerNglView: jest.fn(), unregisterNglView: jest.fn(), getViewerAdapter: jest.fn() };
-    const appStore = legacy_createStore(() => ({}));
+    let registeredAdapter;
+    const context = {
+      registerNglView: jest.fn((id, adapter) => {
+        registeredAdapter = adapter;
+      }),
+      unregisterNglView: jest.fn(),
+      getViewerAdapter: () => registeredAdapter
+    };
+    const initialState = {
+      apiReducers: { lhsDataIsLoaded: false, all_mol_lists: [] },
+      selectionReducers: { toBeDisplayedList: [] },
+      datasetsReducers: { toBeDisplayedList: {} },
+      nglReducers: {}
+    };
+    const appStore = legacy_createStore((state = initialState, action) => action.state || state);
     const ui = designsOpen => (
       <Provider store={appStore}>
         <NglContext.Provider value={context}>
           <div data-testid="wide-layout">{!designsOpen && <OutPortal node={portal} />}</div>
           <div data-testid="designs-layout">{designsOpen && <OutPortal node={portal} />}</div>
           <InPortal node={portal}>
-            <MoorhenView div_id="major_view" />
+            <MoorhenView div_id="major_view" deferInitialPresentation />
           </InPortal>
         </NglContext.Provider>
       </Provider>
@@ -119,10 +133,24 @@ describe('embedded Moorhen viewport', () => {
       const panel = document.getElementById('major_view');
       const canvas = view.getByTestId('webgl-canvas');
       const adapter = MoorhenViewerAdapter.mock.results[0].value;
+      expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('0');
+      expect(view.getByText('Preparing view...')).toBeInTheDocument();
       expect(observer.observe).toHaveBeenCalledWith(panel);
       expect(adapter.resize).not.toHaveBeenCalled();
       await act(async () => flushFrames());
       expect(adapter.resize).toHaveBeenCalledTimes(1);
+
+      await act(async () =>
+        appStore.dispatch({
+          type: 'INITIAL_LOAD_FINISHED',
+          state: { ...initialState, apiReducers: { lhsDataIsLoaded: true, all_mol_lists: [] } }
+        })
+      );
+      await act(async () => flushFrames());
+      expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('0');
+      await act(async () => flushFrames());
+      expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('1');
+      await act(async () => appStore.dispatch({ type: 'SNAPSHOT_LOAD_STARTED', state: initialState }));
 
       for (const designsOpen of [true, false, true]) {
         view.rerender(ui(designsOpen));
@@ -133,6 +161,7 @@ describe('embedded Moorhen viewport', () => {
         const parent = view.getByTestId(designsOpen ? 'designs-layout' : 'wide-layout');
         expect(parent).toContainElement(canvas);
         expect(document.getElementById('major_view')).toBe(panel);
+        expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('1');
       }
       expect(adapter.resize).toHaveBeenCalledTimes(4);
       expect(MoorhenViewerAdapter).toHaveBeenCalledTimes(1);

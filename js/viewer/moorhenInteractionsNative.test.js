@@ -6,6 +6,9 @@ import { runInNewContext } from 'vm';
 import ts from 'typescript';
 import { vec3, mat3 } from 'gl-matrix';
 import { getMoorhenRepresentationStyle } from './moorhenAdapterUtils';
+import MoorhenViewerAdapter from './MoorhenViewerAdapter';
+
+jest.mock('moorhen', () => ({}));
 
 const installedRepresentation = () => {
   const bundle = fs.readFileSync(require.resolve('moorhen'), 'utf8');
@@ -81,6 +84,7 @@ describe('native interaction geometry', () => {
       parentMolecule: { molNo: 12 },
       commandCentre: { current: { cootCommand } }
     });
+    MoorhenViewerAdapter.prototype.configureContactRepresentationColours(representation);
     const [mesh] = await representation.getBufferObjects();
     expect(cootCommand).toHaveBeenCalledWith(
       { returnType: 'vector_hbond', command: 'get_h_bonds', commandArgs: [12, '/*/*/*/*', false] },
@@ -93,8 +97,11 @@ describe('native interaction geometry', () => {
     const origins = mesh.instance_origins[0][0];
     const sizes = mesh.instance_sizes[0][0];
     const orientations = mesh.instance_orientations[0][0];
+    const colours = mesh.col_tri[0][0];
     expect(origins).toHaveLength(renderedBonds.length * 3);
+    expect(colours).toHaveLength(renderedBonds.length * 4);
     renderedBonds.forEach(({ donor, acceptor }, index) => {
+      expect(colours.slice(index * 4, index * 4 + 4)).toStrictEqual([43 / 255, 131 / 255, 186 / 255, 1]);
       ['x', 'y', 'z'].forEach((axis, offset) => {
         expect(origins[index * 3 + offset]).toBeCloseTo(donor[axis], 5);
         const end = origins[index * 3 + offset] + orientations[index * 16 + 8 + offset] * sizes[index * 3 + 2];

@@ -259,3 +259,102 @@ Validation:
   toggle LHS/RHS structures and maps, resize/change layouts, save/restore, switch snapshots repeatedly, and navigate
   poses. Confirm no preparation overlay or canvas disappearance after the initial reveal, smooth transitions,
   incremental removals, and no blocking-dialog flashes. Automated tests do not establish GPU/visual parity.
+
+## Apply representation appearance before presentation (2026-09-15)
+
+The installed `MoorhenMolecule.addRepresentation()` draws its default representation before returning. The adapter
+then applied Fragalysis colour, bond/radius settings and opacity, showed the representation and redrew it. This
+exposed thin default ligand bonds and the default surface colour while the requested appearance was being built.
+
+The adapter now constructs an undrawn native representation, configures its appearance, and generates its first
+mesh with those settings. Newly published buffers stay hidden during the remaining asynchronous atom work. Opacity
+is applied to the completed buffers before showing them, and the final reveal explicitly repaints the canvas.
+Existing structures remain visible throughout. Initially hidden representations generate no geometry until shown;
+their opacity also applies when those buffers are eventually created.
+
+The representation's `ready` promise now covers the entire initialization, including the final reveal. Failed
+creation removes its partial native buffers and representation record. Native colour rules are detached before
+adding the requested colour: Moorhen's `setColourRules([])` restores defaults rather than clearing the rule list,
+and appending to that shared list could otherwise affect other representations. Saved representation records and
+the snapshot, centering, transfer and object-operation queues retain their existing contracts.
+
+Validation:
+
+- PASS: 47 Jest suites / 315 tests. After the final repaint adjustment, 8 relevant suites / 82 tests passed.
+- PASS: tests execute the installed native representation constructor, colour rules, draw, buffer publication,
+  hide/show and deletion code, with controlled mesh generation, atom fetching and GPU allocation. They verify the
+  requested LHS/RHS ligand and surface appearance on the first mesh, one initial mesh generation, hidden partial
+  buffers, opacity, a final visible frame, a stable pending `ready` promise, hidden saved representations, failure
+  cleanup and deletion during creation. Circular native ownership and typed buffer fixtures remain covered.
+- PASS: targeted lint for the changed adapter and new native presentation tests; changed-file whitespace checks.
+- PASS: final production build and backend stats validation, with the existing two bundle-size warnings; Moorhen
+  asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: live browser visual acceptance; no browser is connected. Reload Preview, repeatedly add/remove LHS and
+  RHS ligands and surfaces, and check that their first visible appearance already has the requested thickness,
+  colour and opacity. Also check representation additions/selection edits, hidden saved representations, rotation,
+  layouts, snapshot save/restore/switching and pose transfers with shared structures. Verify that existing objects
+  stay visible during preparation and that removal leaves no buffers. The tests do not exercise actual GPU output.
+
+## Other structure presentation audit (2026-09-15)
+
+Proteins, hit-protein sidechains, artefacts and merged complexes use the same representation initialization path.
+The installed native lifecycle tests now cover their first mesh settings, hidden partial buffers and final reveal,
+including disposal of the temporary ligand before the complex starts drawing.
+
+Spheres were an exception: `addSphere()` loaded and revealed a default-sized sphere, then applied its radius and
+optional opacity through an edit/redraw. These settings now enter the initial representation definition. Both new
+sphere tests failed against the previous implementation and pass with the fix; only one initial mesh is generated.
+
+Source inspection of the installed Moorhen map code confirms that data loading does not draw contours. The adapter
+disables native suggested-settings replacement and applies contour level, radius, style, colours and opacity before
+requesting geometry. Native buffer setup applies those colours/opacity before publishing the buffers. This shared
+path serves density, event and hotspot maps; it does not establish OpenDX input compatibility. Arrows and cylinders
+carry their final coordinates, colour and arrow mode before publication, and the native vector renderer reads those
+values directly. Event-map molecule layers use the common molecular initialization path. Multi-part objects retain
+incremental layer loading; this audit concerns each representation's initial appearance, not an atomic scene reveal.
+
+Validation:
+
+- PASS: 8 relevant suites / 88 tests, including presentation, adapter/boundary, native map geometry, display queues,
+  pose transfer and snapshot shape checks.
+- PASS: targeted adapter/new-test lint, new-test formatting and changed-file whitespace checks. The adapter's
+  pre-existing camera-method formatting discrepancy remains outside this change.
+- PASS: production build and backend stats validation (33.019 seconds), with the existing two bundle-size warnings.
+- PASS: Moorhen asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: live visual acceptance; browser discovery again returned no connected browser. Reload Preview and check
+  protein/sidechain/artefact/complex/sphere toggles plus density/event maps, including saved customized layers.
+  Confirm initial colour, width/radius and opacity, existing-scene continuity, and clean removals. Native lifecycle
+  fixtures and source inspection do not establish actual GPU output or complete visual parity.
+
+## Sidechain and hydrogen-bond colours (2026-09-15)
+
+The pre-migration `renderHitProtein` and `renderArtefactChains` definitions in commit `6c617a65` explicitly used
+`colorScheme: 'element'`. Their Moorhen defaults omitted it, so the adapter applied the carbon/observation colour
+to non-carbon atoms as well. Line representation handles now default to element colouring, including restored
+definitions that omit the scheme. Explicit saved schemes such as `uniform` take precedence. Carbon colour, bond
+widths, ligand stripping and the preparation/reveal lifecycle retain their existing behavior.
+
+The installed `allHBonds` representation ignores colour rules and passes a hard-coded purple to its dashed-cylinder
+builder. Contact representations now pass NGL's hydrogen-bond blue (`#2b83ba`) to that same native builder, before
+buffers are created. Coot's selection, detected endpoints, distance filtering, geometry and redraw/disposal paths
+are retained. Other representations are unaffected.
+
+This is a colour correction, not full NGL interaction parity. NGL's
+[contact palette and detector](https://github.com/nglviewer/ngl/blob/master/src/chemistry/interactions/contact.ts)
+also distinguish weak hydrogen bonds, ionic, aromatic, halogen and metal interactions. The current adapter asks
+Coot for hydrogen bonds only. Reproducing the remaining coloured lines requires equivalent interaction detection;
+assigning those colours arbitrarily to existing hydrogen bonds would misrepresent the chemistry.
+
+Validation:
+
+- PASS: new native-lifecycle checks verify carbon-only colour commands before first presentation for sidechains,
+  artefacts and saved definitions without a scheme, plus preservation of explicitly uniform saved colours.
+- PASS: the existing real Coot hydrogen-bond test now exercises the adapter's colour override and checks the NGL
+  blue for every generated cylinder, alongside its existing endpoint and dash-gap geometry assertions.
+- PASS: targeted lint for the adapter and both native presentation/interaction test files.
+- PASS: 9 relevant suites / 93 tests, including viewer, queue, transfer and snapshot regressions.
+- PASS: production build and backend stats validation (63.419 seconds), with the existing two bundle-size warnings;
+  Moorhen asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: live comparison with the supplied screenshots; no browser is connected. Reload Preview and compare
+  sidechains, artefacts and contacts; also exercise saved representations, colour edits, hidden/revealed layers,
+  snapshots and removal. These checks do not establish exact element shades, lighting or interaction-type parity.

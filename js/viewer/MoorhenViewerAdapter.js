@@ -3,6 +3,7 @@ import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from
 import {
   MoorhenMap,
   MoorhenMolecule,
+  MoorhenMoleculeRepresentation,
   MoorhenReduxStore,
   addMap,
   addMolecule,
@@ -228,7 +229,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         this.getRepresentations(object).length
       }`;
     const colourValue = parameters.colorValue ?? parameters.color;
-    const params = { visible: true, opacity: 1, ...parameters };
+    // NGL line representations colour heteroatoms by element, including saved
+    // sidechains that omit the scheme. Preserve an explicitly saved scheme.
+    const params = {
+      visible: true,
+      opacity: 1,
+      ...(representationType === 'line' ? { colorScheme: 'element' } : {}),
+      ...parameters
+    };
     if (colourValue != null) {
       params.colorValue = normaliseMoorhenColour(colourValue, '#ffffff').integer;
     }
@@ -485,14 +493,53 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return molecule;
   }
 
-  async initialiseMoleculeRepresentation(component, handle) {
-    const style = getMoorhenRepresentationStyle(handle.type);
-    const cid = nglSelectionToMoorhenCid(handle.params.sele);
-    const nativeRepresentation = await component.addRepresentation(style, cid);
-    handle.nativeRepresentation = nativeRepresentation;
-    handle.ready = Promise.resolve(nativeRepresentation);
-    await this.applyMoleculeRepresentationParameters(handle, handle.params);
-    return nativeRepresentation;
+  initialiseMoleculeRepresentation(component, handle) {
+    const initialise = async () => {
+      if (!component.defaultColourRules) await component.fetchDefaultColourRules();
+      const style = getMoorhenRepresentationStyle(handle.type);
+      const cid = nglSelectionToMoorhenCid(handle.params.sele);
+      // addRepresentation() draws immediately with native defaults. Configure
+      // an undrawn representation so its first mesh already has our appearance.
+      const representation = new MoorhenMoleculeRepresentation(style, cid, this.commandCentre, this.glRef);
+      representation.setParentMolecule(component);
+      representation.buffers = [];
+      handle.nativeRepresentation = representation;
+      component.representations.push(representation);
+
+      const buildBuffers = representation.buildBuffers;
+      let preparing = true;
+      representation.buildBuffers = function(...args) {
+        buildBuffers.apply(this, args);
+        // Native draw() publishes buffers before its asynchronous atom work
+        // finishes. Keep only this new representation hidden until it is ready.
+        if (preparing) this.hide();
+        // Native meshes do not consume nonCustomOpacity during generation.
+        // Apply it to every new buffer, including a later show of a hidden item.
+        this.setNonCustomOpacity(this.nonCustomOpacity);
+      };
+      try {
+        if (handle.type === 'contact') this.configureContactRepresentationColours(representation);
+        this.configureMoleculeRepresentationParameters(representation, handle.params);
+        if (handle.params.visible !== false) {
+          await representation.draw();
+          await component.drawSymmetry(false);
+          component.drawBiomolecule(false);
+          await representation.show();
+          this.glRef.current?.drawScene?.();
+        }
+        handle.visible = handle.params.visible !== false;
+        return representation;
+      } catch (error) {
+        representation.deleteBuffers();
+        component.representations = component.representations.filter(item => item !== representation);
+        this.glRef.current?.drawScene?.();
+        throw error;
+      } finally {
+        preparing = false;
+      }
+    };
+    handle.ready = initialise();
+    return handle.ready;
   }
 
   async loadMolecule(source, options = {}) {
@@ -811,10 +858,19 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     };
   }
 
-  async applyMoleculeRepresentationParameters(handle, parameters = {}) {
-    const nativeRepresentation = handle.nativeRepresentation || (await handle.ready);
-    if (!nativeRepresentation) return handle;
+  configureContactRepresentationColours(representation) {
+    // Native allHBonds ignores colour rules and hard-codes purple. Its detected
+    // contacts are hydrogen bonds, whose NGL colour is #2b83ba:
+    // https://github.com/nglviewer/ngl/blob/master/src/chemistry/interactions/contact.ts
+    // Keep Coot's endpoints/geometry; other NGL interaction types need detection
+    // support rather than assigning their colours to these hydrogen bonds.
+    const getBuffers = representation.getGemmiAtomPairsBuffers;
+    representation.getGemmiAtomPairsBuffers = function(pairs, colour, labelled) {
+      return getBuffers.call(this, pairs, [43 / 255, 131 / 255, 186 / 255, 1], labelled);
+    };
+  }
 
+  configureMoleculeRepresentationParameters(nativeRepresentation, parameters = {}) {
     const opacity = Number(parameters.opacity);
     if (Number.isFinite(opacity) && typeof nativeRepresentation.setNonCustomOpacity === 'function') {
       nativeRepresentation.setNonCustomOpacity(Math.max(0, Math.min(1, opacity)));
@@ -824,7 +880,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (colourValue != null && typeof nativeRepresentation.addColourRule === 'function') {
       const colour = normaliseMoorhenColour(colourValue, '#ffffff');
       const cid = nglSelectionToMoorhenCid(parameters.sele);
-      nativeRepresentation.setColourRules?.([]);
+      // Moorhen's setColourRules([]) restores defaults instead of clearing them.
+      // Detach the rules before adding ours so other representations keep theirs.
+      nativeRepresentation.colourRules = [];
       nativeRepresentation.setUseDefaultColourRules?.(false);
       nativeRepresentation.addColourRule(
         'chain',
@@ -834,9 +892,6 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         false,
         parameters.colorScheme !== 'element'
       );
-      if (typeof nativeRepresentation.applyColourRules === 'function') {
-        await nativeRepresentation.applyColourRules();
-      }
     }
 
     const width = Number(parameters.radiusSize ?? parameters.radius ?? parameters.bondRadius);
@@ -869,6 +924,19 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         m2tChanged = true;
       }
       if (m2tChanged) nativeRepresentation.setM2tParams(m2tParams);
+    }
+  }
+
+  async applyMoleculeRepresentationParameters(handle, parameters = {}) {
+    const nativeRepresentation = handle.nativeRepresentation || (await handle.ready);
+    if (!nativeRepresentation) return handle;
+
+    this.configureMoleculeRepresentationParameters(nativeRepresentation, parameters);
+    if (
+      (parameters.colorValue ?? parameters.color) != null &&
+      typeof nativeRepresentation.applyColourRules === 'function'
+    ) {
+      await nativeRepresentation.applyColourRules();
     }
 
     if (parameters.visible === false) {
@@ -978,17 +1046,20 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       name,
       fromString: true,
       representation,
+      representations: [
+        {
+          type: representation,
+          params: {
+            ...representationParameters,
+            sphereRadius: Number(radius),
+            colorValue: normaliseMoorhenColour(color, '#00ff00').integer
+          }
+        }
+      ],
       color,
       center: false
     });
     molecule.shapeType = 'sphere';
-    const handle = this.getRepresentations(molecule)[0];
-    this.setRepresentationParameters(handle, {
-      ...representationParameters,
-      sphereRadius: Number(radius),
-      colorValue: normaliseMoorhenColour(color, '#00ff00').integer
-    });
-    await handle.ready;
     return molecule;
   }
 

@@ -12,6 +12,7 @@ import { loadObject as loadViewerObject, deleteObject as deleteViewerObject } fr
 import {
   MoorhenMap,
   MoorhenMolecule,
+  MoorhenMoleculeRepresentation,
   addMap,
   addMolecule,
   addVector,
@@ -46,6 +47,11 @@ jest.mock('moorhen', () => {
   return {
     MoorhenReduxStore: {},
     MoorhenMolecule: jest.fn(),
+    MoorhenMoleculeRepresentation: jest.fn(function(style, cid) {
+      this.setParentMolecule = molecule => {
+        Object.assign(this, molecule.testRepresentation, { style, cid, parentMolecule: molecule, visible: false });
+      };
+    }),
     MoorhenMap: MockMoorhenMap,
     addMap: action('moorhen/addMap'),
     addMolecule: action('moorhen/addMolecule'),
@@ -150,15 +156,17 @@ const createNativeRepresentation = (id = 'rep-1') => ({
   m2tParams: { ballsStyleRadiusMultiplier: 1 },
   addColourRule: jest.fn(),
   applyColourRules: jest.fn(() => Promise.resolve()),
+  buildBuffers: jest.fn(function() { this.buffers.push({ visible: true }); }),
   deleteBuffers: jest.fn(),
-  hide: jest.fn(),
+  draw: jest.fn(async function() { this.visible = true; this.buildBuffers(); }),
+  hide: jest.fn(function() { this.visible = false; this.buffers?.forEach(buffer => { buffer.visible = false; }); }),
   redraw: jest.fn(() => Promise.resolve()),
   setBondOptions: jest.fn(),
   setColourRules: jest.fn(),
   setM2tParams: jest.fn(),
   setNonCustomOpacity: jest.fn(),
   setUseDefaultColourRules: jest.fn(),
-  show: jest.fn(() => Promise.resolve())
+  show: jest.fn(async function() { this.visible = true; this.buffers?.forEach(buffer => { buffer.visible = true; }); })
 });
 
 const createMolecule = (molNo = 1) => {
@@ -171,12 +179,10 @@ const createMolecule = (molNo = 1) => {
     representations: [],
     moleculeDiameter: 20,
     defaultBondOptions: {},
-    addRepresentation: jest.fn(function(style, cid) {
-      representation.style = style;
-      representation.cid = cid;
-      this.representations.push(representation);
-      return Promise.resolve(representation);
-    }),
+    defaultColourRules: [],
+    testRepresentation: representation,
+    drawSymmetry: jest.fn(async () => {}),
+    drawBiomolecule: jest.fn(),
     buffersInclude: jest.fn(() => true),
     centreOn: jest.fn(() => Promise.resolve()),
     delete: jest.fn(() => Promise.resolve()),
@@ -381,7 +387,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
     expect(MoorhenMolecule).toHaveBeenCalledWith(expect.any(Object), expect.any(Object), store, '/monomers');
     expect(first.molecule.loadToCootFromURL).toHaveBeenCalledWith('/models/tutorial.pdb', 'tutorial', undefined);
-    expect(first.molecule.addRepresentation).toHaveBeenCalledWith('CRs', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('CRs', '/*/*/*/*', expect.anything(), expect.anything());
     expect(first.representation.addColourRule).toHaveBeenCalledWith(
       'chain',
       '/*/*/*/*',
@@ -402,7 +408,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       center: true
     });
     expect(ligand.molecule.loadToCootFromString).toHaveBeenCalledWith('ligand sdf', 'ligand');
-    expect(ligand.molecule.addRepresentation).toHaveBeenCalledWith('ligands', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('ligands', '/*/*/*/*', expect.anything(), expect.anything());
     expect(ligand.representation.setBondOptions).toHaveBeenCalledWith(expect.objectContaining({ width: 0.22 }));
     expect(ligand.representation.setM2tParams).toHaveBeenCalledWith(
       expect.objectContaining({ ballsStyleRadiusMultiplier: 1.35 })
@@ -430,7 +436,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       object_name: 'right-side-ligand',
       markAsRightSideLigand: true
     });
-    expect(rightSideLigand.molecule.addRepresentation).toHaveBeenCalledWith('CBs', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('CBs', '/*/*/*/*', expect.anything(), expect.anything());
     expect(rightSideRepresentations[0].params).toEqual(
       expect.objectContaining({ multipleBond: true, radiusSize: 0.11 })
     );
@@ -547,7 +553,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       expect(loadedPdb).toContain('HOH');
       expect(loadedPdb).not.toContain('CONECT');
       expect(protein.molecule.mergeMolecules).not.toHaveBeenCalled();
-      expect(protein.molecule.addRepresentation).toHaveBeenCalledWith('CBs', '/*/*/*/*');
+      expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('CBs', '/*/*/*/*', expect.anything(), expect.anything());
       expect(representations[0].params).toEqual(expect.objectContaining({ linewidth, sele: '/0' }));
       expect(protein.representation.setBondOptions.mock.calls[0][0].width).toBeCloseTo(width);
     }
@@ -566,7 +572,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
     expect(protein.molecule.mergeMolecules).toHaveBeenCalledWith([ligand.molecule], false, false);
     expect(ligand.molecule.delete).toHaveBeenCalledTimes(1);
-    expect(protein.molecule.addRepresentation).toHaveBeenCalledWith('allHBonds', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('allHBonds', '/*/*/*/*', expect.anything(), expect.anything());
     expect(protein.molecule.centreOn).not.toHaveBeenCalled();
     expect(representations).toHaveLength(1);
   });
@@ -599,7 +605,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       object_name: 'surface'
     });
 
-    expect(surface.molecule.addRepresentation).toHaveBeenCalledWith('MolecularSurface', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('MolecularSurface', '/*/*/*/*', expect.anything(), expect.anything());
     expect(surface.representation.setNonCustomOpacity).toHaveBeenCalledWith(0.74);
     expect(representations[0].params.sele).toBe('polymer');
   });
@@ -826,7 +832,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       object_name: 'event'
     });
 
-    expect(molecule.molecule.addRepresentation.mock.calls).toEqual([
+    expect(MoorhenMoleculeRepresentation.mock.calls.map(([style, cid]) => [style, cid])).toEqual([
       ['CRs', '/*/*/*/*'],
       ['allHBonds', '/*/*/(LIG)/*'],
       ['ligands', '/*/*/(LIG)/*']
@@ -905,7 +911,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       expect.stringContaining('HETATM'),
       'radius-sphere'
     );
-    expect(sphere.molecule.addRepresentation).toHaveBeenCalledWith('VdwSpheres', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenCalledWith('VdwSpheres', '/*/*/*/*', expect.anything(), expect.anything());
     expect(sphere.representation.setM2tParams).toHaveBeenCalledWith(
       expect.objectContaining({ ballsStyleRadiusMultiplier: 2 })
     );
@@ -919,11 +925,11 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     const surface = adapter.createRepresentation(first.molecule, 'surface', { opacity: 0.5 }, 'legacy-id');
     await surface.ready;
     expect(surface.lastKnownID).toBe('legacy-id');
-    expect(first.molecule.addRepresentation).toHaveBeenLastCalledWith('MolecularSurface', '/*/*/*/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenLastCalledWith('MolecularSurface', '/*/*/*/*', expect.anything(), expect.anything());
 
     adapter.setRepresentationParameters(surface, { sele: 'LIG', opacity: 0.25 });
     await surface.ready;
-    expect(first.molecule.addRepresentation).toHaveBeenLastCalledWith('MolecularSurface', '/*/*/(LIG)/*');
+    expect(MoorhenMoleculeRepresentation).toHaveBeenLastCalledWith('MolecularSurface', '/*/*/(LIG)/*', expect.anything(), expect.anything());
     await adapter.setVisibility(surface, false);
     expect(surface.nativeRepresentation.hide).toHaveBeenCalled();
 
@@ -936,7 +942,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     const { adapter } = createAdapter({ molecule: first.molecule });
     await adapter.loadMolecule('ATOM\n', { name: 'molecule', fromString: true });
     const error = new Error('representation failed');
-    first.molecule.addRepresentation.mockRejectedValueOnce(error);
+    first.representation.draw.mockRejectedValueOnce(error);
 
     const failed = adapter.createRepresentation(first.molecule, 'surface');
 
@@ -956,7 +962,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     const first = createMolecule(23);
     const { adapter, store } = createAdapter({ molecule: first.molecule });
     const error = new Error('initial representation failed');
-    first.molecule.addRepresentation.mockRejectedValueOnce(error);
+    first.representation.draw.mockRejectedValueOnce(error);
 
     await expect(adapter.loadMolecule('ATOM\n', { name: 'broken-molecule', fromString: true })).rejects.toBe(error);
 
@@ -1013,10 +1019,9 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     const visibleBuffers = new Set();
     const molecules = [createMolecule(101), createMolecule(102)];
     for (const { molecule, representation } of molecules) {
-      molecule.addRepresentation.mockImplementation(async () => {
+      representation.draw.mockImplementation(async function() {
         visibleBuffers.add(representation);
-        molecule.representations.push(representation);
-        return representation;
+        this.buildBuffers();
       });
       molecule.delete.mockImplementation(async () => { visibleBuffers.delete(representation); });
       MoorhenMolecule.mockImplementationOnce(() => molecule);
@@ -1090,8 +1095,8 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
         object.loadToCootFromMapData.mockImplementation(async () => { object.molNo = active.size + 1; active.add(object); return object; });
         MoorhenMap.mockImplementationOnce(() => object);
       } else {
-        const addRepresentation = object.addRepresentation.getMockImplementation();
-        object.addRepresentation.mockImplementation(async (...args) => { active.add(object); return addRepresentation.apply(object, args); });
+        const draw = object.testRepresentation.draw.getMockImplementation();
+        object.testRepresentation.draw.mockImplementation(async function(...args) { active.add(object); return draw.apply(this, args); });
       }
       object.delete.mockImplementation(async () => { active.delete(object); });
     }
@@ -1157,15 +1162,16 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
       // Model the native graph absent from the original lightweight test doubles.
       representation.parentMolecule = molecule;
       representation.glRef = glRef;
-      representation.buffers = [new Float32Array(32768)];
       MoorhenMolecule.mockImplementation(() => molecule);
       const target = { name: `ligand-${index}`, OBJECT_TYPE: 'LIGAND', sdf_info: 'sdf' };
       const handles = await adapter.loadObject({ target, representations: settings });
+      const nativeRepresentation = molecule.representations[0];
+      nativeRepresentation.buffers.push(new Float32Array(32768));
       state = nglReducers(state, loadNglObject(target, handles));
       const descriptor = state.objectsInView[target.name].representations[0];
       const live = adapter.getRepresentation(molecule, descriptor);
       expect(live).toBe(handles[0]);
-      expect(live.nativeRepresentation).toBe(representation);
+      expect(live.nativeRepresentation).toBe(nativeRepresentation);
 
       adapter.setRepresentationParameters(live, { opacity: 0.7 });
       await live.ready;

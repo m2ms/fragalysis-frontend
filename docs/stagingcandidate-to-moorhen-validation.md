@@ -358,3 +358,25 @@ Validation:
 - NOT RUN: live comparison with the supplied screenshots; no browser is connected. Reload Preview and compare
   sidechains, artefacts and contacts; also exercise saved representations, colour edits, hidden/revealed layers,
   snapshots and removal. These checks do not establish exact element shades, lighting or interaction-type parity.
+
+## First density-dialog opening reloads an unchanged map (2026-09-15)
+
+Both D-button left-click handlers omit flags for unselected map types. The popover initializes these checkboxes
+to `false`, then previously submitted those normalized settings on mount. The density display hook interpreted
+the shape difference as an edit and removed/reloaded the map. Once normalized, subsequent openings did not reload it.
+
+The popover now records its initial control values as the unchanged baseline when density already exists or is
+loading. Only changed control values are submitted. Opening without existing density still loads the default map;
+real edits, including reverting an edit, still use the existing asynchronous queue. Snapshot shapes are unchanged.
+
+Validation:
+
+- PASS: reproduced the first-open reload for Event, 2FoFc and FoFc before the fix. Actual popover/Redux/display-hook
+  tests under Strict Mode now verify no viewer load/delete calls or Redux changes on first opening and reopening.
+- PASS: pending initial loads complete once; opening without density loads once; real edits and reverting them work.
+- PASS: 7 related suites / 88 tests, including adapter/boundary, display queues, transfers and snapshot shapes.
+- PASS: targeted ESLint for the popover and its tests.
+- PASS: production build and backend stats validation (77.772 seconds), with bundle-size warnings only;
+  Moorhen asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: live browser acceptance; browser connection failed and discovery returned no connected browsers.
+  In Django-backed Preview, check left-click D followed by right-click, reopening, edits, removal and snapshot switching.

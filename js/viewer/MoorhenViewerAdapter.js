@@ -1,4 +1,5 @@
 import ViewerAdapter from './ViewerAdapter';
+import ContactWorkerClient from './contacts/ContactWorkerClient';
 import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from './moorhenMapUtils';
 import {
   MoorhenMap,
@@ -158,6 +159,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.objectOperations = new Map();
     this.objectRemovals = new WeakMap();
     this.mapRendering = new WeakMap();
+    this.contactInputs = new WeakMap();
+    this.contactWorker = new ContactWorkerClient();
     this.representationsByObject = new WeakMap();
     this.centerZoomScaleByObject = new WeakMap();
     this.pickHandlers = new Map();
@@ -412,6 +415,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         fromString: true,
         representation: 'cartoon',
         representations: moleculeRepresentations,
+        contactEnvironment: true,
         center: options.center
       });
       let map;
@@ -482,6 +486,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       if (isMolfileData(data) && typeof molecule.loadToCootFromFile === 'function') {
         const molfileName = `${name.replace(/\.(?:mol|sdf)$/i, '')}.mol`;
         await molecule.loadToCootFromFile(new File([data], molfileName, { type: 'chemical/x-mdl-molfile' }));
+        this.contactInputs.set(molecule, { sdf: data });
       } else {
         await molecule.loadToCootFromString(data, name);
       }
@@ -497,7 +502,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     const initialise = async () => {
       if (!component.defaultColourRules) await component.fetchDefaultColourRules();
       const style = getMoorhenRepresentationStyle(handle.type);
-      const cid = nglSelectionToMoorhenCid(handle.params.sele);
+      const cid = handle.type === 'contact' ? '/*/*/*/*' : nglSelectionToMoorhenCid(handle.params.sele);
       // addRepresentation() draws immediately with native defaults. Configure
       // an undrawn representation so its first mesh already has our appearance.
       const representation = new MoorhenMoleculeRepresentation(style, cid, this.commandCentre, this.glRef);
@@ -518,7 +523,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         this.setNonCustomOpacity(this.nonCustomOpacity);
       };
       try {
-        if (handle.type === 'contact') this.configureContactRepresentationColours(representation);
+        if (handle.type === 'contact') this.configureContactRepresentation(representation, handle);
         this.configureMoleculeRepresentationParameters(representation, handle.params);
         if (handle.params.visible !== false) {
           await representation.draw();
@@ -561,6 +566,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
     const coordinates = options.stripLigand ? await this.getPdbWithoutLigand(source, options.fetchOptions) : source;
     const molecule = await this.createNativeMolecule(coordinates, name, options);
+    if (options.contactEnvironment) this.contactInputs.set(molecule, { environment: true });
     this.store.dispatch(addMolecule(molecule));
     this.store.dispatch(showMolecule(molecule));
     const registeredMolecule = this.registerObject(molecule, name);
@@ -612,7 +618,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return this.loadProteinLigandComposite(target, options, {
       source: target.prot_url,
       fallbackType: 'contact',
-      fallbackParameters: { color: target.colour, visible: true },
+      fallbackParameters: {
+        color: target.colour,
+        visible: true,
+        masterModelIndex: 0,
+        weakHydrogenBond: true,
+        maxHbondDonPlaneAngle: 35,
+        sele: '/0 or /1'
+      },
       centerSelection: '/*/*/(LIG)/*'
     });
   }
@@ -650,8 +663,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     let ligand;
     try {
       ligand = await this.createNativeMolecule(target.sdf_info, `${name}-ligand`, { fromString: true });
+      // Preserve the protein/SDF topology and model separation used by the old
+      // contact detector. Only plain coordinates go to the computation worker.
+      const pdb = await protein.getAtoms('pdb');
       await protein.mergeMolecules([ligand], false, false);
+      const sdf = typeof target.sdf_info === 'string' ? target.sdf_info : await target.sdf_info.text();
+      this.contactInputs.set(protein, { pdb, sdf });
       await ligand.delete();
+      this.contactInputs.delete(ligand);
       ligand = null;
     } catch (error) {
       await Promise.allSettled([protein.delete(), ligand?.delete()]);
@@ -858,16 +877,48 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     };
   }
 
-  configureContactRepresentationColours(representation) {
-    // Native allHBonds ignores colour rules and hard-codes purple. Its detected
-    // contacts are hydrogen bonds, whose NGL colour is #2b83ba:
-    // https://github.com/nglviewer/ngl/blob/master/src/chemistry/interactions/contact.ts
-    // Keep Coot's endpoints/geometry; other NGL interaction types need detection
-    // support rather than assigning their colours to these hydrogen bonds.
-    const getBuffers = representation.getGemmiAtomPairsBuffers;
-    representation.getGemmiAtomPairsBuffers = function(pairs, colour, labelled) {
-      return getBuffers.call(this, pairs, [43 / 255, 131 / 255, 186 / 255, 1], labelled);
+  configureContactRepresentation(representation, handle) {
+    representation.getHBondBuffers = async () => {
+      const molecule = handle.parentObject;
+      let input = this.contactInputs.get(molecule);
+      if (!input?.pdb && !input?.sdf) {
+        input = { ...input, pdb: await molecule.getAtoms('pdb') };
+        this.contactInputs.set(molecule, input);
+      }
+      const contacts = await this.contactWorker.calculate({ ...input, parameters: { ...handle.params } });
+      return this.createContactBuffers(representation, contacts);
     };
+  }
+
+  createContactBuffers(representation, contacts) {
+    const groups = new Map();
+    contacts.types.forEach((type, index) => {
+      const start = Array.from(contacts.position1.slice(index * 3, index * 3 + 3));
+      const end = Array.from(contacts.position2.slice(index * 3, index * 3 + 3));
+      const distance = Math.hypot(...end.map((value, axis) => value - start[axis]));
+      if (!Number.isFinite(distance) || distance < 1e-6) return;
+      if (!groups.has(type))
+        groups.set(type, {
+          pairs: [],
+          dimensions: [],
+          colour: [...contacts.color.slice(index * 3, index * 3 + 3), 1]
+        });
+      const group = groups.get(type);
+      // Native hydrogen-bond geometry filters distances to 1.9–4 Å. Build its
+      // dashed template at 3 Å, then set the true length/radius for each contact
+      // so longer ionic/aromatic contacts keep their calculated endpoints.
+      const templateEnd = end.map((value, axis) => start[axis] + ((value - start[axis]) * 3) / distance);
+      group.pairs.push([
+        { x: start[0], y: start[1], z: start[2], serial: 2 * index },
+        { x: templateEnd[0], y: templateEnd[1], z: templateEnd[2], serial: 2 * index + 1 }
+      ]);
+      group.dimensions.push([contacts.radius[index], contacts.radius[index], distance]);
+    });
+    return Array.from(groups.values(), ({ pairs, dimensions, colour }) => {
+      const [mesh] = representation.getGemmiAtomPairsBuffers(pairs, colour, false);
+      mesh.instance_sizes[0][0] = dimensions.flat();
+      return mesh;
+    });
   }
 
   configureMoleculeRepresentationParameters(nativeRepresentation, parameters = {}) {
@@ -1356,7 +1407,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   }
 
   getTaskCount() {
-    return this.commandCentre.current?.activeMessages?.length || 0;
+    return (this.commandCentre.current?.activeMessages?.length || 0) + this.contactWorker.pending.size;
   }
 
   onTasksComplete(callback) {
@@ -1489,6 +1540,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
     this.representationsByObject.delete(component);
     this.mapRendering.delete(component);
+    this.contactInputs.delete(component);
   }
 
   async removeAll() {
@@ -1509,6 +1561,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (this.destroyed) return;
     this.destroyed = true;
     await this.removeAll();
+    this.contactWorker.dispose();
     Array.from(this.pickHandlers.keys()).forEach(handler => this.removePickHandler(handler));
     Array.from(this.clickHandlers.keys()).forEach(handler => this.removeClickHandler(handler));
     Array.from(this.orientationHandlers.keys()).forEach(handler => this.removeOrientationChangeHandler(handler));

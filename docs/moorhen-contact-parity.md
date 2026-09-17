@@ -1,0 +1,36 @@
+# Interaction classification and colours
+
+Implemented 2026-09-15 after the all-blue contact report.
+
+The former adapter requested Coot hydrogen bonds and rendered them all in NGL's hydrogen-bond blue. It did not calculate
+the other NGL interaction categories. The replacement computes the original NGL contact classifications in a dedicated
+worker and renders their geometry through Moorhen. See the [detector documentation](../js/viewer/contacts/vendor/README.md)
+for algorithms, defaults, colours, pinned sources, licence notices and reproducible reference comparisons.
+
+The contact control now includes hydrogen and weak hydrogen bonds, ionic contacts, aromatic interactions, halogen bonds
+and metal coordination. Saved parameters can also enable water, backbone and hydrophobic contacts. Different colours
+represent calculated categories; a selection containing only hydrogen bonds can still legitimately look all blue.
+
+Protein/SDF topology remains separate for calculation and is never stored in Fragalysis Redux. Native representations
+receive final meshes before becoming visible. Pending worker jobs count as viewer work, and molecule removal waits for
+contact generation and representation disposal. Existing snapshot serialization and in-place switching are unchanged.
+
+## Automated acceptance
+
+Completed: `yarn test:ci` (50 suites, 347 tests), targeted ESLint, `yarn build` including backend stats validation,
+and `yarn verify:moorhen-assets` (275 files). The build reports bundle-size warnings only.
+
+- Independent comparisons with the original NGL bundle cover all ten contact types, complete endpoints/colours/radii,
+  model selections, paired filters, parameter changes, complex ligand topology and event-map environments.
+- V3000 and V2000 equivalents produce matching contacts, with V3000 coordinate precision preserved.
+- The shipped worker executes off-thread, returns typed arrays, survives a failed calculation and releases its URL.
+- Installed Moorhen geometry preserves every type's colour, native dashed geometry and lengths beyond 4 Å.
+- Native representation lifecycle checks cover final colours/opacity before visibility, delayed contact calculations,
+  concurrent removal and failed calculations without leaving native buffers or registry entries.
+
+## Manual acceptance still required
+
+No browser was connected during implementation. Automated checks do not establish the screenshot's visual parity.
+Reload the Django-backed Preview and verify the reported target with contact toggles, LHS/RHS transfers, camera motion,
+layout changes, saving/restoring and same-project snapshot switching. Check that old contacts disappear, colours match
+detected types, initial views reveal only completed representations, and repeated transfers do not grow tab memory.

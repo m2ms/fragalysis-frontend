@@ -6,6 +6,7 @@ import { createCcp4Map } from './fixtures/ccp4Map';
 import fs from 'fs';
 import { runInNewContext } from 'vm';
 import ts from 'typescript';
+jest.mock('./contacts/createContactWorker', () => ({ __esModule: true, default: jest.fn() }));
 import { loadNglObject, updateComponentRepresentation, deleteNglObject } from '../reducers/ngl/actions';
 import nglReducers from '../reducers/ngl/nglReducers';
 import { loadObject as loadViewerObject, deleteObject as deleteViewerObject } from '../reducers/ngl/dispatchActions';
@@ -200,6 +201,7 @@ const createMolecule = (molNo = 1) => {
       return Promise.resolve(this);
     }),
     mergeMolecules: jest.fn(() => Promise.resolve()),
+    getAtoms: jest.fn(async () => 'ATOM\n'),
     setBackgroundColour: jest.fn()
   };
   return { molecule, representation };
@@ -834,7 +836,7 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
 
     expect(MoorhenMoleculeRepresentation.mock.calls.map(([style, cid]) => [style, cid])).toEqual([
       ['CRs', '/*/*/*/*'],
-      ['allHBonds', '/*/*/(LIG)/*'],
+      ['allHBonds', '/*/*/*/*'],
       ['ligands', '/*/*/(LIG)/*']
     ]);
     expect(map.loadToCootFromMapData).toHaveBeenCalledWith(expect.any(Uint8Array), 'event_EVENT_MAP', true);

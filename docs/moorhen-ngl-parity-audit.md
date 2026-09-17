@@ -16,6 +16,9 @@ This audit treats the removed NGL behavior as the compatibility specification fo
 This is primarily a static code audit. A status of **implemented** means that a Moorhen path exists; it does not imply
 visual parity unless a manual or browser check is explicitly noted.
 
+The [2026-09-15 contact follow-up](moorhen-contact-parity.md) supersedes the contact-classification findings below;
+it records the computational and native-rendering checks separately from pending visual acceptance.
+
 ## Verdict
 
 Stages 20 and 21 do not need to be reverted in order to recover old behavior. The removed implementation remains a

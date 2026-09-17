@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Typography from '@mui/material/Typography';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -162,12 +162,17 @@ export const DensityButtonPopover = ({ mol }) => {
     [mol, mode, color, checked, contour]
   );
 
+  // Opening the editor normalizes omitted flags/defaults for its controls.
+  // Treat that initial appearance as unchanged so an existing map stays loaded.
+  const lastSubmittedDensity = useRef(currentDensity ? createDefaultDensityObject().densityObject : null);
+
   useEffect(() => {
+    const densityToEdit = createDefaultDensityObject();
+    if (!densityToEdit.id || isEqual(lastSubmittedDensity.current, densityToEdit.densityObject)) return;
+    lastSubmittedDensity.current = densityToEdit.densityObject;
     // Submit local edits once. Queue acknowledgements must not resubmit stale
     // settings or retry a failed map load while the popover remains open.
     dispatch((dispatch, getState) => {
-      const densityToEdit = createDefaultDensityObject();
-      if (!densityToEdit.id) return;
       const densityRenderObject = getState().selectionReducers.toBeDisplayedList.find(
         d => d.id === densityToEdit.id && d.type === NGL_OBJECTS.DENSITY
       );

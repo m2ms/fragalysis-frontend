@@ -42,6 +42,7 @@ import {
   getMoorhenRepresentationStyle,
   getMoorhenRepresentationTemplate,
   getMoorhenLigandFocus,
+  interpolateMoorhenQuaternion,
   nglSelectionToMoorhenCid,
   normaliseMoorhenColour,
   normaliseMoorhenOrientation
@@ -169,6 +170,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.taskCompletionHandlers = new Set();
     this.focusRequestSequence = 0;
     this.destroyed = false;
+    this.orientationAnimation = null;
+    this.nativeCameraSequence = 0;
+    this.installCameraAnimationGuard();
     this.runtime = { commandCentre, glRef, store, containerElement, viewerAdapter: this };
     this.store.dispatch(setBackgroundColor([0, 0, 0, 1]));
     this.store.dispatch(setZoomWheelSensitivityFactor(ZOOM_WHEEL_SENSITIVITY));
@@ -1328,6 +1332,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   }
 
   setOrientation(orientation) {
+    this.orientationAnimation?.finish('cancelled');
     const { origin, quat4, zoom } = normaliseMoorhenOrientation(orientation);
 
     if (origin) this.store.dispatch(setOrigin(origin));
@@ -1337,17 +1342,132 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
   getOrientation() {
     const glState = this.store.getState().glRef;
+    const movingRenderer = this.orientationAnimation && this.glRef.current;
     const orientation = {
-      origin: Array.from(glState.origin || [0, 0, 0]),
-      quat4: Array.from(glState.quat || [0, 0, 0, -1]),
-      zoom: glState.zoom
+      origin: Array.from(movingRenderer?.origin || glState.origin || [0, 0, 0]),
+      quat4: Array.from(movingRenderer?.myQuat || glState.quat || [0, 0, 0, -1]),
+      zoom: movingRenderer?.zoom ?? glState.zoom
     };
     return { ...orientation, elements: [...orientation.quat4, ...orientation.origin, orientation.zoom] };
   }
 
-  animateOrientation(orientation) {
-    this.setOrientation(orientation);
-    return Promise.resolve();
+  installCameraAnimationGuard() {
+    const renderer = this.glRef.current;
+    if (!renderer?.setOriginOrientationAndZoomAnimated || this.cameraAnimationGuard?.renderer === renderer) return;
+    const animate = renderer.setOriginOrientationAndZoomAnimated;
+    const frame = renderer.setOriginOrientationAndZoomFrame;
+    // Moorhen does not retain a cancellable RAF id. Capture a generation in
+    // each native run, so its already scheduled callbacks can become no-ops.
+    renderer.setOriginOrientationAndZoomAnimated = (...args) => {
+      if (this.destroyed || this.orientationAnimation || renderer.animating) return;
+      const sequence = ++this.nativeCameraSequence;
+      renderer.setOriginOrientationAndZoomFrame = (...frameArgs) => {
+        if (this.destroyed || sequence !== this.nativeCameraSequence) return;
+        return frame.apply(renderer, frameArgs);
+      };
+      return animate.apply(renderer, args);
+    };
+    this.cameraAnimationGuard = { renderer, animate, frame };
+  }
+
+  getRenderedOrientation() {
+    const renderer = this.glRef.current;
+    const stored = this.getOrientation();
+    return {
+      origin: Array.from(renderer?.origin || stored.origin),
+      quat4: Array.from(renderer?.myQuat || stored.quat4),
+      zoom: renderer?.zoom ?? stored.zoom
+    };
+  }
+
+  animateOrientation(orientation, duration = 400, { signal } = {}) {
+    this.orientationAnimation?.finish('cancelled');
+    if (this.destroyed) return Promise.resolve({ status: 'destroyed' });
+    if (signal?.aborted) return Promise.resolve({ status: 'cancelled' });
+    this.installCameraAnimationGuard();
+    const renderer = this.glRef.current;
+    const start = this.getRenderedOrientation();
+    const normalized = normaliseMoorhenOrientation(orientation);
+    const destination = {
+      origin: normalized.origin || start.origin,
+      quat4: normalized.quat4 || start.quat4,
+      // Legacy NGL matrices intentionally retain the fitted Moorhen zoom.
+      zoom: normalized.zoom ?? start.zoom
+    };
+    const finalQuaternion = interpolateMoorhenQuaternion(start.quat4, destination.quat4, 1);
+    const unchanged =
+      start.origin.every((value, index) => Math.abs(value - destination.origin[index]) < 1e-6) &&
+      start.quat4.every((value, index) => Math.abs(value - finalQuaternion[index]) < 1e-6) &&
+      Math.abs(start.zoom - destination.zoom) < 1e-6;
+    const animationDuration = unchanged ? 0 : duration;
+    ++this.nativeCameraSequence;
+    renderer.animating = true;
+    const canvas = this.getRendererElement();
+
+    return new Promise((resolve, reject) => {
+      let frameId;
+      let startTime;
+      let finished = false;
+      const interrupt = () => finish('interrupted');
+      const abort = () => finish('cancelled');
+      const finish = (status, error) => {
+        if (finished) return;
+        finished = true;
+        cancelAnimationFrame(frameId);
+        signal?.removeEventListener('abort', abort);
+        ['pointerdown', 'wheel', 'keydown'].forEach(event => canvas?.removeEventListener(event, interrupt, true));
+        try {
+          if (status !== 'destroyed') {
+            const actual = this.getRenderedOrientation();
+            // Publish only once, after drawing, with detached arrays. In
+            // particular, never put the mutable renderer quaternion in Redux.
+            this.store.dispatch(setOrigin(actual.origin));
+            this.store.dispatch(setQuat(actual.quat4));
+            this.store.dispatch(setZoom(actual.zoom));
+          }
+          // Keep the native animator blocked until all three store values
+          // match the displayed camera, even with synchronous subscribers.
+          this.orientationAnimation = null;
+          renderer.animating = false;
+          if (status !== 'destroyed') {
+            if (renderer.handleOriginUpdated) renderer.handleOriginUpdated(true);
+            else this.orientationHandlers.forEach(({ wrappedHandler }) => wrappedHandler());
+            // Moorhen uses this event to update zoom-dependent clipping/fog.
+            if (typeof document !== 'undefined') {
+              document.dispatchEvent(
+                new CustomEvent('zoomChanged', { detail: { oldZoom: start.zoom, newZoom: renderer.zoom } })
+              );
+            }
+          }
+          if (error) reject(error);
+          else resolve({ status });
+        } catch (finishError) {
+          this.orientationAnimation = null;
+          renderer.animating = false;
+          reject(error || finishError);
+        }
+      };
+      const frame = timestamp => {
+        if (finished) return;
+        try {
+          if (startTime == null) startTime = timestamp;
+          const progress = animationDuration > 0 ? Math.min(1, (timestamp - startTime) / animationDuration) : 1;
+          const eased = progress * progress * (3 - 2 * progress);
+          renderer.origin = start.origin.map((value, index) => value + (destination.origin[index] - value) * eased);
+          renderer.myQuat = new Float32Array(interpolateMoorhenQuaternion(start.quat4, destination.quat4, eased));
+          renderer.zoom = start.zoom + (destination.zoom - start.zoom) * eased;
+          renderer.drawScene();
+          if (progress === 1) finish('completed');
+          else frameId = requestAnimationFrame(frame);
+        } catch (error) {
+          finish('failed', error);
+        }
+      };
+      this.orientationAnimation = { finish };
+      signal?.addEventListener('abort', abort);
+      ['pointerdown', 'wheel', 'keydown'].forEach(event => canvas?.addEventListener(event, interrupt, true));
+      frameId = requestAnimationFrame(frame);
+    });
   }
 
   // Only used before Preview reveals its first scene. MoorhenWebMG animates
@@ -1564,6 +1684,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   async destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.orientationAnimation?.finish('destroyed');
+    ++this.nativeCameraSequence;
+    if (this.cameraAnimationGuard) {
+      const { renderer, animate, frame } = this.cameraAnimationGuard;
+      renderer.setOriginOrientationAndZoomAnimated = animate;
+      renderer.setOriginOrientationAndZoomFrame = frame;
+      this.cameraAnimationGuard = null;
+    }
     await this.removeAll();
     this.contactWorker.dispose();
     Array.from(this.pickHandlers.keys()).forEach(handler => this.removePickHandler(handler));

@@ -569,8 +569,19 @@ export const initializeRHSMolecules = () => (dispatch, getState) => {
   const state = getState();
   const isSnapshot = state.apiReducers.isSnapshot;
   const isDirectDisplay = Object.keys(state.apiReducers.direct_access || {})?.length > 0;
+  const selection = state.selectionReducers;
+  // A snapshot captured before Designs was opened has no RHS tag choice yet.
+  // Initialize that UI filter only; saved choices (including a cleared list)
+  // and structure/camera restoration must remain untouched.
+  const needsSnapshotTagDefault =
+    isSnapshot &&
+    selection?.areRHSCompoundsInitialized === false &&
+    selection.rhs_selectedTagList?.length === 0 &&
+    !selection.rhs_displayAllMolecules &&
+    !selection.rhs_displayUntaggedMolecules &&
+    !selection.isCoordinateFilterAppliedRHS;
 
-  if (!isSnapshot && !isDirectDisplay) {
+  if ((!isSnapshot || needsSnapshotTagDefault) && !isDirectDisplay) {
     const firstTag = dispatch(getFirstRHSTagAlphabetically());
     if (firstTag) {
       dispatch(appendRHSSelectedTag(firstTag));

@@ -302,3 +302,23 @@ export const normaliseMoorhenOrientation = orientation => {
 
   return {};
 };
+
+// q and -q describe the same rotation. Use the shorter arc, including near
+// identical endpoints where spherical interpolation would divide by zero.
+export const interpolateMoorhenQuaternion = (start, destination, progress) => {
+  const from = normalizeQuaternion(start);
+  let to = normalizeQuaternion(destination);
+  let dot = from.reduce((sum, value, index) => sum + value * to[index], 0);
+  if (dot < 0) {
+    to = to.map(value => -value);
+    dot = -dot;
+  }
+  if (dot > 0.9995) {
+    return normalizeQuaternion(from.map((value, index) => value + (to[index] - value) * progress));
+  }
+  const angle = Math.acos(Math.min(1, dot));
+  const scale = Math.sin(angle);
+  return from.map(
+    (value, index) => (value * Math.sin((1 - progress) * angle) + to[index] * Math.sin(progress * angle)) / scale
+  );
+};

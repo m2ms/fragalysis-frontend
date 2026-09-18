@@ -269,6 +269,208 @@ const createAdapter = ({ molecule = createMolecule().molecule, map = createMap()
   };
 };
 
+describe('snapshot camera animation', () => {
+  let frames;
+  let nextFrame;
+  const advance = timestamp => {
+    const pending = [...frames.values()];
+    frames.clear();
+    pending.forEach(callback => callback(timestamp));
+  };
+  const camera = () => {
+    const fixture = createAdapter();
+    const { adapter, glRef, store, canvas } = fixture;
+    const renderer = installedCameraAnimation(callback => requestAnimationFrame(callback));
+    Object.assign(renderer, {
+      origin: [1, 2, 3],
+      myQuat: new Float32Array([0, 0, 0, -1]),
+      zoom: 0.5,
+      canvasRef: { current: canvas },
+      drawScene: jest.fn(),
+      handleOriginUpdated: jest.fn(() => document.dispatchEvent(new CustomEvent('originUpdate')))
+    });
+    glRef.current = renderer;
+    adapter.installCameraAnimationGuard();
+    store.dispatch.mockImplementation(action => {
+      const key = { 'moorhen/setOrigin': 'origin', 'moorhen/setQuat': 'quat', 'moorhen/setZoom': 'zoom' }[action.type];
+      if (key) store.state.glRef[key] = action.payload;
+    });
+    store.dispatch.mockClear();
+    return { ...fixture, renderer };
+  };
+
+  // Isolate RAF scheduling and restore globals after each test.
+  // eslint-disable-next-line jest/no-hooks
+  beforeEach(() => {
+    frames = new Map();
+    nextFrame = 0;
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.set(++nextFrame, callback);
+      return nextFrame;
+    });
+    jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(id => frames.delete(id));
+  });
+
+  // Restore the globals installed for each test.
+  // eslint-disable-next-line jest/no-hooks
+  afterEach(() => jest.restoreAllMocks());
+
+  it('uses elapsed time across irregular frames and publishes the final camera only after drawing', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer, store } = camera();
+    const changed = jest.fn();
+    adapter.addOrientationChangeHandler(changed);
+    const pending = adapter.animateOrientation([0, 0, -1, 0, 11, 12, 13, 1.5], 400);
+    advance(1000);
+    advance(1100);
+    expect(renderer.origin[0]).toBeCloseTo(2.5625);
+    advance(1200);
+    expect(renderer.origin).toStrictEqual([6, 7, 8]);
+    expect(renderer.zoom).toBe(1);
+    expect(renderer.myQuat[2]).toBeCloseTo(-Math.SQRT1_2);
+    expect(renderer.myQuat[3]).toBeCloseTo(-Math.SQRT1_2);
+    expect(adapter.getOrientation().origin).toStrictEqual([6, 7, 8]);
+    expect(store.dispatch).not.toHaveBeenCalled();
+    advance(1390);
+    expect(renderer.animating).toBe(true);
+    advance(1437);
+    expect(await pending).toStrictEqual({ status: 'completed' });
+    expect(renderer.origin).toStrictEqual([11, 12, 13]);
+    expect(store.state.glRef).toStrictEqual({ origin: [11, 12, 13], quat: [0, 0, -1, 0], zoom: 1.5 });
+    expect(store.state.glRef.origin).not.toBe(renderer.origin);
+    expect(renderer.animating).toBe(false);
+    expect(frames.size).toBe(0);
+    expect(changed).toHaveBeenCalledTimes(2);
+    adapter.removeOrientationChangeHandler(changed);
+  });
+
+  it('takes the shortest quaternion arc and preserves fitted zoom for a legacy NGL matrix', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    const pending = adapter.animateOrientation({ quat4: [0, 0, 0, 1], origin: [2, 3, 4] });
+    advance(0);
+    advance(200);
+    expect(Array.from(renderer.myQuat)).toStrictEqual([0, 0, 0, -1]);
+    advance(400);
+    await pending;
+    const legacy = adapter.animateOrientation([50, 0, 0, 0, 0, 50, 0, 0, 0, 0, 50, 0, -4, -5, -6, 1]);
+    advance(500);
+    advance(900);
+    await legacy;
+    expect(renderer.origin).toStrictEqual([-4, -5, -6]);
+    expect(renderer.zoom).toBe(0.5);
+  });
+
+  it('does not wait for the duration when the camera is already at the destination', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    const pending = adapter.animateOrientation({ origin: [1, 2, 3], quat4: [0, 0, 0, 1], zoom: 0.5 });
+    advance(0);
+    expect(await pending).toStrictEqual({ status: 'completed' });
+    expect(renderer.drawScene).toHaveBeenCalledTimes(1);
+    expect(frames.size).toBe(0);
+  });
+
+  it('blocks native store subscribers until the complete displayed camera has been published', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer, store } = camera();
+    const dispatch = store.dispatch.getMockImplementation();
+    store.dispatch.mockImplementation(action => {
+      dispatch(action);
+      const state = store.state.glRef;
+      renderer.setOriginOrientationAndZoomAnimated(state.origin, state.quat, state.zoom);
+    });
+    const pending = adapter.animateOrientation({ origin: [11, 12, 13], zoom: 1.5 });
+    advance(0);
+    advance(400);
+    await pending;
+    expect(frames.size).toBe(0);
+    expect(renderer.animating).toBe(false);
+    expect(store.state.glRef.origin).toStrictEqual(renderer.origin);
+  });
+
+  it('invalidates already queued native frames and ignores native store animation requests during the transition', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    renderer.setOriginOrientationAndZoomAnimated([100, 100, 100], [0, 0, 0, -1], 10);
+    advance(0);
+    const actual = [...renderer.origin];
+    const pending = adapter.animateOrientation({ origin: [11, 12, 13], zoom: 1.5 });
+    renderer.setOriginOrientationAndZoomAnimated([-100, -100, -100], [0, 0, 0, -1], 20);
+    advance(10);
+    expect(renderer.origin).toStrictEqual(actual);
+    advance(410);
+    await pending;
+    advance(500);
+    expect(renderer.origin).toStrictEqual([11, 12, 13]);
+    expect(frames.size).toBe(0);
+    // Ordinary native camera requests still work after releasing ownership.
+    renderer.setOriginOrientationAndZoomAnimated([20, 21, 22], [0, 0, 0, -1], 2);
+    for (let i = 0; i < 15; i++) advance(600 + i * 16);
+    expect(renderer.origin).toStrictEqual([20, 21, 22]);
+  });
+
+  it('starts a replacement from the displayed camera and settles the superseded promise', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    const first = adapter.animateOrientation({ origin: [11, 12, 13] });
+    advance(0);
+    advance(200);
+    const second = adapter.animateOrientation({ origin: [-4, -3, -2] });
+    expect(await first).toStrictEqual({ status: 'cancelled' });
+    advance(220);
+    expect(renderer.origin).toStrictEqual([6, 7, 8]);
+    advance(620);
+    expect(await second).toStrictEqual({ status: 'completed' });
+    expect(renderer.origin).toStrictEqual([-4, -3, -2]);
+  });
+
+  it.each(['pointerdown', 'wheel', 'keydown'])('lets %s stop motion without forcing the destination', async event => {
+    expect.hasAssertions();
+    const { adapter, renderer, canvas, store } = camera();
+    const pending = adapter.animateOrientation({ origin: [11, 12, 13] });
+    advance(0);
+    advance(200);
+    canvas.dispatchEvent(new Event(event));
+    expect(await pending).toStrictEqual({ status: 'interrupted' });
+    expect(store.state.glRef.origin).toStrictEqual([6, 7, 8]);
+    renderer.origin = [2, 4, 6];
+    advance(500);
+    expect(renderer.origin).toStrictEqual([2, 4, 6]);
+    expect(frames.size).toBe(0);
+  });
+
+  it('settles aborted and destroyed transitions and cancels their remaining frames', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    const controller = new AbortController();
+    const pending = adapter.animateOrientation({ origin: [11, 12, 13] }, 400, { signal: controller.signal });
+    advance(0);
+    controller.abort();
+    expect(await pending).toStrictEqual({ status: 'cancelled' });
+    const next = adapter.animateOrientation({ origin: [30, 30, 30] });
+    await adapter.destroy();
+    expect(await next).toStrictEqual({ status: 'destroyed' });
+    advance(500);
+    expect(renderer.origin).toStrictEqual([1, 2, 3]);
+    expect(frames.size).toBe(0);
+  });
+
+  it('propagates drawing errors and releases camera ownership', async () => {
+    expect.hasAssertions();
+    const { adapter, renderer } = camera();
+    renderer.drawScene.mockImplementationOnce(() => {
+      throw new Error('Draw failed');
+    });
+    const pending = adapter.animateOrientation({ origin: [11, 12, 13] });
+    advance(0);
+    await expect(pending).rejects.toThrow('Draw failed');
+    expect(renderer.animating).toBe(false);
+    expect(adapter.orientationAnimation).toBeNull();
+    expect(frames.size).toBe(0);
+  });
+});
+
 describe('MoorhenViewerAdapter Stage 18 parity', () => {
   beforeEach(() => {
     jest.clearAllMocks();

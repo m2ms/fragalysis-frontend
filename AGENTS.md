@@ -103,8 +103,10 @@ Snapshot behaviour is the highest-risk area. Always inspect
   are uploaded together after both captures exist; preserve that grouping unless the backend contract changes.
 - Moorhen captures its own orientation format and accepts historic NGL matrices through
   `js/viewer/moorhenAdapterUtils.js`. Legacy camera distance is not Moorhen zoom: preserve the compatibility conversion
-  and fitted zoom rather than copying numeric values between engines. `animateOrientation` currently applies the final
-  orientation immediately; its name does not establish timed animation parity.
+  and fitted zoom rather than copying numeric values between engines. User-approved same-project transitions prepare
+  state before a cancellable, elapsed-time camera animation (400 ms), then apply incremental structure changes after
+  the final frame can paint. Preserve request ownership, live-state rebasing, native-animation cancellation and manual
+  interruption; do not reapply the saved camera after the user interrupts it. Initial hydration remains separate.
 
 Full-state replacement is still used for initial project/snapshot hydration and job-execution overlays. Do not merge
 that path with the in-place user switch merely because both ultimately load snapshot data.

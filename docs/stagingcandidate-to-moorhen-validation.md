@@ -457,3 +457,76 @@ Validation:
   warnings, verified against HEAD; the other files changed in this follow-up have no lint findings.
 - NOT RUN: live browser verification; no browser is connected. Reload the updated frontend, inspect all download
   dialog labels, and save/update a snapshot to confirm the thumbnail remains correct without the image-load error.
+
+## Timed same-project snapshot transitions (2026-09-18)
+
+The user approved replacing the old transition timing and staging structure changes after camera motion, with
+rollback if the live result is worse. Baseline commit: `8dbfb9bbb356face05de4344c78522abb6d415f5` (clean working tree).
+The former `2000` argument was ignored by the adapter: it dispatched camera state immediately, while the installed
+Moorhen host independently animated over 15 frames. Snapshot cloning and structure work could overlap that motion.
+
+The adapter now interpolates origin, zoom and the shortest quaternion arc using animation-frame timestamps and a
+400 ms smooth easing curve. An unchanged camera does not wait out that duration. A guard around the installed
+native camera scheduler invalidates already queued native frames and prevents competing animations. It is restored
+on teardown. Final camera values are copied to Moorhen's store before camera ownership is released; origin and zoom
+notifications retain map updates and zoom-dependent clipping/fog. Legacy NGL matrix conversion retains fitted zoom.
+
+The switch prepares its existing cloned/merged state before motion, lets the final camera frame paint, and then
+applies destination intent through the existing slice actions and display queues. It rebases against current state
+if work completed during motion. Request ownership is kept outside Redux: a newer selection aborts old camera motion,
+ignores stale fetch responses, and owns flag cleanup. Manual pointer/wheel/keyboard input on the canvas stops motion
+while allowing destination structures to load. The existing orientation-applied flag prevents delayed restoration
+from snapping the camera back afterward. Initial/job hydration retains its separate full-state path. Snapshot/API
+formats, structural preservation masks, native load/deletion queues and blocking-dialog suppression remain intact.
+
+Validation:
+
+- PASS: all 55 Jest suites / 388 tests, 67.335 seconds. Includes adapter/boundary, display queues, transfers, initial
+  presentation, layout/host and snapshot compatibility checks.
+- PASS: 3 directly changed suites / 65 tests after test-style adjustments, 11.427 seconds. New cases cover irregular
+  frame intervals, final camera/store agreement, native scheduled frames, shortest rotations, legacy zoom, unchanged
+  cameras, supersession, manual interruption, errors, teardown, stale responses, fresh runtime acknowledgements,
+  shared-object retention/removal commands, and initial versus in-place orientation restoration.
+- PASS: production bundle and backend stats validation, 67.454 seconds, with the two existing bundle-size warnings.
+- PASS: Moorhen static integrity, 275 assets / 114450225 bytes; whitespace check; no additional ESLint findings versus
+  baseline. The adapter test file retains 59 existing test-style errors; snapshot actions and ProjectPreview retain
+  their 17 and 1 existing unused-variable warnings respectively. New test files have no findings.
+- NOT RUN: live timing baseline/comparison or visual acceptance because browser discovery returned no connected
+  browser. Installed native scheduling is exercised in tests, but WebGL drawing is modeled; no live FPS improvement
+  or smoothness guarantee is claimed. No speculative surface-quality or rendering-cache changes were made.
+
+For live acceptance, reload the tab first. Compare camera-only snapshots, snapshots with different structures, and
+complex protein/surface/map scenes. Record fetch/preparation delay, camera frame gaps and destination completion time;
+rapidly select A/B/C and rotate or zoom during a transition. Confirm the latest snapshot wins, shared objects stay
+visible, removed objects disappear, no blocking dialog flashes, and manual camera changes survive structure loading.
+Also check initial target/snapshot load, LHS/RHS toggles, layout moves/resizing, save/update thumbnails, orientation
+restoration, and repeated RHS transfers with shared inspirations while watching memory. The separately deferred
+maximum-update-depth warning is not claimed fixed by this change.
+
+## First Designs opening after restoring a snapshot (2026-09-18)
+
+Read-only inspection of `/api/snapshot_state/4/` confirmed that project 4 / snapshot 4 was saved with
+`sidesOpen.RHS: false`, `areRHSCompoundsInitialized: false`, and `rhs_selectedTagList: []`. The target's tag API
+contains one visible RHS tag (79). The selection was not lost during switching: no RHS selection had been saved,
+and `initializeRHSMolecules` skipped default tag selection for every snapshot, including an unopened Designs panel.
+
+RHS initialization now selects its normal first eligible tag for that uninitialized snapshot case. It requires an
+explicit false initialization flag, an empty saved tag list, and no saved Show all, untagged, or coordinate filter.
+Existing selections, intentionally cleared initialized selections, and legacy snapshots with an unknown initialization
+status retain their saved behavior. Direct-display mode still skips initialization. This fallback dispatches only a
+tag selection; LHS initialization, structure queues, camera restoration and the approved animation are unchanged.
+Existing snapshots use the fallback when opened; no saved record or API payload format was modified.
+
+Validation:
+
+- PASS: the save/merge/first-open regression reproduced the empty selection before the fix and passes afterward.
+- PASS: 6 relevant suites / 54 tests, 13.164 seconds, including snapshot shapes/switching, project camera restoration,
+  pose transfers and initial viewer presentation. Tests cover preserved saved/empty choices, direct display, filter
+  alternatives, eligible tag ordering and repeated initialization without touching viewer state.
+- PASS: no new ESLint findings against HEAD and clean whitespace checks for changed code. The actions retain five
+  existing unused-variable warnings; the existing test retains its one pre-existing assertion-style finding.
+- PASS: production build and backend stats validation, 75.934 seconds, with the two existing bundle-size warnings;
+  Moorhen asset integrity, 275 assets / 114450225 bytes.
+- NOT RUN: interactive Designs opening; no browser is connected. Reload, restore snapshot 4, then open Designs and
+  confirm tag 79 is selected. Also restore a snapshot with an explicitly cleared tag selection and confirm it stays
+  empty. Close/reopen Designs and recheck smooth snapshot switching.

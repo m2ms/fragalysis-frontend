@@ -107,6 +107,8 @@ export class ViewerAdapter {
     return notImplemented('getOrientation');
   }
 
+  // Animate to an orientation over elapsed milliseconds. The optional signal
+  // cancels superseded requests; the promise settles on completion/interruption.
   animateOrientation() {
     return notImplemented('animateOrientation');
   }

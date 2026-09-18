@@ -1001,6 +1001,35 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     await expect(adapter.captureImage()).resolves.toBe('data:image/png');
   });
 
+  it.each([false, true])('freezes the redrawn canvas before asynchronous capture (DOM capture: %s)', async useDomCapture => {
+    expect.hasAssertions();
+    const { adapter, canvas, glRef } = createAdapter();
+    let pixels = 'cleared';
+    Object.assign(glRef.current, {
+      drawScene: jest.fn(() => {
+        pixels = 'molecule-and-map';
+        // Model a non-preserved WebGL drawing buffer becoming unavailable after drawing.
+        Promise.resolve().then(() => {
+          pixels = 'cleared';
+        });
+      })
+    });
+    canvas.toDataURL.mockImplementation(() => `data:image/png;base64,${pixels}`);
+    const capture = jest.fn(async image => {
+      await Promise.resolve();
+      expect(pixels).toBe('cleared');
+      return image;
+    });
+
+    expect(await adapter.captureImage(useDomCapture ? { capture } : undefined)).toBe(
+      'data:image/png;base64,molecule-and-map'
+    );
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    expect(canvas.toDataURL).toHaveBeenCalledTimes(1);
+    expect(canvas.toDataURL).toHaveBeenCalledWith('image/png');
+    if (useDomCapture) expect(capture).toHaveBeenCalledWith('data:image/png;base64,molecule-and-map');
+  });
+
   it('centres a deduplicated group with equal ligand weights and fits its full extent', async () => {
     const { adapter, store } = createAdapter();
     store.dispatch.mockClear();

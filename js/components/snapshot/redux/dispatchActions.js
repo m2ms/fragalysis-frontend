@@ -448,14 +448,14 @@ export const saveAndShareSnapshot = (
   dispatch(setDisableRedirect(true));
 
   if (targetId) {
-    let imageFullscreen = await dispatch(captureScreenOfSnapshotFullScreen());
+    const majorViewer = nglViewList?.find(view => view.id === VIEWS.MAJOR_VIEW);
+    const viewerAdapter = asViewerAdapter(majorViewer?.stage);
+    let imageFullscreen = await dispatch(captureScreenOfSnapshotFullScreen(viewerAdapter));
     imageFullscreen = await rescaleImage(
       imageFullscreen,
       DEFAULT_SCREENSHOT_RESOLUTION.width,
       DEFAULT_SCREENSHOT_RESOLUTION.height
     );
-    const majorViewer = nglViewList?.find(view => view.id === VIEWS.MAJOR_VIEW);
-    const viewerAdapter = asViewerAdapter(majorViewer?.stage);
     let imageNgl = await dispatch(captureScreenOfSnapshotNglScreen(viewerAdapter));
     imageNgl = await rescaleImage(imageNgl, DEFAULT_SCREENSHOT_RESOLUTION.width, DEFAULT_SCREENSHOT_RESOLUTION.height);
     if (showDialog) {

@@ -24,7 +24,7 @@ import { createViewerInitializationTelemetry } from '../../viewer/viewerTelemetr
 import { installMoorhenWorkerBridge } from './moorhenWorkerBridge';
 import { useInitialViewerPresentation } from './useInitialViewerPresentation';
 
-const MOORHEN_INITIALIZATION_TIMEOUT_MS = 30000;
+const MOORHEN_INITIALIZATION_TIMEOUT_MS = 300000;
 let moorhenStorePrepared = false;
 
 const createMemoryStorage = () => {

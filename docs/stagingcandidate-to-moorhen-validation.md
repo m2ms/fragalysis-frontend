@@ -380,3 +380,80 @@ Validation:
   Moorhen asset integrity, 275 assets / 114450225 bytes.
 - NOT RUN: live browser acceptance; browser connection failed and discovery returned no connected browsers.
   In Django-backed Preview, check left-click D followed by right-click, reopening, edits, removal and snapshot switching.
+
+## Black snapshot thumbnails (2026-09-18)
+
+The snapshot card uses the saved `NGL_SCREEN` image, including with Moorhen. Moorhen 0.22.7 creates its WebGL
+context without `preserveDrawingBuffer`; the old adapter either read an undrawn canvas or delegated directly to
+asynchronous DOM capture. `dom-to-image-more` could therefore read a cleared buffer, producing the reported black
+thumbnail. This follows the [WebGL drawing-buffer lifecycle](https://registry.khronos.org/webgl/specs/latest/1.0/#2.2).
+
+The adapter now redraws and synchronously encodes the canvas before invoking DOM capture. Both the viewer and
+full-page snapshot captures replace only the cloned canvas image with that frozen frame, retaining DOM overlays,
+layout dimensions and the live canvas. Save/share/update still rescale both images and upload them with snapshot
+state in the existing group. Snapshot payloads, orientation and switching behavior are unchanged. Already stored
+black images require loading the desired snapshot and using Update to capture it again.
+
+Validation:
+
+- PASS: five new regressions failed before the fix, covering direct/delegated adapter capture, both DOM captures
+  after a modeled buffer clear, and full-page capture errors. The focused adapter, boundary, screenshot and snapshot
+  shape suites passed all 61 tests after the fix.
+- PASS: new coverage also checks high-DPI layout dimensions, labels, unrelated canvases, unchanged live DOM,
+  DOM-only fallback, missing viewer nodes and error propagation.
+- PASS: full unit suite, 52 suites / 365 tests (117.093 seconds), including native adapter, boundary, display queues,
+  pose transfers and snapshot shapes.
+- PASS: production build and backend stats validation (79.494 seconds), with the two existing bundle-size warnings.
+- PASS: Moorhen asset verification, 275 assets / 114450225 bytes, and `git diff --check`.
+- PASS: lint comparison against HEAD found no added findings. The existing adapter test file has 59 lint errors;
+  snapshot dispatch actions have 17 unused-variable warnings. Other changed JavaScript files have no findings.
+- NOT RUN: live browser acceptance; browser discovery returned no connected browsers. Reload the updated frontend,
+  load a target with ligand/protein/map and labels, rotate, then create and update snapshots. Inspect both uploaded
+  images and the thumbnail, including after resizing/layout changes. Check LHS/RHS toggles, restore, smooth
+  same-project switching, incremental removal, orientation and absence of blocking-dialog flashes.
+
+## Download dialog text and console review (2026-09-18)
+
+The user confirmed the thumbnail now shows the scene, then reported unreadable Download structures labels and
+provided console output. The installed Moorhen container appends `darkly.css` globally when the viewer background
+is dark. Its body text color is white. The shared Fragalysis modal set its paper background but inherited text color
+from that body. Modal paper now also sets the application theme's primary text color. Disabled labels and explicit
+button/error colors retain their own styles.
+
+The dialog also retained MUI v4's removed `disableTypography` property, nesting an `h5` or `h4` inside DialogTitle's
+default `h2`. All four title states now use a `div` wrapper, retaining the inner heading and its typography.
+
+The `dom-to-image-more` image-load exception was reproduced using the installed library's image helper. It leaves
+an `onload` callback on the resolved canvas image which removes a temporary SVG. Replacing that image's `src` with
+the frozen frame invokes the callback again, after the SVG has already been removed. The clone adjustment now
+detaches the completed load/error callbacks and substitutes the frame only once. Live image handlers are untouched.
+
+Remaining supplied messages:
+
+- `Maximum update depth exceeded`: the user clarified snapshot switching as the suspected trigger and requested
+  deferring investigation to a later prompt. The supplied log has no component stack; no fix is claimed.
+- `GridLegacy` deprecation: expected with the intentionally retained grid compatibility component.
+- Missing dependency source maps: debugger metadata warnings; the log subsequently records successful viewer startup.
+- Cross-origin CSS rules: snapshot font discovery cannot inspect Moorhen sheets loaded from port 3030. The installed
+  `moorhen.css` and `darkly.css` contain no `@font-face` rules, and the capture library catches these errors and continues.
+  Font embedding remains enabled for accessible application font stylesheets; warnings are not suppressed.
+- Missing list keys: `PM` maps to the installed Moorhen bundle's React Bootstrap `OverlayTrigger`. The other
+  `ForwardRef` warning is not specific enough to locate from this excerpt. No dependency patch was made.
+- Zinc charge/protonation warning: emitted by the vendored contact detector's valence model, which lacks a zinc
+  assignment branch. It continues using the supplied formal charge (or zero) and default geometry; the log records
+  the object load completing. This is a chemistry-model limitation, not a failed structure download.
+
+Validation:
+
+- PASS: the new installed-library image regression reproduced `NotFoundError` before the handler fix and passed after it.
+- PASS: a rendered download-dialog test reproduces the body color from the installed dark stylesheet, verifies dark
+  text on white paper and the disabled map option, and checks valid headings without React errors while current
+  snapshot metadata changes. This uses JSDOM and does not establish live-browser visual acceptance.
+- PASS: 7 relevant suites / 88 tests (13.617 seconds), covering the dialog, capture helper, theme/UI boundary,
+  viewer adapter/boundary and snapshot shapes.
+- PASS: production build and backend stats validation (43.513 seconds), with the two existing bundle-size warnings;
+  Moorhen asset verification, 275 assets / 114450225 bytes.
+- PASS: targeted ESLint and whitespace checks. Download dialog retains its four pre-existing unused-variable
+  warnings, verified against HEAD; the other files changed in this follow-up have no lint findings.
+- NOT RUN: live browser verification; no browser is connected. Reload the updated frontend, inspect all download
+  dialog labels, and save/update a snapshot to confirm the thumbnail remains correct without the image-load error.

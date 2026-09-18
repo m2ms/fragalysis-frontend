@@ -57,6 +57,10 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /contacts[\\/]vendor[\\/]detector\.mjs$/,
+        type: 'asset/source'
+      },
+      {
         test: /\.(js|jsx)$/,
         enforce: 'pre',
         exclude: /node_modules/,

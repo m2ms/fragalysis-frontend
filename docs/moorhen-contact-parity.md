@@ -34,3 +34,19 @@ No browser was connected during implementation. Automated checks do not establis
 Reload the Django-backed Preview and verify the reported target with contact toggles, LHS/RHS transfers, camera motion,
 layout changes, saving/restoring and same-project snapshot switching. Check that old contacts disappear, colours match
 detected types, initial views reveal only completed representations, and repeated transfers do not grow tab memory.
+
+## Development worker build fix (2026-09-17)
+
+`yarn start` uses `webpack.config-dev.js`, independently of the production configuration. The development configuration
+was missing the detector's `asset/source` rule: it imported the detector as a JavaScript module instead of the text
+inserted into the worker. This produced the missing-default-export warning and `detectContacts is not defined` when
+interactions were requested. Both configurations now load the detector as source text.
+
+The existing worker test mocked that import, so it did not cover this build failure. A new integration test bundles the
+worker factory with each configuration's actual module rules and executes the resulting worker against the contact
+fixture. Before the fix, the development case reproduced the reported warning while the production case passed.
+
+Validation: all 21 worker, detector and build-integration tests passed; targeted ESLint passed. A full development
+compilation, with output and backend stats kept in memory to preserve the running server, completed without errors or
+warnings and classified the detector as `asset/source`. No browser was connected for visual verification of the reported
+pose. Restart `yarn start` and reload Preview before retesting; HMR does not reload the Webpack configuration.

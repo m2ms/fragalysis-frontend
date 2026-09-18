@@ -1550,11 +1550,15 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
   }
 
-  captureImage(options) {
+  async captureImage(options) {
+    // Moorhen does not preserve the WebGL drawing buffer. Encode the frame in
+    // the same turn as drawing it, before asynchronous DOM cloning can yield.
+    this.glRef.current?.drawScene?.();
+    const image = this.getRendererElement()?.toDataURL('image/png');
     if (options && typeof options.capture === 'function') {
-      return options.capture();
+      return options.capture(image);
     }
-    return Promise.resolve(this.getRendererElement()?.toDataURL('image/png'));
+    return image;
   }
 
   async destroy() {

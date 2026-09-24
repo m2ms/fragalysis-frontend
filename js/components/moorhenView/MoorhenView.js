@@ -300,7 +300,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
             monomerLibraryPath={monomerLibraryPath}
             setMoorhenDimensions={getMoorhenDimensions}
             disableFileUploads
-            viewOnly
+            viewOnly={false}
             allowScripting={false}
             backupStorageInstance={backupStorageRef.current}
             store={MoorhenReduxStore}

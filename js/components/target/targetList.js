@@ -42,6 +42,8 @@ import { DJANGO_CONTEXT } from '../../utils/djangoContext';
 import { Panel } from '../common';
 import RichTooltip from '../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
+import { TargetAccessAction } from '../access/TargetAccessAction';
+import { canInspectAccess } from '../access/accessUtils';
 
 const useStyles = makeStyles(theme => ({
   table: {
@@ -503,6 +505,11 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
             </TableCell>,
             <TableCell key={'16'} style={{ width: '2px', padding: '0px', margin: '0px' }}></TableCell>
           ]}
+          {canInspectAccess() && !legacy && (
+            <TableCell align="center" style={{ padding: '0px', margin: '0px' }}>
+              <TargetAccessAction target={target} compact />
+            </TableCell>
+          )}
           {DJANGO_CONTEXT['authenticated'] && !target.isLegacy && (
             <TableCell style={{ width: '2px', padding: '0px', margin: '0px' }}>
               <IconButton
@@ -1084,6 +1091,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
                 </HeaderControlCell>
               ]}
 
+              {canInspectAccess() && !legacy && <TableCell className={classes.tableHeader}>Access</TableCell>}
               {DJANGO_CONTEXT['authenticated'] && legacy === false && (
                 <TableCell
                   className={classes.tableHeader}

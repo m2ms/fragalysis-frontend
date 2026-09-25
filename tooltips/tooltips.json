@@ -266,6 +266,9 @@
         "companyContributor": "{{companyTitle}}"
       },
       "menu": "Open main menu",
+      "drawer": {
+        "whatCanISee": "List the target access strings (TAS) available to your account"
+      },
       "targetSettings": "Open target settings",
       "saveSnapshot": "Save snapshot",
       "shareSnapshot": "Share current view",
@@ -288,6 +291,12 @@
       "cmd": "{{companyTitle}}"
     },
     "components": {
+      "accessDialog": {
+        "whoCanSeeMe": "Who can see me",
+        "missingTas": "Access information is unavailable because this target has no TAS",
+        "retry": "Retry loading access information",
+        "close": "Close access information"
+      },
       "filterWrapper": {
         "openFilter": "Open {{title}}",
         "closeFilter": "Close filter",

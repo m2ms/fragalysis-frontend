@@ -15,6 +15,7 @@ import { replaceTarget, setTargetOnAliases, setTargetOnName } from '../../reduce
 import { getCurrentTarget } from '../../reducers/api/selectors';
 import { DENSITY_MAP_TYPES, MAP_RENDERING_MODES } from '../preview/molecule/utils/constants';
 import RichTooltip from '../tooltip/RichTooltip';
+import { TargetAccessAction } from '../access/TargetAccessAction';
 
 const useStyles = makeStyles(theme => ({
   copyButton: {
@@ -258,6 +259,11 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
               <Typography variant="body1">{currentTarget?.project?.open_to_public ? 'Yes' : 'No'}</Typography>
             </Grid>
           </Grid>
+          {openModal && (
+            <Grid item>
+              <TargetAccessAction target={isTargetOn ? activeTarget : selectedTarget} />
+            </Grid>
+          )}
           <Divider />
           <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
             <Grid item xs>

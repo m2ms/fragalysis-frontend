@@ -1,0 +1,279 @@
+import React, { StrictMode } from 'react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { legacy_createStore } from 'redux';
+import { MemoryRouter } from 'react-router-dom';
+import { deserialize, serialize } from 'v8';
+import { ThemeProvider } from '../../ui/styles';
+import { getTheme } from '../../theme';
+import { TargetList } from './targetList';
+import { BarChart } from '@mui/x-charts/BarChart';
+import {
+  downloadStructuresZip,
+  getDownloadStructuresTaskOrUrl,
+  getDownloadTaskStatusObject
+} from '../snapshot/api/api';
+
+jest.mock('../../utils/djangoContext', () => ({
+  DJANGO_CONTEXT: { pk: 37, authenticated: true, username: 'tester' }
+}));
+jest.mock('./targetListSortFilterDialog', () => ({ TargetListSortFilterDialog: () => null }));
+jest.mock('./redux/dispatchActions', () => ({
+  getTargetProjectCombinations: targets => targets.map(target => ({ updatedTarget: target }))
+}));
+jest.mock('@mui/x-charts/BarChart', () => ({
+  BarChart: jest.fn(() => <div data-testid="target-chart" />)
+}));
+jest.mock('../snapshot/api/api', () => ({
+  downloadStructuresZip: jest.fn(),
+  getDownloadStructuresTaskOrUrl: jest.fn(),
+  getDownloadTaskStatusObject: jest.fn()
+}));
+
+const makeTarget = (id, settings = {}) => ({
+  id,
+  title: `target-${id}`,
+  display_name: `Target ${id}`,
+  short_name: '',
+  long_name: '',
+  organism: '',
+  settings,
+  project: {
+    alias: `Alias ${id}`,
+    target_access_string: `real-tas-${id}`,
+    open_to_public: id === 1,
+    init_date: '2026-01-01'
+  }
+});
+const target = makeTarget(1, {
+  crystallographic_binding_events: 40,
+  bound_compounds: 30,
+  associated_affinity_measurements: 20,
+  measured_compounds: 10,
+  blog_url: 'https://example.org/a-future-blog'
+});
+const renderList = (list = [target], props = {}) => {
+  const state = { targetReducers: { projects: [] }, selectionReducers: {} };
+  const store = legacy_createStore((current = state) => current);
+  return render(
+    <StrictMode>
+      <Provider store={store}>
+        <ThemeProvider theme={getTheme()}>
+          <MemoryRouter>
+            <TargetList list={list} {...props} />
+          </MemoryRouter>
+        </ThemeProvider>
+      </Provider>
+    </StrictMode>
+  );
+};
+const confirmDownload = async () => {
+  fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Download the full dataset' }));
+  const dialog = screen.getByRole('dialog', { name: 'Download target data?' });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Download' }));
+  await act(async () => {});
+};
+
+describe('landing target details and downloads', () => {
+  it('expands public/private rows independently, preserving placeholder content, aliases, and target links', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    const privateTarget = makeTarget(2);
+    const before = JSON.stringify([target, privateTarget]);
+    renderList([target, privateTarget]);
+    expect(await screen.findByRole('link', { name: 'Target 1' })).toHaveAttribute(
+      'href',
+      '/viewer/react/preview/target/target-1/tas/real-tas-1'
+    );
+    expect(screen.getByText('Alias 1')).toBeInTheDocument();
+    expect(getDownloadStructuresTaskOrUrl).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByText('May 5, 2026')).toBeInTheDocument();
+    expect(screen.getByText(/Blog: Inside OpenBind's First Public Data Release:/)).toBeInTheDocument();
+    expect(screen.queryByText(target.settings.blog_url)).not.toBeInTheDocument();
+    expect(BarChart.mock.calls.at(-1)[0].series.map(series => series.data[0])).toStrictEqual([40, 30, 20, 10]);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Target 2' }));
+    expect(screen.getAllByRole('button', { name: 'Download the full dataset' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Collapse Target 1' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Target 1' }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Download the full dataset' })).toHaveLength(1));
+    expect(JSON.stringify([target, privateTarget])).toBe(before);
+  });
+
+  it('retains the source branch chart visibility for missing and zero counts', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    renderList([makeTarget(1, { ...target.settings, bound_compounds: 0 }), makeTarget(2)]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Target 2' }));
+    expect(screen.getAllByText('May 5, 2026')).toHaveLength(2);
+    expect(screen.queryByTestId('target-chart')).not.toBeInTheDocument();
+  });
+
+  it('keeps legacy targets as external links without new detail/download controls', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    renderList([{ ...makeTarget(1), isLegacy: true, legacyUrl: 'https://legacy.example/target' }], { legacy: true });
+    expect(await screen.findByRole('link', { name: 'Target 1' })).toHaveAttribute(
+      'href',
+      'https://legacy.example/target'
+    );
+    expect(screen.queryByRole('button', { name: /Expand Target/ })).not.toBeInTheDocument();
+  });
+
+  it('confirms before requesting the source default archive using the actual access string', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    getDownloadStructuresTaskOrUrl.mockResolvedValue({ status: 200, data: { file_url: '/archive.zip' } });
+    renderList();
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Download the full dataset' }));
+    expect(getDownloadStructuresTaskOrUrl).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    expect(getDownloadStructuresTaskOrUrl).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', { name: 'Download the full dataset' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Download' }));
+    await waitFor(() => expect(downloadStructuresZip).toHaveBeenCalledWith('/archive.zip'));
+    expect(getDownloadStructuresTaskOrUrl).toHaveBeenCalledTimes(1);
+    expect(getDownloadStructuresTaskOrUrl).toHaveBeenCalledWith({
+      target_name: 'target-1',
+      target_access_string: 'real-tas-1',
+      proteins: '',
+      event_file: false,
+      sigmaa_file: false,
+      diff_file: false,
+      trans_matrix_info: false,
+      pdb_info: false,
+      mtz_info: false,
+      cif_info: false,
+      map_info: false,
+      single_sdf_file: true,
+      compound_sets: true,
+      soakdb_files: false,
+      all_aligned_structures: true,
+      metadata_info: true,
+      static_link: false,
+      file_url: '',
+      use_zip: true
+    });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('polls a pending archive, prevents duplicate submission, and downloads once', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    jest.useFakeTimers();
+    getDownloadStructuresTaskOrUrl.mockResolvedValue({ status: 200, data: { task_status_url: '/status/1/' } });
+    getDownloadTaskStatusObject
+      .mockResolvedValueOnce({ data: { finished: false } })
+      .mockResolvedValueOnce({ data: { finished: true, status: 'SUCCESS', messages: '/ready.zip' } });
+    renderList();
+    await confirmDownload();
+    expect(screen.getByText('Preparing download…')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Download' })).toBeDisabled();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(getDownloadTaskStatusObject).toHaveBeenCalledTimes(2);
+    expect(getDownloadStructuresTaskOrUrl).toHaveBeenCalledTimes(1);
+    expect(downloadStructuresZip).toHaveBeenCalledTimes(1);
+    expect(downloadStructuresZip).toHaveBeenCalledWith('/ready.zip');
+  });
+
+  it.each([
+    { status: 208, data: {}, message: 'The same download is already being prepared.' },
+    { status: 200, data: {}, message: 'The server returned an unexpected response.' },
+    { error: { response: { data: { message: 'Backend unavailable' } } }, message: 'Backend unavailable' }
+  ])('reports archive preparation errors and allows retry: $message', async scenario => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    if (scenario.error) getDownloadStructuresTaskOrUrl.mockRejectedValue(scenario.error);
+    else getDownloadStructuresTaskOrUrl.mockResolvedValue(scenario);
+    renderList();
+    await confirmDownload();
+    expect(await screen.findByText(scenario.message, { exact: false })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Download' })).toBeEnabled();
+    expect(downloadStructuresZip).not.toHaveBeenCalled();
+  });
+
+  it('reports failed task status without downloading', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    getDownloadStructuresTaskOrUrl.mockResolvedValue({ status: 200, data: { task_status_url: '/status/1/' } });
+    getDownloadTaskStatusObject.mockResolvedValue({
+      data: { finished: true, status: 'FAILURE', messages: 'Archive failed' }
+    });
+    renderList();
+    await confirmDownload();
+    expect(await screen.findByText('Archive failed')).toBeInTheDocument();
+    expect(downloadStructuresZip).not.toHaveBeenCalled();
+  });
+
+  it('ignores a late status success after leaving the landing page', async () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    jest.useFakeTimers();
+    let finish;
+    getDownloadStructuresTaskOrUrl.mockResolvedValue({ status: 200, data: { task_status_url: '/status/1/' } });
+    getDownloadTaskStatusObject.mockReturnValue(
+      new Promise(resolve => {
+        finish = resolve;
+      })
+    );
+    const view = renderList();
+    await confirmDownload();
+    view.unmount();
+    await act(async () => {
+      finish({ data: { finished: true, status: 'SUCCESS', messages: '/late.zip' } });
+      jest.advanceTimersByTime(10000);
+    });
+    expect(downloadStructuresZip).not.toHaveBeenCalled();
+    expect(getDownloadTaskStatusObject).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the installed chart package with the source four-series layout', () => {
+    expect.hasAssertions();
+    jest.clearAllMocks();
+    jest.useRealTimers();
+    const NativeBarChart = jest.requireActual('@mui/x-charts/BarChart').BarChart;
+    // JSDOM omits this browser API, which the installed chart uses for plain gesture options.
+    const originalClone = global.structuredClone;
+    global.structuredClone = value => deserialize(serialize(value));
+    try {
+      render(
+        <ThemeProvider theme={getTheme()}>
+          <NativeBarChart
+            width={800}
+            height={260}
+            layout="horizontal"
+            skipAnimation
+            yAxis={[{ scaleType: 'band', data: ['data'] }]}
+            xAxis={[{ label: 'Count' }]}
+            series={[
+              { label: 'Binding events', data: [40] },
+              { label: 'Bound compounds', data: [30] },
+              { label: 'Affinity measurements', data: [20] },
+              { label: 'Measured compounds', data: [10] }
+            ]}
+          />
+        </ThemeProvider>
+      );
+      expect(screen.getByText('Count')).toBeInTheDocument();
+      expect(screen.getByText('Binding events')).toBeInTheDocument();
+      expect(screen.getByText('Measured compounds')).toBeInTheDocument();
+    } finally {
+      if (originalClone) global.structuredClone = originalClone;
+      else delete global.structuredClone;
+    }
+  });
+});

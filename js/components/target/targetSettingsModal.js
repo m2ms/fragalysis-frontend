@@ -3,7 +3,21 @@
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, GridLegacy as Grid, IconButton, Radio, RadioGroup, TextField, Typography } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControlLabel,
+  GridLegacy as Grid,
+  IconButton,
+  Radio,
+  RadioGroup,
+  TextField,
+  Typography
+} from '@mui/material';
 import { makeStyles } from '../../ui/styles';
 import { Close } from '@mui/icons-material';
 import { base_url } from '../routes/constants';
@@ -64,6 +78,12 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
   const [currentTarget, setCurrentTarget] = useState(null);
   const [electronDensityMapType, setElectronDensityMapType] = useState(DENSITY_MAP_TYPES.EVENT);
   const [electronDensityRenderingMode, setElectronDensityRenderingMode] = useState(MAP_RENDERING_MODES.WIREFRAME);
+
+  const [crystallographicBindingEvents, setCrystallographicBindingEvents] = useState(0);
+  const [boundCompounds, setBoundCompounds] = useState(0);
+  const [associatedAffinityMeasurements, setAssociatedAffinityMeasurements] = useState(0);
+  const [measuredCompounds, setMeasuredCompounds] = useState(0);
+  const [blogUrl, setBlogUrl] = useState('');
 
   const target_on_name = useSelector(state => state.apiReducers.target_on_name);
   const target_on_aliases = useSelector(state => state.apiReducers.target_on_aliases);
@@ -127,6 +147,11 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
     setExternalURLName(target.external_url_display_name);
     setElectronDensityMapType(target.settings?.electron_density_map_type || DENSITY_MAP_TYPES.EVENT);
     setElectronDensityRenderingMode(target.settings?.electron_density_rendering_mode || MAP_RENDERING_MODES.WIREFRAME);
+    setCrystallographicBindingEvents(target.settings?.crystallographic_binding_events || 0);
+    setBoundCompounds(target.settings?.bound_compounds || 0);
+    setAssociatedAffinityMeasurements(target.settings?.associated_affinity_measurements || 0);
+    setMeasuredCompounds(target.settings?.measured_compounds || 0);
+    setBlogUrl(target.settings?.blog_url || '');
     // setElectronDensity(null);
   }, [isTargetOn, target_on_name, target_on_aliases, activeTarget, selectedTarget]);
 
@@ -160,7 +185,12 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
     const updatedSettings = {
       ...(currentTarget?.settings || {}),
       electron_density_map_type: electronDensityMapType,
-      electron_density_rendering_mode: electronDensityRenderingMode
+      electron_density_rendering_mode: electronDensityRenderingMode,
+      crystallographic_binding_events: crystallographicBindingEvents,
+      bound_compounds: boundCompounds,
+      associated_affinity_measurements: associatedAffinityMeasurements,
+      measured_compounds: measuredCompounds,
+      blog_url: blogUrl
     };
     const projectId = currentTarget?.project?.id || currentTarget?.project;
     const projectAlias = alias?.length > 0 ? alias : null;
@@ -490,6 +520,97 @@ export const TargetSettingsModal = memo(({ openModal, onModalClose, isTargetOn =
                     />
                   </RadioGroup>
                 </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
+          <Divider />
+          <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+            <Grid item xs>
+              <Typography variant="body1">Graph Data</Typography>
+            </Grid>
+            <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Grid item xs>
+                <Typography variant="body1">Blog URL</Typography>
+              </Grid>
+              <Grid item xs>
+                {editable ? (
+                  <TextField
+                    value={blogUrl ?? ''}
+                    placeholder="enter blog URL"
+                    onChange={e => setBlogUrl(e.target.value)}
+                    disabled={!editable}
+                  />
+                ) : (
+                  <Typography variant="body1">{blogUrl}</Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Grid item xs>
+                <Typography variant="body1">Crystallographic Binding events</Typography>
+              </Grid>
+              <Grid item xs>
+                {editable ? (
+                  <TextField
+                    value={crystallographicBindingEvents ?? ''}
+                    placeholder="enter crystallographic binding events"
+                    onChange={e => setCrystallographicBindingEvents(e.target.value)}
+                    disabled={!editable}
+                  />
+                ) : (
+                  <Typography variant="body1">{crystallographicBindingEvents}</Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Grid item xs>
+                <Typography variant="body1">Bound Compounds</Typography>
+              </Grid>
+              <Grid item xs>
+                {editable ? (
+                  <TextField
+                    value={boundCompounds ?? ''}
+                    placeholder="enter bound compounds"
+                    onChange={e => setBoundCompounds(e.target.value)}
+                    disabled={!editable}
+                  />
+                ) : (
+                  <Typography variant="body1">{boundCompounds}</Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Grid item xs>
+                <Typography variant="body1">Associated Affinity Measurements</Typography>
+              </Grid>
+              <Grid item xs>
+                {editable ? (
+                  <TextField
+                    value={associatedAffinityMeasurements ?? ''}
+                    placeholder="enter associated affinity measurements"
+                    onChange={e => setAssociatedAffinityMeasurements(e.target.value)}
+                    disabled={!editable}
+                  />
+                ) : (
+                  <Typography variant="body1">{associatedAffinityMeasurements}</Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Grid item container direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+              <Grid item xs>
+                <Typography variant="body1">Measured Compounds</Typography>
+              </Grid>
+              <Grid item xs>
+                {editable ? (
+                  <TextField
+                    value={measuredCompounds ?? ''}
+                    placeholder="enter measured compounds"
+                    onChange={e => setMeasuredCompounds(e.target.value)}
+                    disabled={!editable}
+                  />
+                ) : (
+                  <Typography variant="body1">{measuredCompounds}</Typography>
+                )}
               </Grid>
             </Grid>
           </Grid>

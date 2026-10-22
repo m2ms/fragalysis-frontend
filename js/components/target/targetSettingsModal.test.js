@@ -8,7 +8,7 @@ import { api } from '../../utils/api';
 import { TargetSettingsModal } from './targetSettingsModal';
 
 jest.mock('../../utils/djangoContext', () => ({ DJANGO_CONTEXT: {} }));
-jest.mock('../../utils/api', () => ({ api: jest.fn(), METHOD: { GET: 'GET', PATCH: 'PATCH' } }));
+jest.mock('../../utils/api', () => ({ api: jest.fn(), METHOD: { GET: 'GET', PATCH: 'PATCH', POST: 'POST' } }));
 
 describe('landing graph settings', () => {
   it.each([true, false])(
@@ -41,7 +41,15 @@ describe('landing graph settings', () => {
       };
       const store = legacy_createStore((current = state) => current);
       api.mockImplementation(request =>
-        Promise.resolve({ data: request.method === 'GET' ? { results: [] } : request.data })
+        Promise.resolve({
+          data: request.url.includes('/target-blogs/')
+            ? request.method === 'GET'
+              ? { results: [{ id: 7, target: 1, title: 'Blog', url: 'https://example.org/api-blog' }] }
+              : { id: 7, target: 1, ...request.data }
+            : request.method === 'GET'
+            ? { results: [] }
+            : request.data
+        })
       );
       const onClose = jest.fn();
       render(
@@ -51,7 +59,8 @@ describe('landing graph settings', () => {
           </ThemeProvider>
         </Provider>
       );
-      expect(await screen.findByText('https://example.org/blog')).toBeInTheDocument();
+      expect(await screen.findByText('https://example.org/api-blog')).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled());
       fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
       expect(screen.getByPlaceholderText('enter measured compounds')).toHaveValue('10');
       fireEvent.change(screen.getByPlaceholderText('enter blog URL'), {
@@ -72,9 +81,16 @@ describe('landing graph settings', () => {
               bound_compounds: 30,
               associated_affinity_measurements: 20,
               measured_compounds: '15',
-              blog_url: 'https://example.org/new-blog'
+              blog_url: 'https://example.org/blog'
             })
           })
+        })
+      );
+      expect(api).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('/api/target-blogs/7/'),
+          method: 'PATCH',
+          data: expect.objectContaining({ url: 'https://example.org/new-blog' })
         })
       );
       expect(api).toHaveBeenCalledWith(

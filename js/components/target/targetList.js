@@ -2,7 +2,7 @@
  * Created by abradley on 13/03/2018.
  */
 
-import React, { memo, useState, useEffect, useCallback } from 'react';
+import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   Table,
@@ -51,7 +51,8 @@ import RichTooltip from '../tooltip/RichTooltip';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
 import { TargetAccessAction } from '../access/TargetAccessAction';
 import { canInspectAccess } from '../access/accessUtils';
-import { BarChart } from '@mui/x-charts/BarChart';
+import { TargetDetails } from './TargetDetails';
+import { fetchTargetBlog } from './targetBlogApi';
 import {
   downloadStructuresZip,
   getDownloadStructuresTaskOrUrl,
@@ -150,20 +151,31 @@ const useStyles = makeStyles(theme => ({
     width: 260,
     height: 172,
     objectFit: 'cover',
-    borderRadius: 12,
-    background: 'linear-gradient(135deg, #f07d7d, #7651cf 45%, #df5f9e)'
+    borderRadius: 12
+  },
+  dropdownWithoutImage: {
+    gridTemplateColumns: 'minmax(360px, 1fr) minmax(420px, 0.8fr)',
+    [theme.breakpoints.down('md')]: {
+      gridTemplateColumns: '1fr'
+    }
   },
   dropdownDate: {
     color: '#0077a5',
     fontStyle: 'italic'
   },
   dropdownTitle: {
+    display: 'block',
     color: '#003b60',
     lineHeight: 1.1,
-    marginBottom: theme.spacing(1)
+    marginBottom: theme.spacing(1),
+    textDecoration: 'none',
+    '&:hover': {
+      textDecoration: 'underline'
+    }
   },
   dropdownText: {
-    color: '#0077a5'
+    color: '#0077a5',
+    whiteSpace: 'pre-wrap'
   },
   dropdownButton: {
     marginTop: theme.spacing(2),
@@ -188,6 +200,19 @@ const HeaderControlCell = ({ children }) => (
 export const TargetList = memo(({ list = [], title = 'Target list', authRequired = false, legacy = false }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
+  // Keep blog reads and image URLs stable for this landing-page visit, including across pagination.
+  const blogCache = useRef(new Map());
+  const imageRefreshToken = useRef(Date.now());
+  const loadBlog = useCallback(targetId => {
+    if (!blogCache.current.has(targetId)) {
+      const request = fetchTargetBlog(targetId).catch(error => {
+        blogCache.current.delete(targetId);
+        throw error;
+      });
+      blogCache.current.set(targetId, request);
+    }
+    return blogCache.current.get(targetId);
+  }, []);
   const [initList, setInitList] = useState([]);
   const [targetList, setTargetList] = useState([]);
   const [expandedTargets, setExpandedTargets] = useState({});
@@ -601,103 +626,6 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
     }
   }
 
-  const renderStaticDropdown = useCallback(
-    target => {
-      const settings = target.settings ? target.settings : null;
-      const renderChart =
-        settings?.measured_compounds &&
-        settings?.crystallographic_binding_events &&
-        settings?.bound_compounds &&
-        settings?.associated_affinity_measurements;
-
-      return (
-        <div className={classes.dropdownContent}>
-          <div className={classes.dropdownImage} />
-
-          <div>
-            <Typography className={classes.dropdownDate} variant="body2">
-              May 5, 2026
-            </Typography>
-            <Typography className={classes.dropdownTitle} variant="h5">
-              Blog: Inside OpenBind's First Public Data Release:
-              <br />
-              The Real Process Behind the Data Generation
-            </Typography>
-            <Typography className={classes.dropdownText} variant="body2">
-              This post outlines the experimental and structural biology work underpinning OpenBind's first data
-              release, from protein production and crystallography through to model building and refinement.
-            </Typography>
-            <button className={classes.dropdownButton} onClick={() => openTargetDownloadConfirmation(target)}>
-              Download the full dataset
-            </button>
-          </div>
-          {renderChart && (
-            <BarChart
-              layout="horizontal"
-              height={260}
-              yAxis={[
-                {
-                  scaleType: 'band',
-                  data: ['data'],
-                  width: 140,
-                  barGapRatio: 0.5
-                }
-              ]}
-              xAxis={[
-                {
-                  label: 'Count'
-                }
-              ]}
-              series={[
-                {
-                  id: 'binding-events',
-                  label: 'Binding events',
-                  data: [settings?.crystallographic_binding_events ?? 0],
-                  color: '#1976d2'
-                },
-                {
-                  id: 'bound-compounds',
-                  label: 'Bound compounds',
-                  data: [settings?.bound_compounds ?? 0],
-                  color: '#64b5f6'
-                },
-                {
-                  id: 'affinity-measurements',
-                  label: 'Affinity measurements',
-                  data: [settings?.associated_affinity_measurements ?? 0],
-                  color: '#7b1fa2'
-                },
-                {
-                  id: 'measured-compounds',
-                  label: 'Measured compounds',
-                  data: [settings?.measured_compounds ?? 0],
-                  color: '#ba68c8'
-                }
-              ]}
-              margin={{
-                top: 70,
-                right: 30,
-                bottom: 50,
-                left: 20
-              }}
-              slotProps={{
-                legend: {
-                  direction: 'horizontal',
-                  position: {
-                    vertical: 'top',
-                    horizontal: 'center'
-                  }
-                }
-              }}
-              borderRadius={4}
-            />
-          )}
-        </div>
-      );
-    },
-    [classes, openTargetDownloadConfirmation]
-  );
-
   const render_item_method = useCallback(
     (target, index) => {
       let preview;
@@ -823,7 +751,13 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
             <TableRow>
               <TableCell className={classes.dropdownCell} colSpan={100}>
                 <Collapse in={isExpanded} timeout={240} unmountOnExit>
-                  {renderStaticDropdown(target)}
+                  <TargetDetails
+                    target={target}
+                    classes={classes}
+                    onDownload={openTargetDownloadConfirmation}
+                    loadBlog={loadBlog}
+                    imageRefreshToken={imageRefreshToken.current}
+                  />
                 </Collapse>
               </TableCell>
             </TableRow>
@@ -831,7 +765,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
         </React.Fragment>
       );
     },
-    [classes, dispatch, expandedTargets, legacy, title, renderStaticDropdown]
+    [classes, dispatch, expandedTargets, legacy, title, openTargetDownloadConfirmation, loadBlog]
   );
 
   // window height for showing rows per page

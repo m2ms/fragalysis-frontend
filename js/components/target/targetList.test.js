@@ -8,6 +8,7 @@ import { ThemeProvider } from '../../ui/styles';
 import { getTheme } from '../../theme';
 import { TargetList } from './targetList';
 import { BarChart } from '@mui/x-charts/BarChart';
+import { fetchTargetBlog } from './targetBlogApi';
 import {
   downloadStructuresZip,
   getDownloadStructuresTaskOrUrl,
@@ -23,6 +24,10 @@ jest.mock('./redux/dispatchActions', () => ({
 }));
 jest.mock('@mui/x-charts/BarChart', () => ({
   BarChart: jest.fn(() => <div data-testid="target-chart" />)
+}));
+jest.mock('./targetBlogApi', () => ({
+  ...jest.requireActual('./targetBlogApi'),
+  fetchTargetBlog: jest.fn()
 }));
 jest.mock('../snapshot/api/api', () => ({
   downloadStructuresZip: jest.fn(),
@@ -52,10 +57,43 @@ const target = makeTarget(1, {
   measured_compounds: 10,
   blog_url: 'https://example.org/a-future-blog'
 });
-const renderList = (list = [target], props = {}) => {
+const blogs = [
+  {
+    id: 11,
+    target: 1,
+    title: 'Public target blog',
+    published: '2026-05-11',
+    overview: 'Public target overview',
+    image: 'https://example.org/public.png',
+    url: 'https://example.org/public-blog'
+  },
+  {
+    id: 12,
+    target: 2,
+    title: 'Private target blog',
+    published: '2026-05-12',
+    overview: 'Private target overview',
+    image: 'https://example.org/private.png',
+    url: 'https://example.org/private-blog'
+  }
+];
+const renderList = (
+  list = [target],
+  props = {},
+  loadBlog = id => Promise.resolve(blogs.find(blog => blog.target === id) || null)
+) => {
+  fetchTargetBlog.mockReset().mockImplementation(loadBlog);
   const state = { targetReducers: { projects: [] }, selectionReducers: {} };
-  const store = legacy_createStore((current = state) => current);
-  return render(
+  const store = legacy_createStore((current = state, action) =>
+    action.type === 'test/edit'
+      ? {
+          ...current,
+          targetReducers: { ...current.targetReducers, isEditTargetDialogOpen: action.open },
+          selectionReducers: { targetToEdit: action.open ? target : null }
+        }
+      : current
+  );
+  const view = render(
     <StrictMode>
       <Provider store={store}>
         <ThemeProvider theme={getTheme()}>
@@ -66,6 +104,7 @@ const renderList = (list = [target], props = {}) => {
       </Provider>
     </StrictMode>
   );
+  return { ...view, store };
 };
 const confirmDownload = async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
@@ -76,7 +115,7 @@ const confirmDownload = async () => {
 };
 
 describe('landing target details and downloads', () => {
-  it('expands public/private rows independently, preserving placeholder content, aliases, and target links', async () => {
+  it('displays each public/private blog with a new-tab title link, preserving aliases and target links', async () => {
     expect.hasAssertions();
     jest.clearAllMocks();
     jest.useRealTimers();
@@ -89,12 +128,24 @@ describe('landing target details and downloads', () => {
     );
     expect(screen.getByText('Alias 1')).toBeInTheDocument();
     expect(getDownloadStructuresTaskOrUrl).not.toHaveBeenCalled();
+    expect(fetchTargetBlog).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Expand Target 1' }));
-    expect(await screen.findByText('May 5, 2026')).toBeInTheDocument();
-    expect(screen.getByText(/Blog: Inside OpenBind's First Public Data Release:/)).toBeInTheDocument();
+    expect(await screen.findByText('May 11, 2026')).toHaveAttribute('datetime', '2026-05-11');
+    const blogLink = screen.getByRole('link', { name: blogs[0].title });
+    expect(blogLink).toHaveAttribute('href', blogs[0].url);
+    expect(blogLink).toHaveAttribute('target', '_blank');
+    expect(blogLink).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByText(blogs[0].overview)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Blog preview for Target 1' })).toHaveAttribute('src', blogs[0].image);
     expect(screen.queryByText(target.settings.blog_url)).not.toBeInTheDocument();
     expect(BarChart.mock.calls.at(-1)[0].series.map(series => series.data[0])).toStrictEqual([40, 30, 20, 10]);
     fireEvent.click(screen.getByRole('button', { name: 'Expand Target 2' }));
+    expect(await screen.findByRole('link', { name: blogs[1].title })).toHaveAttribute('href', blogs[1].url);
+    expect(screen.getByText('May 12, 2026')).toBeInTheDocument();
+    expect(screen.getByText(blogs[1].overview)).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Blog preview for Target 2' })).toHaveAttribute('src', blogs[1].image);
+    expect(fetchTargetBlog).toHaveBeenCalledWith(1);
+    expect(fetchTargetBlog).toHaveBeenCalledWith(2);
     expect(screen.getAllByRole('button', { name: 'Download the full dataset' })).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Collapse Target 1' })).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(screen.getByRole('button', { name: 'Collapse Target 1' }));
@@ -109,8 +160,40 @@ describe('landing target details and downloads', () => {
     renderList([makeTarget(1, { ...target.settings, bound_compounds: 0 }), makeTarget(2)]);
     fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
     fireEvent.click(screen.getByRole('button', { name: 'Expand Target 2' }));
-    expect(screen.getAllByText('May 5, 2026')).toHaveLength(2);
+    expect(await screen.findByRole('link', { name: blogs[1].title })).toBeInTheDocument();
     expect(screen.queryByTestId('target-chart')).not.toBeInTheDocument();
+  });
+
+  it('reuses the blog and thumbnail URL after collapsing and reopening a target', async () => {
+    expect.hasAssertions();
+    renderList([target], {}, () =>
+      Promise.resolve({ ...blogs[0], image: 'https://localhost/media/target_blog/11/' })
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    const originalImage = await screen.findByRole('img', { name: 'Blog preview for Target 1' });
+    const originalUrl = originalImage.getAttribute('src');
+    expect(new URL(originalUrl).searchParams.get('__cacheBust')).toMatch(/^\d+$/);
+    expect(fetchTargetBlog).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Target 1' }));
+    await waitFor(() => expect(originalImage).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByRole('img', { name: 'Blog preview for Target 1' })).toHaveAttribute('src', originalUrl);
+    expect(fetchTargetBlog).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses an in-flight blog request when a target is reopened before the response arrives', async () => {
+    expect.hasAssertions();
+    let finish;
+    renderList([target], {}, () => new Promise(resolve => (finish = resolve)));
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByText('Loading blog…')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Target 1' }));
+    await waitFor(() => expect(screen.queryByText('Loading blog…')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByText('Loading blog…')).toBeInTheDocument();
+    expect(fetchTargetBlog).toHaveBeenCalledTimes(1);
+    await act(async () => finish(blogs[0]));
+    expect(await screen.findByRole('link', { name: blogs[0].title })).toBeInTheDocument();
   });
 
   it('keeps legacy targets as external links without new detail/download controls', async () => {
@@ -123,6 +206,63 @@ describe('landing target details and downloads', () => {
       'https://legacy.example/target'
     );
     expect(screen.queryByRole('button', { name: /Expand Target/ })).not.toBeInTheDocument();
+    expect(fetchTargetBlog).not.toHaveBeenCalled();
+  });
+
+  it('keeps downloads and chart data when no blog exists, without showing the old placeholders or URL fallback', async () => {
+    expect.hasAssertions();
+    renderList([target], {}, () => Promise.resolve(null));
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByText('No blog has been added.')).toBeInTheDocument();
+    expect(screen.queryByText(/Inside OpenBind's First Public Data Release/)).not.toBeInTheDocument();
+    expect(screen.queryByText('May 5, 2026')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /blog/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Download the full dataset' })).toBeInTheDocument();
+    expect(screen.getByTestId('target-chart')).toBeInTheDocument();
+  });
+
+  it('renders a blog without optional image, publication date, or overview', async () => {
+    expect.hasAssertions();
+    renderList([target], {}, () => Promise.resolve({ ...blogs[0], image: null, published: null, overview: '' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByRole('link', { name: blogs[0].title })).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByText('May 11, 2026')).not.toBeInTheDocument();
+    expect(screen.queryByText(blogs[0].overview)).not.toBeInTheDocument();
+  });
+
+  it('retries a blog load error while keeping dataset controls available', async () => {
+    expect.hasAssertions();
+    const loadBlog = jest.fn().mockResolvedValue(blogs[0]);
+    loadBlog.mockRejectedValueOnce(new Error('Blog service unavailable'));
+    renderList([target], {}, loadBlog);
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Blog service unavailable');
+    expect(screen.getByRole('button', { name: 'Download the full dataset' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry loading blog' }));
+    expect(await screen.findByRole('link', { name: blogs[0].title })).toBeInTheDocument();
+    expect(fetchTargetBlog).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps cached blog data until the landing page is revisited', async () => {
+    expect.hasAssertions();
+    const view = renderList();
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByRole('link', { name: blogs[0].title })).toBeInTheDocument();
+    await act(async () => view.store.dispatch({ type: 'test/edit', open: true }));
+    fetchTargetBlog.mockResolvedValue({ ...blogs[0], title: 'Updated title', url: 'https://example.org/updated' });
+    await act(async () => view.store.dispatch({ type: 'test/edit', open: false }));
+    expect(await screen.findByRole('link', { name: blogs[0].title })).toHaveAttribute('href', blogs[0].url);
+    expect(fetchTargetBlog).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('link', { name: 'Updated title' })).not.toBeInTheDocument();
+    view.unmount();
+    renderList([target], {}, () =>
+      Promise.resolve({ ...blogs[0], title: 'Updated title', url: 'https://example.org/updated' })
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand Target 1' }));
+    expect(await screen.findByRole('link', { name: 'Updated title' })).toHaveAttribute('href', 'https://example.org/updated');
+    expect(screen.queryByRole('link', { name: blogs[0].title })).not.toBeInTheDocument();
   });
 
   it('confirms before requesting the source default archive using the actual access string', async () => {

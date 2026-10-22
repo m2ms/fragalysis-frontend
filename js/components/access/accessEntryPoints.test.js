@@ -67,7 +67,10 @@ describe('access inspection entry points', () => {
     api.mockReset();
     api.mockImplementation(({ url }) =>
       Promise.resolve({
-        data: url.includes('compound-identifier-types') ? { results: [] } : { ping: 'OK', users: ['member1'] }
+        data:
+          url.includes('compound-identifier-types') || url.includes('target-blogs')
+            ? { results: [] }
+            : { ping: 'OK', users: ['member1'] }
       })
     );
   };

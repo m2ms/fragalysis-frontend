@@ -28,7 +28,7 @@ export const TargetDetails = ({ target, classes, onDownload, loadBlog, imageRefr
       {imageUrl && (
         <img className={classes.dropdownImage} src={imageUrl} alt={`Blog preview for ${target.display_name}`} />
       )}
-      <div>
+      <div className={classes.dropdownBlog}>
         {blog.status === 'loading' && <Typography role="status">Loading blog…</Typography>}
         {blog.status === 'error' && (
           <Alert severity="error">
@@ -59,26 +59,33 @@ export const TargetDetails = ({ target, classes, onDownload, loadBlog, imageRefr
             >
               {blog.record.title}
             </Typography>
-            {blog.record.overview && (
-              <Typography className={classes.dropdownText} variant="body2">
-                {blog.record.overview}
-              </Typography>
-            )}
           </>
         )}
-        <button className={classes.dropdownButton} onClick={() => onDownload(target)}>
-          Download the full dataset
-        </button>
+        <div
+          className={classes.dropdownOverview}
+          role="region"
+          aria-label={`Blog overview for ${target.display_name}`}
+          tabIndex={0}
+        >
+          {blog.status === 'ready' && blog.record?.overview && (
+            <Typography className={classes.dropdownText} variant="body2">
+              {blog.record.overview}
+            </Typography>
+          )}
+          <button className={classes.dropdownButton} onClick={() => onDownload(target)}>
+            Download the full dataset
+          </button>
+        </div>
       </div>
       {renderChart && (
         <BarChart
           layout="horizontal"
-          height={260}
+          height={210}
           yAxis={[
             {
               scaleType: 'band',
               data: [''],
-              width: 140,
+              width: 0,
               barGapRatio: 0.5
             }
           ]}
@@ -109,7 +116,7 @@ export const TargetDetails = ({ target, classes, onDownload, loadBlog, imageRefr
               color: '#ba68c8'
             }
           ]}
-          margin={{ top: 70, right: 30, bottom: 50, left: 20 }}
+          margin={{ top: 70, right: 30, bottom: 0, left: 20 }}
           slotProps={{
             legend: {
               direction: 'horizontal',

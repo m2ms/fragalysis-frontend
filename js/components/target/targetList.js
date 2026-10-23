@@ -61,6 +61,9 @@ import {
 
 const DOWNLOAD_STATUS_POLL_INTERVAL = 5000;
 
+const getTargetKey = target =>
+  target.isLegacy ? `${target.title}-legacy` : `${target.id}-${target.project.target_access_string}`;
+
 const createDefaultTargetDownloadRequest = target => ({
   target_name: target.title,
   target_access_string: target.project?.target_access_string,
@@ -125,6 +128,11 @@ const useStyles = makeStyles(theme => ({
   expandButton: {
     padding: 0
   },
+  toggleAllButton: {
+    marginRight: theme.spacing(1),
+    textTransform: 'none',
+    whiteSpace: 'nowrap'
+  },
   dropdownCell: {
     padding: '0px !important',
     borderBottom: '1px solid #e6e8ef',
@@ -133,13 +141,10 @@ const useStyles = makeStyles(theme => ({
   dropdownContent: {
     display: 'grid',
     gridTemplateColumns: '260px minmax(360px, 1fr) minmax(420px, 0.8fr)',
-    alignItems: 'center',
+    alignItems: 'start',
     gap: theme.spacing(3),
-    // The chart is 260px tall; allow another 32px for the vertical padding.
-    maxHeight: 292,
     boxSizing: 'border-box',
-    overflow: 'auto',
-    padding: theme.spacing(2),
+    padding: theme.spacing(2, 2, 0),
     [theme.breakpoints.down('md')]: {
       gridTemplateColumns: '260px 1fr'
     },
@@ -158,6 +163,18 @@ const useStyles = makeStyles(theme => ({
     [theme.breakpoints.down('md')]: {
       gridTemplateColumns: '1fr'
     }
+  },
+  dropdownBlog: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    minHeight: 0,
+    maxHeight: 260
+  },
+  dropdownOverview: {
+    minHeight: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden'
   },
   dropdownDate: {
     color: '#0077a5',
@@ -216,6 +233,18 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
   const [initList, setInitList] = useState([]);
   const [targetList, setTargetList] = useState([]);
   const [expandedTargets, setExpandedTargets] = useState({});
+  const detailTargets = initList.filter(target => !target.isLegacy);
+  const hasExpandedTargets = detailTargets.some(target => expandedTargets[getTargetKey(target)] !== false);
+  const toggleAllTargetDetails = () => {
+    setExpandedTargets(current => {
+      const expand = !detailTargets.some(target => current[getTargetKey(target)] !== false);
+      const updated = { ...current };
+      detailTargets.forEach(target => {
+        updated[getTargetKey(target)] = expand;
+      });
+      return updated;
+    });
+  };
   const [targetToDownload, setTargetToDownload] = useState(null);
   const [downloadPreparing, setDownloadPreparing] = useState(false);
   const [downloadError, setDownloadError] = useState('');
@@ -635,10 +664,8 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
         preview = `${URLS.target}${target.title}/${URL_TOKENS.target_access_string}/${target.project.target_access_string}`;
       }
       const targetTitleId = title.replace(/\s+/g, '-').toLowerCase();
-      const targetKey = target.isLegacy
-        ? `${target.title}-legacy`
-        : `${target.id}-${target.project.target_access_string}`;
-      const isExpanded = expandedTargets[targetKey] === true;
+      const targetKey = getTargetKey(target);
+      const isExpanded = expandedTargets[targetKey] !== false;
 
       return (
         <React.Fragment key={targetKey}>
@@ -722,7 +749,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
                   className={classes.expandButton}
                   aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${target.display_name}`}
                   aria-expanded={isExpanded}
-                  onClick={() => setExpandedTargets(current => ({ ...current, [targetKey]: !current[targetKey] }))}
+                  onClick={() => setExpandedTargets(current => ({ ...current, [targetKey]: current[targetKey] === false }))}
                 >
                   {isExpanded ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
                 </IconButton>
@@ -969,6 +996,19 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
               }}
               onChange={handleSearch}
             />,
+            !legacy && (
+              <Button
+                className={classes.toggleAllButton}
+                variant="text"
+                color="inherit"
+                size="small"
+                aria-label={`${hasExpandedTargets ? 'Collapse' : 'Expand'} all ${title.toLowerCase()}`}
+                disabled={detailTargets.length === 0}
+                onClick={toggleAllTargetDetails}
+              >
+                {hasExpandedTargets ? 'Collapse all' : 'Expand all'}
+              </Button>
+            ),
             <IconButton
               id={title.replace(/\s+/g, '-').toLowerCase() + '-filter'}
               onClick={event => {

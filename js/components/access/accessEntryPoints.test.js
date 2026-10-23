@@ -75,13 +75,13 @@ describe('access inspection entry points', () => {
     );
   };
 
-  it('opens public and private landing-page lookups without navigating or fetching ahead of a click', async () => {
+  it('opens public and private landing-page lookups without navigating or fetching access ahead of a click', async () => {
     expect.hasAssertions();
     resetMocks();
     const user = userEvent.setup();
     renderWithState(<TargetList list={targets} />);
     const publicButton = await screen.findByRole('button', { name: 'Who can see this data: Public target' });
-    expect(api).not.toHaveBeenCalled();
+    expect(api).not.toHaveBeenCalledWith(expect.objectContaining({ params: { tas: expect.any(String) } }));
     await user.click(publicButton);
     expect(await screen.findByRole('dialog', { name: 'Who can see this data' })).toHaveTextContent('member1');
     expect(screen.getByText(/This target is publicly accessible/)).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe('access inspection entry points', () => {
     expect(screen.queryByText(/This target is publicly accessible/)).not.toBeInTheDocument();
     expect(api).toHaveBeenLastCalledWith(expect.objectContaining({ params: { tas: 'private-tas' } }));
     expect(screen.getByTestId('location')).toHaveTextContent('/viewer/react/landing/');
-    expect(api).toHaveBeenCalledTimes(2);
+    expect(api.mock.calls.filter(([request]) => request.params?.tas)).toHaveLength(2);
   });
 
   it('hides landing-page access actions for logged-out users', async () => {
@@ -103,7 +103,7 @@ describe('access inspection entry points', () => {
     renderWithState(<TargetList list={targets} />);
     expect(await screen.findByRole('link', { name: 'Public target' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Who can see this data/ })).not.toBeInTheDocument();
-    expect(api).not.toHaveBeenCalled();
+    expect(api).not.toHaveBeenCalledWith(expect.objectContaining({ params: { tas: expect.any(String) } }));
   });
 
   it.each([true, false])(

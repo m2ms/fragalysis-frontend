@@ -194,9 +194,16 @@ const useStyles = makeStyles(theme => ({
     color: '#0077a5',
     whiteSpace: 'pre-wrap'
   },
-  dropdownButton: {
+  dropdownActions: {
+    display: 'flex',
+    gap: theme.spacing(1),
     marginTop: theme.spacing(2),
-    padding: theme.spacing(0.75, 4),
+    alignItems: 'center'
+  },
+  dropdownButton: {
+    padding: theme.spacing(0.75, 2),
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
     backgroundColor: '#3f51b5',
     color: '#ffffff',
     fontWeight: 700,
@@ -780,6 +787,7 @@ export const TargetList = memo(({ list = [], title = 'Target list', authRequired
                 <Collapse in={isExpanded} timeout={240} unmountOnExit>
                   <TargetDetails
                     target={target}
+                    preview={preview}
                     classes={classes}
                     onDownload={openTargetDownloadConfirmation}
                     loadBlog={loadBlog}

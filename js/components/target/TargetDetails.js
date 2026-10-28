@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import { Alert, Button, Typography } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import moment from 'moment';
 import { targetBlogImageUrl } from './targetBlogApi';
 import { useTargetBlog } from './useTargetBlog';
 
-export const TargetDetails = ({ target, classes, onDownload, loadBlog, imageRefreshToken }) => {
+export const TargetDetails = ({ target, preview, classes, onDownload, loadBlog, imageRefreshToken }) => {
   const isEditing = useSelector(
     state =>
       Boolean(state.targetReducers?.isEditTargetDialogOpen) && state.selectionReducers?.targetToEdit?.id === target.id
@@ -72,9 +73,14 @@ export const TargetDetails = ({ target, classes, onDownload, loadBlog, imageRefr
               {blog.record.overview}
             </Typography>
           )}
-          <button className={classes.dropdownButton} onClick={() => onDownload(target)}>
-            Download the full dataset
-          </button>
+          <div className={classes.dropdownActions}>
+            <Button component={Link} to={preview} className={classes.dropdownButton} variant="contained">
+              Go to target
+            </Button>
+            <Button className={classes.dropdownButton} onClick={() => onDownload(target)} variant="contained">
+              Download the full dataset
+            </Button>
+          </div>
         </div>
       </div>
       {renderChart && (

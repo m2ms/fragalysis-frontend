@@ -125,6 +125,13 @@ describe('landing target details and downloads', () => {
       '/viewer/react/preview/target/target-1/tas/real-tas-1'
     );
     expect(screen.getByText('Alias 1')).toBeInTheDocument();
+    for (const id of [1, 2]) {
+      const previewLink = within(screen.getByRole('region', { name: `Blog overview for Target ${id}` })).getByRole(
+        'link',
+        { name: 'Go to target' }
+      );
+      expect(previewLink).toHaveAttribute('href', screen.getByRole('link', { name: `Target ${id}` }).getAttribute('href'));
+    }
     expect(getDownloadStructuresTaskOrUrl).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Collapse Target 1' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('button', { name: 'Collapse Target 2' })).toHaveAttribute('aria-expanded', 'true');

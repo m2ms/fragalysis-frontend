@@ -4,9 +4,25 @@ import { ThemeProvider } from '../../../ui/styles';
 import { getTheme } from '../../../theme';
 import { ReviewWorkspace } from './ReviewWorkspace';
 import { ReviewButton } from './ReviewButton';
+import { Provider } from 'react-redux';
+import { legacy_createStore, combineReducers } from 'redux';
+import { selectionReducers } from '../../../reducers/selection/selectionReducers';
+import { reloadSelectionReducer } from '../../../reducers/selection/actions';
+import { normalizeReviewSettings } from '../../../constants/reviewSettings';
+import { ReviewDesignDbAction } from './ReviewDesignDbAction';
+
+jest.mock('../../../utils/djangoContext', () => ({ DJANGO_CONTEXT: { pk: 7 } }));
 
 const panels = {
-  rhs: { title: 'Design review', content: <p>RHS content</p> },
+  rhs: {
+    title: 'Design review',
+    content: (
+      <>
+        <p>RHS content</p>
+        <ReviewDesignDbAction />
+      </>
+    )
+  },
   lhs: { title: 'Hit review', content: <p>LHS content</p> }
 };
 
@@ -28,15 +44,18 @@ const setup = (disabled = false, includeLhs = false) => {
   const observe = jest.spyOn(TestResizeObserver.prototype, 'observe');
   const disconnect = jest.spyOn(TestResizeObserver.prototype, 'disconnect');
   global.ResizeObserver = TestResizeObserver;
+  const store = legacy_createStore(combineReducers({ selectionReducers }));
   const view = render(
-    <ThemeProvider theme={getTheme()}>
-      <ReviewWorkspace panels={panels}>
-        <div data-testid="navigator">
-          <ReviewButton side="rhs" disabled={disabled} />
-        </div>
-        {includeLhs && <ReviewButton side="lhs" />}
-      </ReviewWorkspace>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={getTheme()}>
+        <ReviewWorkspace panels={panels}>
+          <div data-testid="navigator">
+            <ReviewButton side="rhs" disabled={disabled} />
+          </div>
+          {includeLhs && <ReviewButton side="lhs" />}
+        </ReviewWorkspace>
+      </ThemeProvider>
+    </Provider>
   );
   const root = observe.mock.calls[0][0];
   let height = 800;
@@ -44,6 +63,7 @@ const setup = (disabled = false, includeLhs = false) => {
   act(() => observers[0].notify());
   return {
     ...view,
+    store,
     observer: observers[0],
     disconnect,
     cleanup: () => {
@@ -60,6 +80,45 @@ const setup = (disabled = false, includeLhs = false) => {
 };
 
 describe('review workspace', () => {
+  it('restores panel ownership, height and ordering without remounting the upper workspace, and defaults old snapshots', () => {
+    expect.hasAssertions();
+    const view = setup(false, true);
+    try {
+      const navigator = screen.getByTestId('navigator');
+      act(() =>
+        view.store.dispatch(
+          reloadSelectionReducer({
+            review: {
+              owner: 'rhs',
+              open: true,
+              height: 430,
+              orderingBySide: { rhs: { sortOption: 'COMPOUND_CODE', ascending: false } }
+            }
+          })
+        )
+      );
+      expect(screen.getByRole('region', { name: 'Design review' }).parentElement.style.height).toBe('430px');
+      expect(view.store.getState().selectionReducers.review.orderingBySide.rhs.ascending).toBe(false);
+      fireEvent.click(screen.getByRole('button', { name: 'Push to DesignDB' }));
+      expect(screen.getByRole('dialog', { name: 'WARNING! Coming soon' })).toBeInTheDocument();
+      act(() => view.store.dispatch(reloadSelectionReducer(view.store.getState().selectionReducers)));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Close review panel' }));
+      expect(view.store.getState().selectionReducers.review).toMatchObject({ owner: 'rhs', open: false, height: 430 });
+      act(() => view.store.dispatch(reloadSelectionReducer({ review: { owner: 'lhs', open: true, height: 400 } })));
+      expect(screen.getByRole('region', { name: 'Hit review' })).toBeVisible();
+      expect(screen.getByTestId('navigator')).toBe(navigator);
+      act(() => view.store.dispatch(reloadSelectionReducer({})));
+      expect(screen.queryByRole('region')).not.toBeInTheDocument();
+      expect(view.store.getState().selectionReducers.review).toStrictEqual(normalizeReviewSettings());
+      fireEvent.click(screen.getAllByRole('button', { name: 'Review', exact: true })[0]);
+      expect(screen.getByRole('region', { name: 'Design review' }).parentElement.style.height).toBe('376px');
+      expect(screen.getByTestId('navigator')).toBe(navigator);
+    } finally {
+      view.cleanup();
+    }
+  });
+
   it('retains the resized height across both closing actions and clamps temporary smaller workspaces', () => {
     expect.hasAssertions();
     const view = setup();
@@ -70,7 +129,7 @@ describe('review workspace', () => {
       expect(button).toHaveAttribute('aria-expanded', 'false');
       fireEvent.click(button);
       expect(button).toHaveAttribute('aria-expanded', 'true');
-      expect(panelHeight()).toBe('336px');
+      expect(panelHeight()).toBe('376px');
       const divider = screen.getByRole('separator');
       fireEvent.mouseDown(divider, { button: 0 });
       fireEvent.mouseMove(window, { clientY: 450 });
@@ -96,7 +155,7 @@ describe('review workspace', () => {
       fireEvent.mouseDown(screen.getByRole('separator'), { button: 0 });
       fireEvent.mouseMove(window, { clientY: 1000 });
       fireEvent.mouseUp(window);
-      expect(panelHeight()).toBe('120px');
+      expect(panelHeight()).toBe('160px');
       view.unmount();
       expect(view.disconnect).toHaveBeenCalledTimes(1);
       act(() => view.observer.notify());

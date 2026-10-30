@@ -26,7 +26,12 @@
         "centerOn": "Center on",
         "setGrade": "Set the main status for {{label}} to {{colour}} immediately",
         "gradeLogin": "Log in to change the main status. Quality summaries remain available",
-        "gradePending": "Saving the main status for {{label}}"
+        "gradePending": "Saving the main status for {{label}}",
+        "mainStatusFilter": "Filter both design lists by {{grade}} main status. Selecting several colours includes any of them; clearing every colour removes this filter. Displayed designs stay in Review",
+        "pushToDesignDb": "Preview the Push to DesignDB warning. Coming soon; no data will be sent",
+        "pushToDesignDbLogin": "Log in to preview Push to DesignDB. This feature is coming soon",
+        "designDbComingSoon": "Coming soon. Pushing to DesignDB is not available yet",
+        "designDbCancel": "Close without pushing to DesignDB"
       },
       "downloadStructures": {
         "copyJson": {

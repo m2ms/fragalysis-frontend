@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { applyMiddleware, combineReducers, legacy_createStore } from 'redux';
 import { thunk } from 'redux-thunk';
@@ -10,6 +10,7 @@ import { selectionReducers } from '../../../reducers/selection/selectionReducers
 import {
   setCoordinateFilterResults,
   setIsCoordinateFilterApplied,
+  reloadSelectionReducer,
   setShowDisplayedMolecules,
   setUnifiedFilterItem
 } from '../../../reducers/selection/actions';
@@ -28,6 +29,10 @@ import { RhsReviewPanel } from './RhsReviewPanel';
 import { ReviewContext } from './ReviewContext';
 import { RHS_REVIEW_VIEW_CONFIG, useRhsObservationResult } from './useRhsObservationResult';
 import { ToastContext } from '../../toast';
+import apiReducers from '../../../reducers/api/apiReducers';
+import { constants as apiConstants } from '../../../reducers/api/constants';
+import { addQualityStatus } from '../../../reducers/api/actions';
+import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 
 jest.mock('../../../utils/djangoContext', () => ({ DJANGO_CONTEXT: { pk: 7 } }));
 jest.mock('../../rdkit/RDKitContext', () => ({ useRDKit: () => ({ RDKitModule: null, loading: false }) }));
@@ -89,7 +94,7 @@ const Workspace = ({ realNavigator }) => {
   );
 };
 
-const setup = (realNavigator = false) => {
+const setup = (realNavigator = false, statuses = []) => {
   const observations = Array.from({ length: 80 }, (_, i) => ({
     id: i + 1,
     cmpd: i + 1,
@@ -117,7 +122,7 @@ const setup = (realNavigator = false) => {
         { property_name: 'series', text_value: o.id % 2 ? 'alpha' : 'beta' }
       ]
     })),
-    quality_statuses: [],
+    quality_statuses: statuses,
     lhs_extra_columns: [
       { result_property: 'score', data_type: 'float', visible: true },
       { result_property: 'series', data_type: 'text', visible: true }
@@ -126,7 +131,8 @@ const setup = (realNavigator = false) => {
   const reducer = combineReducers({
     selectionReducers,
     previewReducers: combineReducers({ molecule }),
-    apiReducers: (state = api) => state,
+    apiReducers: (state = api, action) =>
+      action.type === apiConstants.ADD_QUALITY_STATUS ? apiReducers(state, action) : state,
     targetReducers: (state = { currentProject: {} }) => state,
     nglReducers,
     datasetsReducers: (state = { moleculeLists: { 10: observations } }) => state
@@ -173,7 +179,195 @@ const withLayout = async check => {
   }
 };
 
+const gradeFixtures = () => [
+  { id: 1, site_observation: 1, main_status: true, status: 'GOOD', user: 7 },
+  { id: 2, site_observation: 2, main_status: true, status: 'MEDIOCRE', user: 7 },
+  { id: 3, site_observation: 3, main_status: true, status: 'BAD', user: 7 },
+  { id: 4, site_observation: 4, main_status: true, status: 'NONE', user: 7 },
+  { id: 5, site_observation: 5, main_status: false, status: 'GOOD', user: 7 },
+  { id: 6, site_observation: 6, main_status: true, status: 'GOOD', user: 7, comment: 'Created on load' }
+];
+const cardLabels = () => screen.getAllByRole('listitem').map(node => node.getAttribute('aria-label'));
+const navigatorLabels = () =>
+  screen
+    .getAllByRole('row')
+    .map(node => node.getAttribute('aria-label'))
+    .filter(Boolean);
+const gradeButton = colour => screen.getByRole('button', { name: `Filter ${colour} main status` });
+
 describe('rhs navigator/review controlled filters', () => {
+  it('ignores a structure-search response from before snapshot restore even when the restored query is identical', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup();
+      const structure = within(screen.getByRole('region', { name: 'Filter (Molecule)' }));
+      let resolve;
+      filterCompoundsByStructure.mockReturnValueOnce(
+        new Promise(accept => {
+          resolve = accept;
+        })
+      );
+      fireEvent.change(structure.getByRole('textbox'), { target: { value: 'CC' } });
+      fireEvent.click(structure.getByRole('button', { name: 'Apply filter' }));
+      const restored = store.getState().selectionReducers;
+      act(() => store.dispatch(reloadSelectionReducer(restored)));
+      await act(async () => resolve([1]));
+      expect(store.getState().selectionReducers.unifiedFilter.rhs.filters.molecule).toStrictEqual(
+        restored.unifiedFilter.rhs.filters.molecule
+      );
+      expect(currentResult.poses).toHaveLength(80);
+    });
+  });
+
+  it('opens and dismisses the DesignDB placeholder without changing grades, filters, selection, or viewer state', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup(false, gradeFixtures());
+      fireEvent.click(gradeButton('green'));
+      const before = store.getState();
+      fireEvent.click(screen.getByRole('button', { name: 'Push to DesignDB' }));
+      const dialog = screen.getByRole('dialog', { name: 'WARNING! Coming soon' });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'YES', exact: true }));
+      expect(store.getState()).toBe(before);
+      fireEvent.click(within(dialog).getByRole('button', { name: 'NO', exact: true }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(store.getState()).toBe(before);
+      expect(gradeButton('green')).toHaveAttribute('aria-pressed', 'true');
+      expect(cardLabels()).toStrictEqual(['v1a']);
+      expect(navigatorLabels()).toStrictEqual(['v1a']);
+    });
+  });
+
+  it('combines independent header colours in both views and returns to unrestricted results when all are cleared', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup(true, gradeFixtures());
+      const before = store.getState();
+      fireEvent.click(gradeButton('green'));
+      expect(cardLabels()).toStrictEqual(['v1a']);
+      expect(navigatorLabels()).toStrictEqual(['v1a']);
+      fireEvent.click(gradeButton('yellow'));
+      expect(cardLabels()).toStrictEqual(['v1a', 'v2a']);
+      expect(navigatorLabels()).toStrictEqual(['v1a', 'v2a']);
+      fireEvent.click(gradeButton('green'));
+      expect(cardLabels()).toStrictEqual(['v2a']);
+      fireEvent.click(gradeButton('ungraded'));
+      expect(navigatorLabels()).toContain('v2a');
+      expect(navigatorLabels()).toContain('v5a');
+      expect(navigatorLabels()).toContain('v6a');
+      expect(navigatorLabels()).not.toContain('v1a');
+      expect(navigatorLabels()).not.toContain('v3a');
+      fireEvent.click(gradeButton('yellow'));
+      expect(cardLabels()[0]).toBe('v4a');
+      fireEvent.click(gradeButton('ungraded'));
+      expect(cardLabels()[0]).toBe('v1a');
+      expect(navigatorLabels()).toHaveLength(30);
+      expect(store.getState().selectionReducers.unifiedFilter.detail).toStrictEqual(
+        before.selectionReducers.unifiedFilter.detail
+      );
+      expect(store.getState().selectionReducers.unifiedFilter.molecule).toStrictEqual(
+        before.selectionReducers.unifiedFilter.molecule
+      );
+      expect(store.getState().selectionReducers.moleculeAllSelection).toBe(
+        before.selectionReducers.moleculeAllSelection
+      );
+      expect(store.getState().nglReducers).toBe(before.nglReducers);
+    });
+  });
+
+  it('reacts to confirmed grade changes under a selected colour and keeps empty Review reopenable for recovery', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup(true, gradeFixtures());
+      fireEvent.click(gradeButton('green'));
+      act(() =>
+        store.dispatch(
+          addQualityStatus({ id: 10, site_observation: 1, main_status: true, status: 'MEDIOCRE', user: 7 })
+        )
+      );
+      expect(screen.getByText('No designs to review.')).toBeInTheDocument();
+      expect(navigatorLabels()).toStrictEqual([]);
+      expect(screen.getByRole('button', { name: 'Review', exact: true })).toBeEnabled();
+      expect(gradeButton('green')).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.click(gradeButton('yellow'));
+      expect(cardLabels()).toStrictEqual(['v1a', 'v2a']);
+      expect(navigatorLabels()).toStrictEqual(['v1a', 'v2a']);
+      expect(screen.getByRole('button', { name: 'Quality status for v1a: MEDIOCRE' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Show all', exact: true }));
+      ['green', 'yellow', 'red', 'ungraded'].forEach(colour =>
+        expect(gradeButton(colour)).toHaveAttribute('aria-pressed', 'false')
+      );
+      expect(navigatorLabels()).toHaveLength(30);
+      expect(store.getState().apiReducers.quality_statuses[0].status).toBe('MEDIOCRE');
+    });
+  });
+
+  it('combines header colours with advanced peer-review and observation filters, then resets them together', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup(false, [
+        ...gradeFixtures(),
+        { id: 7, site_observation: 2, main_status: false, status: 'BAD', user: 9 }
+      ]);
+      fireEvent.click(gradeButton('yellow'));
+      const peer = within(screen.getByRole('region', { name: 'Sort / Filter (Peer Review)' }));
+      fireEvent.click(peer.getAllByRole('checkbox', { name: 'Bad', exact: true })[1]);
+      expect(cardLabels()).toStrictEqual(['v2a']);
+      const observation = within(screen.getByRole('region', { name: 'Advanced Search' }));
+      fireEvent.click(observation.getByRole('checkbox', { name: 'Observation code', exact: true }));
+      fireEvent.change(observation.getByRole('textbox'), { target: { value: 'v1a' } });
+      expect(screen.getByText('No designs to review.')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Show all', exact: true }));
+      expect(gradeButton('yellow')).toHaveAttribute('aria-pressed', 'false');
+      expect(peer.getAllByRole('checkbox', { name: 'Bad', exact: true })[1]).not.toBeChecked();
+      expect(observation.getByRole('textbox')).toHaveValue('');
+      expect(currentResult.poses).toHaveLength(80);
+      expect(store.getState().selectionReducers.unifiedFilter.detail).toStrictEqual({ value: 'LHS untouched' });
+    });
+  });
+
+  it('retains displayed grade non-matches only where the established displayed-item rules allow them', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const store = setup(true, gradeFixtures());
+      act(() => store.dispatch(setShowDisplayedMolecules(false, 'rhs')));
+      const target = {
+        name: 'uploaded-observation-3_PROTEIN_10',
+        moleculeId: 3,
+        OBJECT_TYPE: OBJECT_TYPE.HIT_PROTEIN,
+        display_div: VIEWS.MAJOR_VIEW
+      };
+      act(() => store.dispatch(loadNglObject(target, [{ uuid: 'ack', type: 'cartoon', params: {}, visible: true }])));
+      fireEvent.click(gradeButton('green'));
+      expect(cardLabels()).toStrictEqual(['v3a', 'v1a']);
+      expect(navigatorLabels()).toStrictEqual(['v1a']);
+      act(() => store.dispatch(deleteNglObject(target)));
+      expect(cardLabels()).toStrictEqual(['v1a']);
+    });
+  });
+
+  it('allows logged-out users to filter without enabling grading or changing backend statuses', async () => {
+    expect.hasAssertions();
+    await withLayout(async () => {
+      const saved = { ...DJANGO_CONTEXT };
+      Object.assign(DJANGO_CONTEXT, { pk: undefined, authenticated: false, username: 'NOT_LOGGED_IN' });
+      try {
+        const store = setup(true, gradeFixtures());
+        const statuses = store.getState().apiReducers.quality_statuses;
+        expect(gradeButton('green')).toBeEnabled();
+        fireEvent.click(gradeButton('green'));
+        expect(cardLabels()).toStrictEqual(['v1a']);
+        expect(navigatorLabels()).toStrictEqual(['v1a']);
+        expect(screen.getByRole('button', { name: 'Set green main status for v1a' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Push to DesignDB' })).toBeDisabled();
+        expect(store.getState().apiReducers.quality_statuses).toBe(statuses);
+      } finally {
+        Object.keys(DJANGO_CONTEXT).forEach(key => delete DJANGO_CONTEXT[key]);
+        Object.assign(DJANGO_CONTEXT, saved);
+      }
+    });
+  });
+
   it('hides all inactive cards and navigator rows, follows ligand acknowledgements, and recovers with Show all', async () => {
     expect.hasAssertions();
     await withLayout(async () => {
@@ -209,6 +403,7 @@ describe('rhs navigator/review controlled filters', () => {
       act(() => store.dispatch(deleteNglObject(ligand)));
       expect(screen.getByText('No designs to review.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Review', exact: true })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Push to DesignDB' })).toBeEnabled();
       expect(screen.getByRole('button', { name: 'Show all', exact: true })).toBeEnabled();
       expect(store.getState().nglReducers.objectsInView[protein.name]).toBeDefined();
       fireEvent.click(screen.getByRole('button', { name: 'Show all', exact: true }));

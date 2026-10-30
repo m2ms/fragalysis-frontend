@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { applyMiddleware, combineReducers, legacy_createStore } from 'redux';
 import { thunk } from 'redux-thunk';
@@ -25,6 +25,12 @@ import { createReviewLigandController } from './reviewLigandController';
 import { ReviewLigandProvider } from './ReviewLigandProvider';
 import { RhsReviewPanel } from './RhsReviewPanel';
 import { ToastContext } from '../../toast';
+import { api } from '../../../utils/api';
+import { changeSnapshot } from '../../snapshot/redux/dispatchActions';
+import { createSnapshotStateForSaving } from '../../snapshot/redux/utilitySnapshotShapes';
+import { snapshotReducers } from '../../snapshot/redux/reducer';
+
+jest.mock('../../../utils/api', () => ({ api: jest.fn(), METHOD: { GET: 'get', POST: 'post' } }));
 
 jest.mock('../../../utils/djangoContext', () => ({ DJANGO_CONTEXT: { pk: 7 } }));
 jest.mock('../../rdkit/RDKitContext', () => ({ useRDKit: () => ({ RDKitModule: null, loading: false }) }));
@@ -99,6 +105,7 @@ const setup = (panel = false, options = {}) => {
     selectionReducers,
     nglReducers,
     datasetsReducers,
+    snapshotReducers,
     previewReducers: combineReducers({ molecule }),
     apiReducers: (state = api, action) => (action.type === 'TEST_TARGET' ? { ...state, target_on: action.id } : state)
   });
@@ -190,6 +197,123 @@ const groupOptions = {
 };
 
 describe('review ligand rendering through the application queues', () => {
+  it('removes a dataset-only design when the destination snapshot omits that dataset, awaiting native disposal', async () => {
+    expect.hasAssertions();
+    const test = setup();
+    const deletion = deferred();
+    try {
+      const empty = createSnapshotStateForSaving(test.store.getState());
+      expect(empty.datasetsReducers.toBeDisplayedList).toStrictEqual({});
+      await run(test.controller, 3);
+      expect(test.runtime.resources.has('v3_LIGAND_20')).toBe(true);
+
+      test.runtime.removeGates.set('v3_LIGAND_20', deletion);
+
+      api.mockImplementation(({ url }) =>
+        Promise.resolve(
+          url.includes('snapshot_state') ? { data: { state: empty } } : { data: { id: 14, additional_info: {} } }
+        )
+      );
+      await act(async () => test.store.dispatch(changeSnapshot(7, 14, null)));
+      await waitFor(() => expect(test.runtime.removals).toContain('v3_LIGAND_20'));
+      expect(test.runtime.resources.has('v3_LIGAND_20')).toBe(true);
+      expect(test.store.getState().datasetsReducers.ligandLists[20]).toContain(3);
+      await act(async () => deletion.resolve());
+      await waitFor(() => expect(test.runtime.resources.has('v3_LIGAND_20')).toBe(false));
+      expect(test.store.getState().datasetsReducers.ligandLists[20]).toStrictEqual([]);
+      expect(test.store.getState().datasetsReducers.toBeDisplayedList[20] || []).toStrictEqual([]);
+    } finally {
+      deletion.resolve();
+
+      test.finish();
+
+      api.mockReset();
+    }
+  });
+
+  it.each(['resource', 'legacy'])(
+    'restores shared and independently held inspirations from the %s snapshot state',
+    async storage => {
+      expect.hasAssertions();
+      const test = setup(false, groupOptions);
+      try {
+        await act(async () => test.store.dispatch(addLigand(test.runtime, inspirations[1], undefined, false)));
+        await run(test.controller, 1);
+        await run(test.controller, 2);
+        const saved = createSnapshotStateForSaving(test.store.getState());
+        const ownership = saved.selectionReducers.review.ligandGroups;
+        expect(ownership.groups).toHaveLength(2);
+        expect(ownership.members.find(member => member.id === '12').held).toStrictEqual(['x12_LIGAND']);
+        expect(ownership.members.find(member => member.id === '11').owned).toStrictEqual([null]);
+        expect(JSON.stringify(ownership)).not.toMatch(/nativeRepresentation|buffers|pending|promise/);
+        await run(test.controller, 1);
+        await run(test.controller, 2);
+        expect([...test.runtime.resources.keys()]).toStrictEqual(['x12_LIGAND']);
+        api.mockImplementation(({ url }) =>
+          Promise.resolve(
+            url.includes('snapshot_state')
+              ? { data: { state: storage === 'resource' ? saved : null } }
+              : { data: { id: 12, additional_info: { snapshotState: saved } } }
+          )
+        );
+        await act(async () => test.store.dispatch(changeSnapshot(7, 12, null)));
+        await waitFor(() => expect(test.runtime.resources.size).toBe(5));
+        await run(test.controller, 1);
+        expect([...test.runtime.resources.keys()].sort()).toStrictEqual([
+          'v2_LIGAND',
+          'x11_LIGAND',
+          'x12_LIGAND',
+          'x13_LIGAND'
+        ]);
+        await run(test.controller, 2);
+        expect([...test.runtime.resources.keys()]).toStrictEqual(['x12_LIGAND']);
+        expect(test.runtime.centerOn).not.toHaveBeenCalled();
+        expect(() => JSON.stringify(test.store.getState())).not.toThrow();
+      } finally {
+        test.finish();
+
+        api.mockReset();
+      }
+    }
+  );
+
+  it('invalidates a pending group on snapshot restore and lets the existing queues dispose late native resources', async () => {
+    expect.hasAssertions();
+    const test = setup(false, groupOptions);
+    const gate = deferred();
+    try {
+      const empty = createSnapshotStateForSaving(test.store.getState());
+
+      test.runtime.loadGates.set('v1_LIGAND', gate);
+
+      let pending;
+      await act(async () => {
+        pending = test.controller.toggle(1);
+      });
+      expect(test.controller.getSnapshot()['1'].pending).toBe(true);
+      api.mockImplementation(({ url }) =>
+        Promise.resolve(
+          url.includes('snapshot_state') ? { data: { state: empty } } : { data: { id: 13, additional_info: {} } }
+        )
+      );
+      await act(async () => test.store.dispatch(changeSnapshot(7, 13, null)));
+      await act(async () => {
+        gate.resolve();
+        await pending;
+      });
+      await waitFor(() => expect(test.runtime.resources.size).toBe(0));
+      expect(test.controller.getSnapshot()).toStrictEqual({});
+      expect(test.store.getState().selectionReducers.review.ligandGroups).toStrictEqual({ groups: [], members: [] });
+      expect(selectActiveRhsObservationIds(test.store.getState())).toStrictEqual([]);
+    } finally {
+      gate.resolve();
+
+      test.finish();
+
+      api.mockReset();
+    }
+  });
+
   it('keeps pending and active group ownership across closing/reopening and exposes partial blue cards as restore actions', async () => {
     expect.hasAssertions();
     const observer = global.ResizeObserver;

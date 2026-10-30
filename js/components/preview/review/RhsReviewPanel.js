@@ -11,6 +11,8 @@ import { ReviewGrid } from './ReviewGrid';
 import { ReviewLigandImage } from './ReviewLigandImage';
 import { ReviewCenterButton } from './ReviewCenterButton';
 import { ReviewStatusControls } from './ReviewStatusControls';
+import { ReviewGradeFilters } from './ReviewGradeFilters';
+import { ReviewDesignDbAction } from './ReviewDesignDbAction';
 
 const renderImage = item => <ReviewLigandImage item={item} />;
 const renderActions = item => <ReviewCenterButton item={item} />;
@@ -46,6 +48,7 @@ export const RhsReviewPanel = () => {
               Hide all inactive
             </Button>
           </RichTooltip>
+          <ReviewGradeFilters disabled={!loaded} />
         </div>
       </TooltipPathProvider>
       {!loaded ? (
@@ -60,6 +63,7 @@ export const RhsReviewPanel = () => {
           renderDetails={renderDetails}
         />
       )}
+      <ReviewDesignDbAction />
     </>
   );
 };

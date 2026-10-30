@@ -63,12 +63,12 @@ import { getComputedInspirationsForPose } from './utils/computedInspirations';
 import { TAG_META_CATEGORIES } from '../tags/utils/tagUtils';
 import { setIsOpenCrossReferenceDialog } from '../../datasets/redux/actions';
 import { createRhsPoseTransferConfig } from './rhsPoseTransferConfig';
-import { ReviewButton } from '../review/ReviewButton';
+import { RhsReviewButton } from '../review/RhsReviewButton';
 import { selectRhsObservationData, getRhsPoseObservation, searchRhsObservations } from './utils/rhsObservations';
 import { RHS_REVIEW_VIEW_CONFIG, useRhsObservationResult } from '../review/useRhsObservationResult';
 import { selectRhsGeneralFilter, setRhsGeneralFilter } from '../review/rhsObservationResult';
 
-const renderReviewButton = ({ hasItems }) => <ReviewButton side="rhs" disabled={!hasItems} />;
+const renderReviewButton = ({ hasItems }) => <RhsReviewButton hasItems={hasItems} />;
 
 const restoreInspirationDialog = ({ dispatch, pose, ids, requestAnchor }) => {
   dispatch(setObsInspirationDialogObsIds(ids));

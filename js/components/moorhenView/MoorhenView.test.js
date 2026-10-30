@@ -9,6 +9,7 @@ import { initializeMoorhenCcp4Module } from '../moorhenProof/moorhenCcp4';
 import MoorhenView from './MoorhenView';
 import { ReviewWorkspace } from '../preview/review/ReviewWorkspace';
 import { ReviewButton } from '../preview/review/ReviewButton';
+import { selectionReducers } from '../../reducers/selection/selectionReducers';
 
 jest.mock('../nglView/nglProvider', () => ({ NglContext: require('react').createContext() }));
 jest.mock('../nglView/redux/dispatchActions', () => ({ handleNglViewPick: jest.fn() }));
@@ -117,7 +118,11 @@ describe('embedded Moorhen viewport', () => {
         viewParams: { backgroundColor: 'white', clipNear: 30, clipFar: 80, clipDist: '5', fogNear: 40, fogFar: 85 }
       }
     };
-    const appStore = legacy_createStore((state = initialState, action) => action.state || state);
+    const appStore = legacy_createStore((state = initialState, action) => {
+      const next = action.state || state;
+      const selection = selectionReducers(next.selectionReducers, action);
+      return selection === next.selectionReducers ? next : { ...next, selectionReducers: selection };
+    });
     const ui = designsOpen => (
       <Provider store={appStore}>
         <NglContext.Provider value={context}>
@@ -136,10 +141,9 @@ describe('embedded Moorhen viewport', () => {
     try {
       view = render(ui(false));
       await act(async () => {});
-      expect(observers).toHaveLength(0);
-      expect(getComputedStyle(document.getElementById('major_view')).backgroundColor).toBe('rgb(255, 255, 255)');
-      await act(async () => finishInitialization());
+      // ReviewWorkspace observes its dock before Moorhen finishes initializing.
       expect(observers).toHaveLength(1);
+      expect(getComputedStyle(document.getElementById('major_view')).backgroundColor).toBe('rgb(255, 255, 255)');
       await act(async () => finishInitialization());
       expect(observers).toHaveLength(2);
       const observer = observers[1];

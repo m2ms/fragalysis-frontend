@@ -15,6 +15,8 @@ import { jobTableReducer } from '../components/preview/jobTable/redux/reducer';
 import { layoutReducers } from './layout/layoutReducers';
 import { constants } from './constants';
 import { normalizeRhsPoseNavigationConfig } from '../constants/poseNavigation';
+import { constants as apiConstants } from './api/constants';
+import { normalizeReviewSelection, normalizeReviewSettings } from '../constants/reviewSettings';
 
 const appReducer = combineReducers({
   apiReducers,
@@ -32,13 +34,38 @@ const appReducer = combineReducers({
 
 const rootReducer = (state, action) => {
   if (action.type === constants.SET_ENTIRE_STATE) {
+    const selection = normalizeReviewSelection(action.newState.selectionReducers);
+    selection.unifiedFilter.rhs.resetVersion = (state?.selectionReducers?.unifiedFilter?.rhs?.resetVersion || 0) + 1;
     return {
       ...action.newState,
       selectionReducers: {
-        ...action.newState.selectionReducers,
+        ...selection,
+        reviewRevision: (state?.selectionReducers?.reviewRevision || 0) + 1,
         rhsPoseNavigationConfig: normalizeRhsPoseNavigationConfig(
           action.newState.selectionReducers?.rhsPoseNavigationConfig
         )
+      }
+    };
+  }
+
+  if (action.type === apiConstants.SET_TARGET_ON && state && state.apiReducers?.target_on !== action.target_on) {
+    state = {
+      ...state,
+      selectionReducers: {
+        ...state.selectionReducers,
+        review: normalizeReviewSettings(),
+        reviewRevision: (state.selectionReducers.reviewRevision || 0) + 1,
+        unifiedFilter: {
+          ...state.selectionReducers.unifiedFilter,
+          rhs: {
+            resetVersion: (state.selectionReducers.unifiedFilter?.rhs?.resetVersion || 0) + 1,
+            generalFilter: { active: false }
+          }
+        }
+      },
+      previewReducers: {
+        ...state.previewReducers,
+        molecule: { ...state.previewReducers?.molecule, imageCache: {}, searchStringRHS: '' }
       }
     };
   }

@@ -85,6 +85,7 @@ const setup = (intersection, legacyCoordinates = false) => {
       molecule: { smiles: 'N' },
       detailRHS: { value: 'old RHS fallback' },
       rhs: {
+        mainStatusFilters: ['BAD', 'NONE'],
         filters: { molecule: { smiles: 'CC', filteredCompounds: [] }, mainStatus: ['good'] },
         sortings: { detail: { enabled: 1, order: false } }
       }
@@ -165,6 +166,7 @@ describe('review Show all RHS action', () => {
       expect(selection.sphereCoordinatesRHS).toBeNull();
       expect(selection.coordinateRadiusRHS).toBe('');
       expect(model.filters).toStrictEqual({});
+      expect(model.mainStatusFilters).toStrictEqual([]);
       expect(model.sortings).toBe(before.selectionReducers.unifiedFilter.rhs.sortings);
       expect(selectRhsGeneralFilter(after)).toStrictEqual({ ...generalFilter, active: false });
       expect(after.previewReducers.molecule.searchStringRHS).toBe('');

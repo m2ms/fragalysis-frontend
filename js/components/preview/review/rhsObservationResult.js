@@ -3,8 +3,9 @@ import { setUnifiedFilterItem } from '../../../reducers/selection/actions';
 import { createObservationProjection } from '../molecule/observationUnifiedView/hooks/observationProjection';
 import { filterMolecules } from '../molecule/moleculeListSortFilterDialog';
 import { getPosesForObservations } from '../molecule/utils/poseListData';
-import { searchRhsObservations } from '../molecule/utils/rhsObservations';
+import { getRhsPoseObservation, searchRhsObservations } from '../molecule/utils/rhsObservations';
 import { mergeDisplayedRhsPoses } from './rhsReviewRetention';
+import { createRhsMainStatusPredicate, normalizeRhsMainStatusFilters } from './rhsGradeFilters';
 
 const EMPTY = {};
 export const selectRhsTableState = createSelector(
@@ -28,6 +29,25 @@ export const setRhsGeneralFilter = generalFilter => (dispatch, getState) => {
   dispatch(setUnifiedFilterItem('rhs', { ...selectRhsTableState(getState()), generalFilter }));
 };
 
+export const selectRhsMainStatusFilters = createSelector(selectRhsTableState, model =>
+  normalizeRhsMainStatusFilters(model.mainStatusFilters)
+);
+
+export const toggleRhsMainStatusFilter = status => (dispatch, getState) => {
+  if (!normalizeRhsMainStatusFilters([status]).length) return;
+  const state = getState();
+  const model = selectRhsTableState(state);
+  const active = selectRhsMainStatusFilters(state);
+  dispatch(
+    setUnifiedFilterItem('rhs', {
+      ...model,
+      mainStatusFilters: active.includes(status)
+        ? active.filter(value => value !== status)
+        : normalizeRhsMainStatusFilters([...active, status])
+    })
+  );
+};
+
 export const projectRhsObservationResult = ({
   data,
   observations,
@@ -46,11 +66,12 @@ export const projectRhsObservationResult = ({
     const ids = new Set(activeIds);
     return { poses, reviewPoses: poses, observations: data.observations.filter(obs => ids.has(String(obs.id))) };
   }
+  const matchesGrade = createRhsMainStatusPredicate(columnOptions.mainStatusFilters, columnOptions.allStatuses);
   let matching = searchRhsObservations(search, observations, data.poses, searchSettings, searchObservations);
   const normalObservations = selection.filter?.active ? filterMolecules(matching, selection.filter) : matching;
   const normalPoses = createObservationProjection({ ...columnOptions, showDisplayedMolecules: false })(
     getPosesForObservations(data.poses, normalObservations).sort(compare)
-  );
+  ).filter(matchesGrade);
   const byId = new Map(data.observations.map(observation => [String(observation.id), observation]));
   const addMissing = values => {
     const seen = new Set(matching.map(observation => String(observation.id)));
@@ -72,7 +93,13 @@ export const projectRhsObservationResult = ({
   addMissing(selection.molForTagEdit);
   if (selection.isGlobalEdit) addMissing(selection.moleculesToEdit);
   const candidates = getPosesForObservations(data.poses, matching).sort(compare);
-  const poses = createObservationProjection(columnOptions)(candidates);
+  const poses = createObservationProjection(columnOptions)(candidates).filter(
+    pose =>
+      matchesGrade(pose) ||
+      (columnOptions.showDisplayedMolecules &&
+        (columnOptions.viewConfig?.matchesDisplayedObservations?.(pose, columnOptions.displayedObservationIds || []) ??
+          columnOptions.displayedObservationIds?.includes(getRhsPoseObservation(pose)?.id)))
+  );
   const ids = new Set(poses.flatMap(pose => pose.associatedObs.map(observation => String(observation.id))));
   const reviewPoses = mergeDisplayedRhsPoses({ data, normalPoses, displayedIds, compare, columnOptions });
   return { poses, reviewPoses, observations: matching.filter(observation => ids.has(String(observation.id))) };

@@ -1,7 +1,7 @@
 import configureStore from 'redux-mock-store';
 import { thunk } from 'redux-thunk';
-import { changeSnapshot } from './dispatchActions';
-import { api } from '../../../utils/api';
+import { changeSnapshot, createNewSnapshot } from './dispatchActions';
+import { api, METHOD } from '../../../utils/api';
 import ViewerAdapter from '../../../viewer/ViewerAdapter';
 import { VIEWS } from '../../../constants/constants';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
@@ -10,8 +10,12 @@ import { setNglStateFromCurrentSnapshot } from '../../../reducers/ngl/actions';
 import { setSnapshotLoadingInProgress } from '../../../reducers/api/actions';
 import { setDatasetsStateFromSnapshot } from '../../datasets/redux/actions';
 import { setCurrentSnapshot } from '../../projects/redux/actions';
-import { setSwitchingSnapshotWithinProject } from './actions';
+import { setSwitchingSnapshotWithinProject, setIsLoadingSnapshotDialog, setSharedSnapshot } from './actions';
 import { setEntireState } from '../../../reducers/actions';
+import { rootReducer } from '../../../reducers/rootReducer';
+import { SET_REVIEW_SETTINGS } from '../../../constants/reviewSettings';
+
+jest.mock('../../../utils/djangoContext', () => ({ DJANGO_CONTEXT: {} }));
 
 jest.mock('../../../utils/api', () => ({ api: jest.fn(), METHOD: { GET: 'get', POST: 'post' } }));
 
@@ -52,6 +56,87 @@ const actionsOf = (store, creator) => store.getActions().filter(action => action
 const flush = async () => {
   for (let i = 0; i < 8; i++) await Promise.resolve();
 };
+
+describe('snapshot creation persistence', () => {
+  it('reports a state upload failure and clears loading without acknowledging a saved snapshot', async () => {
+    expect.hasAssertions();
+    const state = rootReducer(undefined, {});
+    state.snapshotReducers.disableRedirect = true;
+    api.mockImplementation(({ url, method }) => {
+      if (url.includes('snapshot_state')) return Promise.reject(new Error('state upload failed'));
+      return Promise.resolve({ data: method === METHOD.POST ? { id: 11 } : { count: 1 } });
+    });
+    const store = configureStore([thunk])(state);
+    try {
+      await expect(store.dispatch(createNewSnapshot({ session_project: 7, title: 'Review snapshot' }))).rejects.toThrow(
+        'state upload failed'
+      );
+      expect(store.getActions()).toContainEqual(setIsLoadingSnapshotDialog(false));
+      expect(store.getActions().filter(action => action.type === setSharedSnapshot({}).type)).toStrictEqual([]);
+    } finally {
+      api.mockReset();
+    }
+  });
+
+  it.each([false, true])(
+    'uploads cleaned Review state before acknowledging Save (overwrite=%s)',
+    async overwriteSnapshot => {
+      expect.hasAssertions();
+      const state = rootReducer(undefined, {
+        type: SET_REVIEW_SETTINGS,
+        settings: { owner: 'rhs', open: true, height: 452 }
+      });
+      state.projectReducers.currentSnapshot = { id: 10, children: [] };
+      state.snapshotReducers.disableRedirect = true;
+      state.selectionReducers.unifiedFilter = { rhs: { mainStatusFilters: ['GOOD', 'MEDIOCRE'], activeOnly: true } };
+      state.previewReducers.molecule.imageCache = { 5: '<svg />' };
+      const upload = deferred();
+      api.mockImplementation(({ url, method }) => {
+        if (url.includes('snapshot_state')) return upload.promise;
+        if (method === METHOD.POST || method === METHOD.PUT) return Promise.resolve({ data: { id: 11 } });
+        return Promise.resolve({ data: { count: 1 } });
+      });
+      const store = configureStore([thunk])(state);
+      try {
+        let done = false;
+        const pending = store
+          .dispatch(
+            createNewSnapshot({
+              session_project: 7,
+              title: 'Review snapshot',
+              description: 'test',
+              author: 7,
+              parent: 10,
+              overwriteSnapshot
+            })
+          )
+          .then(value => {
+            done = true;
+            return value;
+          });
+        await flush();
+        const request = api.mock.calls.map(([input]) => input).find(input => input.url.includes('snapshot_state'));
+        expect(new URL(request.url, window.location.origin).pathname).toBe(
+          `/api/snapshot_state/${overwriteSnapshot ? 10 : 11}/`
+        );
+        expect(request.method).toBe(METHOD.PUT);
+        expect(request.data.state.selectionReducers.review).toMatchObject({ owner: 'rhs', open: true, height: 452 });
+        expect(request.data.state.selectionReducers.unifiedFilter.rhs.mainStatusFilters).toStrictEqual([
+          'GOOD',
+          'MEDIOCRE'
+        ]);
+        expect(request.data.state.previewReducers.molecule.imageCache).toStrictEqual({});
+        expect(request.data.state.selectionReducers).not.toHaveProperty('reviewRevision');
+        expect(done).toBe(false);
+        upload.resolve({ data: {} });
+        expect(await pending).toBe(overwriteSnapshot ? 10 : 11);
+      } finally {
+        upload.resolve({ data: {} });
+        api.mockReset();
+      }
+    }
+  );
+});
 
 describe('in-place snapshot switching', () => {
   let frames;

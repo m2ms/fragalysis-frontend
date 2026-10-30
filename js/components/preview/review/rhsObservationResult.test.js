@@ -17,7 +17,13 @@ import { getObservationColumns } from '../molecule/observationUnifiedView/hooks/
 import { createObservationProjection } from '../molecule/observationUnifiedView/hooks/observationProjection';
 import { getAdjacentPoses } from '../molecule/poseTransfer';
 import { QUALITY_STATUSES } from '../molecule/moleculeView/qualityStatus/constants';
-import { projectRhsObservationResult, selectRhsTableState, updateRhsTableSetting } from './rhsObservationResult';
+import {
+  projectRhsObservationResult,
+  selectRhsTableState,
+  updateRhsTableSetting,
+  selectRhsMainStatusFilters,
+  toggleRhsMainStatusFilter
+} from './rhsObservationResult';
 
 const viewConfig = buildObservationViewConfig(RHS_OBSERVATION_VIEW_CONFIG);
 const extraColumns = [
@@ -60,7 +66,116 @@ const peerSettings = () => ({
   )
 });
 
+const gradeRecords = [
+  { site_observation: 1, main_status: true, status: 'GOOD' },
+  { site_observation: 1, main_status: true, status: 'BAD' },
+  { site_observation: 2, main_status: true, status: 'MEDIOCRE' },
+  { site_observation: 3, main_status: true, status: 'BAD' },
+  { site_observation: 4, main_status: true, status: 'NONE' },
+  { site_observation: 6, main_status: false, status: 'GOOD', user: 7 },
+  { site_observation: 7, main_status: true, status: 'GOOD', comment: 'Created on load' },
+  { site_observation: 7, main_status: true, status: 'BAD' },
+  { site_observation: 8, main_status: true, status: 'GOOD', comment: 'Created on load' }
+];
+const combinations = Array.from({ length: 16 }, (_, mask) => [
+  mask,
+  ['GOOD', 'MEDIOCRE', 'BAD', 'NONE'].filter((_status, index) => mask & (1 << index))
+]);
+
 describe('complete RHS observation projection', () => {
+  it.each(combinations)(
+    'applies main-status OR combination %s to both full results without using peer reviews or load defaults',
+    (_mask, active) => {
+      expect.hasAssertions();
+      const result = project({ columnOptions: { mainStatusFilters: active, allStatuses: gradeRecords } });
+      const gradeFor = id => ({ 1: 'GOOD', 2: 'MEDIOCRE', 3: 'BAD', 7: 'BAD' }[id] || 'NONE');
+      const expected = observations
+        .filter(observation => !active.length || active.includes(gradeFor(observation.id)))
+        .map(observation => observation.id);
+      expect(ids(result)).toStrictEqual(expected);
+      expect(result.reviewPoses.map(pose => pose.main_site_observation)).toStrictEqual(expected);
+      expect(result.observations.map(observation => observation.id)).toStrictEqual(expected);
+    }
+  );
+
+  it('combines the header restriction with search, structure, numeric and the existing advanced main/peer OR filter', () => {
+    expect.hasAssertions();
+    const settings = peerSettings();
+    settings.mainStatus.good = true;
+    settings.peerReview.bad.checked = true;
+    const allStatuses = [
+      ...gradeRecords,
+      { site_observation: 2, main_status: false, status: 'BAD', user: 7 },
+      { site_observation: 3, main_status: false, status: 'BAD', user: 8 }
+    ];
+    const columnOptions = {
+      mainStatusFilters: ['MEDIOCRE'],
+      allStatuses,
+      filters: {
+        peerReview: settings,
+        molecule: { filteredCompounds: [2, 3], structureType: 'compound' },
+        score: { type: 'value', condition: 2, value: '2' }
+      }
+    };
+    expect(ids(project({ search: 'v2', columnOptions }))).toStrictEqual([2]);
+    expect(ids(project({ search: 'v1', columnOptions }))).toStrictEqual([]);
+    expect(ids(project({ columnOptions: { ...columnOptions, mainStatusFilters: ['BAD'] } }))).toStrictEqual([3]);
+    expect(settings.mainStatus.good).toBe(true);
+    expect(settings.peerReview.bad.checked).toBe(true);
+  });
+
+  it('retains displayed grade non-matches in Review and preserves the navigator bypass and active-only semantics', () => {
+    expect.hasAssertions();
+    const options = {
+      displayedIds: ['2', '3'],
+      activeIds: ['3'],
+      selection: { proteinList: [2, 3], isGlobalEdit: true, moleculesToEdit: [80] },
+      columnOptions: {
+        mainStatusFilters: ['GOOD'],
+        allStatuses: gradeRecords,
+        displayedObservationIds: [2, 3],
+        showDisplayedMolecules: false
+      }
+    };
+    const normal = project(options);
+    expect(ids(normal)).toStrictEqual([1]);
+    expect(normal.reviewPoses.map(pose => pose.main_site_observation)).toStrictEqual([2, 3, 1]);
+    const bypass = project({ ...options, columnOptions: { ...options.columnOptions, showDisplayedMolecules: true } });
+    expect(ids(bypass)).toStrictEqual([1, 2, 3]);
+    expect(bypass.reviewPoses.map(pose => pose.main_site_observation)).toStrictEqual([2, 3, 1]);
+    const activeOnly = project({ ...options, columnOptions: { ...options.columnOptions, activeOnly: true } });
+    expect(ids(activeOnly)).toStrictEqual([3]);
+    expect(activeOnly.reviewPoses).toBe(activeOnly.poses);
+  });
+
+  it('toggles latest RHS settings independently, normalizes malformed selections, and preserves other filters', () => {
+    expect.hasAssertions();
+    const store = legacy_createStore(combineReducers({ selectionReducers }), applyMiddleware(thunk));
+    store.dispatch(
+      setUnifiedFilterItem('rhs', { filters: { detail: { value: 'keep' } }, sortings: { detail: { enabled: true } } })
+    );
+    store.dispatch(setUnifiedFilterItem('detail', { value: 'LHS' }));
+    store.dispatch(toggleRhsMainStatusFilter('GOOD'));
+    store.dispatch(toggleRhsMainStatusFilter('MEDIOCRE'));
+    store.dispatch(updateRhsTableSetting('filters', 'series', { value: 'alpha' }));
+    expect(selectRhsMainStatusFilters(store.getState())).toStrictEqual(['GOOD', 'MEDIOCRE']);
+    store.dispatch(toggleRhsMainStatusFilter('GOOD'));
+    expect(selectRhsMainStatusFilters(store.getState())).toStrictEqual(['MEDIOCRE']);
+    expect(selectRhsTableState(store.getState()).filters).toStrictEqual({
+      detail: { value: 'keep' },
+      series: { value: 'alpha' }
+    });
+    expect(store.getState().selectionReducers.unifiedFilter.detail).toStrictEqual({ value: 'LHS' });
+    const before = store.getState();
+    store.dispatch(toggleRhsMainStatusFilter('unknown'));
+    expect(store.getState()).toBe(before);
+    store.dispatch(setUnifiedFilterItem('rhs', { mainStatusFilters: ['BAD', 'BAD', 'unknown'] }));
+    expect(selectRhsMainStatusFilters(store.getState())).toStrictEqual(['BAD']);
+    store.dispatch(setUnifiedFilterItem('rhs', { mainStatusFilters: 'GOOD' }));
+    expect(selectRhsMainStatusFilters(store.getState())).toStrictEqual([]);
+    expect(ids(project({ columnOptions: { mainStatusFilters: ['unknown'] } }))).toHaveLength(80);
+  });
+
   it('filters and sorts the full result before pagination and supplies the same full navigation order', () => {
     expect.hasAssertions();
     const result = project({

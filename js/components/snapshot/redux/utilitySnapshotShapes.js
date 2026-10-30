@@ -1,6 +1,7 @@
 import { deepClone, deepMergeWithPriority, deepMergeWithPriorityAndBlackList } from '../../../utils/objectUtils';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
 import { normalizeRhsPoseNavigationConfig } from '../../../constants/poseNavigation';
+import { normalizeReviewSelection } from '../../../constants/reviewSettings';
 
 const BLACKLIST_FLAG = true;
 const BLACKLIST_COUNTER = 1;
@@ -175,6 +176,7 @@ export const SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS = {
 };
 
 const SNAPSHOT_RUNTIME_STATE_TO_PRESERVE_WHEN_SWITCHING = {
+  previewReducers: { molecule: { imageCache: {} } },
   selectionReducers: {
     isScrollFiredForLHS: BLACKLIST_FLAG,
     lhsIsFullyRendered: BLACKLIST_FLAG,
@@ -236,14 +238,16 @@ const countObjectsToBeRenderedByDataset = datasetsToBeDisplayed =>
 export const normalizeSnapshotRenderState = snapshotState => {
   const normalizedSnapshotState = deepClone(snapshotState);
 
-  normalizedSnapshotState.selectionReducers = normalizedSnapshotState.selectionReducers || {};
+  normalizedSnapshotState.selectionReducers = normalizeReviewSelection(normalizedSnapshotState.selectionReducers);
   normalizedSnapshotState.selectionReducers.rhsPoseNavigationConfig = normalizeRhsPoseNavigationConfig(
     normalizedSnapshotState.selectionReducers.rhsPoseNavigationConfig
   );
   normalizedSnapshotState.datasetsReducers = normalizedSnapshotState.datasetsReducers || {};
   normalizedSnapshotState.nglReducers = normalizedSnapshotState.nglReducers || {};
 
-  const normalizedLhsObjects = normalizeObjectsToBeDisplayed(normalizedSnapshotState.selectionReducers.toBeDisplayedList);
+  const normalizedLhsObjects = normalizeObjectsToBeDisplayed(
+    normalizedSnapshotState.selectionReducers.toBeDisplayedList
+  );
   const normalizedRhsObjects = normalizeObjectsToBeDisplayedByDataset(
     normalizedSnapshotState.datasetsReducers.toBeDisplayedList
   );
@@ -262,7 +266,8 @@ export const normalizeSnapshotRenderState = snapshotState => {
   return normalizedSnapshotState;
 };
 
-const includesId = (list = [], itemId) => list.some(item => (typeof item === 'object' ? item?.id === itemId : item === itemId));
+const includesId = (list = [], itemId) =>
+  list.some(item => (typeof item === 'object' ? item?.id === itemId : item === itemId));
 
 const isLhsItemDisplayed = (selectionReducers = {}, item) => {
   switch (item.type) {
@@ -278,7 +283,9 @@ const isLhsItemDisplayed = (selectionReducers = {}, item) => {
       return includesId(selectionReducers.surfaceList, item.id);
     case NGL_OBJECTS.DENSITY:
     case NGL_OBJECTS.DENSITY_CUSTOM:
-      return includesId(selectionReducers.densityList, item.id) || includesId(selectionReducers.densityListCustom, item.id);
+      return (
+        includesId(selectionReducers.densityList, item.id) || includesId(selectionReducers.densityListCustom, item.id)
+      );
     case NGL_OBJECTS.VECTOR:
       return includesId(selectionReducers.vectorOnList, item.id);
     case NGL_OBJECTS.QUALITY:
@@ -356,6 +363,10 @@ export const prepareSwitchingSnapshotRenderState = (currentState, snapshotState)
 };
 
 export const createSnapshotStateForSaving = state => {
+  const selection = normalizeReviewSelection(state.selectionReducers);
+  delete selection.reviewRevision;
+  delete selection.unifiedFilter.rhs.resetVersion;
+  state = { ...state, selectionReducers: selection };
   let downloadedStateBlacklist = deepClone(SNAPSHOT_VALUES_NOT_TO_BE_DELETED_SWITCHING_TARGETS);
 
   // Preserve the target list in saved snapshots for compatibility with the existing restore flow.
@@ -373,9 +384,13 @@ export const mergeSnapshotStateWithCurrentData = (currentState, snapshotState) =
   const currentStateClone = deepClone(currentState);
   const normalizedSnapshotState = normalizeSnapshotRenderState(snapshotState);
 
-  return deepMergeWithPriorityAndBlackList(
+  const merged = deepMergeWithPriorityAndBlackList(
     currentStateClone,
     normalizedSnapshotState,
     SNAPSHOT_VALUES_TO_PRESERVE_WHEN_SWITCHING_SNAPSHOTS
   );
+  // Missing per-side settings in old/partial snapshots must never inherit the preceding Review configuration.
+  merged.selectionReducers.review = normalizedSnapshotState.selectionReducers.review;
+  merged.selectionReducers.unifiedFilter.rhs = normalizedSnapshotState.selectionReducers.unifiedFilter.rhs;
+  return merged;
 };

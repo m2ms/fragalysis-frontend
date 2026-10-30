@@ -6,6 +6,7 @@ import { thunk } from 'redux-thunk';
 import { ThemeProvider } from '../../ui/styles';
 import { getTheme } from '../../theme';
 import { layoutReducers } from '../../reducers/layout/layoutReducers';
+import { selectionReducers } from '../../reducers/selection/selectionReducers';
 import { ReviewWorkspace } from './review/ReviewWorkspace';
 import { ReviewButton } from './review/ReviewButton';
 import { useUpdateGridLayout } from './useUpdateGridLayout';
@@ -43,6 +44,7 @@ describe('review-aware upper layout', () => {
     const store = legacy_createStore(
       combineReducers({
         layoutReducers,
+        selectionReducers,
         previewReducers: (state = previewState) => state
       }),
       applyMiddleware(thunk)

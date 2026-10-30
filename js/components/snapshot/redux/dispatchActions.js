@@ -135,6 +135,15 @@ export const createNewSnapshot = ({
   const disableRedirect = state.snapshotReducers.disableRedirect;
   const currentSnapshot = state.projectReducers.currentSnapshot;
   const currentSnapshotId = currentSnapshot && currentSnapshot.id;
+  const persistSnapshotState = id =>
+    api({
+      url: `${base_url}/api/snapshot_state/${id}/`,
+      data: { state: snapshotData },
+      method: METHOD.PUT
+    }).catch(error => {
+      dispatch(setIsLoadingSnapshotDialog(false));
+      throw error;
+    });
 
   if (!session_project) {
     return Promise.reject('Project ID is missing!');
@@ -159,6 +168,7 @@ export const createNewSnapshot = ({
       },
       method: METHOD.PUT
     });
+    await persistSnapshotState(currentSnapshotId);
 
     // return Promise.resolve(dispatch(addCurrentActionsListToSnapshot(currentSnapshot, project, nglViewList))).then(
     return new Promise(resolve => {
@@ -168,6 +178,7 @@ export const createNewSnapshot = ({
         dispatch(setIsLoadingSnapshotDialog(false));
         dispatch(setOpenSnapshotSavingDialog(false));
       }
+      resolve(currentSnapshotId);
     });
   } else {
     let newType = type;
@@ -196,7 +207,10 @@ export const createNewSnapshot = ({
           additional_info: getAdditionalInfo(state)
         },
         method: METHOD.POST
-      }).then(res => {
+      }).then(async res => {
+        if (res.data.id) {
+          await persistSnapshotState(res.data.id);
+        }
         // redirect to project with newest created snapshot /:projectID/:snapshotID
         if (res.data.id && session_project) {
           console.log('created snapshot id: ' + res.data.id);
@@ -601,14 +615,14 @@ const prepareSnapshotStateToApply = (liveState, snapshotState, fromJobExec, load
     const toBeNoLongerDisplayedRHS = [];
     Object.keys(toBeDisplayedRHSCurrent).forEach(datasetID => {
       const currentDataset = toBeDisplayedRHSCurrent[datasetID];
-      const newDataset = toBeDisplayedRHSNew[datasetID];
-      if (newDataset) {
-        const toBeNoLongerDisplayed = currentDataset.filter(
-          currentStruct =>
-            !newDataset.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
-        );
-        toBeNoLongerDisplayedRHS.push(...toBeNoLongerDisplayed);
-      }
+      const newDataset = toBeDisplayedRHSNew[datasetID] || [];
+      const toBeNoLongerDisplayed = currentDataset.filter(
+        currentStruct =>
+          !newDataset.find(newStruct => newStruct.id === currentStruct.id && newStruct.type === currentStruct.type)
+      );
+      toBeNoLongerDisplayedRHS.push(
+        ...toBeNoLongerDisplayed.map(item => ({ ...item, datasetID: item.datasetID || datasetID }))
+      );
     });
     toBeNoLongerDisplayedRHS.forEach(notToBeDisplayed =>
       toBeDisplayedRHSNew[notToBeDisplayed.datasetID]

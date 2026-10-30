@@ -8,6 +8,7 @@ import { copyRepresentationSettingsList } from '../../../viewer/representationSt
 import { observeStructureOperation } from '../../../reducers/ngl/structureOperationCompletion';
 import { selectRhsObservationData } from '../molecule/utils/rhsObservations';
 import { isReviewGroupComplete, isReviewLigandVisible, resolveRhsReviewGroup } from './rhsReviewInspirations';
+import { SET_REVIEW_OWNERSHIP, normalizeReviewOwnership } from '../../../constants/reviewSettings';
 
 const sameId = (a, b) => String(a && typeof a === 'object' ? a.id : a) === String(b);
 const type = NGL_OBJECTS.LIGAND;
@@ -67,6 +68,7 @@ export const createReviewLigandController = ({
   let generation = 0;
   let unsubscribe;
   let ownDispatch = false;
+  let lastOwnership;
   const dispatchOwn = action => {
     ownDispatch = true;
     try {
@@ -76,6 +78,40 @@ export const createReviewLigandController = ({
     }
   };
   const emit = () => listeners.forEach(listener => listener());
+  const publishOwnership = () => {
+    const ownership = normalizeReviewOwnership({
+      groups: [...groups].map(([id, required]) => ({
+        id,
+        members: [...required],
+        releasing: releasingGroups.has(id)
+      })),
+      members: [...members.values()].map(member => ({
+        id: member.id,
+        code: member.code,
+        owned: [...member.owned].map(datasetID => (datasetID === undefined ? null : datasetID)),
+        held: [...member.held]
+      }))
+    });
+    if (JSON.stringify(ownership) !== JSON.stringify(lastOwnership)) {
+      dispatchOwn({ type: SET_REVIEW_OWNERSHIP, ownership });
+    }
+  };
+  const restoreOwnership = ownership => {
+    const saved = normalizeReviewOwnership(ownership);
+    saved.members.forEach(member =>
+      members.set(member.id, {
+        ...member,
+        owners: new Set(),
+        owned: new Set(member.owned.map(datasetID => (datasetID === null ? undefined : datasetID))),
+        held: new Set(member.held)
+      })
+    );
+    saved.groups.forEach(group => {
+      groups.set(group.id, new Set(group.members));
+      if (group.releasing) releasingGroups.add(group.id);
+      group.members.forEach(id => members.get(id).owners.add(group.id));
+    });
+  };
   const update = (id, value) => {
     snapshot = { ...snapshot, [id]: value };
     emit();
@@ -93,6 +129,8 @@ export const createReviewLigandController = ({
   };
   const start = () => {
     let target = store.getState().apiReducers.target_on;
+    lastOwnership = store.getState().selectionReducers.review?.ligandGroups;
+    restoreOwnership(lastOwnership);
     let previousQueues = [
       store.getState().selectionReducers.toBeDisplayedList,
       store.getState().datasetsReducers.toBeDisplayedList
@@ -100,9 +138,13 @@ export const createReviewLigandController = ({
     unsubscribe = store.subscribe(() => {
       const state = store.getState();
       const next = state.apiReducers.target_on;
-      if (next !== target) {
+      const ownership = state.selectionReducers.review?.ligandGroups;
+      const restored = ownership !== lastOwnership;
+      lastOwnership = ownership;
+      if (next !== target || (!ownDispatch && restored)) {
         target = next;
         reset();
+        restoreOwnership(ownership);
       } else if (!ownDispatch) {
         // Observe fresh external rendering intents, including a manual add which joins a pending review load.
         // Render acknowledgements only set rendered:true, so they never acquire an independent hold.
@@ -118,6 +160,7 @@ export const createReviewLigandController = ({
             else if (!path.intent.rendered) member.held.add(path.name);
           });
         });
+        publishOwnership();
       }
       previousQueues = [state.selectionReducers.toBeDisplayedList, state.datasetsReducers.toBeDisplayedList];
     });
@@ -172,7 +215,7 @@ export const createReviewLigandController = ({
     jobs.set(key, job);
     update(key, { pending: true, error: null });
     const current = () => {
-      if (job.generation !== generation) throw new Error('Ligand request belongs to a previous target.');
+      if (job.generation !== generation) throw new Error('Ligand request belongs to a previous target or snapshot.');
       return store.getState();
     };
     const enqueue = async (path, observation, display, representations) => {
@@ -265,6 +308,7 @@ export const createReviewLigandController = ({
             ));
       if (!path) throw new Error('The ligand has no available data source.');
       if (!member.held.has(path.name)) member.owned.add(path.datasetID);
+      publishOwnership();
       await enqueue(path, globalObservation || observation, true, representations);
       if (!isReviewLigandVisible(current(), observation)) throw new Error('The ligand did not become visible.');
     };
@@ -298,6 +342,7 @@ export const createReviewLigandController = ({
         if (complete || releasingGroups.has(key)) {
           releasingGroups.add(key);
           ids.forEach(memberId => members.get(memberId)?.owners.delete(key));
+          publishOwnership();
           const results = await Promise.allSettled(
             [...ids].map(memberId => {
               const member = members.get(memberId);
@@ -319,6 +364,7 @@ export const createReviewLigandController = ({
         // Claim every member synchronously before awaiting a shared load/removal. Independent groups remain concurrent.
         ids.forEach(memberId => members.get(memberId)?.owners.add(key));
         groups.set(key, ids);
+        publishOwnership();
         const results = await Promise.allSettled(
           required.map(observation => {
             const member = members.get(String(observation.id));
@@ -356,6 +402,7 @@ export const createReviewLigandController = ({
       .finally(() => {
         if (jobs.get(key) === job) {
           jobs.delete(key);
+          publishOwnership();
           if (!snapshot[key]?.error) update(key, { pending: false, error: null });
         }
       });

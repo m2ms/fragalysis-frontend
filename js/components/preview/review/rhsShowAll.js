@@ -20,6 +20,7 @@ export const showAllRhsObservations = () => (dispatch, getState) => {
     model: {
       ...model,
       activeOnly: false,
+      mainStatusFilters: [],
       filters: {},
       generalFilter: { ...selectRhsGeneralFilter(state), active: false },
       resetVersion: (model.resetVersion || 0) + 1

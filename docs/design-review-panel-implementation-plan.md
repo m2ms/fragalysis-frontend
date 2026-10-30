@@ -2,18 +2,20 @@
 
 Date: 2026-10-29
 
-Status: checkpoints 1-9 and additional checkpoints 6a and 7a implemented and automated checks passed; live checks passed on the available five-card fixture, with anonymous-session, shared-inspiration, and large-list live acceptance still pending; checkpoints 10-12 have not started.
+Status: checkpoints 1-12 and additional checkpoints 6a and 7a implemented; final automated/build gates passed. Live checks passed on the local five-card fixture, including snapshot save/restore, shared-inspiration ownership, grading, the authenticated DesignDB dialog, and viewer/layout integration. Different-target, large-list/multi-dataset, and extended runtime acceptance limits are recorded under checkpoint 12.
 
 Initial scope: RHS enabled; shared components and contracts support a future LHS implementation.
 
 This document records the latest decisions from the specification discussion. It supersedes the earlier proposals
 to grade personal peer reviews, filter by a user's review with a fallback, or allow only one active header colour.
-Only checkpoints 1-9 and additional checkpoints 6a and 7a have subsequently been authorized and implemented.
+All twelve checkpoints and additional checkpoints 6a and 7a have subsequently been authorized and implemented.
 
 ## Agreed behaviour
 
 - A floating **Review** button sits at the bottom-right of the visible RHS design navigator, over the molecule image
-  area while rows scroll beneath it. It stays visible and greyed out when the effective review list is empty.
+  area while rows scroll beneath it. It stays visible and greyed out when the effective review list is empty and no
+  main-status header colour is selected. Selected header colours keep Review reopenable so they can be cleared after
+  closing an empty filtered panel.
 - Review opens a full-width bottom panel beneath both navigators and the viewer. The panel reduces the height of the
   area above it, has a draggable height divider, and closes through Review or its own close button. An open empty panel
   remains closable through its header. Closing preserves the scene, filters, and panel height.
@@ -916,6 +918,72 @@ clears these buttons. Logged-out users can filter.
 records consistently with the existing summary; advanced-filter composition; displayed/pinned exceptions; grade changes
 under an active filter; no colour fallback to personal reviews; and independent LHS state.
 
+**Implementation and verification (2026-10-30):**
+
+- Added independent green/GOOD, yellow/MEDIOCRE, red/BAD, and ungraded/NONE buttons beside Show all and Hide all inactive.
+  Each has an accessible pressed state, selected styling, a status circle/text label, and a path-based tooltip. They
+  remain enabled for anonymous users once RHS data is loaded and remain available in an empty open panel. Selected
+  colours are stored as a small `mainStatusFilters` array in the existing RHS unified-filter model; no results, native
+  objects, or request state are stored there. Closing/reopening retains the selection. Snapshot normalization remains
+  checkpoint 12 work.
+- The shared full-result projection applies selected grades with OR, with no selected grades meaning unrestricted.
+  This is an additional AND restriction alongside search, general, coordinate/tag eligibility, structure, numeric/text,
+  and advanced filters. The existing advanced main-status/peer-review OR rules and sorting composition are unchanged.
+  The restriction applies before navigator pagination and Review virtualization. Both views respond to shared quality
+  updates; displayed exceptions retain their established behavior.
+- Extracted the existing Review main-status lookup into a small shared pure helper. Filtering builds one index of
+  newest-first main-status records for the full result, excluding `Created on load` records and all peer reviews.
+  Missing/NONE main status is ungraded, even when a green/yellow/red peer-review ring exists. Observation identity is
+  used throughout. Matching cards keep natural order; acknowledged displayed non-matches remain in Review's leading
+  block. The navigator retains its existing Always show displayed hits behavior. Hide all inactive continues to show
+  acknowledged active ligands despite preserved predicates.
+- Show all clears the four header toggles with the existing single RHS reset event, preserving sort, checkboxes,
+  structures, camera, and LHS settings. Colour toggles and asynchronous column updates read the latest RHS model, so
+  they do not overwrite one another. Unknown/malformed colour selections normalize to valid choices or unrestricted.
+- **Recovery refinement:** selected header colours keep the RHS Review button enabled even when the filtered result
+  is empty. Otherwise closing the panel would hide the only controls capable of clearing that restriction. The normal
+  empty-list disabled behavior remains when no header colour is selected; earlier checkpoint checks assumed that
+  state. This is a scoped addition to Review availability, not a change to the existing displayed-item bypass.
+- **PASS focused:** 4 suites / 66 tests (169.723 s). Coverage includes all 16 colour combinations over the complete
+  80-observation result, latest/main/default/peer semantics, existing advanced OR plus new AND composition, search/
+  structure/numeric restrictions, displayed retention and navigator bypass, active-only behavior, controlled widgets,
+  confirmed grade changes under an active filter, empty-result recovery, anonymous filtering with grading disabled,
+  Show all reset, LHS/selection/scene preservation, and existing grading regressions.
+- **PASS full suite:** 83 suites / 649 tests (463.869 s), including existing viewer, queue, transfer, snapshot, layout,
+  filtering, and main-status compatibility checks.
+- **PASS build/assets:** `corepack yarn build` compiled in 77.055 s and validated backend bundle stats with the same two
+  bundle-size warnings. `corepack yarn verify:moorhen-assets` verified 275 files / 114,450,225 bytes. Targeted ESLint
+  passed with zero errors/warnings; targeted Prettier and `git diff --check` passed. No dependencies, backend source,
+  legacy API payloads, viewer operations, snapshot migration, or DesignDB action were added.
+- **PASS live Chrome:** used the Django-backed A71EV2A target with the final production bundle and native Moorhen ready.
+  The available Chrome session was anonymous. After the user's authorization that all local backend data is disposable,
+  prepared a target-scoped fixture through Django's normal model save path: v1a green, v2a yellow, v3a red, v4a/v5a
+  ungraded. This added three fixture main-status records; old history was preserved. v4a retains a green peer-review
+  ring, making the main-status/peer distinction visible.
+- **PASS live combinations/composition:** green returned v1a; green+yellow returned v1a/v2a; yellow returned v2a;
+  yellow+ungraded returned v2a/v4a/v5a; ungraded returned v4a/v5a; red+ungraded returned v3a/v4a/v5a; red returned v3a;
+  clearing every colour restored all five. Both lists agreed. Green excluded the green-peer/ungraded v4a, while
+  ungraded included it. Advanced main-Good OR peer-Good returned v1a/v4a; adding header ungraded reduced this to v4a;
+  adding header green restored v1a/v4a. RHS search combined with the colour filter, and Show all cleared search, both
+  advanced Good checkboxes, and every header colour together. Checkbox selection, LHS search, and the scene survived.
+- **PASS live empty/retention:** red plus a v1a search produced an empty result. Review stayed reopenable; closing and
+  reopening retained the active red button and empty state; Show all recovered all five. Displayed v3a with its image,
+  then selected green: Review ordered the displayed red v3a before matching v1a, and the navigator kept its natural
+  v1a/v3a order under the existing displayed bypass. Releasing the v3a group removed that exception after native
+  disposal. Temporary groups, checkbox selection, searches, and colour/advanced filters were cleared afterward;
+  the initial ligand/protein remained and Review stayed open at 336 px. The example backend grades remain available.
+- **PASS anonymous integration/follow-up to checkpoint 9:** filters were usable, grading shortcuts disabled, and their
+  tooltip explained login. Enter opened the existing quality history with no status-edit or peer-add controls. This
+  closes the previously pending anonymous-session live check for the available fixture.
+- **NOT RUN live:** changing a grade while a colour filter is active (this Chrome session is anonymous), a load-created
+  default record fixture, results beyond navigator pagination, multiple RHS datasets, snapshot switching, repeated pose
+  transfers, and extended memory monitoring. Automated checks cover the relevant grade-update/default/full-result
+  boundaries, but do not establish those unavailable interactive outcomes. User acceptance and checkpoints 11-12 remain.
+- Logs/proof (ignored): `bundles/review-step10-focused.log`, `review-step10-tests.log`, `review-step10-build.log`,
+  `review-step10-assets.log`, `review-step10-lint.log`, `review-step10-green-yellow.jpg`, `review-step10-ungraded.jpg`,
+  `review-step10-empty-recovery.jpg`, `review-step10-retained.jpg`, `review-step10-anonymous-summary.jpg`,
+  `review-step10-anonymous-login.jpg`, `review-step10-scene-before.jpg`, and `review-step10-final.jpg`.
+
 ### 11. Push to DesignDB coming-soon dialog
 
 **Deliverable:** bottom-right Push to DesignDB action and a dialog styled from the supplied mockup. Show WARNING!,
@@ -930,6 +998,44 @@ No push request, grading write, or structure operation is connected to this dial
 
 **Developer checks:** authentication gating, disabled confirmation, dismiss behaviour, accessible dialog labelling, and
 absence of a submission/network action. Add its tooltip paths through the existing tooltip boundary.
+
+**Implementation and verification (2026-10-30):**
+
+- Added `ReviewDesignDbAction` after the scrolling cards in the RHS panel. Its footer remains at the bottom-right,
+  including in an empty result. The component uses local dialog state and the existing `canGradeReview` Django rule;
+  missing/false `pk`, explicitly false authentication, and `NOT_LOGGED_IN` remain distinct authentication cases.
+  The disabled logged-out action has a path-based login tooltip. No Redux action, API submission, main-status save,
+  native viewer operation, or DesignDB endpoint is connected to this component.
+- The labelled dialog shows **WARNING!** and adjacent **Coming soon**, followed by the complete agreed question and
+  irreversible-step warning. **YES** is disabled and has no handler. **NO** closes the dialog, starts with keyboard
+  focus, and returns focus to the opener; Escape and backdrop dismissal use the same local close action. Added tooltip
+  paths for the opener, login explanation, unavailable confirmation, and cancellation through the existing UI boundary.
+- Increased the initial panel height from 336 to 376 px to reserve the footer while keeping the first row's grading
+  controls visible. Chrome exposed slight footer clipping at the old 120 px minimum, so the minimum is now 160 px.
+  Existing height clamping for a smaller workspace, remembered user resizing, close/reopen, and viewer ownership remain.
+- Automated PASS: focused Jest **4 suites / 25 tests** (69.230 s), including seven new dialog/authentication tests and
+  a shared navigator/Review integration test. The integration check opens the dialog with a selected green filter,
+  attempts the disabled confirmation, dismisses with NO, and verifies identical Redux state, grades, filters, selections,
+  viewer state, and both result lists. Further cases cover keyboard Enter/Escape and focus restoration, full accessible
+  text, login tooltip resolution, disabled logged-out actions, and no API call. Existing empty-panel integration checks
+  also assert the footer action remains available. Final layout rerun PASS: **1 suite / 3 tests** (7.680 s).
+- Targeted ESLint PASS with **0 errors / 0 warnings**; targeted Prettier and `git diff --check` PASS. Final production
+  build PASS (71.356 s), including the existing backend stats validator; only the two existing bundle-size warnings
+  remain. Final bundle: `main-3db03b37ba5b3b550a92.js`. Post-build Moorhen verification PASS: **275 files /
+  114,450,225 bytes**.
+- Chrome PASS on local A71EV2A with five cards: bottom-right footer, complete initial row at 376 px, disabled logged-out
+  action, and the exact login tooltip. The target and native Moorhen viewer loaded normally after startup settled.
+  Reloaded the final bundle and verified its hash. The footer fits completely at the new 160 px minimum, close/reopen
+  retains that height, and Hide all inactive leaves an empty panel with both list actions, X, and the disabled footer
+  visible. Show all restores all five cards. Returned the panel to 376 px, with filters/searches clear, no RHS ligand
+  toggled, and the original LHS ligand/protein scene retained. A disabled-action click opens no dialog.
+- NOT RUN: authenticated native dialog opening/NO dismissal and its visual acceptance, because the available Chrome
+  session is anonymous. Those behaviours passed automated tests; they are not claimed as live acceptance. No backend
+  data or authentication settings were changed for this checkpoint. Full Jest and the final integration gate remain
+  checkpoint 12 work; this checkpoint used the focused suites for its local UI/layout scope.
+- Logs/proof (ignored): `bundles/review-step11-focused.log`, `review-step11-layout.log`, `review-step11-build.log`,
+  `review-step11-assets.log`, `review-step11-lint.log`, `review-step11-footer.jpg`, `review-step11-login.jpg`, and
+  `review-step11-minimum-empty.jpg`.
 
 ### 12. Snapshot persistence, target reset, and final integration
 
@@ -960,6 +1066,92 @@ missing per-side fields, both snapshot API storage fallbacks, target-change timi
 ownership reconstruction, queue tombstones, caches, camera interruption, and suppressed progress dialogs. Run all relevant
 snapshot, viewer/host/boundary, display queue, navigation/transfer, and filter tests, then the full suite and production gate.
 
+**Implementation and verification (2026-10-30):**
+
+- Added optional `selectionReducers.review` settings: panel owner/open state, requested height, per-side toolbar ordering,
+  and minimal ligand-group ownership. A shared normalizer whitelists IDs, codes, dataset paths, independent holds, and
+  cleanup flags; owners are reconstructed from group membership. Native handles, buffers, promises, pending/error
+  feedback, image results, and open dialogs are excluded. The existing RHS canonical model continues to hold column
+  filters/sorts, general filtering, header main-status colours, and active-only mode; no duplicate result list is saved.
+- Review now reads its settings from Redux, preserving close/reopen and resize clamping. A runtime-only restore revision
+  remounts the panel's transient content to close popovers/dialogs, while the upper workspace, provider and single native
+  viewer remain mounted. Repeated ordering callbacks preserve state identity. Old/partial snapshots explicitly default
+  Review to closed, 376 px, no header colour and no active-only restriction; RHS fields replace the preceding model
+  rather than inheriting missing predicates. A missing RHS general filter uses that snapshot's legacy shared filter
+  when present, otherwise an explicit inactive default; it never borrows the current LHS filter. Existing LHS and legacy
+  `detailRHS` data are preserved.
+- Applied the same normalization to initial/full-state hydration and incremental slice reload. Changing target resets
+  Review/order/ownership, RHS canonical filters/search, and the image cache, and invalidates pending input work. A matching
+  target initialization after snapshot hydration does not overwrite restored settings. There is no browser-storage
+  persistence. Saved snapshots omit restore/debounce counters. The controlled structure filter rejects a pre-restore
+  response even if the restored query is identical. Late ligand jobs are cancelled and leave cleanup to the existing
+  ordered display queues; restored ownership protects both shared and independently displayed inspirations.
+- Investigation found that regular `createNewSnapshot` computed cleaned state but never uploaded it. Normal Save and
+  overwrite now PUT that state to the existing `/api/snapshot_state/<id>/` endpoint before acknowledging success;
+  overwrite also resolves its existing completion promise. Upload failure clears loading and rejects without a success
+  acknowledgement. The Share path's grouped state/full-screen/viewer-image uploads are unchanged. Snapshot payload shapes,
+  legacy fallback, queue tombstones, cached target data, camera request ownership/animation, and dialog suppression remain.
+  Also extended the existing in-place preservation mask to retain the preview SVG cache, which the old shaping cleared.
+- The dataset-only restore audit reproduced a further queue bug: when a destination snapshot omitted an entire dataset,
+  its old objects never received removal commands. Missing destination datasets now mean an empty intent list, and
+  tombstones retain the enclosing dataset ID even for older entries without one. The new regression failed before the
+  fix and passed afterward; it delays native disposal and checks resources, displayed selections, and queue cleanup.
+  The existing incremental queues and live counters still own the work; no viewer teardown was added.
+- Final automated PASS: **85 suites / 670 tests** (391.630 s), including the native adapter/host/boundary, snapshot,
+  display queue, transfer/navigation, filtering, and Review suites. Final focused PASS: **5 suites / 31 tests** (136.012 s);
+  legacy-default focused PASS: **2 suites / 11 tests** (9.866 s); the omitted-dataset regression PASS: **1 selected test**
+  (23.628 s). The full gate includes all 29 ownership/rendering tests. Added coverage for ordinary/overwrite Save and failure,
+  old/partial/full/incremental hydration, target-reset timing, identical-query late replies, panel dialog reset and upper
+  DOM retention, both snapshot storage fallbacks, shared/independent ownership reconstruction, and late native disposal.
+  Updated two layout/host fixtures to use the real selection reducer now that Review is controlled by Redux; the initial
+  full run exposed those incomplete fixtures. No assertions or compatibility checks were removed.
+- Production build PASS (69.600 s), including backend stats validation; the two existing bundle-size warnings remain.
+  Final bundle: `main-d58c5d171cff30304ac2.js`. Post-build assets PASS: **275 files / 114,450,225 bytes**. Targeted ESLint
+  PASS with **0 errors / 0 new warnings**; 18 existing unused-variable warnings remain in the selection/snapshot files,
+  verified against HEAD. Targeted Prettier and `git diff --check` PASS. No dependency or backend-source change.
+- Chrome PASS: real Share saved local project **1**, snapshot **1 (A)** with Review open at 452 px, green+yellow and an
+  active design/inspiration group. Loading its URL restored all those settings. Regular Save created **2 (B)** in the
+  same project with Review closed, remembered height 400 px, red filtering and v3a active. Backend state inspection
+  confirmed the cleaned settings, ownership and absent image/restore caches. A/B thumbnail switches restored the open/
+  closed state, height, colours, acknowledged ligand groups and different orientations. The same canvas backend identity
+  survived, and no blocking dialog appeared at the observed switch checkpoints. The existing 400 ms camera path is
+  unchanged; automated tests retain interruption/cancellation and final-frame application coverage.
+- Chrome PASS: a disposable **3 (legacy fixture)**, using only `additional_info.snapshotState` and omitting Review/RHS
+  canonical fields, switched in place to closed Review. Reopening gave 376 px with all header colours off and no inherited
+  active-only view. A real v5a NONE→GOOD save under Ungraded removed its card/result; restoring older A retained the latest
+  server GOOD grade and included v5a under A's green filter. The existing summary control restored v5a to NONE afterward.
+  The authenticated DesignDB warning/Coming soon/disabled YES/NO check also passed, closing the earlier live-check gap.
+- Chrome PASS: added inspiration **10 (A71EV2A-x0229b)** to disposable v2a/observation **927**, through its existing computed
+  set, to create an actual shared-inspiration fixture. Updated A through its existing UPDATE action with both v1a/v2a
+  groups, then switched B→A. Releasing v1a retained the shared ligand for v2a; releasing v2a removed it. Independent
+  A71EV2A-x0188a remained visible. No pending operation remained. A short same-page sample during the release check fell
+  from **101,716,288 to 96,133,280 bytes** of JS heap (about 97→92 MiB), with DOM nodes 8,213→7,041 and the same canvas.
+  This is a short integration sample, not an extended native/GPU-memory leak audit.
+- Chrome PASS: Default→Draggable→Default retained the same canvas and 452 px Review; portal movement changed CDP's
+  frontend node ID but preserved its backend identity. LHS ligand/protein off/on, RHS protein rendering, and native density
+  on/off completed without an error or pending indicator. Forward/back RHS transfer with ligand, protein and the shared
+  inspiration moved the design ligand to the destination and removed the source; the common inspiration stayed visible.
+- Chrome PASS: a second forward/back pair included inspiration density. The common inspiration's density reached the
+  destination, the source design ligand was removed, and native map mesh was visually present. Restoring A cleared the
+  temporary maps/proteins through the normal queues, with no pending work or errors. Repeated the legacy check from an
+  explicit Hide all inactive view: legacy restore closed Review and reopening showed all five cards at 376 px with no
+  header colours, so the active-only restriction did not leak.
+- Chrome PASS: an ordinary target URL load started with Review closed; reopening showed 376 px, all five observations,
+  no header colours and no active RHS ligand. Returned to A by its saved URL and verified the final bundle hash, 452 px,
+  green+yellow, both active groups, no pending work and no open dialogs. The final screenshot shows this restored state.
+- Local test data only: A/B/legacy snapshots, the extra v2a inspiration link, and the two v5a grade-history entries remain
+  in the disposable backend. No authentication setting was changed and no DesignDB submission was enabled.
+- NOT RUN: switching to a different real target (the backend contains only A71EV2A), native large-list/multi-dataset
+  fixtures, continuous animation-frame/flash recording, exhaustive map/control combinations, direct GPU-buffer inspection,
+  and an extended tab-memory soak. Target changes and late completions have automated coverage; these unavailable live
+  checks and user acceptance remain unverified. No default/remote Cypress suite was run.
+- Logs/proof (ignored): `bundles/review-step12-tests.log`, `review-step12-final-focused.log`, `review-step12-ownership.log`,
+  `review-step12-build.log`, `review-step12-assets.log`, `review-step12-lint.log`, `review-step12-lint-baseline.log`,
+  `review-step12-legacy-defaults.log`, `review-step12-dataset-regression.log` (expected initial failure),
+  `review-step12-dataset-fixed.log`, `review-step12-live-metrics.json`, `review-step12-a-restored.jpg`,
+  `review-step12-b-restored.jpg`, `review-step12-design-db.jpg`, `review-step12-map-transfer.jpg`,
+  `review-step12-legacy.jpg`, and `review-step12-final.png`.
+
 ## Final acceptance gate
 
 Run `yarn test:ci`, `yarn build`, `yarn verify:moorhen-assets`, and `git diff --check`. Use targeted ESLint for changed
@@ -988,9 +1180,9 @@ fixture/runtime checks explicitly; they remain unverified rather than implicitly
 | 7a. Card ligand centering | Implemented | PASS: 82 suites/590 tests, focused 3 suites/20 tests, build/assets, targeted lint/format checks (baseline warnings only) | PASS: Chrome icon position, exact tooltip, inactive/pending disabling, native card/navigator focus, mouse/Enter, image/bulk/scene preservation; fixture limits above; user acceptance pending |
 | 8. Inspiration groups/ownership | Implemented | PASS: 82 suites/605 tests, focused 3 suites/36 tests, build/assets, targeted lint/format checks | PASS: Chrome design/inspiration rendering, camera/bulk/protein preservation, partial restoration, independent holds before/during activation, concurrent designs, selective release, close/reopen during loading; shared-inspiration/dataset/large-list fixture limits above; user acceptance pending |
 | 9. Main-status grading/summary | Implemented | PASS: 83 suites/625 tests, focused 6 suites/58 tests, build/assets, targeted lint/format checks (baseline warnings only) | PASS: Chrome controls/initial height, real green/yellow saves, card/navigator synchronization, no-op history, keyboard summary/history, scene/bulk preservation, ungraded restoration and close/reopen; anonymous/peer/failure/large-list fixture limits above; user acceptance pending |
-| 10. Main-status colour filtering | Not started | Not run | Not run |
-| 11. DesignDB placeholder dialog | Not started | Not run | Not run |
-| 12. Snapshots/target reset/integration | Not started | Not run | Not run |
+| 10. Main-status colour filtering | Implemented | PASS: 83 suites/649 tests, focused 4 suites/66 tests, build/assets, targeted lint/format checks | PASS: anonymous Chrome colour combinations, main/peer distinction, search/advanced composition, Show all reset, displayed retention, empty close/reopen, selection/LHS/scene preservation; fixture limits above; user acceptance pending |
+| 11. DesignDB placeholder dialog | Implemented | PASS: focused 4 suites/25 tests, final layout 1 suite/3 tests, build/assets, targeted lint/format checks | PASS: Chrome footer/login explanation, initial/minimum sizing, empty-result availability, close/reopen and Show all recovery; authenticated dialog/NO also verified in checkpoint 12 |
+| 12. Snapshots/target reset/integration | Implemented | PASS: 85 suites/670 tests, focused 5 suites/31 tests, legacy defaults 2 suites/11 tests, omitted-dataset regression, build/assets, targeted lint/format checks | PASS: Chrome Share/Save, URL and in-place A/B/legacy restore, grades, shared ownership/release, viewer/layout/ligand/protein/map/transfer checks, normal reload defaults and short memory sample; unavailable live checks and user acceptance above |
 
 After every implemented checkpoint, update this document and show the user:
 

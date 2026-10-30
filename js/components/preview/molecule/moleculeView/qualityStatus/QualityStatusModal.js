@@ -59,7 +59,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export const QualityStatusModal = memo(
-  ({ openModal, onModalClose, statuses, latestPeerReviews, site_observation, anchorElQualityStatus }) => {
+  ({ openModal, onModalClose, statuses, latestPeerReviews, site_observation, anchorElQualityStatus, readOnly = false }) => {
     const getMainQualityStatusObject = useCallback(() => {
       return statuses?.find(status => status.main_status === true);
     }, [statuses]);
@@ -159,7 +159,7 @@ export const QualityStatusModal = memo(
                   props={{ className: classes.mainStatusLight }}
                 />
               </Grid>
-              {DJANGO_CONTEXT.pk && (
+              {DJANGO_CONTEXT.pk && !readOnly && (
                 <>
                   <Grid className={classes.gridItem} item xs={4}>
                     <Typography variant="body1">Set status:</Typography>
@@ -221,7 +221,7 @@ export const QualityStatusModal = memo(
                   )
                 );
               })}
-              {DJANGO_CONTEXT.pk && (
+              {DJANGO_CONTEXT.pk && !readOnly && (
                 <Grid className={classes.gridItem} item xs>
                   <RichTooltip path="addPeerReview">
                     <IconButton size="small" onClick={addPeerReview}>

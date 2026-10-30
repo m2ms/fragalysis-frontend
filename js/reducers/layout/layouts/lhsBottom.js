@@ -2,10 +2,19 @@ import { baseColumnSize, collapsedPanelSize, layoutCols, layoutItemNames } from 
 
 const layout = {
   static: false,
-  createLayout: (showLHS, showRHS, hideProjects, height, margin, layoutLocked, panelsExpanded) => {
+  createLayout: (
+    showLHS,
+    showRHS,
+    hideProjects,
+    height,
+    margin,
+    layoutLocked,
+    panelsExpanded,
+    fitAvailableHeight = false
+  ) => {
     return Object.fromEntries(
       Object.entries(layoutCols).map(([key, cols]) => {
-        const maxRows = Math.max(Math.floor((height - margin) / (margin + 1)), 60);
+        const maxRows = Math.max(Math.floor((height - margin) / (margin + 1)), fitAvailableHeight ? 1 : 60);
         const halfRows = maxRows / 2;
 
         const tagDetailsRows = panelsExpanded[layoutItemNames.TAG_DETAILS] ? halfRows : collapsedPanelSize;

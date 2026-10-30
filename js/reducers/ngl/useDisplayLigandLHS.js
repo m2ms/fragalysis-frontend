@@ -56,7 +56,7 @@ export const useDisplayLigandLHS = () => {
   const displayLigand = useCallback(
     async ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) throw new Error('Ligand observation is unavailable.');
       const colourToggle = getRandomColor(data);
       const molId = generateMoleculeId(data);
 
@@ -103,7 +103,7 @@ export const useDisplayLigandLHS = () => {
   const removeLigand = useCallback(
     async ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) throw new Error('Ligand observation is unavailable.');
       // A bulk ligand may be deselected before it starts downloading. Deletion
       // needs only its name and must still await any native load/disposal by name.
       await dispatch(

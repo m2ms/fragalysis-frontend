@@ -32,7 +32,7 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export const ObservationFilter = memo(({ onFilterChange, onSortingChange, viewConfig = {} }) => {
+export const ObservationFilter = memo(({ onFilterChange, onSortingChange, viewConfig = {}, controlled = false, value, sorting }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const side = viewConfig.kind === 'rhs' ? 'rhs' : 'lhs';
@@ -65,18 +65,24 @@ export const ObservationFilter = memo(({ onFilterChange, onSortingChange, viewCo
     []
   );
 
-  const [filterValue, setFilterValue] = useState(initFilterValue);
-  const [sortingValue, setSortingValue] = useState(initSortingValue);
+  const [localFilterValue, setFilterValue] = useState(initFilterValue);
+  const [localSortingValue, setSortingValue] = useState(initSortingValue);
+
+  const filterValue = controlled ? (value || initFilterValue) : localFilterValue;
+  const sortingValue = controlled ? (sorting || initSortingValue) : localSortingValue;
 
   const initializedFilterKeyRef = useRef(null);
 
-  const handleFilterChangeHandler = handleObservationFilterChange(setFilterValue, onFilterChange, filterKey);
+  const handleFilterChangeHandler = controlled
+    ? (current, property, next) => () => onFilterChange({ ...current, [property]: next })
+    : handleObservationFilterChange(setFilterValue, onFilterChange, filterKey);
 
   const coordinateFilterApplied = useSelector(state =>
     viewConfig.getIsCoordinateFilterApplied?.(state) ?? state.selectionReducers.isCoordinateFilterApplied
   );
 
   useEffect(() => {
+    if (controlled) return;
     const nextFilterValue = filterDetail || initFilterValue;
     // The reducer clones every filter entry, so mirror only actual value changes.
     setFilterValue(currentFilterValue =>
@@ -89,14 +95,14 @@ export const ObservationFilter = memo(({ onFilterChange, onSortingChange, viewCo
         dispatch(setUnifiedFilterItem(filterKey, initFilterValue));
       }
     }
-  }, [dispatch, filterDetail, filterKey, initFilterValue]);
+  }, [controlled, dispatch, filterDetail, filterKey, initFilterValue]);
 
   const handleSortingChange = (property, value) => {
     const newSortingValue = {
       ...sortingValue,
       [property]: value
     };
-    setSortingValue(newSortingValue);
+    if (!controlled) setSortingValue(newSortingValue);
     onSortingChange(newSortingValue);
   };
 
@@ -116,8 +122,8 @@ export const ObservationFilter = memo(({ onFilterChange, onSortingChange, viewCo
         dispatch(setActiveCoordinateFilterSide(side));
       }}
       handleReset={() => {
-        setFilterValue(initFilterValue);
-        setSortingValue(initSortingValue);
+        if (!controlled) setFilterValue(initFilterValue);
+        if (!controlled) setSortingValue(initSortingValue);
         onFilterChange(initFilterValue);
         onSortingChange(initSortingValue);
         dispatch(setUnifiedFilterItem(filterKey, initFilterValue));

@@ -7,7 +7,9 @@ export const getMainObservationForComputedInspirations = ({ data, observations =
   observations.find(observation => observation.id === data?.main_site_observation) || null;
 
 export const getDefaultComputedInspirations = ({ data, observations = [] }) =>
-  getMainObservationForComputedInspirations({ data, observations })?.computed_inspirations || data?.computed_inspirations || [];
+  getMainObservationForComputedInspirations({ data, observations })?.computed_inspirations ||
+  data?.computed_inspirations ||
+  [];
 
 export const getComputedSetIdsFromTags = tags => {
   const computedSetIds = new Set();
@@ -65,3 +67,13 @@ export const getFilteredComputedInspirations = (observation, activeTags = []) =>
 
   return computedInspirations.filter(inspirationId => allowedInspirationIds.has(inspirationId));
 };
+
+// Shared by the navigator and review cards, including split/synthetic observation poses.
+export const getComputedInspirationsForPose = ({ data, observations = [] }, activeTags = []) =>
+  getFilteredComputedInspirations(
+    {
+      ...(observations.find(item => item.id === data?.main_site_observation) || data),
+      computed_inspirations: getDefaultComputedInspirations({ data, observations })
+    },
+    activeTags
+  );

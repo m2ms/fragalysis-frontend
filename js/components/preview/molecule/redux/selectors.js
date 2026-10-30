@@ -2,6 +2,7 @@ import { truncate } from 'lodash';
 import { createSelector } from 'reselect';
 import { CATEGORY_TYPE } from '../../../../constants/constants';
 import { TAG_META_CATEGORIES, isTagVisibleOnSide } from '../../tags/utils/tagUtils';
+import { selectRhsObservations } from '../utils/rhsObservations';
 
 const getAllMolecules = state => state.apiReducers.all_mol_lists;
 const getAllSelectedTags = state => state.selectionReducers.selectedTagList;
@@ -275,7 +276,7 @@ export const selectJoinedMoleculeListLHS = createSelector(
 );
 
 export const selectJoinedMoleculeListRHS = createSelector(
-  getAllMolecules,
+  selectRhsObservations,
   getRHSSelectedTags,
   getRHSTagFilteringMode,
   getNoTagsReceived,
@@ -353,6 +354,11 @@ export const selectJoinedMoleculeListRHS = createSelector(
           return !mol.tags_set || mol.tags_set.length === 0 || !hasCuratorTags;
         });
       }
+    }
+
+    // Coordinate restrictions also apply to the display-all and untagged RHS branches.
+    if (isCoordinateFilterApplied) {
+      allMoleculesList = allMoleculesList.filter(molecule => coordinateFilterResults.includes(molecule.id));
     }
 
     allMoleculesList.sort((a, b) => {

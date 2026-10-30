@@ -15,6 +15,7 @@ import { PlotlyView } from './plotly/plotlyView';
 import { layoutItemNames } from '../../reducers/layout/constants';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
 import { PoseListRHS } from './molecule/poseListRHS';
+import { fitPanelHeights } from './panelHeights';
 
 const useStyles = makeStyles(theme => ({
   root: { display: 'flex', height: '100%', overflow: 'hidden' },
@@ -281,14 +282,7 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
       if (!total || total === lastTotal) return;
       lastTotal = total;
       setHeights(prev => {
-        const sum = prev.reduce((a, b) => a + b, 0);
-        const factor = total / sum;
-        let newH = prev.map((h, i) => clampRange(h * factor, panels[i].min, total));
-        const drift = total - newH.reduce((a, b) => a + b, 0);
-        if (Math.abs(drift) > 1) {
-          const idx = newH.indexOf(Math.max(...newH));
-          newH[idx] += drift;
-        }
+        const newH = fitPanelHeights(panels, prev, panelSuggestedHeights, total);
         if (sameNumberArray(prev, newH)) return prev;
         rememberHeights(newH);
         return newH;
@@ -297,7 +291,7 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
     const node = gridRef?.current?.elementRef?.current?.firstChild;
     if (node) observer.observe(node);
     return () => observer.disconnect();
-  }, [getTotalHeight, gridRef, panels, rememberHeights]);
+  }, [getTotalHeight, gridRef, panels, panelSuggestedHeights, rememberHeights]);
 
   useLayoutEffect(() => {
     let lastTotal = null;
@@ -306,14 +300,7 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
       if (!total || total === lastTotal) return;
       lastTotal = total;
       setRHSHeights(prev => {
-        const sum = prev.reduce((a, b) => a + b, 0);
-        const factor = total / sum;
-        let newH = prev.map((h, i) => clampRange(h * factor, rhsPanels[i].min, total));
-        const drift = total - newH.reduce((a, b) => a + b, 0);
-        if (Math.abs(drift) > 1) {
-          const idx = newH.indexOf(Math.max(...newH));
-          newH[idx] += drift;
-        }
+        const newH = fitPanelHeights(rhsPanels, prev, panelSuggestedRHSHeights, total);
         if (sameNumberArray(prev, newH)) return prev;
         rememberRHSHeights(newH);
         return newH;
@@ -322,7 +309,7 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
     const node = gridRef?.current?.elementRef?.current?.firstChild;
     if (node) observer.observe(node);
     return () => observer.disconnect();
-  }, [getTotalHeight, gridRef, rhsPanels, rememberRHSHeights]);
+  }, [getTotalHeight, gridRef, rhsPanels, panelSuggestedRHSHeights, rememberRHSHeights]);
 
   //  Divider drag handler - horizontal resizers between panels
   const makeOnResize = useCallback(
@@ -465,37 +452,17 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
     if (!total) return;
 
     setHeights(prev => {
-      const next = [...prev];
-      let fixedSum = 0;
-      const variableIdx = [];
-
       panels.forEach((p, i) => {
         const ov = panelSuggestedHeights.find(x => x.id === p.id)?.suggestedHeight;
         if (ov != null) {
           if (Math.abs((prev[i] || 0) - ov) >= 1 && prev[i] > p.min) {
             lastVariableHeights.current[p.id] = prev[i];
           }
-          next[i] = clampRange(ov, p.min, total);
-          fixedSum += next[i];
-        } else {
-          variableIdx.push(i);
         }
       });
-
-      const remain = Math.max(total - fixedSum, 0);
-      if (!variableIdx.length) return next;
-
-      const baseSum = variableIdx.reduce((s, i) => s + (lastVariableHeights.current[panels[i].id] ?? prev[i]), 0) || 1;
-
-      variableIdx.forEach(i => {
-        const remembered = lastVariableHeights.current[panels[i].id] ?? prev[i];
-        next[i] = clampRange((remembered / baseSum) * remain, panels[i].min, remain);
-      });
-
-      const drift = total - next.reduce((a, b) => a + b, 0);
-      if (Math.abs(drift) >= 1) next[variableIdx[0]] += drift;
-
-      return next;
+      const weights = panels.map((p, i) => lastVariableHeights.current[p.id] ?? prev[i]);
+      const next = fitPanelHeights(panels, weights, panelSuggestedHeights, total);
+      return sameNumberArray(prev, next) ? prev : next;
     });
   }, [panelSuggestedHeights, getTotalHeight, panels]);
 
@@ -504,36 +471,9 @@ export const ResizableLayout = ({ gridRef, nglPortal }) => {
     if (!total) return;
 
     setRHSHeights(prev => {
-      const next = [...prev];
-      let fixedSum = 0;
-      const variableIdx = [];
-
-      rhsPanels.forEach((p, i) => {
-        const ov = panelSuggestedRHSHeights.find(x => x.id === p.id)?.suggestedHeight;
-        if (ov != null) {
-          next[i] = clampRange(ov, p.min, total);
-          fixedSum += next[i];
-        } else {
-          variableIdx.push(i);
-        }
-      });
-
-      const remain = Math.max(total - fixedSum, 0);
-
-      if (!variableIdx.length) return next;
-
-      const baseSum =
-        variableIdx.reduce((s, i) => s + (lastVariableRHSHeights.current[rhsPanels[i].id] ?? prev[i]), 0) || 1;
-
-      variableIdx.forEach(i => {
-        const remembered = lastVariableRHSHeights.current[rhsPanels[i].id] ?? prev[i];
-        next[i] = clampRange((remembered / baseSum) * remain, rhsPanels[i].min, remain);
-      });
-
-      const drift = total - next.reduce((a, b) => a + b, 0);
-      if (Math.abs(drift) >= 1) next[variableIdx[0]] += drift;
-
-      return next;
+      const weights = rhsPanels.map((p, i) => lastVariableRHSHeights.current[p.id] ?? prev[i]);
+      const next = fitPanelHeights(rhsPanels, weights, panelSuggestedRHSHeights, total);
+      return sameNumberArray(prev, next) ? prev : next;
     });
   }, [panelSuggestedRHSHeights, getTotalHeight, rhsPanels]);
 

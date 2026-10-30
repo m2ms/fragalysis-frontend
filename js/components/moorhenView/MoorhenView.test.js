@@ -7,6 +7,8 @@ import { NglContext } from '../nglView/nglProvider';
 import MoorhenViewerAdapter from '../../viewer/MoorhenViewerAdapter';
 import { initializeMoorhenCcp4Module } from '../moorhenProof/moorhenCcp4';
 import MoorhenView from './MoorhenView';
+import { ReviewWorkspace } from '../preview/review/ReviewWorkspace';
+import { ReviewButton } from '../preview/review/ReviewButton';
 
 jest.mock('../nglView/nglProvider', () => ({ NglContext: require('react').createContext() }));
 jest.mock('../nglView/redux/dispatchActions', () => ({ handleNglViewPick: jest.fn() }));
@@ -119,8 +121,11 @@ describe('embedded Moorhen viewport', () => {
     const ui = designsOpen => (
       <Provider store={appStore}>
         <NglContext.Provider value={context}>
-          <div data-testid="wide-layout">{!designsOpen && <OutPortal node={portal} />}</div>
-          <div data-testid="designs-layout">{designsOpen && <OutPortal node={portal} />}</div>
+          <ReviewWorkspace panels={{ rhs: { title: 'Design review', content: null } }}>
+            <div data-testid="wide-layout">{!designsOpen && <OutPortal node={portal} />}</div>
+            <div data-testid="designs-layout">{designsOpen && <OutPortal node={portal} />}</div>
+            <ReviewButton side="rhs" />
+          </ReviewWorkspace>
           <InPortal node={portal}>
             <MoorhenView div_id="major_view" deferInitialPresentation />
           </InPortal>
@@ -131,10 +136,10 @@ describe('embedded Moorhen viewport', () => {
     try {
       view = render(ui(false));
       await act(async () => {});
-      expect(observers).toHaveLength(0);
-      await act(async () => finishInitialization());
       expect(observers).toHaveLength(1);
-      const observer = observers[0];
+      await act(async () => finishInitialization());
+      expect(observers).toHaveLength(2);
+      const observer = observers[1];
       const panel = document.getElementById('major_view');
       const canvas = view.getByTestId('webgl-canvas');
       const adapter = MoorhenViewerAdapter.mock.results[0].value;
@@ -162,6 +167,22 @@ describe('embedded Moorhen viewport', () => {
       expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('1');
       await act(async () => appStore.dispatch({ type: 'SNAPSHOT_LOAD_STARTED', state: initialState }));
 
+      fireEvent.click(view.getByRole('button', { name: 'Review' }));
+      expect(view.getByRole('region', { name: 'Design review' })).toBeInTheDocument();
+      observer.notify();
+      await act(async () => flushFrames());
+      fireEvent.mouseDown(view.getByRole('separator'), { button: 0 });
+      fireEvent.mouseMove(canvas, { clientY: -400 });
+      fireEvent.mouseUp(canvas);
+      observer.notify();
+      await act(async () => flushFrames());
+      fireEvent.click(view.getByRole('button', { name: 'Close review panel' }));
+      observer.notify();
+      await act(async () => flushFrames());
+      expect(view.queryByRole('region', { name: 'Design review' })).not.toBeInTheDocument();
+      expect(view.getByTestId('webgl-canvas')).toBe(canvas);
+      expect(adapter.destroy).not.toHaveBeenCalled();
+
       for (const designsOpen of [true, false, true]) {
         view.rerender(ui(designsOpen));
         observer.notify();
@@ -173,7 +194,7 @@ describe('embedded Moorhen viewport', () => {
         expect(document.getElementById('major_view')).toBe(panel);
         expect(getComputedStyle(canvas.closest('.baby-gru')).opacity).toBe('1');
       }
-      expect(adapter.resize).toHaveBeenCalledTimes(4);
+      expect(adapter.resize).toHaveBeenCalledTimes(7);
       expect(MoorhenViewerAdapter).toHaveBeenCalledTimes(1);
       expect(adapter.destroy).not.toHaveBeenCalled();
       expect(interactionsSwitch).toBeChecked();

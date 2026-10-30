@@ -1,10 +1,40 @@
 import {
   getComputedSetIdsFromTags,
+  getComputedInspirationsForPose,
   getDefaultComputedInspirations,
   getFilteredComputedInspirations
 } from './computedInspirations';
 
 describe('computed inspirations helpers', () => {
+  it('resolves a pose main observation before applying the active RHS computed-set tags', () => {
+    expect.hasAssertions();
+    expect(
+      getComputedInspirationsForPose(
+        {
+          data: { main_site_observation: 2, computed_inspirations: [99] },
+          observations: [
+            { id: 1, computed_inspirations: [11] },
+            { id: 2, computed_inspirations: [12, 13], computed_inspirations_by_set: { 7: [13] } }
+          ]
+        },
+        [{ id: 'custom', additional_info: { computed_set: 7 } }]
+      )
+    ).toStrictEqual([13]);
+  });
+
+  it('preserves the navigator pose fallback and legacy tag filtering when observations have no inspiration data', () => {
+    expect.hasAssertions();
+    expect(
+      getComputedInspirationsForPose(
+        {
+          data: { main_site_observation: 2, computed_inspirations: [12, 13] },
+          observations: [{ id: 2, computed_inspirations_by_set: { 7: [12] } }]
+        },
+        [{ id: 'rhs-7' }]
+      )
+    ).toStrictEqual([12]);
+  });
+
   it('prefers main observation inspirations over pose-level inspirations', () => {
     expect.hasAssertions();
 

@@ -128,6 +128,11 @@ export const INITIAL_STATE = {
   proteinSettings: []
 };
 
+const leaveRhsActiveOnly = state =>
+  state.unifiedFilter?.rhs?.activeOnly
+    ? { unifiedFilter: { ...state.unifiedFilter, rhs: { ...state.unifiedFilter.rhs, activeOnly: false } } }
+    : {};
+
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
   switch (action.type) {
     case constants.SET_LHS_IS_FULLY_RENDERED:
@@ -674,13 +679,13 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return { ...state, lhs_displayAllMolecules: action.displayAllMolecules };
 
     case constants.SET_RHS_DISPLAY_ALL_MOLECULES:
-      return { ...state, rhs_displayAllMolecules: action.displayAllMolecules };
+      return { ...state, ...leaveRhsActiveOnly(state), rhs_displayAllMolecules: action.displayAllMolecules };
 
     case constants.SET_LHS_DISPLAY_UNTAGGED_MOLECULES:
       return { ...state, lhs_displayUntaggedMolecules: action.displayUntaggedMolecules };
 
     case constants.SET_RHS_DISPLAY_UNTAGGED_MOLECULES:
-      return { ...state, rhs_displayUntaggedMolecules: action.displayUntaggedMolecules };
+      return { ...state, ...leaveRhsActiveOnly(state), rhs_displayUntaggedMolecules: action.displayUntaggedMolecules };
 
     case constants.SET_LHS_TAG_DETAIL_VIEW:
       return { ...state, lhs_tagDetailView: action.tagDetailView };
@@ -692,13 +697,17 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       return { ...state, lhs_selectedTagList: action.tagList };
 
     case constants.SET_RHS_SELECTED_TAGS:
-      return { ...state, rhs_selectedTagList: action.tagList };
+      return { ...state, ...leaveRhsActiveOnly(state), rhs_selectedTagList: action.tagList };
 
     case constants.APPEND_LHS_SELECTED_TAG:
       return { ...state, lhs_selectedTagList: [...new Set([...state.lhs_selectedTagList, action.item])] };
 
     case constants.APPEND_RHS_SELECTED_TAG:
-      return { ...state, rhs_selectedTagList: [...new Set([...state.rhs_selectedTagList, action.item])] };
+      return {
+        ...state,
+        ...leaveRhsActiveOnly(state),
+        rhs_selectedTagList: [...new Set([...state.rhs_selectedTagList, action.item])]
+      };
 
     case constants.REMOVE_LHS_SELECTED_TAG: {
       let filtered = new Set(state.lhs_selectedTagList);
@@ -733,7 +742,7 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
           filtered.delete(tagToDelete);
         }
       }
-      return { ...state, rhs_selectedTagList: [...filtered] };
+      return { ...state, ...leaveRhsActiveOnly(state), rhs_selectedTagList: [...filtered] };
     }
 
     case constants.SET_RESIZABLE_LAYOUT:
@@ -750,6 +759,28 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
 
     case constants.SET_TOAST_MESSAGES:
       return { ...state, toastMessages: [...action.toastMessages] };
+
+    case constants.HIDE_INACTIVE_RHS_OBSERVATIONS:
+      return {
+        ...state,
+        rhs_selectedTagList: [],
+        rhs_displayAllMolecules: false,
+        rhs_displayUntaggedMolecules: false,
+        unifiedFilter: { ...state.unifiedFilter, rhs: action.model }
+      };
+
+    case constants.SHOW_ALL_RHS_OBSERVATIONS:
+      return {
+        ...state,
+        rhs_selectedTagList: action.tags,
+        rhs_displayAllMolecules: true,
+        rhs_displayUntaggedMolecules: false,
+        isCoordinateFilterAppliedRHS: false,
+        coordinateFilterResultsRHS: [],
+        sphereCoordinatesRHS: null,
+        coordinateRadiusRHS: '',
+        unifiedFilter: { ...state.unifiedFilter, rhs: action.model }
+      };
 
     case constants.SET_UNIFIED_FILTER_ITEM:
       const unifiedFilter = { ...state.unifiedFilter };

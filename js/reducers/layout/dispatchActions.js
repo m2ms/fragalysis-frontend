@@ -1,10 +1,14 @@
 import { setCurrentLayout, setDefaultLayout } from './actions';
 import { layouts } from './layouts';
 
-export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, height, margin) => (
-  dispatch,
-  getState
-) => {
+export const updateLayoutOnDependencyChange = (
+  showLHS,
+  showRHS,
+  hideProjects,
+  height,
+  margin,
+  fitAvailableHeight = false
+) => (dispatch, getState) => {
   const { layoutLocked, panelsExpanded, selectedLayoutName } = getState().layoutReducers;
 
   const defaultLayout = layouts[selectedLayoutName].createLayout(
@@ -14,7 +18,8 @@ export const updateLayoutOnDependencyChange = (showLHS, showRHS, hideProjects, h
     height,
     margin,
     layoutLocked,
-    panelsExpanded
+    panelsExpanded,
+    fitAvailableHeight
   );
 
   dispatch(setDefaultLayout(defaultLayout));

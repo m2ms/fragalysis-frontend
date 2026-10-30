@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Checkbox, FormControl, FormControlLabel, GridLegacy as Grid, IconButton, Radio, RadioGroup, TextField } from '@mui/material';
 import { makeStyles } from '../../../../../../ui/styles';
 import { FilterWrapper } from './filterWrapper';
@@ -35,7 +35,7 @@ const INITIAL_FILTER_VALUE = {
   structureType: 'compound'
 };
 
-export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {} }) => {
+export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {}, controlled = false, value }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const { RDKitModule } = useRDKit();
@@ -47,28 +47,38 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {} }) => {
   const targetList = useSelector(state => state.apiReducers.target_id_list);
   const targetAccessString = useSelector(state => state.targetReducers.currentProject?.target_access_string);
   const savedFilter = useSelector(state => state.selectionReducers.unifiedFilter?.molecule);
-  const filteredSmilesQuery = useSelector(state => getFilterSmileQuery(state));
+  const legacySmilesQuery = useSelector(getFilterSmileQuery);
 
   const targetOnTitle = useMemo(() => {
     const target = targetList.find(t => t.id === targetOnId);
     return target ? target.title : '';
   }, [targetList, targetOnId]);
 
-  const [filterValue, setFilterValue] = useState(() => savedFilter || INITIAL_FILTER_VALUE);
-  const [editorSmiles, setEditorSmiles] = useState(() => savedFilter?.smiles || '');
-  const [inputSmiles, setInputSmiles] = useState(() => savedFilter?.smiles || '');
+  const [localFilterValue, setFilterValue] = useState(() => savedFilter || INITIAL_FILTER_VALUE);
+  const [localEditorSmiles, setEditorSmiles] = useState(() => savedFilter?.smiles || '');
+  const [localInputSmiles, setInputSmiles] = useState(() => savedFilter?.smiles || '');
+  const filterValue = controlled ? (value || INITIAL_FILTER_VALUE) : localFilterValue;
+  const editorSmiles = controlled ? filterValue.smiles : localEditorSmiles;
+  const inputSmiles = controlled ? filterValue.smiles : localInputSmiles;
+  const filteredSmilesQuery = controlled ? filterValue.smiles : legacySmilesQuery;
+  const requestRef = useRef(0);
+  const inputsRef = useRef(null);
+  const requestInputs = JSON.stringify([targetOnId, targetAccessString, targetOnTitle, filterValue]);
+  inputsRef.current = requestInputs;
+  useEffect(() => () => { requestRef.current += 1; }, []);
 
   const handleFilterChange = (property, value) => {
     const newFilterValue = {
       ...filterValue,
       [property]: value
     };
-    setFilterValue(newFilterValue);
-    // onFilterChange(newFilterValue);
+    if (!controlled) setFilterValue(newFilterValue);
+    if (controlled) onFilterChange(newFilterValue);
     return newFilterValue;
   };
 
   const handleApplyFilter = () => {
+    const request = ++requestRef.current;
     const applyMoleculeFilter = viewConfig.applyMoleculeFilter || filterCompoundsByStructure;
 
     applyMoleculeFilter({
@@ -81,11 +91,14 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {} }) => {
       use_chirality: filterValue.distinct
     })
       .then(filteredCompounds => {
+        if (controlled && (request !== requestRef.current || inputsRef.current !== requestInputs)) return;
         console.log(filteredCompounds);
         if (filteredCompounds) {
           const updatedFilter = handleFilterChange('filteredCompounds', filteredCompounds);
-          onFilterChange(updatedFilter);
-          dispatch(setUnifiedFilterItem('molecule', updatedFilter));
+          if (!controlled) {
+            onFilterChange(updatedFilter);
+            dispatch(setUnifiedFilterItem('molecule', updatedFilter));
+          }
         }
       })
       .catch(err => console.log(err));
@@ -95,16 +108,16 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {} }) => {
     console.log(smiles);
     if (smiles !== null) {
       handleFilterChange('smiles', smiles);
-      setInputSmiles(smiles);
+      if (!controlled) setInputSmiles(smiles);
     } else {
       handleFilterChange('smiles', '');
-      setInputSmiles('');
+      if (!controlled) setInputSmiles('');
     }
   };
 
   const handleApplyInputSmiles = () => {
     handleFilterChange('smiles', inputSmiles);
-    setEditorSmiles(inputSmiles);
+    if (!controlled) setEditorSmiles(inputSmiles);
   };
 
   const getOnHoverComponent = useCallback(() => {
@@ -124,11 +137,11 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {} }) => {
     <FilterWrapper
       title="Filter (Molecule)"
       handleReset={() => {
-        setEditorSmiles('');
-        setInputSmiles('');
-        setFilterValue(INITIAL_FILTER_VALUE);
+        if (!controlled) setEditorSmiles('');
+        if (!controlled) setInputSmiles('');
+        if (!controlled) setFilterValue(INITIAL_FILTER_VALUE);
         onFilterChange(INITIAL_FILTER_VALUE);
-        dispatch(setUnifiedFilterItem('molecule', INITIAL_FILTER_VALUE));
+        if (!controlled) dispatch(setUnifiedFilterItem('molecule', INITIAL_FILTER_VALUE));
       }}
       isActive={filterValue.filteredCompounds !== null}
       onHoverComponent={getOnHoverComponent()}

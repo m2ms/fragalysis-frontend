@@ -124,7 +124,7 @@ const ObservationUnifiedView = memo(
       const viewParams = useSelector(state => state.nglReducers.viewParams);
       const tagList = useSelector(state => state.apiReducers.tagList);
       const tagCategories = useSelector(state => state.apiReducers.categoryList);
-      const filteredSmilesQuery = useSelector(state => getFilterSmileQuery(state));
+      const filteredSmilesQuery = useSelector(state => viewConfig.getFilterSmileQuery?.(state) ?? getFilterSmileQuery(state));
 
       const isObservationDialogOpen = useSelector(state => state.selectionReducers.isObservationDialogOpen);
 

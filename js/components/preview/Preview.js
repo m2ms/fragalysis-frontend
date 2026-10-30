@@ -82,8 +82,12 @@ import layout from '../../reducers/layout/layouts/draggable';
 import SnapshotList from '../snapshot/snapshotList';
 import SnapshotSavingProgressDialog from '../snapshot/modals/snapshotSavingProgressDialog';
 import { TooltipPathProvider } from '../tooltip/TooltipPathContext';
+import { ReviewWorkspace } from './review/ReviewWorkspace';
+import { RhsReviewPanel } from './review/RhsReviewPanel';
+import { ReviewLigandProvider } from './review/ReviewLigandProvider';
 
 const ReactGridLayout = WidthProvider(ResponsiveGridLayout);
+const reviewPanels = { rhs: { title: 'Design review', content: <RhsReviewPanel /> } };
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -410,5 +414,11 @@ export default memo(props => {
     }
   }, [toastWarning]);
 
-  return <PreviewContainer {...props} />;
+  return (
+    <ReviewLigandProvider>
+      <ReviewWorkspace panels={reviewPanels}>
+        <PreviewContainer {...props} />
+      </ReviewWorkspace>
+    </ReviewLigandProvider>
+  );
 });

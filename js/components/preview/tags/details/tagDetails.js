@@ -145,6 +145,7 @@ const TagDetails = memo(
     displayAllMolecules,
     displayUntaggedMolecules,
     tagDetailView,
+    searchResetKey,
     onTagFilteringModeChange = () => {},
     onDisplayAllMoleculesChange = () => {},
     onDisplayUntaggedMoleculesChange = () => {},
@@ -168,7 +169,9 @@ const TagDetails = memo(
     const [tagList, setTagList] = useState([]);
     const [selectAll, setSelectAll] = useState(true);
     const [showEditTagsModal, setShowEditTagsModal] = useState(false);
-    const [searchString, setSearchString] = useState(null);
+    const [tagSearch, setTagSearch] = useState({ key: searchResetKey, value: null });
+    const searchString = tagSearch.key === searchResetKey ? tagSearch.value : null;
+    const setSearchString = useCallback(value => setTagSearch({ key: searchResetKey, value }), [searchResetKey]);
 
     const [allTagsAreSelected, setAllTagsAreSelected] = useState(false);
 
@@ -399,7 +402,12 @@ const TagDetails = memo(
               </RichTooltip>
             </Grid>
             <Grid item xs={4}>
-              <SearchField className={classes.search} id="search-tag-details" onChange={setSearchString} />
+              <SearchField
+                className={classes.search}
+                id="search-tag-details"
+                onChange={setSearchString}
+                resetKey={searchResetKey}
+              />
             </Grid>
             <Grid item xs={4}></Grid>
           </Grid>

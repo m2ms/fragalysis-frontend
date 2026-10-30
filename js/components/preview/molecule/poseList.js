@@ -83,6 +83,14 @@ const useStyles = makeStyles(theme => ({
     overflowX: 'hidden',
     width: '100%'
   },
+  listRegion: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '1 1 auto',
+    position: 'relative',
+    minHeight: 0,
+    width: '100%'
+  },
   footer: {
     flex: '0 0 auto',
     width: '100%',
@@ -348,6 +356,9 @@ export const PoseList = memo(
     handlers = {},
     instanceConfig = {},
     expandHandler = null,
+    renderListOverlay = undefined,
+    sortingConfig = undefined,
+    observationResult = undefined,
     navigatorTitle = 'Hit navigator'
   }) => {
     const dispatch = useDispatch();
@@ -359,6 +370,7 @@ export const PoseList = memo(
 
     const moleculesPerPage = 30;
     const [currentPage, setCurrentPage] = useState(0);
+    const currentPageCount = observationResult ? Math.max(1, currentPage) : currentPage;
     const [itemsToBeDisplayed, setItemsToBeDisplayed] = useState([]);
     const [sortSettingsChanged, setSortSettingsChanged] = useState(false);
     const [navigationConfigAnchor, setNavigationConfigAnchor] = useState(null);
@@ -376,9 +388,11 @@ export const PoseList = memo(
     const instanceSide = instanceConfig.instanceSide || 'lhs';
     const isObsInspirationDialogOpen = useSelector(state => state.selectionReducers.isObsInspirationDialogOpen);
 
-    const [ascending, setAscending] = useState(true);
+    const [localAscending, setLocalAscending] = useState(true);
+    const ascending = sortingConfig?.value.ascending ?? localAscending;
     const handleAscendingChecked = event => {
-      setAscending(event.target.checked);
+      if (sortingConfig) sortingConfig.onChange({ ascending: event.target.checked });
+      else setLocalAscending(event.target.checked);
       setSortSettingsChanged(true);
     };
     const SORT_OPTIONS = [
@@ -388,7 +402,12 @@ export const PoseList = memo(
       'CONFORMERSITE_NUMBER',
       'OBSERVATION_COUNT'
     ];
-    const [sortOption, setSortOption] = useState(SORT_OPTIONS[0]);
+    const [localSortOption, setLocalSortOption] = useState(SORT_OPTIONS[0]);
+    const sortOption = sortingConfig?.value.sortOption ?? localSortOption;
+    const setSortOption = value => {
+      if (sortingConfig) sortingConfig.onChange({ sortOption: value });
+      else setLocalSortOption(value);
+    };
 
     useEffect(() => {
       if (dataAreDownloaded && !errorOccuredDuringDownload && allMolListsLength <= 0) {
@@ -656,11 +675,11 @@ export const PoseList = memo(
     }
 
     const loadNextMolecules = useCallback(() => {
-      const newCurrentPage = currentPage + 1;
+      const newCurrentPage = currentPageCount + 1;
 
       setCurrentPage(newCurrentPage);
       setItemsToBeDisplayed(filteredLHSCompoundsList.slice(0, newCurrentPage * moleculesPerPage));
-    }, [currentPage, filteredLHSCompoundsList, moleculesPerPage]);
+    }, [currentPageCount, filteredLHSCompoundsList, moleculesPerPage]);
 
     useEffect(() => {
       if (nextXMolecules || sortSettingsChanged) {
@@ -744,6 +763,7 @@ export const PoseList = memo(
       noTagsReceived
     ]);
 
+    joinedMoleculeLists = observationResult?.observations ?? joinedMoleculeLists;
     const joinedMoleculeListsCopy = useMemo(() => [...joinedMoleculeLists], [joinedMoleculeLists]);
 
     // useEffect(() => {
@@ -900,10 +920,12 @@ export const PoseList = memo(
 
     const selectPoseMembership = useMemo(createPoseMembershipSelector, []);
     const matchingPoses = selectPoseMembership(lhsCompoundsList, joinedMoleculeLists);
-    let filteredLHSCompoundsList = useMemo(
-      () => [...matchingPoses].sort((a, b) => sortOptions[sortOption].handler(a, b, ascending)),
-      [matchingPoses, sortOptions, sortOption, ascending]
-    );
+    let filteredLHSCompoundsList = useMemo(() => {
+      if (observationResult) return observationResult.poses;
+      return [...matchingPoses].sort(
+        sortingConfig?.compare || ((a, b) => sortOptions[sortOption].handler(a, b, ascending))
+      );
+    }, [matchingPoses, sortOptions, sortOption, ascending, sortingConfig, observationResult]);
 
     const { addMoleculeViewRef, registeredMoleculeViewCount, setScrollToMoleculeId, getNode } = useScrollToSelectedPose({
       poses: filteredLHSCompoundsList,
@@ -941,7 +963,7 @@ export const PoseList = memo(
       }
 
       const expectedRenderedItemsCount =
-        currentPage > 0 ? Math.min(filteredLHSCompoundsList.length, currentPage * moleculesPerPage) : 0;
+        currentPageCount > 0 ? Math.min(filteredLHSCompoundsList.length, currentPageCount * moleculesPerPage) : 0;
       const hasRenderedVisibleSlice =
         expectedRenderedItemsCount > 0 &&
         registeredMoleculeViewCount >= expectedRenderedItemsCount &&
@@ -975,7 +997,7 @@ export const PoseList = memo(
       };
     }, [
       areLSHCompoundsInitialized,
-      currentPage,
+      currentPageCount,
       dataAreDownloaded,
       dataAreDownloading,
       filteredLHSCompoundsList.length,
@@ -1155,6 +1177,7 @@ export const PoseList = memo(
         disabled={false || (getJoinedMoleculeList && getJoinedMoleculeList.length === 0)}
         // searchString={filterSearchString?.searchStringHitNavigator ?? ''}
         searchString={searchString ?? ''}
+        resetKey={observationResult ? observationResult.columnFilterConfig.resetVersion || 0 : undefined}
         placeholder="Search"
         searchIconAction={openSearchSettingsDialog}
       />,
@@ -1212,14 +1235,19 @@ export const PoseList = memo(
     );
 
     // const listItemOffset = (currentPage + 1) * moleculesPerPage + nextXMolecules;
-    const listItemOffset = currentPage * moleculesPerPage + nextXMolecules;
+    const listItemOffset = currentPageCount * moleculesPerPage + nextXMolecules;
     const canLoadMore =
       listItemOffset < filteredLHSCompoundsList?.length ||
       (listItemOffset > filteredLHSCompoundsList?.length &&
         itemsToBeDisplayed?.length < filteredLHSCompoundsList?.length);
     useEffect(() => {
       let updatedCurrentPage = currentPage;
-      if (filteredLHSCompoundsList?.length < currentPage * moleculesPerPage) {
+      // A full-result RHS filter can temporarily reduce pagination to zero. Keep its first page usable on recovery.
+      if (observationResult && currentPage === 0 && filteredLHSCompoundsList.length > 0) {
+        setCurrentPage(1);
+        return;
+      }
+      if (filteredLHSCompoundsList?.length < currentPageCount * moleculesPerPage) {
         //we are always only adding +1 to current page so we need to check if there is a oportunity to scale back
         updatedCurrentPage = Math.ceil(filteredLHSCompoundsList?.length / moleculesPerPage); // - 1;
 
@@ -1228,15 +1256,15 @@ export const PoseList = memo(
           setItemsToBeDisplayed([]);
         }
       }
-    }, [filteredLHSCompoundsList, currentPage, moleculesPerPage]);
+    }, [filteredLHSCompoundsList, currentPage, currentPageCount, moleculesPerPage, observationResult]);
 
     useEffect(() => {
       // Compare before dispatching state so fresh filtered-array identities cannot start a passive update loop.
-      const whatToDisplay = filteredLHSCompoundsList?.slice(0, currentPage * moleculesPerPage) || [];
+      const whatToDisplay = filteredLHSCompoundsList?.slice(0, currentPageCount * moleculesPerPage) || [];
       if (poseListsDiffer(itemsToBeDisplayed, whatToDisplay)) {
         setItemsToBeDisplayed([...whatToDisplay]);
       }
-    }, [currentPage, filteredLHSCompoundsList, itemsToBeDisplayed, moleculesPerPage]);
+    }, [currentPageCount, filteredLHSCompoundsList, itemsToBeDisplayed, moleculesPerPage]);
 
     const handleExpandChange = useCallback(
       expanded => {
@@ -1538,8 +1566,8 @@ export const PoseList = memo(
                 </Grid>
               </Grid>
             </Grid>
-            {currentMolecules.length > 0 && (
-              <>
+            <Grid item className={classes.listRegion}>
+              {(observationResult || currentMolecules.length > 0) && (
                 <Grid item className={classes.gridItemList} ref={scrollBarRef}>
                   <InfiniteScroll
                     getScrollParent={() => scrollBarRef.current}
@@ -1564,8 +1592,9 @@ export const PoseList = memo(
                     <ObservationUnifiedViewWrapper
                       viewConfig={viewConfig}
                       ligandRepresentations={ligandRepresentations}
-                      items={itemsToBeDisplayed}
+                      items={observationResult ? filteredLHSCompoundsList.slice(0, currentPageCount * moleculesPerPage) : itemsToBeDisplayed}
                       navigationItems={filteredLHSCompoundsList}
+                      columnFilterConfig={observationResult?.columnFilterConfig}
                       poseTransferConfig={poseTransferConfig}
                       poseTransferInProgress={poseNavigation.busy}
                       poseTransferResetKey={poseNavigation.resetKey}
@@ -1588,60 +1617,63 @@ export const PoseList = memo(
                     />
                   </InfiniteScroll>
                 </Grid>
-                <Grid item className={classes.footer}>
-                  <Grid container alignItems="flex-start" direction="row" className={classes.footerRow}>
-                    <Grid item className={classes.footerSummary}>
-                      <span
-                        className={classes.total}
-                      >{`#Poses=${filteredLHSCompoundsList?.length}, #Obs=${joinedMoleculeLists?.length}`}</span>
-                    </Grid>
-                    <Grid item className={classes.footerActions}>
-                      <div className={classes.footerButtonGroup} aria-label="contained primary button group">
-                        <Button
-                          id="hit-navigator-load-next-30"
-                          variant="text"
-                          size="medium"
-                          color="primary"
-                          className={classes.footerButton}
-                          onClick={() => {
-                            handlers.setNextXMolecules(30);
-                          }}
-                        >
-                          Load next 30
-                        </Button>
-                        <Button
-                          id="hit-navigator-load-next-100"
-                          variant="text"
-                          size="medium"
-                          color="primary"
-                          className={classes.footerButton}
-                          onClick={() => {
-                            handlers.setNextXMolecules(100);
-                          }}
-                        >
-                          Load next 100
-                        </Button>
-                        <Button
-                          id="hit-navigator-load-full-list"
-                          variant="text"
-                          size="medium"
-                          color="primary"
-                          className={classes.footerButton}
-                          onClick={() => {
-                            if (joinedMoleculeLists?.length > 300) {
-                              setIsOpenAlert(true);
-                            } else {
-                              handlers.setNextXMolecules(joinedMoleculeLists?.length || 0);
-                            }
-                          }}
-                        >
-                          Load full list
-                        </Button>
-                      </div>
-                    </Grid>
+              )}
+              {renderListOverlay?.({ hasItems: (observationResult?.reviewPoses ?? filteredLHSCompoundsList).length > 0 })}
+            </Grid>
+            {currentMolecules.length > 0 && (
+              <Grid item className={classes.footer}>
+                <Grid container alignItems="flex-start" direction="row" className={classes.footerRow}>
+                  <Grid item className={classes.footerSummary}>
+                    <span
+                      className={classes.total}
+                    >{`#Poses=${filteredLHSCompoundsList?.length}, #Obs=${joinedMoleculeLists?.length}`}</span>
+                  </Grid>
+                  <Grid item className={classes.footerActions}>
+                    <div className={classes.footerButtonGroup} aria-label="contained primary button group">
+                      <Button
+                        id="hit-navigator-load-next-30"
+                        variant="text"
+                        size="medium"
+                        color="primary"
+                        className={classes.footerButton}
+                        onClick={() => {
+                          handlers.setNextXMolecules(30);
+                        }}
+                      >
+                        Load next 30
+                      </Button>
+                      <Button
+                        id="hit-navigator-load-next-100"
+                        variant="text"
+                        size="medium"
+                        color="primary"
+                        className={classes.footerButton}
+                        onClick={() => {
+                          handlers.setNextXMolecules(100);
+                        }}
+                      >
+                        Load next 100
+                      </Button>
+                      <Button
+                        id="hit-navigator-load-full-list"
+                        variant="text"
+                        size="medium"
+                        color="primary"
+                        className={classes.footerButton}
+                        onClick={() => {
+                          if (joinedMoleculeLists?.length > 300) {
+                            setIsOpenAlert(true);
+                          } else {
+                            handlers.setNextXMolecules(joinedMoleculeLists?.length || 0);
+                          }
+                        }}
+                      >
+                        Load full list
+                      </Button>
+                    </div>
                   </Grid>
                 </Grid>
-              </>
+              </Grid>
             )}
             {moleculesAndTagsAreLoading && (
               <Grid container direction="row" justifyContent="center">

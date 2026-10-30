@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { TextField, InputAdornment, IconButton } from '../../../../ui';
 import { Search } from '../../../../ui/icons';
 import { makeStyles } from '../../../../ui/styles';
@@ -41,10 +41,18 @@ const SearchField = ({
   onChange,
   disabled,
   searchString,
+  resetKey,
   searchIconAction = null
 }) => {
   const classes = useStyles();
   let value = searchString ?? '';
+  const pending = useRef(null);
+
+  useEffect(() => {
+    if (resetKey === undefined) return;
+    pending.current?.cancel();
+    return () => pending.current?.cancel();
+  }, [resetKey]);
 
   const debounced = useMemo(
     () =>
@@ -56,6 +64,10 @@ const SearchField = ({
 
   const onChangeDebounced = event => {
     const value = event.target.value || null;
+    if (resetKey !== undefined) {
+      pending.current?.cancel();
+      pending.current = debounced;
+    }
     debounced(value);
   };
 
@@ -89,7 +101,7 @@ const SearchField = ({
         onChange={onChangeDebounced}
         disabled={disabled}
         defaultValue={value ?? ''}
-        key={value}
+        key={resetKey === undefined ? value : `${resetKey}:${value}`}
       />
     </RichTooltip>
   );

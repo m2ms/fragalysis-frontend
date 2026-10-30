@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { enableLayout } from '../../reducers/layout/actions';
 import { updateLayoutOnDependencyChange } from '../../reducers/layout/dispatchActions';
+import { useReview } from './review/ReviewContext';
 
 /**
  * A hook which takes care of providing the layouting capabilities.
@@ -16,6 +17,7 @@ export const useUpdateGridLayout = hideProjects => {
   const selectedLayoutName = useSelector(state => state.layoutReducers.selectedLayoutName);
 
   const theme = useTheme();
+  const fitAvailableHeight = !!useReview()?.activeSide;
 
   const ref = useRef();
   const [height, setHeight] = useState(800);
@@ -52,10 +54,11 @@ export const useUpdateGridLayout = hideProjects => {
         sidesOpen.RHS,
         hideProjects,
         height,
-        Number.parseFloat(theme.spacing())
+        Number.parseFloat(theme.spacing()),
+        fitAvailableHeight
       )
     );
-  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded, selectedLayoutName]);
+  }, [dispatch, height, hideProjects, sidesOpen, theme, panelsExpanded, selectedLayoutName, fitAvailableHeight]);
 
   return ref;
 };

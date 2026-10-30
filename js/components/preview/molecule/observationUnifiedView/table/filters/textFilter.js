@@ -23,23 +23,26 @@ const INITIAL_SORTING_VALUE = {
     order: ORDER.DESC
 };
 
-export const TextFilter = memo(({ name, onFilterChange, onSortingChange }) => {
+export const TextFilter = memo(({ name, onFilterChange, onSortingChange, controlled = false, value, sorting }) => {
     const classes = useStyles();
     const dispatch = useDispatch();
 
     const savedFilter = useSelector(state => state.selectionReducers.unifiedFilter?.[name]);
 
-    const [filterValue, setFilterValue] = useState(() => savedFilter || INITIAL_FILTER_VALUE);
-    const [sortingValue, setSortingValue] = useState(INITIAL_SORTING_VALUE);
+    const [localFilterValue, setFilterValue] = useState(() => savedFilter || INITIAL_FILTER_VALUE);
+    const [localSortingValue, setSortingValue] = useState(INITIAL_SORTING_VALUE);
+
+    const filterValue = controlled ? (value || INITIAL_FILTER_VALUE) : localFilterValue;
+    const sortingValue = controlled ? (sorting || INITIAL_SORTING_VALUE) : localSortingValue;
 
     const handleFilterChange = (property, value) => {
         const newFilterValue = {
             ...filterValue,
             [property]: value
         };
-        setFilterValue(newFilterValue);
+        if (!controlled) setFilterValue(newFilterValue);
         onFilterChange(newFilterValue);
-        dispatch(setUnifiedFilterItem(name, INITIAL_FILTER_VALUE));
+        if (!controlled) dispatch(setUnifiedFilterItem(name, INITIAL_FILTER_VALUE));
     };
 
     const handleSortingChange = (property, value) => {
@@ -47,18 +50,18 @@ export const TextFilter = memo(({ name, onFilterChange, onSortingChange }) => {
             ...sortingValue,
             [property]: value
         };
-        setSortingValue(newSortingValue);
+        if (!controlled) setSortingValue(newSortingValue);
         onSortingChange(newSortingValue);
     };
 
     return <FilterWrapper
         title={`Sort / Filter (${name})`}
         handleReset={() => {
-            setFilterValue(INITIAL_FILTER_VALUE);
-            setSortingValue(INITIAL_SORTING_VALUE);
+            if (!controlled) setFilterValue(INITIAL_FILTER_VALUE);
+            if (!controlled) setSortingValue(INITIAL_SORTING_VALUE);
             onFilterChange(INITIAL_FILTER_VALUE);
             onSortingChange(INITIAL_SORTING_VALUE);
-            dispatch(setUnifiedFilterItem(name, INITIAL_FILTER_VALUE));
+            if (!controlled) dispatch(setUnifiedFilterItem(name, INITIAL_FILTER_VALUE));
         }}
         isActive={filterValue.value !== '' || sortingValue.enabled}
     >

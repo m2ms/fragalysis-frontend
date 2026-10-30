@@ -14,6 +14,7 @@ import TagDetails from './tagDetails';
 import { TagDetailRowRHS } from './tagDetailRowRHS';
 import { TagGridRowsRHS } from './tagGridRowsRHS';
 import { TAG_META_CATEGORIES } from '../utils/tagUtils';
+import { selectRhsTableState } from '../../review/rhsObservationResult';
 
 export const TagDetailsRHS = memo(({ expandHandler = null }) => {
   const dispatch = useDispatch();
@@ -22,6 +23,7 @@ export const TagDetailsRHS = memo(({ expandHandler = null }) => {
   const displayAllMolecules = useSelector(state => state.selectionReducers.rhs_displayAllMolecules);
   const displayUntaggedMolecules = useSelector(state => state.selectionReducers.rhs_displayUntaggedMolecules);
   const tagDetailView = useSelector(state => state.selectionReducers.rhs_tagDetailView);
+  const searchResetKey = useSelector(state => selectRhsTableState(state).resetVersion || 0);
 
   const handleTagFilteringModeChange = useCallback(
     mode => {
@@ -73,6 +75,7 @@ export const TagDetailsRHS = memo(({ expandHandler = null }) => {
       displayAllMolecules={displayAllMolecules}
       displayUntaggedMolecules={displayUntaggedMolecules}
       tagDetailView={tagDetailView}
+      searchResetKey={searchResetKey}
       onTagFilteringModeChange={handleTagFilteringModeChange}
       onDisplayAllMoleculesChange={handleDisplayAllMoleculesChange}
       onDisplayUntaggedMoleculesChange={handleDisplayUntaggedMoleculesChange}

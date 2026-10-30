@@ -13,6 +13,21 @@
       }
     },
     "preview": {
+      "review": {
+        "open": "Open review panel",
+        "close": "Close review panel",
+        "unavailable": "No observations to review",
+        "showAll": "Clear RHS filters and show all design observations across datasets and tags",
+        "hideInactive": "Unselect RHS tags and keep only observations with a visible design ligand; keep the 3D scene unchanged",
+        "showLigand": "Display the ligand and available inspirations for {{label}}, restoring any missing ligands without moving the camera",
+        "hideLigand": "Hide the ligand and inspirations for {{label}} without moving the camera. Shared and independently displayed inspirations stay visible",
+        "ligandPending": "Updating the ligand and inspirations for {{label}}",
+        "viewerUnavailable": "The 3D viewer is not ready",
+        "centerOn": "Center on",
+        "setGrade": "Set the main status for {{label}} to {{colour}} immediately",
+        "gradeLogin": "Log in to change the main status. Quality summaries remain available",
+        "gradePending": "Saving the main status for {{label}}"
+      },
       "downloadStructures": {
         "copyJson": {
           "text": "Get a json for a POST request (`{{base_url}}/api/download_structures/`) that will generate a FILE_URL.\n\n Download your data at `{{base_url}}/api/download_structures/?file_url=<FILE_URL>`",

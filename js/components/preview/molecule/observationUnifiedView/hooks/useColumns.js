@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { COLUMN_TYPES } from '../table';
+import { useEffect, useRef, useState } from 'react';
+import { getObservationColumns } from './observationColumns';
 import { useSelector } from 'react-redux';
 import { LHS_OBSERVATION_VIEW_CONFIG } from '../viewConfigs';
 
@@ -15,43 +15,10 @@ export const useColumns = (
   const userResizedColumnsRef = useRef(new Set());
   const extraColumns = useSelector(state => state.apiReducers.lhs_extra_columns);
 
-  const getColumnType = useCallback(name => {
-    switch (name) {
-      case 'text':
-        return COLUMN_TYPES.TEXT;
-      case 'float':
-      case 'integer':
-        return COLUMN_TYPES.NUMBER;
-      default:
-        return COLUMN_TYPES.CUSTOM;
-    }
-  }, []);
-
   useEffect(() => {
     userResizedColumnsRef.current = new Set();
-    const baseColumns = viewConfig.getBaseColumns();
-
-    if (extraColumns && extraColumns.length > 0) {
-      const newColumns = [...baseColumns];
-      extraColumns.forEach(column => {
-        if (!newColumns.some(col => col.name === column.name)) {
-          newColumns.push({
-            name: column.result_property,
-            displayName: column.result_property,
-            type: getColumnType(column.data_type),
-            visible: column.visible,
-            minWidth: 50,
-            width: 54,
-            resizable: true,
-            data_type: column.data_type
-          });
-        }
-      });
-      setColumns(newColumns);
-    } else {
-      setColumns(viewConfig.getColumnsWithoutExtras());
-    }
-  }, [extraColumns, getColumnType, viewConfig]);
+    setColumns(getObservationColumns(viewConfig, extraColumns));
+  }, [extraColumns, viewConfig]);
 
   useEffect(() => {
     if (!availableWidth || userResizedColumnsRef.current.has('detail')) {
@@ -82,9 +49,7 @@ export const useColumns = (
         return currentColumns;
       }
 
-      return currentColumns.map(column =>
-        column.name === 'detail' ? { ...column, width: nextDetailWidth } : column
-      );
+      return currentColumns.map(column => (column.name === 'detail' ? { ...column, width: nextDetailWidth } : column));
     });
   }, [availableWidth, defaultWidth, preferredDetailWidth]);
 

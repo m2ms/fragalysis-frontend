@@ -202,10 +202,24 @@ export const setOrientationByInteraction = (div_id, orientation) => (dispatch, g
   }
 };
 
-export const centerOnLigandByMoleculeID = (stage, moleculeID, datasetId = null) => async (dispatch, getState) => {
+export const centerOnLigandByMoleculeID = (
+  stage,
+  moleculeID,
+  datasetId = null,
+  loadedObjectName = null
+) => async (dispatch, getState) => {
   const viewerAdapter = asViewerAdapter(stage);
   if (moleculeID && viewerAdapter) {
     const state = getState();
+    // Review cards can identify an acknowledged dataset/global copy directly, without changing legacy lookup paths.
+    const loadedObject = loadedObjectName && state.nglReducers.objectsInView?.[loadedObjectName];
+    if (loadedObject && String(loadedObject.moleculeId) === String(moleculeID)) {
+      const component = viewerAdapter.getObject(loadedObjectName);
+      if (!component) return false;
+      await viewerAdapter.centerOn(component);
+      dispatch(setNglOrientation(viewerAdapter.getOrientation(), VIEWS.MAJOR_VIEW));
+      return true;
+    }
     let observation = null;
     if (!datasetId) {
       const all_mol_lists = state.apiReducers.all_mol_lists;

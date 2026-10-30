@@ -37,24 +37,24 @@ export const useDisplayLigandLHS = () => {
   const displayLigand = useCallback(
     async ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) throw new Error('Ligand observation is unavailable.');
       const colourToggle = getRandomColor(data);
       const molId = generateMoleculeId(data);
 
-      let moleculeObject = await dispatch(generateMoleculeObject(data, colourToggle));
-      let qualityInformation = dispatch(readQualityInformation(moleculeObject.name, moleculeObject.sdf_info));
-
-      let hasAdditionalInformation =
-        ligandData.withQuality === true &&
-        qualityInformation &&
-        qualityInformation.badids &&
-        qualityInformation.badids.length !== 0;
-      dispatch(appendFragmentDisplayList(molId));
-      if (hasAdditionalInformation) {
-        dispatch(appendQualityList(molId));
-      }
-
       try {
+        let moleculeObject = await dispatch(generateMoleculeObject(data, colourToggle));
+        let qualityInformation = dispatch(readQualityInformation(moleculeObject.name, moleculeObject.sdf_info));
+
+        let hasAdditionalInformation =
+          ligandData.withQuality === true &&
+          qualityInformation &&
+          qualityInformation.badids &&
+          qualityInformation.badids.length !== 0;
+        dispatch(appendFragmentDisplayList(molId));
+        if (hasAdditionalInformation) {
+          dispatch(appendQualityList(molId));
+        }
+
         await dispatch(
           loadObject({
             target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, moleculeObject),
@@ -70,10 +70,11 @@ export const useDisplayLigandLHS = () => {
           dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
         }
         dispatch(updateInToBeDisplayedList({ id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND }));
-      } catch {
+      } catch (error) {
         dispatch(removeFromFragmentDisplayList(molId));
         dispatch(removeFromQualityList(molId));
         dispatch(removeFromToBeDisplayedList({ id: data.id, type: NGL_OBJECTS.LIGAND }));
+        throw error;
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,7 +84,7 @@ export const useDisplayLigandLHS = () => {
   const removeLigand = useCallback(
     async ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) throw new Error('Ligand observation is unavailable.');
       const ligandDataText = await dispatch(generateMoleculeObject(data));
       await dispatch(deleteObject(Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText), stage));
       dispatch(removeFromFragmentDisplayList(generateMoleculeId(data)));

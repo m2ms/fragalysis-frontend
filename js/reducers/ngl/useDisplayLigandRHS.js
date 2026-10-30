@@ -22,6 +22,7 @@ export const useDisplayLigandRHS = () => {
   const toBeDisplayedList = useSelector(state => state.datasetsReducers.toBeDisplayedList);
   const displayedLigands = useSelector(state => state.datasetsReducers.ligandLists);
   const allCompounds = useSelector(state => state.datasetsReducers.moleculeLists);
+  const allObservations = useSelector(state => state.apiReducers.all_mol_lists);
 
   const { getNglView } = useContext(NglContext);
   const stage = getNglView(VIEWS.MAJOR_VIEW) && getNglView(VIEWS.MAJOR_VIEW).stage;
@@ -29,16 +30,21 @@ export const useDisplayLigandRHS = () => {
   const displayLigand = useCallback(
     async ligandData => {
       const datasetCompounds = allCompounds[ligandData.datasetID];
-      const data = datasetCompounds?.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      const member = datasetCompounds?.find(
+        obs => String(typeof obs === 'object' ? obs.id : obs) === String(ligandData.id)
+      );
+      const data =
+        allObservations?.find(obs => String(obs.id) === String(ligandData.id)) ||
+        (typeof member === 'object' ? member : null);
+      if (!data) throw new Error('Dataset ligand observation is unavailable.');
       const colourToggle = getRandomColor(data);
       const datasetID = ligandData.datasetID;
       const moleculeId = generateMoleculeCompoundId(data);
 
       console.count(`Grabbed orientation before loading dataset ligand`);
-      const ligandDataText = await dispatch(generateMoleculeObject(data, colourToggle, datasetID));
-      dispatch(appendLigandList(datasetID, moleculeId));
       try {
+        const ligandDataText = await dispatch(generateMoleculeObject(data, colourToggle, datasetID));
+        dispatch(appendLigandList(datasetID, moleculeId));
         await dispatch(
           loadObject({
             target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, ligandDataText),
@@ -50,19 +56,25 @@ export const useDisplayLigandRHS = () => {
         dispatch(
           updateInToBeDisplayedListForDataset(datasetID, { id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND })
         );
-      } catch {
+      } catch (error) {
         dispatch(removeFromLigandList(datasetID, moleculeId));
         dispatch(removeFromToBeDisplayedListForDataset(datasetID, { id: data.id, type: NGL_OBJECTS.LIGAND }));
+        throw error;
       }
     },
-    [allCompounds, dispatch, stage]
+    [allCompounds, allObservations, dispatch, stage]
   );
 
   const removeLigand = useCallback(
     async ligandData => {
       const datasetCompounds = allCompounds[ligandData.datasetID];
-      const data = datasetCompounds?.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      const member = datasetCompounds?.find(
+        obs => String(typeof obs === 'object' ? obs.id : obs) === String(ligandData.id)
+      );
+      const data =
+        allObservations?.find(obs => String(obs.id) === String(ligandData.id)) ||
+        (typeof member === 'object' ? member : null);
+      if (!data) throw new Error('Dataset ligand observation is unavailable.');
       const datasetID = ligandData.datasetID;
 
       const ligandDataText = await dispatch(generateMoleculeObject(data, undefined, datasetID));
@@ -71,7 +83,7 @@ export const useDisplayLigandRHS = () => {
 
       dispatch(removeFromToBeDisplayedListForDataset(datasetID, { id: ligandData.id, type: NGL_OBJECTS.LIGAND }));
     },
-    [allCompounds, dispatch, stage]
+    [allCompounds, allObservations, dispatch, stage]
   );
 
   useEffect(() => {

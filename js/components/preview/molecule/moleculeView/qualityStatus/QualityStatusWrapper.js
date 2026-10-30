@@ -42,14 +42,14 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-export const QualityStatusWrapper = memo(({ data }) => {
+export const QualityStatusWrapper = memo(({ data, triggerLabel, readOnly }) => {
   const allStatuses = useSelector(state => state.apiReducers.quality_statuses);
   const classes = useStyles();
 
   // These values are rendered per row; derive them without scheduling passive updates.
   const qualityStatuses = useMemo(
     () =>
-      allStatuses.filter(
+      (allStatuses || []).filter(
         status => status.site_observation === data.main_site_observation && status.comment !== 'Created on load'
       ),
     [allStatuses, data.main_site_observation]
@@ -144,6 +144,13 @@ export const QualityStatusWrapper = memo(({ data }) => {
     setAnchorElModal(statusLightDivRef.current || event.currentTarget);
     setAnchorElQualityStatus(event.currentTarget);
   }, [clearClosePopoverTimer]);
+
+  const handleTriggerKeyDown = event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleEditDialogOpenFromLight(event);
+    }
+  };
 
   const handleStatusMouseEnter = event => {
     clearClosePopoverTimer();
@@ -246,6 +253,13 @@ export const QualityStatusWrapper = memo(({ data }) => {
       <div
         ref={statusLightDivRef}
         className={classes.statusTrigger}
+        role={triggerLabel ? 'button' : undefined}
+        tabIndex={triggerLabel ? 0 : undefined}
+        aria-label={triggerLabel ? `${triggerLabel}: ${mainQualityStatus || QUALITY_STATUSES.NONE}` : undefined}
+        aria-haspopup={triggerLabel ? 'dialog' : undefined}
+        aria-expanded={triggerLabel ? Boolean(anchorElQualityStatus) : undefined}
+        onClick={triggerLabel ? handleEditDialogOpenFromLight : undefined}
+        onKeyDown={triggerLabel ? handleTriggerKeyDown : undefined}
         onMouseEnter={handleStatusMouseEnter}
         onMouseLeave={handleStatusMouseLeave}
       >
@@ -254,7 +268,7 @@ export const QualityStatusWrapper = memo(({ data }) => {
           status={mainQualityStatus}
           props={{
             className: classes.pizzaLight,
-            onClick: handleEditDialogOpenFromLight
+            onClick: triggerLabel ? undefined : handleEditDialogOpenFromLight
           }}
         />
       </div>
@@ -277,6 +291,7 @@ export const QualityStatusWrapper = memo(({ data }) => {
         <TooltipPathProvider path="summaryTooltip">{getQualityStatusSummaryTooltip()}</TooltipPathProvider>
       </Popover>
       <QualityStatusModal
+        readOnly={readOnly}
         openModal={Boolean(anchorElQualityStatus)}
         onModalClose={handleModalClose}
         statuses={qualityStatuses}

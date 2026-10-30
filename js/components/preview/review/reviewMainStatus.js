@@ -4,6 +4,7 @@ import { DJANGO_CONTEXT } from '../../../utils/djangoContext';
 import { QUALITY_STATUSES } from '../molecule/moleculeView/qualityStatus/constants';
 import { postQualityStatuse } from '../molecule/moleculeView/qualityStatus/api/api';
 import { addQualityStatusAction } from '../molecule/moleculeView/qualityStatus/api/apiActions';
+import { getReviewMainStatus } from './reviewQualityStatus';
 
 const controllers = new WeakMap();
 const grades = [QUALITY_STATUSES.GOOD, QUALITY_STATUSES.MEDIOCRE, QUALITY_STATUSES.BAD];
@@ -12,10 +13,7 @@ export const canGradeReview = () =>
   Boolean(DJANGO_CONTEXT?.pk) && DJANGO_CONTEXT.authenticated !== false && DJANGO_CONTEXT.username !== 'NOT_LOGGED_IN';
 
 export const selectReviewMainStatus = (state, observationId) =>
-  state.apiReducers.quality_statuses?.find(
-    record =>
-      record.site_observation === observationId && record.main_status === true && record.comment !== 'Created on load'
-  )?.status || QUALITY_STATUSES.NONE;
+  getReviewMainStatus(state.apiReducers.quality_statuses, observationId);
 
 const validResponse = (record, payload) =>
   record &&

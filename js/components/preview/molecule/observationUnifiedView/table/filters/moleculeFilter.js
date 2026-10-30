@@ -44,6 +44,7 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {}, controlle
   const EXACT = 'exact';
 
   const targetOnId = useSelector(state => state.apiReducers.target_on);
+  const restoreRevision = useSelector(state => (controlled ? state.selectionReducers.reviewRevision || 0 : 0));
   const targetList = useSelector(state => state.apiReducers.target_id_list);
   const targetAccessString = useSelector(state => state.targetReducers.currentProject?.target_access_string);
   const savedFilter = useSelector(state => state.selectionReducers.unifiedFilter?.molecule);
@@ -63,7 +64,7 @@ export const MoleculeFilter = memo(({ onFilterChange, viewConfig = {}, controlle
   const filteredSmilesQuery = controlled ? filterValue.smiles : legacySmilesQuery;
   const requestRef = useRef(0);
   const inputsRef = useRef(null);
-  const requestInputs = JSON.stringify([targetOnId, targetAccessString, targetOnTitle, filterValue]);
+  const requestInputs = JSON.stringify([targetOnId, targetAccessString, targetOnTitle, filterValue, restoreRevision]);
   inputsRef.current = requestInputs;
   useEffect(() => () => { requestRef.current += 1; }, []);
 

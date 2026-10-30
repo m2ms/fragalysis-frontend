@@ -5,6 +5,13 @@ import { parse } from 'date-fns';
 import { setPoseIdForObservationsDialog } from './actions';
 import { constants } from './constants';
 import { DEFAULT_RHS_POSE_NAVIGATION_CONFIG, normalizeRhsPoseNavigationConfig } from '../../constants/poseNavigation';
+import {
+  SET_REVIEW_SETTINGS,
+  SET_REVIEW_OWNERSHIP,
+  normalizeReviewSettings,
+  normalizeReviewOwnership,
+  normalizeReviewSelection
+} from '../../constants/reviewSettings';
 
 export const INITIAL_STATE = {
   to_buy_list: [],
@@ -109,6 +116,8 @@ export const INITIAL_STATE = {
   rhsIsFullyRendered: false,
 
   unifiedFilter: {},
+  review: normalizeReviewSettings(),
+  reviewRevision: 0,
   activeCoordinateFilterSide: 'lhs',
   isCoordinateFilterApplied: false,
   isCoordinateFilterAppliedLHS: false,
@@ -135,6 +144,31 @@ const leaveRhsActiveOnly = state =>
 
 export function selectionReducers(state = INITIAL_STATE, action = {}) {
   switch (action.type) {
+    case SET_REVIEW_SETTINGS: {
+      const previous = state.review || normalizeReviewSettings();
+      const next = normalizeReviewSettings({ ...previous, ...action.settings });
+      if (JSON.stringify(next.orderingBySide) === JSON.stringify(previous.orderingBySide)) {
+        next.orderingBySide = previous.orderingBySide;
+      }
+      if (
+        next.owner === previous.owner &&
+        next.open === previous.open &&
+        next.height === previous.height &&
+        next.orderingBySide === previous.orderingBySide
+      )
+        return state;
+      return { ...state, review: { ...next, ligandGroups: previous.ligandGroups } };
+    }
+
+    case SET_REVIEW_OWNERSHIP:
+      return {
+        ...state,
+        review: {
+          ...(state.review || normalizeReviewSettings()),
+          ligandGroups: normalizeReviewOwnership(action.ownership)
+        }
+      };
+
     case constants.SET_LHS_IS_FULLY_RENDERED:
       return { ...state, lhsIsFullyRendered: action.isFullyRendered };
 
@@ -473,7 +507,15 @@ export function selectionReducers(state = INITIAL_STATE, action = {}) {
       });
 
       return Object.assign({}, state, {
-        ...action.payload,
+        ...normalizeReviewSelection(action.payload),
+        reviewRevision: (state.reviewRevision || 0) + 1,
+        unifiedFilter: {
+          ...action.payload.unifiedFilter,
+          rhs: {
+            ...normalizeReviewSelection(action.payload).unifiedFilter.rhs,
+            resetVersion: (state.unifiedFilter?.rhs?.resetVersion || 0) + 1
+          }
+        },
         rhsPoseNavigationConfig: normalizeRhsPoseNavigationConfig(action.payload.rhsPoseNavigationConfig),
         fragmentDisplayList: [...newFraments],
         proteinList: [...newProteins],

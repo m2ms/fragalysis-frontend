@@ -1,4 +1,5 @@
 import { constants } from './constants';
+import { constants as selectionConstants } from '../../../../reducers/selection/constants';
 
 export const INITIAL_STATE = {
   sortDialogOpen: false,
@@ -13,6 +14,9 @@ export const INITIAL_STATE = {
 
 export const molecule = (state = INITIAL_STATE, action = {}) => {
   switch (action.type) {
+    case selectionConstants.SHOW_ALL_RHS_OBSERVATIONS:
+      return { ...state, searchStringRHS: '' };
+
     case constants.SET_SORT_DIALOG_OPEN:
       return Object.assign({}, state, {
         sortDialogOpen: action.payload

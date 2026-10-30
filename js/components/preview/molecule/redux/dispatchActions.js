@@ -1050,28 +1050,34 @@ export const generateAndStoreMolImage = (obs, molType, width, height, RDKitModul
       backgroundColour: [0, 0, 0, 0]
     };
 
-    let highlightOptions = null;
-    if (subqueryToHighlight) {
-      // highlight substructure if available
-      const qmol = RDKitModule.get_qmol(subqueryToHighlight);
-      highlightOptions = getHighlightOptions(mol, qmol);
-      qmol?.delete();
-    }
+    try {
+      let highlightOptions = null;
+      if (subqueryToHighlight) {
+        // highlight substructure if available
+        const qmol = RDKitModule.get_qmol(subqueryToHighlight);
+        try {
+          highlightOptions = getHighlightOptions(mol, qmol);
+        } finally {
+          qmol?.delete();
+        }
+      }
 
-    const svg = mol.get_svg_with_highlights(
-      JSON.stringify({
-        ...options,
-        ...(highlightOptions ? highlightOptions : { bonds: highlightAtoms, atoms: highlightBonds })
-      })
-    );
+      const svg = mol.get_svg_with_highlights(
+        JSON.stringify({
+          ...options,
+          ...(highlightOptions ? highlightOptions : { bonds: highlightAtoms, atoms: highlightBonds })
+        })
+      );
 
-    mol.delete();
-    if (!imageCache.hasOwnProperty(molIdStr) && !subqueryToHighlight) {
-      dispatch(addImageToCache(obsId.toString(), svg));
+      if (!imageCache.hasOwnProperty(molIdStr) && !subqueryToHighlight) {
+        dispatch(addImageToCache(obsId.toString(), svg));
+      }
+      return new Promise((resolve, reject) => {
+        resolve(svg);
+      });
+    } finally {
+      mol?.delete();
     }
-    return new Promise((resolve, reject) => {
-      resolve(svg);
-    });
   }
 };
 

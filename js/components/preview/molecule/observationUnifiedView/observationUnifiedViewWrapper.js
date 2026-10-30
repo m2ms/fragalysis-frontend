@@ -143,6 +143,7 @@ const ObservationUnifiedViewWrapper = memo(
         informationList,
         items,
         navigationItems = items,
+        columnFilterConfig,
         poseTransferConfig,
         poseTransferInProgress = false,
         poseTransferResetKey = 0,
@@ -199,8 +200,9 @@ const ObservationUnifiedViewWrapper = memo(
         availableWidth,
         preferredDetailWidth
       );
-      const { filteredItems, getColumnFilter, applyFiltersAndSort } = useFilters(items, columns, viewConfig);
-      const orderedNavigationItems = useMemo(() => applyFiltersAndSort(navigationItems), [applyFiltersAndSort, navigationItems]);
+      const { filteredItems: locallyFilteredItems, getColumnFilter, applyFiltersAndSort } = useFilters(items, columns, viewConfig, columnFilterConfig);
+      const filteredItems = columnFilterConfig ? items : locallyFilteredItems;
+      const orderedNavigationItems = useMemo(() => columnFilterConfig ? navigationItems : applyFiltersAndSort(navigationItems), [applyFiltersAndSort, navigationItems, columnFilterConfig]);
       const reportedIds = useRef(null);
       useEffect(() => {
         if (!onPoseTransferNavigationItemsChange) return;

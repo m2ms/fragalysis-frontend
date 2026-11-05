@@ -172,7 +172,8 @@ export const PoseListLHS = memo(({}) => {
                         false,
                         true,
                         skipTracking,
-                        ligandRepresentations
+                        ligandRepresentations,
+                        selectedMolecules.length > 1
                       )
                     )
                   );

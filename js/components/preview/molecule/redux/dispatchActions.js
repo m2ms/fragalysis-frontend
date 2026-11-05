@@ -57,6 +57,7 @@ import { selectJoinedMoleculeList } from './selectors';
 import { compareTagsAsc, isTagVisibleOnSide, TAG_META_CATEGORIES } from '../../tags/utils/tagUtils';
 import { createPoseApi, updatePoseApi } from '../api/poseApi';
 import { NGL_OBJECTS } from '../../../../reducers/ngl/constants';
+import { markBulkLigand } from '../../../../reducers/ngl/bulkLigands';
 // import { molFile, pdbApo } from './testData';
 
 /**
@@ -439,18 +440,19 @@ export const addLigand = (
   centerOn = false,
   withQuality = false,
   skipTracking = false,
-  representations = undefined
+  representations = undefined,
+  bulk = false
 ) => async (dispatch, getState) => {
-  dispatch(
-    appendToBeDisplayedList({
-      type: NGL_OBJECTS.LIGAND,
-      id: data.id,
-      display: true,
-      center: centerOn,
-      withQuality: withQuality,
-      representations: representations
-    })
-  );
+  const item = {
+    type: NGL_OBJECTS.LIGAND,
+    id: data.id,
+    display: true,
+    center: centerOn,
+    withQuality: withQuality,
+    representations: representations
+  };
+  if (bulk) markBulkLigand(item);
+  dispatch(appendToBeDisplayedList(item));
 };
 
 export const removeLigand = (stage, data, skipTracking = false, withVector = true) => dispatch => {

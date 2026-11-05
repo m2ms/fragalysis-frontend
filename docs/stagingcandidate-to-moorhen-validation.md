@@ -656,3 +656,44 @@ Validation:
   detect the locally available Chrome installation; Edge was selected explicitly for the fallback run. No browser
   security settings or application isolation checks were relaxed.
 - NOT RUN: authenticated Cypress scenarios, snapshot writes/restores, layout resizing and RHS transfer/memory acceptance.
+
+## Serial bulk LHS ligand experiment (2026-11-05)
+
+Branch: `codex/lhs-ligand-serial`, based on `da1cbfa2`. The user explicitly approved this first experiment after
+reviewing the trade-off against the documented concurrency of independent structures. Only multi-ligand requests
+from the LHS navigator's bulk ligand control enter the serial lane. Individual toggles, RHS transfers, other
+structure types and snapshot hydration keep their existing scheduling.
+
+All requested ligand intents enter the normal Redux list immediately, retaining the complete snapshot intent.
+A weak set outside Redux identifies the live bulk request without adding fields to saved state. The display hook
+admits one marked ligand through coordinate fetching, native representation readiness and the rendered acknowledgement,
+then yields a browser task before admitting another. Waiting items are selected from the latest intent list, so
+deselection and snapshot replacement can supersede them before loading. Existing per-item operation ordering and
+native deletion remain in place. LHS deletion now uses the existing object name without fetching coordinates, so
+cancelling an unstarted ligand does not download it. Coordinate failures use the same rollback path as render failures
+and release the serial lane. Hook teardown cancels the resume timer and prevents further admissions.
+
+Validation:
+
+- PASS: focused viewer, display queue, transfer and snapshot checks, 12 suites / 152 tests. Nine new integration cases
+  exercise the actual LHS toolbar handler, Redux reducers, coordinate fetches and adapter boundary under Strict Mode.
+  Coverage includes one of 930 requests starting, all intents saved in the existing shape, delayed native completion,
+  browser-task yielding, concurrent individual requests, removal with delayed disposal and circular native buffers,
+  fetch/render failures, snapshot supersession/restoration and unmounting.
+- PASS: full Jest suite, 72 suites / 547 tests, 297.116 seconds.
+- PASS: production build and backend stats validation, with the two existing bundle-size warnings; Moorhen integrity,
+  275 files / 114450225 bytes. Changed JavaScript passes targeted ESLint with the five existing unused-variable
+  warnings in molecule actions; new files and the changed hook have no lint findings. New files/hook pass Prettier.
+- PARTIAL (live Chrome, local Django/development bundle, A71EV2A / lb18145-1): reloaded the tab before testing, confirmed
+  initial target rendering and Moorhen readiness, selected Show all hits (736 poses / 930 observations), removed the
+  initial ligand and confirmed the 930-ligand bulk request. Ligands appeared progressively; viewer rotation worked
+  during loading and the scene remained visible without a blocking rendering dialog. Load-completion logs progressed
+  individually, but loading remained slow and several UI actions exceeded browser-control timeouts. Serialization
+  alone does not establish acceptable responsiveness or improved total throughput. This was not a controlled timing
+  comparison; production compilation also ran during part of the live check.
+- UNVERIFIED (live): the bulk removal click was issued, but subsequent browser inspection timed out. Computer-use
+  stopped because it could not verify the current browser URL reliably; native disposal and cancellation completion
+  could not be confirmed. Reload the tab before retesting. No snapshot records were written.
+- NOT RUN: completion of all 930 native loads, quantitative cold/warm comparisons, final-scene FPS/memory measurements,
+  live save/restore/same-project switching, layout resizing or complete RHS transfer acceptance. The unit tests model
+  native lifecycles; they do not establish visual parity or GPU performance.

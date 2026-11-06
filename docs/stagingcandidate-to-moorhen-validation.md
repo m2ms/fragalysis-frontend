@@ -656,3 +656,208 @@ Validation:
   detect the locally available Chrome installation; Edge was selected explicitly for the fallback run. No browser
   security settings or application isolation checks were relaxed.
 - NOT RUN: authenticated Cypress scenarios, snapshot writes/restores, layout resizing and RHS transfer/memory acceptance.
+
+## Serial bulk LHS ligand experiment (2026-11-05)
+
+Branch: `codex/lhs-ligand-serial`, based on `da1cbfa2`. The user explicitly approved this first experiment after
+reviewing the trade-off against the documented concurrency of independent structures. Only multi-ligand requests
+from the LHS navigator's bulk ligand control enter the serial lane. Individual toggles, RHS transfers, other
+structure types and snapshot hydration keep their existing scheduling.
+
+All requested ligand intents enter the normal Redux list immediately, retaining the complete snapshot intent.
+A weak set outside Redux identifies the live bulk request without adding fields to saved state. The display hook
+admits one marked ligand through coordinate fetching, native representation readiness and the rendered acknowledgement,
+then yields a browser task before admitting another. Waiting items are selected from the latest intent list, so
+deselection and snapshot replacement can supersede them before loading. Existing per-item operation ordering and
+native deletion remain in place. LHS deletion now uses the existing object name without fetching coordinates, so
+cancelling an unstarted ligand does not download it. Coordinate failures use the same rollback path as render failures
+and release the serial lane. Hook teardown cancels the resume timer and prevents further admissions.
+
+Validation:
+
+- PASS: focused viewer, display queue, transfer and snapshot checks, 12 suites / 152 tests. Nine new integration cases
+  exercise the actual LHS toolbar handler, Redux reducers, coordinate fetches and adapter boundary under Strict Mode.
+  Coverage includes one of 930 requests starting, all intents saved in the existing shape, delayed native completion,
+  browser-task yielding, concurrent individual requests, removal with delayed disposal and circular native buffers,
+  fetch/render failures, snapshot supersession/restoration and unmounting.
+- PASS: full Jest suite, 72 suites / 547 tests, 297.116 seconds.
+- PASS: production build and backend stats validation, with the two existing bundle-size warnings; Moorhen integrity,
+  275 files / 114450225 bytes. Changed JavaScript passes targeted ESLint with the five existing unused-variable
+  warnings in molecule actions; new files and the changed hook have no lint findings. New files/hook pass Prettier.
+- PARTIAL (live Chrome, local Django/development bundle, A71EV2A / lb18145-1): reloaded the tab before testing, confirmed
+  initial target rendering and Moorhen readiness, selected Show all hits (736 poses / 930 observations), removed the
+  initial ligand and confirmed the 930-ligand bulk request. Ligands appeared progressively; viewer rotation worked
+  during loading and the scene remained visible without a blocking rendering dialog. Load-completion logs progressed
+  individually, but loading remained slow and several UI actions exceeded browser-control timeouts. Serialization
+  alone does not establish acceptable responsiveness or improved total throughput. This was not a controlled timing
+  comparison; production compilation also ran during part of the live check.
+- UNVERIFIED (live): the bulk removal click was issued, but subsequent browser inspection timed out. Computer-use
+  stopped because it could not verify the current browser URL reliably; native disposal and cancellation completion
+  could not be confirmed. Reload the tab before retesting. No snapshot records were written.
+- NOT RUN: completion of all 930 native loads, quantitative cold/warm comparisons, final-scene FPS/memory measurements,
+  live save/restore/same-project switching, layout resizing or complete RHS transfer acceptance. The unit tests model
+  native lifecycles; they do not establish visual parity or GPU performance.
+
+## Bounded bulk LHS ligand experiment (2026-11-05)
+
+Branch: `codex/lhs-ligand-pool`, independently based on `da1cbfa2`, matching the serial experiment's baseline.
+The default `LHS_BULK_LIGAND_CONCURRENCY` in `js/config/viewer.js` is 4. Set it to 2 or 8 and rebuild/reload to compare
+limits. It counts complete bulk ligand loads, including coordinates and native rendering, rather than just network
+requests or worker messages. It is a source setting for this experiment and is not saved in snapshots.
+
+The pool uses the same scope and compatibility protections as the serial branch: only multi-ligand requests from the
+LHS navigator bulk ligand control are marked outside Redux; every requested intent is saved immediately in its normal
+shape. Individual toggles, RHS transfer requests, other structure types and snapshot hydration retain their scheduling.
+The shared per-item operation queue and native deletion queues are unchanged. Waiting requests are read from current
+Redux intent, preventing obsolete waiting loads from starting after deselection or snapshot replacement. Deletion by
+name avoids fetching cancelled coordinates, and coordinate/render failures remove failed intent and release capacity.
+
+The display hook reserves slots by observation ID before awaiting work. This prevents repeated effects and overlapping
+bulk requests from spending multiple slots on the same pending load. Each slot remains occupied until the native load
+and rendered acknowledgement finish, then yields a browser task before reuse. Slots refill independently when loads
+finish out of order; this is not a sequence of batches that waits for the slowest member. Cleanup cancels all pending
+resume timers while preserving active claims through Strict Mode's effect replay. This experiment does not batch Redux
+publication, coalesce native draws or change representation quality.
+
+Validation:
+
+- PASS: focused viewer, display queue, transfer and snapshot checks, 12 suites / 157 tests. Fourteen new integration
+  cases exercise limits 2/4/8 with 930 toolbar requests, snapshot intent preservation, delayed coordinates/rendering,
+  out-of-order completion, independent slot refill, duplicate/overlapping requests, concurrent individual requests,
+  delayed disposal with circular native buffers, coordinate/render failures, snapshot supersession/restoration and
+  teardown during both fetching and scheduled resume tasks.
+- PASS: full Jest suite, 72 suites / 552 tests, 254.927 seconds.
+- PASS: production build and backend stats validation, with the two existing bundle-size warnings; Moorhen integrity,
+  275 files / 114450225 bytes. Targeted ESLint reports only the five existing unused-variable warnings in molecule
+  actions; new files, viewer configuration and the display hook have no lint findings and pass Prettier.
+- PASS (live Chrome, local Django, production bundle `main-600d360673d8fea254ea.js`, A71EV2A / lb18145-1): started
+  a fresh target session, confirmed initial native rendering/readiness, then loaded the first tag's 19 observations
+  across 13 poses through the LHS bulk ligand control. Completion logs increased by 19. The ligands appeared in the
+  scene; no console errors were captured. Rotation, opening/closing Designs with viewer resizing, bulk removal and
+  reloading that group preserved the remaining scene. No saved records were changed. Compilation and tests were idle
+  during this check. This was functional acceptance of a small group, not a timed comparison with the serial branch.
+- UNVERIFIED (live): a mid-load cancellation attempt exceeded the browser interaction deadline; a subsequent check
+  showed the 19-ligand reload had completed. Cancelling queued/in-flight work is covered by delayed integration tests,
+  but this live attempt did not establish interruption during loading.
+- NOT RUN: full 930-ligand completion, controlled cold/warm comparisons at limits 2/4/8, final-scene FPS/memory,
+  live snapshot save/restore/same-project switching, unlocked layouts and a complete RHS transfer/memory audit.
+
+For a controlled comparison, reload before every run, use the same filtered observations and starting scene, and record
+first-visible/all-rendered time, long UI stalls, rotation responsiveness and peak memory. Compare cold and warm coordinate
+caches separately. Keep compilation and test runners idle while measuring. Full 930-ligand completion and live resource
+cleanup require browser verification; mocked lifecycle tests alone do not establish throughput or GPU performance.
+
+## Pipelined bulk LHS ligand experiment (2026-11-05)
+
+Branch: `codex/lhs-ligand-pipeline`, independently based on `da1cbfa2`, matching the serial and bounded-pool baselines.
+Only the LHS navigator's multi-ligand bulk control uses this pipeline. Source settings in `js/config/viewer.js` default
+to `LHS_BULK_LIGAND_DOWNLOAD_CONCURRENCY = 6` and `LHS_BULK_LIGAND_RENDER_CONCURRENCY = 2`. Rebuild and reload to compare
+other positive integer limits. Neither setting enters Redux or saved snapshots.
+
+Six coordinate-preparation slots include both active downloads and prepared ligands waiting for native admission.
+Each slot is held until its ligand starts rendering. At most two additional ligands can occupy native rendering slots,
+so the default pipeline holds no more than eight preparations/loads. This bounds the prefetch backlog when rendering
+is slow instead of downloading all 930 coordinates ahead. Ready ligands can render while an earlier download is slow;
+each native slot lasts through the actual representation readiness and rendered acknowledgement.
+
+Every requested intent is still added to Redux immediately in the existing shape. Runtime-only records claim each
+observation through the existing per-item operation queue, which orders loading, removal and reload across both phases.
+Prepared coordinates wait outside Redux; no native handles are copied into application state. Completion and preparation
+notifications coalesce into a browser task before capacity is reused. Individual requests, RHS transfers, other object
+types and snapshot hydration keep their original scheduling. Representation quality and native drawing are unchanged.
+
+Before native admission, each bulk preparation checks that its original intent and registered viewer are still current.
+Deselecting a prepared ligand, replacing a snapshot or replacing the runtime cancels that preparation without creating
+an obsolete native molecule. Existing active native loads retain their ordered removal/disposal path. Unstarted removal
+uses the existing object name without fetching coordinates. An obsolete download failure cannot remove a replacement
+snapshot's intent. Hook teardown releases waiting admissions and clears the coalesced timer while retaining Strict Mode
+claim protection; late coordinate responses cannot start new native work after unmount.
+
+Validation:
+
+- PASS: focused viewer, display queue, transfer and snapshot checks, 12 suites / 164 tests. Twenty-one new integration
+  cases cover independent limits, all 930 intents saved, bounded prefetch with blocked rendering, slow/out-of-order
+  downloads, native readiness and appearance, circular native state, duplicate/overlapping bulk requests, concurrent
+  individual requests, cancellation before/after native admission, delayed actual disposal, failures, obsolete errors,
+  snapshot supersession/restoration, runtime replacement and teardown in fetching/ready/rendering/yielding phases.
+- PASS: full Jest suite, 72 suites / 559 tests, 285.283 seconds.
+- PASS: production build and backend stats validation (`main-d40035d63a06ec36c889.js`), with the two existing
+  bundle-size warnings; explicit Moorhen asset verification, 275 files / 114450225 bytes. Targeted ESLint reports
+  only the five existing unused-variable warnings in molecule actions. Changed configuration, hook, helper and
+  integration tests pass Prettier; existing formatting elsewhere was retained.
+- PASS (live Edge, local Django, development bundle `main-d62146b54f5c68a98ca4.js`, A71EV2A / lb18145-1): initial
+  target rendering, the first tag's 19 observations across 13 poses, bulk removal and warm reload. Native completion
+  logs increased from 3 to 22 to 41; screenshots showed all ligands loaded and then removed while the protein remained.
+  A further load/cancel attempt ended with a clear ligand scene and the native completion count at 45 rather than 60.
+  This establishes functional small-group loading/removal and interruption, not a controlled throughput comparison.
+  The existing Moorhen native list-key warning appeared at initialization before bulk loading. No snapshot records
+  were written, and compilation/tests were idle during this check.
+- LIMITATION (live): bulk removal and the cancellation click exceeded browser-control deadlines before the subsequent
+  observations recovered. This branch does not establish responsive bulk deletion or eliminate all main-thread stalls.
+  Reducing native admission limits does not coalesce native draws or bound the cost of the final 930-object scene.
+- NOT RUN: full 930-ligand completion, controlled cold/warm comparisons, final-scene FPS/memory, rotation/layout
+  switching/resizing, live snapshot save/restore/same-project switching and complete RHS transfer/memory acceptance.
+  These remain live checks; passing mocked lifecycle tests does not establish visual parity or GPU performance.
+
+Compare this branch against the serial and bounded-pool branches from fresh target sessions, using the same filtered
+observations and starting scene. Record first-visible/all-rendered time, UI stalls, rotation responsiveness and peak
+memory, keeping compilation and test runners idle. Compare cold and warm coordinate caches separately. Try the default
+6/2 preparation/render limits and 4/1 to distinguish download overlap from native contention.
+
+## Batched bulk LHS ligand experiment (2026-11-06)
+
+Branch: `codex/lhs-ligand-batched`, independently based on `da1cbfa2`, matching the first three experiments.
+This variant batches request publication and coalesces the adapter's explicit load-completion repaints. It retains
+baseline concurrency for fetching and native geometry work, isolating this experiment from the serial/pool/pipeline
+variants. It does not guarantee fewer Moorhen worker messages or solve the final 930-object scene's GPU cost.
+
+The LHS navigator's multi-ligand control now dispatches three actions for the whole request: disable the requested
+ligand buttons, append every intent, and re-enable those buttons. Previously it dispatched three actions per ligand
+(2,790 for 930 observations). The reducers copy the relevant list/button dictionary once per action. Existing entries,
+tombstones, duplicate intents, per-control settings, observation order and original intent object identities remain
+intact. Buttons are re-enabled in `finally` if publication fails. Individual toggles and other controls use their
+existing actions. Every requested intent remains immediately available to snapshot saving in its original shape.
+
+A WeakSet marks live bulk intents outside Redux. Only those loads pass the runtime-only `coalesceDraw` option through
+the existing viewer boundary. At initial representation completion, the adapter combines explicit repaint requests
+that arrive before the next animation frame. All participants await that actual repaint before native readiness and
+Redux rendering acknowledgement complete. A 100 ms fallback (`LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS` in
+`js/config/viewer.js`) prevents throttled/background frames from indefinitely holding readiness. The fallback is an
+event-loop deadline, not a guarantee while synchronous work blocks JavaScript.
+
+This is deliberately scoped to the adapter's explicit completion/failed-initialization repaints. Moorhen also requests
+draws through its own Redux store during buffer work, and those remain intact. The renderer is not globally patched;
+camera animation, picking, editing and native store-driven drawing retain their immediate paths. Snapshot-restored
+intents lose the WeakSet marks and retain ordinary rendering. Screenshot capture flushes a pending repaint and encodes
+the canvas in the same turn; teardown flushes pending readiness, drains named operations, disposes resources and
+cancels the outstanding frame/timer. The existing per-item load/removal queues and representation settings are retained.
+
+Validation:
+
+- PASS: focused viewer/boundary, display queue, selection, transfer and snapshot checks, 13 suites / 173 tests.
+  Fourteen new cases verify 930 requests in three subscriber notifications, snapshot shapes, retained tombstones and
+  identities, independent button state, publication failure cleanup, normal concurrent loading, runtime-only options,
+  saved appearance, delayed readiness/deletion with circular native buffers, shared repaints, throttled frames,
+  synchronous capture, drawing errors/retry, task counts and teardown with an active native load waiting for paint.
+- PASS: full Jest suite, 72 suites / 552 tests, 269.468 seconds.
+- PASS: production build and backend stats validation (`main-d5f47b5d04e001ddc41a.js`), with the two existing bundle-size
+  warnings. New/changed production code has no new ESLint findings. The touched legacy action/reducer files retain
+  twelve existing unused-variable warnings; the native adapter test file retains existing lint findings outside its
+  new test block. The new integration tests and new adapter test block have no lint findings.
+- PASS: explicit Moorhen asset integrity verification after the final build, 275 files / 114450225 bytes. The new
+  integration test, bulk helper, viewer configuration, display hook and button reducer pass Prettier. Other touched
+  legacy files retain their existing formatting; changed files use LF line endings and pass `git diff --check`.
+- PASS (live Chrome, local Django, final production bundle `main-d5f47b5d04e001ddc41a.js`, A71EV2A / lb18145-1): fresh
+  target initialization, the first tag's 19 observations across 13 poses, rotation, Designs open/close, bulk removal
+  and warm reload. Native completion logs increased from 3 to 22 to 41. Screenshots confirmed the ligand scene,
+  its removal with protein/sidechains retained, and the completed warm reload. No console errors or warnings were
+  captured. Compilation/test runners were idle, and no saved records were written. This was small-group functional
+  verification, not a controlled speed comparison or a live measurement of frame coalescing.
+- NOT RUN: full 930-ligand completion, quantitative comparisons across branches, live repaint counts, FPS/peak memory,
+  in-flight cancellation, unlocked layout/resizing acceptance, snapshot save/restore/same-project transitions and a
+  complete RHS transfer/memory audit. Snapshot and lifecycle tests do not establish live visual parity or GPU cost.
+
+For comparison, reload before each branch, keep the same filtered observations and initial scene, and separate cold
+and warm coordinate caches. Record initial toggle latency as well as first-visible/all-rendered time, responsiveness,
+repaint frequency and peak memory. This branch reduces initial Redux work and eligible adapter repaints; the other
+three variants limit active loads. A later combined experiment can test both mechanisms once each is measured.

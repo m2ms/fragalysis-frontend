@@ -306,6 +306,203 @@ const createAdapter = ({ molecule = createMolecule().molecule, map = createMap()
   };
 };
 
+describe('opt-in bulk ligand repaint coalescing', () => {
+  let frames;
+  let nextFrame;
+
+  // eslint-disable-next-line jest/no-hooks
+  beforeEach(() => {
+    jest.useFakeTimers();
+    frames = new Map();
+    nextFrame = 0;
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation(callback => {
+      frames.set(++nextFrame, callback);
+      return nextFrame;
+    });
+    jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(id => frames.delete(id));
+  });
+
+  // eslint-disable-next-line jest/no-hooks
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('combines completion requests into one actual frame and reports its pending work', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    const first = adapter.requestSceneDraw(true);
+    const second = adapter.requestSceneDraw(true);
+    expect(second).toBe(first);
+    expect(frames.size).toBe(1);
+    expect(adapter.getTaskCount()).toBe(1);
+    expect(glRef.current.drawScene).not.toHaveBeenCalled();
+    [...frames.values()][0]();
+    await Promise.all([first, second]);
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    expect(adapter.getTaskCount()).toBe(0);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('uses a bounded fallback when animation frames are throttled', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    const draw = adapter.requestSceneDraw(true);
+    jest.advanceTimersByTime(99);
+    expect(glRef.current.drawScene).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    await draw;
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('keeps ordinary draws immediate and flushes a screenshot in the same turn as encoding', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef, canvas } = createAdapter();
+    let drawn = false;
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene').mockImplementation(() => {
+      drawn = true;
+    });
+    canvas.toDataURL.mockImplementation(() => {
+      expect(drawn).toBe(true);
+      drawn = false;
+      return 'data:image/png';
+    });
+    const pending = adapter.requestSceneDraw(true);
+    adapter.requestSceneDraw();
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    drawn = false;
+    expect(await adapter.captureImage()).toBe('data:image/png');
+    await pending;
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(2);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('propagates a failed repaint to every waiter and can retry without retained timers', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene').mockImplementationOnce(() => {
+      throw new Error('WebGL failed');
+    });
+    const first = adapter.requestSceneDraw(true);
+    const second = adapter.requestSceneDraw(true);
+    const settled = Promise.allSettled([first, second]);
+    [...frames.values()][0]();
+    expect((await settled).map(result => result.reason.message)).toStrictEqual(['WebGL failed', 'WebGL failed']);
+    const retry = adapter.requestSceneDraw(true);
+    [...frames.values()][0]();
+    await retry;
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(2);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('waits for a shared repaint before native load acknowledgement and subsequent deletion', async () => {
+    expect.hasAssertions();
+    const first = createMolecule(1);
+    const second = createMolecule(2);
+    const { adapter, glRef } = createAdapter();
+    MoorhenMolecule.mockImplementationOnce(() => first.molecule).mockImplementationOnce(() => second.molecule);
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    let shown = 0;
+    let bothShown;
+    const readyToDraw = new Promise(resolve => {
+      bothShown = resolve;
+    });
+    [first, second].forEach(({ representation }) => {
+      representation.show.mockImplementation(async function() {
+        this.buffers.forEach(buffer => {
+          buffer.visible = true;
+        });
+        if (++shown === 2) bothShown();
+      });
+    });
+    const acknowledged = jest.fn();
+    const load = name =>
+      adapter
+        .loadObject({
+          target: { OBJECT_TYPE: 'LIGAND', name, sdf_info: 'ATOM\n' },
+          coalesceDraw: true
+        })
+        .then(acknowledged);
+    const loads = [load('first'), load('second')];
+    await readyToDraw;
+    await Promise.resolve();
+    expect(acknowledged).not.toHaveBeenCalled();
+    expect(first.molecule.representations[0].buffers).toHaveLength(1);
+    expect(frames.size).toBe(1);
+    const removal = adapter.removeObjects('first');
+    expect(first.molecule.delete).not.toHaveBeenCalled();
+    [...frames.values()][0]();
+    await Promise.all([...loads, removal]);
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    expect(acknowledged).toHaveBeenCalledTimes(2);
+    expect(first.molecule.delete).toHaveBeenCalledTimes(1);
+    expect(adapter.getObject('first')).toBeUndefined();
+    expect(adapter.getObject('second')).toBe(second.molecule);
+    await adapter.destroy();
+    expect(second.molecule.delete).toHaveBeenCalledTimes(1);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('drains a native load waiting for a repaint during teardown and disposes its buffers', async () => {
+    expect.hasAssertions();
+    const { adapter, molecule, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    molecule.delete.mockImplementation(async () => {
+      molecule.representations.forEach(representation => representation.buffers.splice(0));
+    });
+    let scheduled;
+    const waiting = new Promise(resolve => {
+      scheduled = resolve;
+    });
+    global.requestAnimationFrame.mockImplementationOnce(callback => {
+      frames.set(++nextFrame, callback);
+      scheduled();
+      return nextFrame;
+    });
+    const loading = adapter.loadObject({
+      target: { OBJECT_TYPE: 'LIGAND', name: 'teardown', sdf_info: 'ATOM\n' },
+      coalesceDraw: true
+    });
+    await waiting;
+    const representation = molecule.representations[0];
+    expect(representation.buffers).toHaveLength(1);
+    await Promise.all([adapter.destroy(), loading]);
+    expect(molecule.delete).toHaveBeenCalledTimes(1);
+    expect(representation.buffers).toStrictEqual([]);
+    expect(adapter.getObjects('teardown')).toStrictEqual([]);
+    expect(adapter.getNativeViewer().viewerAdapter).toBeUndefined();
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('flushes readiness on destroy and prevents late completions from scheduling more frames', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    const pending = adapter.requestSceneDraw(true);
+    await adapter.destroy();
+    await pending;
+    adapter.requestSceneDraw(true);
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(2);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
 describe('moorhen scene settings', () => {
   it('drains a native background redraw before deleting its molecule and skips callbacks queued after disposal starts', async () => {
     expect.hasAssertions();

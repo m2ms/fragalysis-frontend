@@ -19,6 +19,7 @@ import { deleteObject, loadObject } from './dispatchActions';
 import { removeVector } from '../../components/preview/molecule/redux/dispatchActions';
 import { getToBeDisplayedStructures } from './utils';
 import { setNglOrientation } from './actions';
+import { isBulkLigand } from './bulkLigands';
 
 export const useDisplayLigandLHS = () => {
   const dispatch = useDispatch();
@@ -62,7 +63,8 @@ export const useDisplayLigandLHS = () => {
             previousRepresentations: ligandData.representations,
             loadQuality: hasAdditionalInformation,
             quality: qualityInformation,
-            center: ligandData.center
+            center: ligandData.center,
+            ...(isBulkLigand(ligandData) ? { coalesceDraw: true } : {})
           })
         );
         if (ligandData.center) {

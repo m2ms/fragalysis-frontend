@@ -1,6 +1,6 @@
 import ViewerAdapter from './ViewerAdapter';
 import ContactWorkerClient from './contacts/ContactWorkerClient';
-import { USE_NGL_STYLE_INTERACTIONS } from '../config/viewer';
+import { LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS, USE_NGL_STYLE_INTERACTIONS } from '../config/viewer';
 import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from './moorhenMapUtils';
 import { NGL_VIEW_DEFAULT_VALUES } from '../components/nglView/constants';
 import { getSceneRadius, getSceneRanges } from './moorhenSceneSettings';
@@ -182,6 +182,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.taskCompletionHandlers = new Set();
     this.focusRequestSequence = 0;
     this.destroyed = false;
+    this.pendingSceneDraw = null;
     this.orientationAnimation = null;
     this.nativeCameraSequence = 0;
     this.sceneParameters = null;
@@ -350,6 +351,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         representations: options.representations || defaultRepresentations,
         color: target.colour,
         center: options.center === true,
+        coalesceDraw: options.coalesceDraw === true,
         centerZoomScale: LIGAND_FOCUS_ZOOM_SCALE
       });
       return this.getRepresentations(molecule);
@@ -523,7 +525,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return molecule;
   }
 
-  initialiseMoleculeRepresentation(component, handle) {
+  initialiseMoleculeRepresentation(component, handle, coalesceDraw = false) {
     const initialise = async () => {
       if (!component.defaultColourRules) await component.fetchDefaultColourRules();
       const style = getMoorhenRepresentationStyle(handle.type);
@@ -555,14 +557,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           await component.drawSymmetry(false);
           component.drawBiomolecule(false);
           await representation.show();
-          this.glRef.current?.drawScene?.();
+          await this.requestSceneDraw(coalesceDraw);
         }
         handle.visible = handle.params.visible !== false;
         return representation;
       } catch (error) {
         representation.deleteBuffers();
         component.representations = component.representations.filter(item => item !== representation);
-        this.glRef.current?.drawScene?.();
+        await this.requestSceneDraw(coalesceDraw);
         throw error;
       } finally {
         preparing = false;
@@ -626,7 +628,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         );
         handles.push(handle);
         this.representationsByObject.set(registeredMolecule, handles);
-        await this.initialiseMoleculeRepresentation(registeredMolecule, handle);
+        await this.initialiseMoleculeRepresentation(registeredMolecule, handle, options.coalesceDraw === true);
       }
 
       if (focusRequestId === this.focusRequestSequence) {
@@ -1703,7 +1705,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return (
       (this.commandCentre.current?.activeMessages?.length || 0) +
       this.contactWorker.pending.size +
-      this.pendingInteractionStyleChanges
+      this.pendingInteractionStyleChanges +
+      (this.pendingSceneDraw ? 1 : 0)
     );
   }
 
@@ -1869,10 +1872,52 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
   }
 
+  requestSceneDraw(coalesce = false) {
+    if (!coalesce || this.destroyed) {
+      this.glRef.current?.drawScene?.();
+      return;
+    }
+    if (!this.pendingSceneDraw) {
+      let resolve;
+      let reject;
+      const promise = new Promise((accept, fail) => {
+        resolve = accept;
+        reject = fail;
+      });
+      const pending = { promise, resolve, reject };
+      this.pendingSceneDraw = pending;
+      // Only opt-in load-completion draws join this frame. Camera movement,
+      // picking, native store-driven draws and edits keep their immediate path.
+      if (typeof requestAnimationFrame === 'function') {
+        pending.frame = requestAnimationFrame(() => this.flushPendingSceneDraw());
+      }
+      pending.timer = setTimeout(() => this.flushPendingSceneDraw(), LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS);
+    }
+    return this.pendingSceneDraw.promise;
+  }
+
+  flushPendingSceneDraw() {
+    const pending = this.pendingSceneDraw;
+    if (!pending) return null;
+    this.pendingSceneDraw = null;
+    if (pending.frame != null) cancelAnimationFrame(pending.frame);
+    clearTimeout(pending.timer);
+    try {
+      this.glRef.current?.drawScene?.();
+      pending.resolve();
+      return {};
+    } catch (error) {
+      pending.reject(error);
+      return { error };
+    }
+  }
+
   async captureImage(options) {
     // Moorhen does not preserve the WebGL drawing buffer. Encode the frame in
     // the same turn as drawing it, before asynchronous DOM cloning can yield.
-    this.glRef.current?.drawScene?.();
+    const pendingDraw = this.flushPendingSceneDraw();
+    if (pendingDraw?.error) throw pendingDraw.error;
+    if (!pendingDraw) this.glRef.current?.drawScene?.();
     const image = this.getRendererElement()?.toDataURL('image/png');
     if (options && typeof options.capture === 'function') {
       return options.capture(image);
@@ -1883,6 +1928,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   async destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
+    // Release load readiness before draining named operations. Late completions
+    // draw synchronously during teardown and cannot schedule another frame.
+    this.flushPendingSceneDraw();
     if (this.sceneSettingsGuard) {
       const { renderer, drawScene, zoomChanged } = this.sceneSettingsGuard;
       renderer.drawScene = drawScene;

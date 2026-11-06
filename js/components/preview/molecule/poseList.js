@@ -1123,6 +1123,11 @@ export const PoseList = memo(
 
     const removeSelectedType = (type, skipTracking = false) => {
       if (type === 'ligand') {
+        if (handlers.removeLigandsBulk && lpcControlMolecules.length > 1) {
+          handlers.removeLigandsBulk(majorViewStage, lpcControlMolecules, skipTracking);
+          selectedAll.current = false;
+          return;
+        }
         lpcControlMolecules.forEach(molecule => {
           removeType[type](majorViewStage, molecule, skipTracking);
         });

@@ -925,3 +925,45 @@ For clean comparisons, remove the displayed ligand group, choose a preset, then 
 cold and warm coordinate caches separately and keep compilation/tests idle while measuring. Native store-driven draws,
 camera interactions, representation quality and the final scene's GPU cost remain unchanged; this experiment does not
 claim a single draw per frame across all Moorhen internals.
+
+## Bulk ligand action stopwatch (2026-11-06)
+
+The combined branch now displays a stopwatch immediately after the ligand strategy/settings button. It starts at
+bulk LHS ligand request publication, includes the initial dispatch work, queued waiting, coordinates, native loading
+and completion repaint, and retains the final elapsed value. Bulk removal starts a new measurement and waits for
+ordered ligand disposal and queue acknowledgement, including loads which were already in progress. Counters may
+already show 0/0 during that cleanup while the stopwatch continues running.
+
+The visible label is Load or Remove, with Stopped and Failed outcomes for interrupted/failed work. A subsequent bulk
+action resets the clock; late completions from the previous action cannot replace its result. Individual cancellation
+of an active bulk ligand includes its ordered removal before timing can finish. Already displayed ligands complete
+without additional rendering, and unstarted intents superseded by a snapshot are stopped. Ordinary single toggles,
+RHS operations and snapshot hydration do not start a new stopwatch.
+
+Timing uses `performance.now()` and a tab-local external store. It publishes only start/end notifications, with an
+isolated 250 ms UI refresh while running and a final display precision of one tenth of a second. The final timestamp
+is recorded at operation completion rather than at a UI refresh tick. Interval cleanup is covered under Strict Mode
+and active unmount. Neither timing data nor its runtime promise/intent bookkeeping enter Redux, snapshots or API
+payloads; record lookup is linear in the current queue size. Native buffers and their settings remain unchanged.
+
+Validation:
+
+- PASS: focused timing/UI, queue, viewer/boundary, transfer and snapshot checks, 12 suites / 157 tests. New coverage
+  includes publication/queue time, final coalesced paint, delayed real buffer disposal after counters clear, partial
+  cancellation, obsolete completion ownership, errors, already rendered overlaps, retained duration, formatting and
+  interval cleanup. Snapshot-shape assertions exclude timer timestamps.
+- PASS: targeted ESLint with only the five existing molecule-action unused-variable warnings; new files and changed
+  hook/control files pass Prettier. Source changes retain existing formatting elsewhere and pass `git diff --check`.
+- PASS: production build and backend stats validation (`main-cabe27f64820b748ee32.js`), with the two existing bundle-size
+  warnings.
+- PASS: full Jest suite, 77 suites / 605 tests; explicit Moorhen static verification, 275 files / 114,450,225 bytes.
+- PASS: Chrome through Django on port 8080 with the production bundle above, A71EV2A first tag (19 observations).
+  Initial single-ligand startup left Time idle. Bulk removal completed at 0.7 s; loading advanced from 1/19 downloaded,
+  0/19 rendered with a running clock to 19/19 for both and a retained 20.4 s. Opening/closing strategy settings kept
+  20.4 s unchanged. Removing the 19 ligands completed at 10.1 s; the next warm load reset the clock, showed 19/19
+  downloaded before rendering finished, and retained 17.6 s after completion. Rotation and Designs open/close kept
+  the scene, counts and final time. No console errors/warnings were captured. Build/test runners were idle during
+  this check; these observations are functional checks, not controlled throughput measurements.
+- NOT RUN: full 930-ligand benchmark, live cancellation/failure injection, narrow viewport/unlocked resizing,
+  save/restore/same-project snapshot transitions and a full RHS transfer/memory audit. Automated cancellation,
+  snapshot and transfer coverage does not establish live visual parity for these remaining flows.

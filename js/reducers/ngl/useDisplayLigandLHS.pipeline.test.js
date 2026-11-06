@@ -18,6 +18,7 @@ import { useDisplayLigandLHS } from './useDisplayLigandLHS';
 import { bulkLigandPreset, getBulkLigandSettings, setBulkLigandSettings } from './bulkLigandSettings';
 import { MoorhenViewerAdapter } from '../../viewer/MoorhenViewerAdapter';
 import { getLigandLoadingProgress } from '../../components/preview/viewerControls/LigandLoadingProgress';
+import { getLigandActionTiming } from './ligandActionTiming';
 
 jest.mock('../../components/nglView/nglProvider', () => ({ NglContext: require('react').createContext() }));
 jest.mock('../../components/preview/molecule/poseList', () => ({ PoseList: jest.fn(() => null) }));
@@ -165,6 +166,7 @@ describe('pipelined bulk LHS ligand loading', () => {
       });
       expect(JSON.stringify(snapshot)).not.toContain('admit');
       expect(JSON.stringify(snapshot)).not.toContain('CONCURRENCY');
+      expect(JSON.stringify(snapshot)).not.toMatch(/startedAt|finishedAt|ligandActionTiming/);
     }
   );
 
@@ -282,6 +284,94 @@ describe('pipelined bulk LHS ligand loading', () => {
     expect(progress().rendered).toBe(2);
     await advancePipeline();
     expect(nativeIds(scene.stage)).toStrictEqual([1, 2, 3, 4]);
+  });
+
+  it('stops the bulk stopwatch only after the final shared completion repaint', async () => {
+    expect.hasAssertions();
+    const scene = createScene(2, 2, 2);
+    const paint = {
+      destroyed: false,
+      pendingSceneDraw: null,
+      glRef: { current: { drawScene: jest.fn() } },
+      flushPendingSceneDraw: MoorhenViewerAdapter.prototype.flushPendingSceneDraw
+    };
+    const loadNative = scene.stage.loadObject.getMockImplementation();
+    scene.stage.loadObject.mockImplementation(async options => {
+      const handles = await loadNative(options);
+      await MoorhenViewerAdapter.prototype.requestSceneDraw.call(paint, options.coalesceDraw, options.drawMaxWaitMs);
+      return handles;
+    });
+    await startBulk(scene);
+    const startedAt = getLigandActionTiming().startedAt;
+    await act(async () => {
+      scene.coordinates.forEach(item => item.resolve());
+    });
+    await advancePipeline();
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      scene.rendering.forEach(item => item.resolve());
+    });
+    expect(scene.nativeObjects.size).toBe(2);
+    expect(getLigandActionTiming().status).toBe('running');
+    expect(paint.glRef.current.drawScene).not.toHaveBeenCalled();
+    await act(async () => {
+      jest.advanceTimersByTime(16);
+    });
+    expect(paint.glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    const timing = getLigandActionTiming();
+    expect(timing.status).toBe('completed');
+    expect(timing.finishedAt - startedAt).toBeGreaterThan(1000);
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(getLigandActionTiming()).toBe(timing);
+  });
+
+  it('times a bulk removal through actual buffer disposal after counters have cleared', async () => {
+    expect.hasAssertions();
+    const scene = createScene(2, 2, 2);
+    await startBulk(scene);
+    await act(async () => {
+      scene.coordinates.forEach(item => item.resolve());
+    });
+    await advancePipeline();
+    await act(async () => {
+      scene.rendering.forEach(item => item.resolve());
+    });
+    expect(getLigandActionTiming().status).toBe('completed');
+    const disposal = deferred();
+    const native = [...scene.nativeObjects.values()];
+    scene.stage.removeObjects.mockImplementation(async name => {
+      await disposal.promise;
+      scene.nativeObjects.get(name).buffers.splice(0);
+      scene.nativeObjects.delete(name);
+    });
+    await act(async () => {
+      const { handlers } = PoseList.mock.calls[PoseList.mock.calls.length - 1][0];
+      handlers.removeLigandsBulk(scene.stage, scene.observations);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(250);
+    });
+    const state = scene.store.getState();
+    expect(
+      getLigandLoadingProgress(
+        state.selectionReducers.toBeDisplayedList,
+        state.apiReducers.ligandData,
+        scene.observations,
+        state.nglReducers.objectsInView
+      ).total
+    ).toBe(0);
+    expect(getLigandActionTiming().kind).toBe('remove');
+    expect(getLigandActionTiming().status).toBe('running');
+    expect(native.every(object => object.buffers.length === 1)).toBe(true);
+    await act(async () => {
+      disposal.resolve();
+    });
+    expect(native.every(object => object.buffers.length === 0)).toBe(true);
+    expect(scene.nativeObjects.size).toBe(0);
+    expect(getLigandActionTiming().status).toBe('completed');
+    expect(getLigandActionTiming().finishedAt - getLigandActionTiming().startedAt).toBe(250);
   });
 
   it('finishes an active strategy before starting requests with newly chosen settings', async () => {
@@ -593,6 +683,7 @@ describe('pipelined bulk LHS ligand loading', () => {
       }
       const started = global.fetch.mock.calls.length;
       scene.unmount();
+      expect(getLigandActionTiming().status).toBe('cancelled');
       await act(async () => {
         scene.coordinates.forEach(item => item.resolve());
         scene.rendering.forEach(item => item.resolve());

@@ -101,6 +101,11 @@ describe('ligand loading progress', () => {
     );
     const counter = screen.getByTestId('ligand-loading-progress');
     expect(
+      screen
+        .getByRole('button', { name: 'Ligand loading settings' })
+        .compareDocumentPosition(screen.getByTestId('ligand-action-timer')) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
       screen.getByRole('button', { name: 'Hits' }).compareDocumentPosition(counter) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(

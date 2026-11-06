@@ -5,6 +5,7 @@ import { Tune } from '@mui/icons-material';
 import { NGL_OBJECTS } from '../../../reducers/ngl/constants';
 import RichTooltip from '../../tooltip/RichTooltip';
 import { BulkLigandSettingsDialog } from './BulkLigandSettingsDialog';
+import { LigandActionTimer } from './LigandActionTimer';
 
 // Count current hit-ligand intent, not cumulative downloads or queued removals.
 // Native completion needs both its queue acknowledgement and matching metadata.
@@ -58,7 +59,7 @@ export const LigandLoadingProgress = memo(() => {
           sx={{ minWidth: 0, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}
         >
           <div>
-            Ligands downloaded {downloaded}/{total}
+            Downloaded {downloaded}/{total}
           </div>
           <div>
             Rendered {rendered}/{total}
@@ -70,6 +71,7 @@ export const LigandLoadingProgress = memo(() => {
           <Tune fontSize="small" />
         </IconButton>
       </RichTooltip>
+      <LigandActionTimer />
       {settingsOpen && <BulkLigandSettingsDialog onClose={() => setSettingsOpen(false)} />}
     </Box>
   );

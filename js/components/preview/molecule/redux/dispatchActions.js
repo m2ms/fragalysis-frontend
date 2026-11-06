@@ -65,6 +65,12 @@ import { createPoseApi, updatePoseApi } from '../api/poseApi';
 import { NGL_OBJECTS } from '../../../../reducers/ngl/constants';
 import { markBulkLigand } from '../../../../reducers/ngl/bulkLigands';
 import { getBulkLigandSettings } from '../../../../reducers/ngl/bulkLigandSettings';
+import {
+  beginLigandActionTiming,
+  bindLigandActionIntents,
+  failLigandActionTiming,
+  publishLigandActionTiming
+} from '../../../../reducers/ngl/ligandActionTiming';
 // import { molFile, pdbApo } from './testData';
 
 /**
@@ -463,7 +469,8 @@ export const addLigand = (
 
 // Publish the complete durable intent in one reducer pass. Runtime-only marks
 // opt these loads into repaint coalescing without changing snapshot records.
-export const addLigandsBulk = (observations, representations) => async dispatch => {
+export const addLigandsBulk = (observations, representations) => async (dispatch, getState) => {
+  const timing = beginLigandActionTiming('load', observations, getState);
   const settings = getBulkLigandSettings();
   const ids = observations.map(observation => observation.id);
   const items = observations.map(observation => {
@@ -478,18 +485,45 @@ export const addLigandsBulk = (observations, representations) => async dispatch 
     markBulkLigand(item, settings);
     return item;
   });
-  if (!settings.batchRequests) {
-    return dispatch(
-      withDisabledMoleculesNglControlButtons(ids, 'ligand', async () => {
-        items.forEach(item => dispatch(appendToBeDisplayedList(item)));
-      })
-    );
-  }
-  dispatch(setMoleculeNglControlButtons(ids, 'ligand', true));
+  bindLigandActionIntents(timing, items);
   try {
-    dispatch(appendToBeDisplayedListBulk(items));
+    if (!settings.batchRequests) {
+      return await dispatch(
+        withDisabledMoleculesNglControlButtons(ids, 'ligand', async () => {
+          items.forEach(item => dispatch(appendToBeDisplayedList(item)));
+        })
+      );
+    }
+    dispatch(setMoleculeNglControlButtons(ids, 'ligand', true));
+    try {
+      dispatch(appendToBeDisplayedListBulk(items));
+    } finally {
+      dispatch(setMoleculeNglControlButtons(ids, 'ligand', false));
+    }
+  } catch (error) {
+    failLigandActionTiming(timing);
+    throw error;
   } finally {
-    dispatch(setMoleculeNglControlButtons(ids, 'ligand', false));
+    publishLigandActionTiming(timing);
+  }
+};
+
+export const removeLigandsBulk = (stage, observations, skipTracking = false) => (dispatch, getState) => {
+  const timing = beginLigandActionTiming('remove', observations, getState);
+  const ids = new Set(observations.map(observation => observation.id));
+  try {
+    observations.forEach(observation => dispatch(removeLigand(stage, observation, skipTracking)));
+    bindLigandActionIntents(
+      timing,
+      getState().selectionReducers.toBeDisplayedList.filter(
+        item => item.type === NGL_OBJECTS.LIGAND && item.display === false && ids.has(item.id)
+      )
+    );
+  } catch (error) {
+    failLigandActionTiming(timing);
+    throw error;
+  } finally {
+    publishLigandActionTiming(timing);
   }
 };
 

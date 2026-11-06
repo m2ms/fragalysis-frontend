@@ -21,11 +21,24 @@ import { getToBeDisplayedStructures } from './utils';
 import { setNglOrientation } from './actions';
 import { getBulkLigandSettingsForItem, isBulkLigand } from './bulkLigands';
 import { DEFAULT_BULK_LIGAND_SETTINGS, getBulkLigandLimits } from './bulkLigandSettings';
+import {
+  cancelLigandActionTiming,
+  reconcileLigandActionTiming,
+  trackLigandActionOperation
+} from './ligandActionTiming';
 
 export const useDisplayLigandLHS = () => {
   const dispatch = useDispatch();
   const store = useStore();
   const runStructureOperation = useStructureOperationQueue();
+  const runLigandOperation = useCallback(
+    (item, operation) => {
+      const pending = runStructureOperation(item, operation);
+      trackLigandActionOperation(item, pending);
+      return pending;
+    },
+    [runStructureOperation]
+  );
   const bulkLoading = useRef(new Map());
   const bulkRunSettings = useRef(null);
   const bulkWakeTimer = useRef(null);
@@ -49,6 +62,7 @@ export const useDisplayLigandLHS = () => {
     const activeLoads = bulkLoading.current;
     return () => {
       mounted.current = false;
+      cancelLigandActionTiming();
       if (bulkWakeTimer.current !== null) {
         clearTimeout(bulkWakeTimer.current);
         bulkWakeTimer.current = null;
@@ -95,13 +109,14 @@ export const useDisplayLigandLHS = () => {
   const displayLigand = useCallback(
     async (ligandData, bulkEntry) => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) return 'cancelled';
       const colourToggle = getRandomColor(data);
       const molId = generateMoleculeId(data);
 
       try {
         let moleculeObject = await dispatch(generateMoleculeObject(data, colourToggle));
-        if (bulkEntry && (!(await waitForBulkRender(bulkEntry)) || !mounted.current || !bulkEntry.isCurrent())) return;
+        if (bulkEntry && (!(await waitForBulkRender(bulkEntry)) || !mounted.current || !bulkEntry.isCurrent()))
+          return 'cancelled';
         let qualityInformation = dispatch(readQualityInformation(moleculeObject.name, moleculeObject.sdf_info));
 
         let hasAdditionalInformation =
@@ -131,6 +146,7 @@ export const useDisplayLigandLHS = () => {
           dispatch(setNglOrientation(currentOrientation, VIEWS.MAJOR_VIEW));
         }
         dispatch(updateInToBeDisplayedList({ id: data.id, rendered: true, type: NGL_OBJECTS.LIGAND }));
+        return 'rendered';
       } catch (error) {
         // A superseded preparation must not remove the replacement snapshot's intent.
         if (!bulkEntry || bulkEntry.isCurrent()) {
@@ -148,7 +164,7 @@ export const useDisplayLigandLHS = () => {
   const removeLigand = useCallback(
     async ligandData => {
       const data = allObservations.find(obs => obs.id === ligandData.id);
-      if (!data) return;
+      if (!data) return 'cancelled';
       // A bulk ligand may be deselected before it starts downloading. Deletion
       // needs only its name and must still await any native load/disposal by name.
       await dispatch(
@@ -165,6 +181,7 @@ export const useDisplayLigandLHS = () => {
       }
 
       dispatch(removeFromToBeDisplayedList({ id: ligandData.id, type: NGL_OBJECTS.LIGAND }));
+      return 'removed';
     },
     [allObservations, dispatch, stage]
   );
@@ -187,7 +204,7 @@ export const useDisplayLigandLHS = () => {
       true
     );
     toBeRemovedLigands?.forEach(data => {
-      runStructureOperation(data, removeLigand);
+      runLigandOperation(data, removeLigand);
     });
 
     // Only admission to Moorhen consumes native capacity. Prepared coordinates
@@ -216,7 +233,7 @@ export const useDisplayLigandLHS = () => {
 
     toBeDisplayedLigands?.forEach(data => {
       if (!isBulkLigand(data)) {
-        runStructureOperation(data, displayLigand);
+        runLigandOperation(data, displayLigand);
         return;
       }
       if (
@@ -249,10 +266,11 @@ export const useDisplayLigandLHS = () => {
           wakeBulkPipeline();
         }
       };
-      runStructureOperation(data, item => displayLigand(item, entry)).then(settle, settle);
+      runLigandOperation(data, item => displayLigand(item, entry)).then(settle, settle);
     });
+    reconcileLigandActionTiming();
   }, [
-    runStructureOperation,
+    runLigandOperation,
     toBeDisplayedList,
     displayedLigands,
     displayLigand,

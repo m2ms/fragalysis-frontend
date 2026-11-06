@@ -23,6 +23,7 @@
       "viewerControls": {
         "ligandProgress": "Current requested hit ligands. Downloaded includes coordinates already cached; rendered counts completed viewer loads. Removed ligands leave the total.",
         "ligandLoadingSettings": "Choose bulk ligand loading strategies, concurrency limits, request batching and repaint coalescing.",
+        "ligandActionTime": "Elapsed time of the latest bulk hit-ligand load or removal, including queueing, downloads, rendering or ligand disposal. The clock runs during the action and keeps its final value afterwards. A new bulk action resets it.",
         "lhs": {
           "open": "Open hits panel",
           "close": "Close hits panel"

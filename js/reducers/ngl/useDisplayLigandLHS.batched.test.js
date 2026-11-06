@@ -91,6 +91,7 @@ describe('batched LHS ligand requests', () => {
     originalFetch = global.fetch;
     if (!global.fetch) global.fetch = () => {};
     jest.spyOn(global, 'fetch');
+    jest.useFakeTimers();
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'count').mockImplementation(() => {});
   });
@@ -98,6 +99,7 @@ describe('batched LHS ligand requests', () => {
   // eslint-disable-next-line jest/no-hooks
   afterEach(() => {
     cleanup();
+    jest.useRealTimers();
     jest.restoreAllMocks();
     jest.clearAllMocks();
     global.fetch = originalFetch;
@@ -189,12 +191,15 @@ describe('batched LHS ligand requests', () => {
     await act(async () => {
       scene.coordinates.forEach(item => item.resolve());
     });
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
     expect(scene.stage.loadObject).toHaveBeenCalledTimes(3);
-    expect(scene.stage.loadObject.mock.calls.map(([options]) => options.coalesceDraw)).toStrictEqual([
-      true,
-      true,
-      undefined
-    ]);
+    expect(
+      Object.fromEntries(
+        scene.stage.loadObject.mock.calls.map(([options]) => [options.target.moleculeId, options.coalesceDraw])
+      )
+    ).toStrictEqual({ 1: true, 2: true, 3: undefined });
     expect(scene.store.getState().selectionReducers.toBeDisplayedList.some(item => item.rendered)).toBe(false);
     await act(async () => {
       scene.rendering.forEach(item => item.resolve());
@@ -215,6 +220,9 @@ describe('batched LHS ligand requests', () => {
     await act(async () => {
       await toolbar().addNewType('ligand', scene.observations, scene.stage, false, representations);
       snapshot = createSnapshotStateForSaving(scene.store.getState());
+    });
+    await act(async () => {
+      jest.runOnlyPendingTimers();
     });
     await act(async () => {
       scene.rendering.forEach(item => item.resolve());
@@ -238,6 +246,9 @@ describe('batched LHS ligand requests', () => {
     global.fetch.mockResolvedValue({ text: async () => 'coordinates' });
     await act(async () => {
       await toolbar().addNewType('ligand', scene.observations, scene.stage);
+    });
+    await act(async () => {
+      jest.runOnlyPendingTimers();
     });
     const disposal = deferred();
     scene.stage.removeObjects.mockImplementation(async name => {

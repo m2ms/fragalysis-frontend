@@ -362,6 +362,21 @@ describe('opt-in bulk ligand repaint coalescing', () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  it('honors a custom repaint fallback delay while animation frames are throttled', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    glRef.current.drawScene = () => {};
+    jest.spyOn(glRef.current, 'drawScene');
+    const draw = adapter.requestSceneDraw(true, 25);
+    jest.advanceTimersByTime(24);
+    expect(glRef.current.drawScene).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
+    await draw;
+    expect(glRef.current.drawScene).toHaveBeenCalledTimes(1);
+    expect(frames.size).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
   it('keeps ordinary draws immediate and flushes a screenshot in the same turn as encoding', async () => {
     expect.hasAssertions();
     const { adapter, glRef, canvas } = createAdapter();

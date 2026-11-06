@@ -64,6 +64,7 @@ import { compareTagsAsc, isTagVisibleOnSide, TAG_META_CATEGORIES } from '../../t
 import { createPoseApi, updatePoseApi } from '../api/poseApi';
 import { NGL_OBJECTS } from '../../../../reducers/ngl/constants';
 import { markBulkLigand } from '../../../../reducers/ngl/bulkLigands';
+import { getBulkLigandSettings } from '../../../../reducers/ngl/bulkLigandSettings';
 // import { molFile, pdbApo } from './testData';
 
 /**
@@ -463,21 +464,29 @@ export const addLigand = (
 // Publish the complete durable intent in one reducer pass. Runtime-only marks
 // opt these loads into repaint coalescing without changing snapshot records.
 export const addLigandsBulk = (observations, representations) => async dispatch => {
+  const settings = getBulkLigandSettings();
   const ids = observations.map(observation => observation.id);
+  const items = observations.map(observation => {
+    const item = {
+      type: NGL_OBJECTS.LIGAND,
+      id: observation.id,
+      display: true,
+      center: false,
+      withQuality: true,
+      representations
+    };
+    markBulkLigand(item, settings);
+    return item;
+  });
+  if (!settings.batchRequests) {
+    return dispatch(
+      withDisabledMoleculesNglControlButtons(ids, 'ligand', async () => {
+        items.forEach(item => dispatch(appendToBeDisplayedList(item)));
+      })
+    );
+  }
   dispatch(setMoleculeNglControlButtons(ids, 'ligand', true));
   try {
-    const items = observations.map(observation => {
-      const item = {
-        type: NGL_OBJECTS.LIGAND,
-        id: observation.id,
-        display: true,
-        center: false,
-        withQuality: true,
-        representations
-      };
-      markBulkLigand(item);
-      return item;
-    });
     dispatch(appendToBeDisplayedListBulk(items));
   } finally {
     dispatch(setMoleculeNglControlButtons(ids, 'ligand', false));

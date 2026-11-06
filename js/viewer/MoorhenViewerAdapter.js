@@ -352,6 +352,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         color: target.colour,
         center: options.center === true,
         coalesceDraw: options.coalesceDraw === true,
+        drawMaxWaitMs: options.drawMaxWaitMs,
         centerZoomScale: LIGAND_FOCUS_ZOOM_SCALE
       });
       return this.getRepresentations(molecule);
@@ -525,7 +526,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return molecule;
   }
 
-  initialiseMoleculeRepresentation(component, handle, coalesceDraw = false) {
+  initialiseMoleculeRepresentation(component, handle, coalesceDraw = false, drawMaxWaitMs) {
     const initialise = async () => {
       if (!component.defaultColourRules) await component.fetchDefaultColourRules();
       const style = getMoorhenRepresentationStyle(handle.type);
@@ -557,14 +558,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           await component.drawSymmetry(false);
           component.drawBiomolecule(false);
           await representation.show();
-          await this.requestSceneDraw(coalesceDraw);
+          await this.requestSceneDraw(coalesceDraw, drawMaxWaitMs);
         }
         handle.visible = handle.params.visible !== false;
         return representation;
       } catch (error) {
         representation.deleteBuffers();
         component.representations = component.representations.filter(item => item !== representation);
-        await this.requestSceneDraw(coalesceDraw);
+        await this.requestSceneDraw(coalesceDraw, drawMaxWaitMs);
         throw error;
       } finally {
         preparing = false;
@@ -628,7 +629,12 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         );
         handles.push(handle);
         this.representationsByObject.set(registeredMolecule, handles);
-        await this.initialiseMoleculeRepresentation(registeredMolecule, handle, options.coalesceDraw === true);
+        await this.initialiseMoleculeRepresentation(
+          registeredMolecule,
+          handle,
+          options.coalesceDraw === true,
+          options.drawMaxWaitMs
+        );
       }
 
       if (focusRequestId === this.focusRequestSequence) {
@@ -1872,7 +1878,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
   }
 
-  requestSceneDraw(coalesce = false) {
+  requestSceneDraw(coalesce = false, maxWaitMs = LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS) {
     if (!coalesce || this.destroyed) {
       this.glRef.current?.drawScene?.();
       return;
@@ -1891,7 +1897,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       if (typeof requestAnimationFrame === 'function') {
         pending.frame = requestAnimationFrame(() => this.flushPendingSceneDraw());
       }
-      pending.timer = setTimeout(() => this.flushPendingSceneDraw(), LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS);
+      pending.timer = setTimeout(() => this.flushPendingSceneDraw(), maxWaitMs);
     }
     return this.pendingSceneDraw.promise;
   }

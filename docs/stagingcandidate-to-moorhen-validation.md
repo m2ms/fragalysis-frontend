@@ -861,3 +861,67 @@ For comparison, reload before each branch, keep the same filtered observations a
 and warm coordinate caches. Record initial toggle latency as well as first-visible/all-rendered time, responsiveness,
 repaint frequency and peak memory. This branch reduces initial Redux work and eligible adapter repaints; the other
 three variants limit active loads. A later combined experiment can test both mechanisms once each is measured.
+
+## Combined bulk LHS ligand experiment and controls (2026-11-06)
+
+Branch: `codex/lhs-ligand-combined`, merging `codex/lhs-ligand-batched` with `codex/lhs-ligand-pipeline`.
+The serial and pool alternatives are available as presets of the shared scheduler rather than competing display hooks.
+The earlier four experimental branches remain unchanged.
+
+Default combined behavior:
+
+- Publish every bulk ligand intent and button state in three Redux updates.
+- Prepare up to six ligands (including downloaded ligands waiting for native admission) while up to two native loads
+  finish rendering. Slots remain occupied through the actual coalesced completion repaint and Redux acknowledgement.
+- Coalesce adapter completion repaints within an animation frame, with a default 100 ms fallback for throttled frames.
+- Keep per-item/name operation ordering, stale-intent/runtime cancellation, failure cleanup and awaited native disposal.
+
+The bottom toolbar now displays `Ligands downloaded X/Y` and `Rendered Z/Y` between HITS and the main viewer settings.
+These are counts of unique currently requested LHS ligands, excluding removal tombstones. Downloaded includes cached
+or inline coordinates; rendered requires a rendered-intent acknowledgement and matching LHS object metadata. Duplicate
+requests for an already displayed ligand count once. Totals follow selection/snapshot changes and fall to zero on removal.
+The component derives counts from existing caches, intent and detached viewer records without publishing extra actions
+or retaining native handles.
+
+A sliders button beside the counter opens **Bulk ligand loading**. Presets cover Original (unrestricted), experiments
+1–4, and Combined. Custom controls select unrestricted/serial/pool/pipeline scheduling, complete-load or independent
+preparation/render limits, request batching, repaint coalescing, and repaint fallback delay. Inputs require positive
+whole numbers. Apply commits a tab-local immutable settings record; Cancel leaves it unchanged. Settings reset on page
+reload and are not included in saved snapshots or API payloads.
+
+Each bulk request captures its settings outside Redux in a WeakMap. An active configuration finishes before requests
+using a different configuration start; changes never resize or reassign an in-flight operation. Serial holds one slot
+through coordinates and native readiness; Pool holds the configured number of complete-load slots; Pipeline bounds
+preparation and native phases separately. The unrestricted preset removes admission limits. Original and experiment
+presets reproduce their scheduling/publication/repaint choices while retaining the shared lifecycle protections.
+Individual toggles, RHS operations and cloned snapshot intents keep normal scheduling. Snapshots do not inherit the
+currently selected experimental strategy.
+
+Validation:
+
+- PASS: focused checks, 17 suites / 214 tests. In addition to inherited queue, viewer, transfer and snapshot cases,
+  coverage includes original/serial/pool/combined modes, queued settings changes, actual shared repaint readiness,
+  configurable fallback timing, live counter acknowledgements/removals/restores, presets, custom controls, validation,
+  Cancel, and absence of additional Redux fields. Circular native buffers and delayed actual disposal remain covered.
+- PASS: targeted ESLint for the new controls, settings, counters and integration tests; the toolbar retains its two
+  existing unused-import warnings. No new lint findings in those checks.
+- PASS: final full Jest suite, 75 suites / 590 tests, 295.395 seconds. The combined pipeline fixture isolates unused
+  native package imports while exercising the actual adapter repaint scheduler; native load/disposal coverage remains
+  in the adapter suite and the local browser checks.
+- PASS: production build (`main-b17ed3f584884cc47958.js`) and backend stats validation, with the two existing bundle-size
+  warnings; Moorhen asset integrity, 275 files / 114450225 bytes. New settings/control/test files pass Prettier.
+- PASS (live Chrome, local Django, final production bundle, A71EV2A / lb18145-1): initial 1/1 counts, removal to 0/0,
+  combined loading from 1/19 downloaded and 0/19 rendered to 19/19 for both counters; a warm serial reload showed
+  19/19 downloaded with 1/19 rendered before finishing at 19/19. Preset selection persisted across Apply/reopen;
+  custom preparation/render/fallback values 3/1/25 applied; editing preparation to 7 then cancelling retained 3.
+  Rotation and Designs open/close retained the scene and counts. The final tab was restored to Combined 6/2/100.
+  No console errors/warnings were captured and no saved records were written. The full test runner was active during
+  parts of this functional check, so these observations are not controlled throughput or responsiveness measurements.
+- NOT RUN: full 930-ligand completion, cold/warm comparisons across every preset, live frame/FPS/peak-memory profiling,
+  in-flight cancellation with settings changes, unlocked layout/resizing acceptance, save/restore/same-project snapshot
+  transitions and a full RHS transfer/memory audit. Mocked lifecycle coverage does not establish live visual parity.
+
+For clean comparisons, remove the displayed ligand group, choose a preset, then request the same group again. Compare
+cold and warm coordinate caches separately and keep compilation/tests idle while measuring. Native store-driven draws,
+camera interactions, representation quality and the final scene's GPU cost remain unchanged; this experiment does not
+claim a single draw per frame across all Moorhen internals.

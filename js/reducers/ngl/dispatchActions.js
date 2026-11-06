@@ -51,7 +51,8 @@ export const loadObject = ({
   quality,
   preserveColour = false,
   center,
-  coalesceDraw = false
+  coalesceDraw = false,
+  drawMaxWaitMs
 }) => async (dispatch, getState) => {
   console.log('loadObject - entry');
   dispatch(setIsNGLQueueEmpty(false));
@@ -96,7 +97,7 @@ export const loadObject = ({
         dispatch,
         state,
         center,
-        ...(coalesceDraw ? { coalesceDraw: true } : {})
+        ...(coalesceDraw ? { coalesceDraw: true, drawMaxWaitMs } : {})
       })
       .then(representations => {
         console.count(`Object loaded`);

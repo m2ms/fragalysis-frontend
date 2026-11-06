@@ -21,6 +21,8 @@
         "showExamples": "Navigates to github thread with curl and python examples."
       },
       "viewerControls": {
+        "ligandProgress": "Current requested hit ligands. Downloaded includes coordinates already cached; rendered counts completed viewer loads. Removed ligands leave the total.",
+        "ligandLoadingSettings": "Choose bulk ligand loading strategies, concurrency limits, request batching and repaint coalescing.",
         "lhs": {
           "open": "Open hits panel",
           "close": "Close hits panel"

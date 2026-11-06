@@ -15,6 +15,7 @@ import { NglContext } from '../../nglView/nglProvider';
 import { turnSide } from './redux/actions';
 import RichTooltip from '../../tooltip/RichTooltip';
 import { BackgroundColorToggle } from './BackgroundColorToggle';
+import { LigandLoadingProgress } from './LigandLoadingProgress';
 
 const drawers = {
   settings: 'settings',
@@ -35,8 +36,21 @@ const useStyles = makeStyles(theme => ({
   button: {
     padding: theme.spacing()
   },
+  sideControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(),
+    flex: '1 1 0',
+    minWidth: 0
+  },
+  rhsControls: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    flex: '1 1 0',
+    minWidth: 0
+  },
   nglButtons: {
-    flexBasis: 0,
+    flexShrink: 0,
     display: 'flex',
     justifyContent: 'center',
     flexWrap: 'nowrap',
@@ -65,24 +79,28 @@ export const ViewerControls = memo(() => {
   return (
     <>
       <div className={classes.root}>
-        <RichTooltip path={sidesOpen.LHS ? 'lhs.close' : 'lhs.open'}>
-          <Button
-            id="open-lhs-button"
-            variant={sidesOpen.LHS ? 'contained' : 'outlined'}
-            size="small"
-            color="primary"
-            onClick={() => dispatch(turnSide('LHS', !sidesOpen.LHS))}
-            className={classes.button}
-          >
-            Hits
-          </Button>
-        </RichTooltip>
+        <div className={classes.sideControls}>
+          <RichTooltip path={sidesOpen.LHS ? 'lhs.close' : 'lhs.open'}>
+            <Button
+              id="open-lhs-button"
+              variant={sidesOpen.LHS ? 'contained' : 'outlined'}
+              size="small"
+              color="primary"
+              onClick={() => dispatch(turnSide('LHS', !sidesOpen.LHS))}
+              className={classes.button}
+            >
+              Hits
+            </Button>
+          </RichTooltip>
+          <LigandLoadingProgress />
+        </div>
 
         <div className={classes.nglButtons}>
           <ButtonGroup variant="contained" color="primary">
             <RichTooltip path="settings">
               <Button
                 size="small"
+                aria-label="Viewer settings"
                 color="primary"
                 onClick={() => openDrawer(drawers.settings)}
                 className={classes.button}
@@ -109,17 +127,19 @@ export const ViewerControls = memo(() => {
           <BackgroundColorToggle showLabel />
         </div>
 
-        <RichTooltip path={sidesOpen.RHS ? 'rhs.close' : 'rhs.open'}>
-          <Button
-            variant={sidesOpen.RHS ? 'contained' : 'outlined'}
-            size="small"
-            color="primary"
-            onClick={() => dispatch(turnSide('RHS', !sidesOpen.RHS))}
-            className={classes.button}
-          >
-            Designs
-          </Button>
-        </RichTooltip>
+        <div className={classes.rhsControls}>
+          <RichTooltip path={sidesOpen.RHS ? 'rhs.close' : 'rhs.open'}>
+            <Button
+              variant={sidesOpen.RHS ? 'contained' : 'outlined'}
+              size="small"
+              color="primary"
+              onClick={() => dispatch(turnSide('RHS', !sidesOpen.RHS))}
+              className={classes.button}
+            >
+              Designs
+            </Button>
+          </RichTooltip>
+        </div>
       </div>
       <SettingControls open={drawerSettings[drawers.settings]} onClose={closeAllDrawers} />
       <DisplayControls open={drawerSettings[drawers.display]} onClose={closeAllDrawers} />

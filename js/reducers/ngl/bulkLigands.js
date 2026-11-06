@@ -1,7 +1,11 @@
 // Scheduling belongs to this live bulk request, not to saved snapshot state.
 // Snapshot preparation clones intents, so restored items use normal scheduling.
-const bulkLigands = new WeakSet();
+import { getBulkLigandSettings } from './bulkLigandSettings';
 
-export const markBulkLigand = item => bulkLigands.add(item);
+const bulkLigands = new WeakMap();
+
+export const markBulkLigand = (item, settings = getBulkLigandSettings()) => bulkLigands.set(item, settings);
 
 export const isBulkLigand = item => bulkLigands.has(item);
+
+export const getBulkLigandSettingsForItem = item => bulkLigands.get(item);

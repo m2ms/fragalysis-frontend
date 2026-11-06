@@ -339,7 +339,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
             multipleBond: true,
             radiusSize: options.markAsRightSideLigand ? 0.11 : 0.2,
             // Moorhen's Smooth slider position (100) maps to native quality 3.
-            ...(options.markAsRightSideLigand ? {} : { atomRadiusBondRatio: 2, bondSmoothness: 3 }),
+            ...(options.markAsRightSideLigand
+              ? {}
+              : { atomRadiusBondRatio: 2, bondSmoothness: options.bulkLigandOptions?.lowDetail ? 1 : 3 }),
             visible: true
           }
         }
@@ -353,6 +355,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         center: options.center === true,
         coalesceDraw: options.coalesceDraw === true,
         drawMaxWaitMs: options.drawMaxWaitMs,
+        reduceNativeUpdates: options.bulkLigandOptions?.reduceNativeUpdates === true,
         centerZoomScale: LIGAND_FOCUS_ZOOM_SCALE
       });
       return this.getRepresentations(molecule);
@@ -526,7 +529,13 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return molecule;
   }
 
-  initialiseMoleculeRepresentation(component, handle, coalesceDraw = false, drawMaxWaitMs) {
+  initialiseMoleculeRepresentation(
+    component,
+    handle,
+    coalesceDraw = false,
+    drawMaxWaitMs,
+    reduceNativeUpdates = false
+  ) {
     const initialise = async () => {
       if (!component.defaultColourRules) await component.fetchDefaultColourRules();
       const style = getMoorhenRepresentationStyle(handle.type);
@@ -541,8 +550,36 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
 
       const buildBuffers = representation.buildBuffers;
       let preparing = true;
+      let revealOpaqueBuffers = false;
       representation.buildBuffers = function(...args) {
         buildBuffers.apply(this, args);
+        // Opaque bond meshes already have alpha 1. Avoid dirtying and uploading
+        // them again, and avoid hide/show's label-list updates for unlabelled bonds.
+        const opaqueBonds =
+          reduceNativeUpdates &&
+          style === 'CBs' &&
+          this.nonCustomOpacity === 1 &&
+          this.buffers.length > 0 &&
+          this.buffers.every(
+            buffer =>
+              !('labels' in buffer) &&
+              !buffer.transparent &&
+              buffer.triangleColours?.every(colours => {
+                for (let index = 3; index < colours.length; index += 4) if (colours[index] !== 1) return false;
+                return true;
+              })
+          );
+        if (opaqueBonds) {
+          if (preparing) {
+            revealOpaqueBuffers = true;
+            this.visible = false;
+            this.buffers.forEach(buffer => {
+              buffer.visible = false;
+            });
+          }
+          return;
+        }
+        revealOpaqueBuffers = false;
         // Native draw() publishes buffers before its asynchronous atom work
         // finishes. Keep only this new representation hidden until it is ready.
         if (preparing) this.hide();
@@ -557,7 +594,14 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           await representation.draw();
           await component.drawSymmetry(false);
           component.drawBiomolecule(false);
-          await representation.show();
+          if (revealOpaqueBuffers) {
+            representation.visible = true;
+            representation.buffers.forEach(buffer => {
+              buffer.visible = true;
+            });
+          } else {
+            await representation.show();
+          }
           await this.requestSceneDraw(coalesceDraw, drawMaxWaitMs);
         }
         handle.visible = handle.params.visible !== false;
@@ -633,7 +677,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           registeredMolecule,
           handle,
           options.coalesceDraw === true,
-          options.drawMaxWaitMs
+          options.drawMaxWaitMs,
+          options.reduceNativeUpdates === true
         );
       }
 

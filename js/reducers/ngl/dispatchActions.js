@@ -52,7 +52,8 @@ export const loadObject = ({
   preserveColour = false,
   center,
   coalesceDraw = false,
-  drawMaxWaitMs
+  drawMaxWaitMs,
+  bulkLigandOptions
 }) => async (dispatch, getState) => {
   console.log('loadObject - entry');
   dispatch(setIsNGLQueueEmpty(false));
@@ -97,6 +98,7 @@ export const loadObject = ({
         dispatch,
         state,
         center,
+        ...(bulkLigandOptions ? { bulkLigandOptions } : {}),
         ...(coalesceDraw ? { coalesceDraw: true, drawMaxWaitMs } : {})
       })
       .then(representations => {

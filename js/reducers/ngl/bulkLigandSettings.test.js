@@ -17,7 +17,8 @@ describe('bulk ligand experiment settings', () => {
       'pool',
       'pipeline',
       'batched',
-      'combined'
+      'combined',
+      'native'
     ]);
     expect(getBulkLigandLimits(bulkLigandPreset('serial'))).toStrictEqual({ wholeLoad: 1, downloads: 1, renders: 1 });
     expect(getBulkLigandLimits(bulkLigandPreset('pool'))).toStrictEqual({ wholeLoad: 4, downloads: 4, renders: 4 });
@@ -34,6 +35,12 @@ describe('bulk ligand experiment settings', () => {
     expect(bulkLigandPreset('original').batchRequests).toBe(false);
     expect(bulkLigandPreset('original').coalesceDraw).toBe(false);
     expect(bulkLigandPreset('batched').batchRequests).toBe(true);
+    expect(bulkLigandPreset('combined').deferModelsUI).toBe(false);
+    expect(bulkLigandPreset('native')).toMatchObject({
+      deferModelsUI: true,
+      reduceNativeUpdates: true,
+      lowDetail: true
+    });
     Object.keys(BULK_LIGAND_PRESETS).forEach(name => expect(getBulkLigandPreset(bulkLigandPreset(name))).toBe(name));
   });
 

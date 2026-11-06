@@ -113,6 +113,40 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
             />
           </Box>
           {draft.coalesceDraw && numeric('drawMaxWaitMs', 'Repaint fallback delay (ms)')}
+          <Box>
+            <Typography variant="subtitle2">Native viewer experiments</Typography>
+            <FormControlLabel
+              label="Defer native Models UI until first opened"
+              control={
+                <Checkbox checked={draft.deferModelsUI} onChange={(_, checked) => update('deferModelsUI', checked)} />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              Applies immediately while the native Models panel has never been opened. After first use it stays mounted
+              to retain its controls. A fresh page resets that first-use state.
+            </Typography>
+            <FormControlLabel
+              label="Skip redundant opaque buffer updates"
+              control={
+                <Checkbox
+                  checked={draft.reduceNativeUpdates}
+                  onChange={(_, checked) => update('reduceNativeUpdates', checked)}
+                />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              New bulk ligands avoid repeated opacity uploads and label updates when their bond buffers are opaque. They
+              still wait for complete geometry before appearing.
+            </Typography>
+            <FormControlLabel
+              label="Low-detail bulk ligands"
+              control={<Checkbox checked={draft.lowDetail} onChange={(_, checked) => update('lowDetail', checked)} />}
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              New default bulk ligand styles use bond smoothness 1 instead of 3. Saved or customized styles keep their
+              settings. Remove and reload the group to compare detail.
+            </Typography>
+          </Box>
           <Typography variant="caption" color="textSecondary">
             Preparation slots include downloaded ligands waiting to render. Settings reset on page reload and are not
             saved in snapshots. Individual toggles and restored snapshots keep their usual loading behavior.

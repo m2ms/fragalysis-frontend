@@ -1038,6 +1038,33 @@ describe('MoorhenViewerAdapter Stage 18 parity', () => {
     );
   });
 
+  it.each([false, true])('uses lower default bulk detail only when requested: %s', async lowDetail => {
+    expect.hasAssertions();
+    const { adapter } = createAdapter();
+    const load = jest.spyOn(adapter, 'loadMolecule').mockResolvedValue({});
+    jest.spyOn(adapter, 'getRepresentations').mockReturnValue([]);
+    await adapter.loadObject({
+      target: { OBJECT_TYPE: 'LIGAND', name: 'bulk', sdf_info: 'sdf' },
+      bulkLigandOptions: { lowDetail, reduceNativeUpdates: true }
+    });
+    expect(load).toHaveBeenCalledWith(
+      'sdf',
+      expect.objectContaining({
+        reduceNativeUpdates: true,
+        representations: [
+          expect.objectContaining({ params: expect.objectContaining({ bondSmoothness: lowDetail ? 1 : 3 }) })
+        ]
+      })
+    );
+    const custom = [{ type: 'licorice', params: { bondSmoothness: 2, opacity: 0.4 } }];
+    await adapter.loadObject({
+      target: { OBJECT_TYPE: 'LIGAND', name: 'custom', sdf_info: 'sdf' },
+      bulkLigandOptions: { lowDetail: true },
+      representations: custom
+    });
+    expect(load.mock.calls[1][1].representations).toBe(custom);
+  });
+
   it('keeps the latest explicit focus when molecule loads finish out of order', async () => {
     expect.assertions(2);
     const first = createMolecule(19);

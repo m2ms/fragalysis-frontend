@@ -13,7 +13,10 @@ export const DEFAULT_BULK_LIGAND_SETTINGS = Object.freeze({
   renders: LHS_BULK_LIGAND_RENDER_CONCURRENCY,
   drawMaxWaitMs: LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS,
   batchRequests: true,
-  coalesceDraw: true
+  coalesceDraw: true,
+  deferModelsUI: false,
+  reduceNativeUpdates: false,
+  lowDetail: false
 });
 
 export const BULK_LIGAND_PRESETS = {
@@ -27,7 +30,16 @@ export const BULK_LIGAND_PRESETS = {
     batchRequests: true,
     coalesceDraw: true
   },
-  combined: { label: 'Combined optimizations', strategy: 'pipeline', batchRequests: true, coalesceDraw: true }
+  combined: { label: 'Combined optimizations', strategy: 'pipeline', batchRequests: true, coalesceDraw: true },
+  native: {
+    label: 'Combined + native viewer experiments',
+    strategy: 'pipeline',
+    batchRequests: true,
+    coalesceDraw: true,
+    deferModelsUI: true,
+    reduceNativeUpdates: true,
+    lowDetail: true
+  }
 };
 
 export const bulkLigandPreset = name => {
@@ -47,17 +59,24 @@ export const validBulkLigandSettings = settings =>
     key => Number.isInteger(settings[key]) && settings[key] > 0
   ) &&
   typeof settings.batchRequests === 'boolean' &&
-  typeof settings.coalesceDraw === 'boolean';
+  typeof settings.coalesceDraw === 'boolean' &&
+  ['deferModelsUI', 'reduceNativeUpdates', 'lowDetail'].every(key => typeof settings[key] === 'boolean');
 
 // Tab-local experimental controls never enter application Redux, saved snapshots,
 // native objects or API payloads.
 let current = DEFAULT_BULK_LIGAND_SETTINGS;
+const listeners = new Set();
 export const getBulkLigandSettings = () => current;
+export const subscribeBulkLigandSettings = listener => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
 export const setBulkLigandSettings = settings => {
   if (!validBulkLigandSettings(settings)) throw new TypeError('Invalid bulk ligand loading settings');
   const next = Object.fromEntries(Object.keys(DEFAULT_BULK_LIGAND_SETTINGS).map(key => [key, settings[key]]));
   if (Object.keys(next).every(key => current[key] === next[key])) return;
   current = Object.freeze(next);
+  listeners.forEach(listener => listener());
 };
 
 export const getBulkLigandLimits = settings => {

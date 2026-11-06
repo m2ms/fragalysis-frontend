@@ -36,6 +36,7 @@ const deferred = () => {
 
 // Execute the installed constructors and draw/build/show/hide lifecycle. Only
 // mesh generation, atom fetching and GPU allocation are replaced by fixtures.
+const nativeBufferUploads = jest.fn();
 const installedRepresentation = () => {
   const bundle = fs.readFileSync(require.resolve('moorhen'), 'utf8');
   const marker = bundle.lastIndexOf('sourceMappingURL=data:');
@@ -64,7 +65,7 @@ const installedRepresentation = () => {
       ])
     ),
     '../WebGLgComponents/buildBuffers': {
-      buildBuffers: () => {},
+      buildBuffers: nativeBufferUploads,
       appendOtherData: object => [{ ...object, visible: true, clearBuffers: () => {} }]
     }
   }).MoorhenMoleculeRepresentation;
@@ -188,6 +189,66 @@ describe('representation appearance before first presentation', () => {
     });
     return { ...fixture, handle: fixture.adapter.getRepresentations(fixture.molecule)[0] };
   };
+
+  it.each([false, true])('preserves first-paint readiness while reducing opaque native updates: %s', async enabled => {
+    expect.hasAssertions();
+    const { adapter, molecule, built, atoms, state, existingBuffer, frames } = setup();
+    const loading = adapter.loadMolecule('ligand', {
+      name: 'bulk-ligand',
+      reduceNativeUpdates: enabled,
+      representations: [{ type: 'licorice', params: { radiusSize: 0.2 } }]
+    });
+    await built.promise;
+    const representation = molecule.representations[0];
+    const uploads = nativeBufferUploads.mock.calls.filter(([buffers]) => buffers.length > 0);
+    expect(uploads).toHaveLength(enabled ? 1 : 2);
+    expect(representation.buffers[0].visible).toBe(false);
+    expect(frames.every(frame => !frame.includes('CBs'))).toBe(true);
+    atoms.resolve([]);
+    await loading;
+    expect(representation.buffers[0].visible).toBe(true);
+    expect(representation.buffers[0].width).toBe(0.2);
+    expect(representation.buffers[0].triangleColours[0][3]).toBe(1);
+    expect(frames[frames.length - 1]).toContain('CBs');
+    representation.buffers[0].owner = representation;
+    await adapter.removeObjects('bulk-ligand');
+    expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+    expect(adapter.getObjects('bulk-ligand')).toStrictEqual([]);
+  });
+
+  it('keeps translucent styles and later opacity edits on the native path with the experiment enabled', async () => {
+    expect.hasAssertions();
+    const { adapter, molecule, atoms } = setup();
+    atoms.resolve([]);
+    await adapter.loadMolecule('ligand', {
+      name: 'translucent',
+      reduceNativeUpdates: true,
+      representations: [{ type: 'licorice', params: { opacity: 0.4 } }]
+    });
+    const representation = molecule.representations[0];
+    expect(representation.buffers[0].triangleColours[0][3]).toBeCloseTo(0.4);
+    const handle = adapter.getRepresentations(molecule)[0];
+    await adapter.setRepresentationParameters(handle, { opacity: 0.7 });
+    expect(representation.buffers[0].triangleColours[0][3]).toBeCloseTo(0.7);
+    expect(representation.buffers[0].visible).toBe(true);
+  });
+
+  it('disposes hidden partial buffers after an optimized atom-fetch failure', async () => {
+    expect.hasAssertions();
+    const { adapter, molecule, atoms, built, state, existingBuffer } = setup();
+    const loading = adapter.loadMolecule('ligand', {
+      name: 'failed',
+      reduceNativeUpdates: true,
+      representation: 'licorice'
+    });
+    const rejected = loading.catch(error => error);
+    await built.promise;
+    expect(molecule.representations[0].buffers[0].visible).toBe(false);
+    atoms.reject(new Error('atoms failed'));
+    expect(await rejected).toStrictEqual(new Error('atoms failed'));
+    expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+    expect(adapter.getObjects('failed')).toStrictEqual([]);
+  });
 
   it('redraws live contacts in both modes without replacing the molecule, handle or unrelated buffers', async () => {
     expect.hasAssertions();

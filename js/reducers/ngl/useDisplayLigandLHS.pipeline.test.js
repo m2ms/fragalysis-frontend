@@ -419,6 +419,32 @@ describe('pipelined bulk LHS ligand loading', () => {
     expect(scene.store.getState().selectionReducers.toBeDisplayedList.every(item => item.rendered)).toBe(true);
   });
 
+  it('captures native experiments per bulk request and excludes them from single toggles and snapshots', async () => {
+    expect.hasAssertions();
+    setBulkLigandSettings(bulkLigandPreset('native'));
+    const scene = createScene(3);
+    await startBulk(scene, scene.observations.slice(0, 2));
+    setBulkLigandSettings(bulkLigandPreset('combined'));
+    await act(async () => {
+      await scene.store.dispatch(addLigand(scene.stage, scene.observations[2]));
+      scene.coordinates.forEach(item => item.resolve());
+    });
+    await advancePipeline();
+    const requests = scene.stage.loadObject.mock.calls.map(([options]) => options);
+    expect(requests.find(options => options.target.moleculeId === 3).bulkLigandOptions).toBeUndefined();
+    expect(
+      requests
+        .filter(options => options.target.moleculeId !== 3)
+        .every(options => options.bulkLigandOptions.reduceNativeUpdates && options.bulkLigandOptions.lowDetail)
+    ).toBe(true);
+    expect(JSON.stringify(createSnapshotStateForSaving(scene.store.getState()))).not.toMatch(
+      /bulkLigandOptions|reduceNativeUpdates|lowDetail|deferModelsUI/
+    );
+    await act(async () => {
+      scene.rendering.forEach(item => item.resolve());
+    });
+  });
+
   it('drains the pipeline with saved appearance and keeps circular native resources out of Redux', async () => {
     expect.hasAssertions();
     const scene = createScene(9, 3, 2);

@@ -154,6 +154,22 @@ describe('ligand loading progress', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Ligand loading settings' }));
     expect(screen.getByRole('dialog', { name: 'Bulk ligand loading' })).toBeInTheDocument();
+    [
+      'Defer native Models UI until first opened',
+      'Skip redundant opaque buffer updates',
+      'Low-detail bulk ligands'
+    ].forEach(name => {
+      expect(screen.getByRole('checkbox', { name })).not.toBeChecked();
+      fireEvent.click(screen.getByRole('checkbox', { name }));
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(getBulkLigandSettings()).toStrictEqual(bulkLigandPreset('combined'));
+    fireEvent.click(screen.getByRole('button', { name: 'Ligand loading settings' }));
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Preset' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Combined + native viewer experiments' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(getBulkLigandSettings()).toStrictEqual(bulkLigandPreset('native'));
+    fireEvent.click(screen.getByRole('button', { name: 'Ligand loading settings' }));
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Preset' }));
     fireEvent.click(screen.getByRole('option', { name: 'Experiment 1: serial' }));
     expect(screen.getByRole('checkbox', { name: 'Batch request updates' })).not.toBeChecked();

@@ -138,6 +138,14 @@ export const useDisplayLigandLHS = () => {
             loadQuality: hasAdditionalInformation,
             quality: qualityInformation,
             center: ligandData.center,
+            ...(settings
+              ? {
+                  bulkLigandOptions: {
+                    reduceNativeUpdates: settings.reduceNativeUpdates,
+                    lowDetail: settings.lowDetail
+                  }
+                }
+              : {}),
             ...(settings?.coalesceDraw ? { coalesceDraw: true, drawMaxWaitMs: settings.drawMaxWaitMs } : {})
           })
         );

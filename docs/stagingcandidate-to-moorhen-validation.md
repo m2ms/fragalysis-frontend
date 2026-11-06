@@ -967,3 +967,56 @@ Validation:
 - NOT RUN: full 930-ligand benchmark, live cancellation/failure injection, narrow viewport/unlocked resizing,
   save/restore/same-project snapshot transitions and a full RHS transfer/memory audit. Automated cancellation,
   snapshot and transfer coverage does not establish live visual parity for these remaining flows.
+
+## Native viewer experiment options (2026-11-06)
+
+The combined branch adds three independent checkboxes in Bulk ligand loading, plus the preset
+**Combined + native viewer experiments**. Existing presets and startup defaults keep all three new options off.
+
+- **Defer native Models UI until first opened** takes effect immediately while that native panel has never been used
+  in this viewer. It avoids constructing its hidden molecule cards and their subscriptions. After first opening, the
+  panel stays mounted when closed so its control state and native initialization are retained. Start a fresh page to
+  compare deferral again after using Models. Fragalysis Display controls and the canvas remain mounted throughout.
+- **Skip redundant opaque buffer updates** applies to newly requested bulk LHS ligands. Unlabelled CBs buffers with
+  opacity and all generated alpha values equal to 1 skip the second opacity upload and hide/show label-list updates.
+  Buffers remain hidden through asynchronous atom preparation and are revealed before the awaited completion repaint.
+  Translucent, labelled or other-style buffers retain the existing path; subsequent opacity edits and disposal still
+  use native operations and readiness ordering.
+- **Low-detail bulk ligands** uses smoothness 1 instead of 3 for new default bulk LHS ligand representations. Coordinates,
+  chemistry, bond radius and atom-radius ratio remain unchanged. Explicit saved/custom representation definitions retain
+  their appearance. This is a visual-quality experiment: compare the same group after removal and reload.
+
+The UI option subscribes to tab-local settings; rendering options are captured with each original bulk intent and
+passed to the adapter outside Redux. Single toggles, RHS work and cloned snapshot intents do not acquire these options.
+No experimental flags or native handles enter snapshots; the ordinary representation parameters still describe the
+actual rendered appearance, including the selected default bond smoothness.
+
+Moorhen 0.22.7 exposes no Models component override. `webpack/moorhenModelsLoader.js` therefore wraps only its Models
+component initializer in the generated JS at build time, using an AST match for its native Models modal. It checks the
+installed package version and requires exactly one match, failing visibly on an incompatible upgrade. It does not
+edit node_modules, upgrade dependencies, or change the matching workers/WASM/static assets. The wrapper subscribes to
+the native modal state without remounting MoorhenContainer, the canvas or adapter.
+
+Validation:
+
+- PASS: focused checks, 7 suites / 148 tests, covering the native installed representation lifecycle, opaque upload
+  reduction, delayed first-paint readiness, translucency and opacity edits, failed-load buffer cleanup, circular native
+  references, per-request option capture, single-toggle exclusion, snapshot flag exclusion, live settings Apply/Cancel,
+  native panel first-use retention and the version-pinned build transformation.
+- PASS: targeted ESLint with no new findings. Five existing ngl dispatch-action unused-variable warnings remain;
+  MoorhenViewerAdapter.test.js has the same 59 pre-existing lint findings as HEAD.
+- PASS: production build and backend stats validation (`main-b312cb8a6fedcb92d892.js`), with the two existing bundle-size
+  warnings; explicit Moorhen static verification, 275 files / 114,450,225 bytes.
+- PASS: full Jest suite, 79 suites / 615 tests.
+- PASS: Chrome through Django on port 8080 with the production bundle above, A71EV2A first tag (19 observations).
+  All three new controls started off. Applying the new preset checked all three and removed the unopened native Models
+  DOM (from 346 child elements to no Models element). Bulk load completed at 19/19 downloaded and rendered with
+  visibly lower-detail ligands and no Models DOM. Opening Models created the native panel and its 2,308 child elements;
+  collapsing, closing and reopening retained the collapsed control state. Cancelling a draft change retained the
+  applied settings. Bulk removal cleared the ligand scene while retaining protein, and warm reload returned to 19/19.
+  Rotation and Designs open/close retained the scene and final duration. No console errors/warnings were captured.
+  Some semantic browser clicks exceeded automation deadlines; native input completed and verified those interactions.
+- NOT RUN: controlled per-option 930-ligand benchmarks, live peak-memory/FPS profiling, cancellation/failure injection,
+  narrow viewport/unlocked resizing, snapshot save/restore/same-project transitions or a full RHS transfer audit.
+  The full test runner was active during initial live loading, and Models was used before the subsequent warm reload;
+  the recorded durations are not a controlled comparison of these experiments.

@@ -1020,3 +1020,70 @@ Validation:
   narrow viewport/unlocked resizing, snapshot save/restore/same-project transitions or a full RHS transfer audit.
   The full test runner was active during initial live loading, and Models was used before the subsequent warm reload;
   the recorded durations are not a controlled comparison of these experiments.
+
+## Suspended and virtualized Display controls (2026-11-06)
+
+On `codex/lhs-ligand-combined`, the Fragalysis Display drawer retains its last open data view while closed.
+Its Redux selector then returns a stable empty sentinel, so native load acknowledgements do not rebuild the hidden
+structure tree. The mounted tree keeps expansion, selection, focus and scroll state; reopening reads current objects
+and reconciles additions/removals. This is separate from the native Moorhen Models experiment and is always active.
+
+The open drawer renders a flat, fixed-height window of object/representation rows with four rows of overscan, plus
+its focused row and an active editor's anchor. Expansion and scroll anchors use stable object/representation identities,
+so rows can leave the viewport without losing control state. Keyboard arrows, Home/End, Page Up/Down and typeahead
+operate over the complete logical list. Long names retain their full title and accessible label.
+
+Only the active representation editor mounts, outside the virtual rows. It receives its detached representation and
+view identity directly rather than subscribing independently to the complete object map. The edited row stays mounted
+outside the window to preserve its DOM anchor. Closing the drawer hides its editor/colour popup while retaining their
+state; reopening restores them if the representation still exists. Removing the edited representation clears the
+editor rather than reopening it with an obsolete anchor. Representation ordering copies the display array before
+sorting; native handles remain inside the adapter. Viewer, scheduler, snapshot payload and disposal paths are unchanged.
+
+Validation:
+
+- PASS: full Jest suite: 80 suites / 623 tests, 309.246 seconds, including native adapter/boundary, queue, transfer and
+  snapshot tests. Eight new Display regressions verify zero hidden-tree commits through 930 incoming updates, bounded
+  mounted rows, full-list scrolling/keyboard navigation,
+  retained expansion/selection/scroll anchor, updates/removals on reopen, editor anchor pinning, colour popup/Cancel
+  state, correct row actions/protein protection and awaited native readiness with circular native references excluded
+  from serialized representation state.
+- PASS: targeted ESLint for Display controls and its new tests; the enclosing ViewerControls file retains its two
+  existing unused-import warnings. Production build and backend stats validation (`main-4db0d4a40c36beb58004.js`),
+  with the two existing size warnings. Moorhen static verification: 275 files / 114,450,225 bytes.
+- PASS: Chrome through Django on port 8080 with the production bundle above, A71EV2A, all 736 poses / 930 observations.
+  Expanded the initial protein and closed Display controls before bulk loading. Throughout the run its three retained
+  rows stayed unchanged. All 927 successful coordinate requests were cached early; the same three native MOL-loading
+  failures (`Cannot read properties of undefined (reading 'first')`) removed their intents, as in the preceding run.
+  The final action timer reported Failed 17:46.6 with 927/927 downloaded and rendered, versus Failed 22:31.2 previously:
+  4:44.6 less elapsed time (21.1%). Preparation=1000, native rendering=8, all three native experiments enabled,
+  native Models never opened, and build/test runners idle during both measurement runs.
+- The following native-completion intervals exclude downloading and the CPU profiling window. They show a useful
+  improvement at larger scene sizes, with remaining growth and substantial run-to-run variation:
+
+  | Completed ligands | Previous seconds | Suspended Display seconds |
+  | --- | ---: | ---: |
+  | 50–100 | 40.7 | 37.9 |
+  | 250–300 | 48.4 | 48.2 |
+  | 450–500 | 62.8 | 65.5 |
+  | 600–650 | 94.7 | 56.8 |
+  | 650–700 | 93.0 | 64.8 |
+  | 750–800 | 120.8 | 79.4 |
+  | 850–900 | 106.8 | 63.2 |
+
+  This is a single before/after observation, not a guaranteed throughput improvement. The previous run included a
+  36.9-second CPU profile near 500 ligands; the new run included 31.0 seconds near 518–566. Exclude 500–600 intervals
+  from direct comparisons. The new profile still shows substantial React/DOM rendering and tooltip/control work;
+  suspending Display controls does not remove all UI or native scene-size costs. No FPS or memory claim is made.
+- PASS: reopening showed 929 logical objects (927 ligands and two proteins), with 37 mounted rows in a 1206-pixel
+  viewport and the original protein expansion retained. Home/End reached both ends of the list, scrolling retained
+  about 35–37 mounted rows, and the final ligand's editor worked. Changed opacity to 0.95 and restored 1; hid and
+  restored visibility with asynchronous native acknowledgement. Closing/reopening retained expansion and exactly
+  the same 36,034-pixel scroll offset. Removed the first ligand through Display, observed its removal and 926/926,
+  then warmed it back to 927/927 through the navigator. Rotation and Designs open/close preserved the scene; a native
+  canvas backend node remained identical across layout movement. No new application errors were observed in these
+  control checks. Some semantic automation actions exceeded their deadline while rendering continued; subsequent
+  DOM observations verified their completed effects rather than repeating them blindly.
+- NOT RUN: authenticated snapshot save/restore and same-project switching, a full RHS transfer/memory audit,
+  narrow viewport/unlocked panel resizing or live failure/cancellation injection. Their automated coverage does not
+  establish visual parity. These tests used an anonymous local target and did not create or modify saved snapshots.

@@ -2,7 +2,7 @@ import React, { memo, useContext, Fragment } from 'react';
 import { Menu, Popover, Slider, GridLegacy as Grid, Checkbox, TextField, Select, Box } from '@mui/material';
 import { makeStyles } from '../../../../ui/styles';
 import { NglContext } from '../../../nglView/nglProvider';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { updateComponentRepresentation } from '../../../../reducers/ngl/actions';
 import { throttle } from 'lodash';
 import { PhotoshopPicker } from 'react-color';
@@ -22,15 +22,14 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export const EditRepresentationMenu = memo(
-  ({ editMenuAnchor, closeRepresentationEditMenu, representation, parentKey }) => {
+  ({ editMenuAnchor, closeRepresentationEditMenu, representation, parentKey, displayDiv, active = true }) => {
     const classes = useStyles();
     const { getViewerAdapter } = useContext(NglContext);
-    const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
     const [colorMenus, setColorMenus] = React.useState({});
 
     const dispatch = useDispatch();
     const oldRepresentation = JSON.parse(JSON.stringify(representation));
-    const viewerAdapter = getViewerAdapter(objectsInView[parentKey].display_div);
+    const viewerAdapter = getViewerAdapter(displayDiv);
     const component = viewerAdapter.getObject(parentKey);
 
     const closeColorMenu = menuKey => setColorMenus({ ...colorMenus, [menuKey]: null });
@@ -165,6 +164,7 @@ export const EditRepresentationMenu = memo(
                 onClick={e => openColorMenu(key, e.currentTarget, color)}
               />
               <Popover
+                keepMounted
                 id={`color-menu-${key}`}
                 anchorOrigin={{
                   vertical: 'bottom',
@@ -175,7 +175,7 @@ export const EditRepresentationMenu = memo(
                   horizontal: 'right'
                 }}
                 anchorEl={(colorMenus[key] && colorMenus[key].menu) || null}
-                open={(colorMenus[key] && Boolean(colorMenus[key].menu)) || false}
+                open={active && ((colorMenus[key] && Boolean(colorMenus[key].menu)) || false)}
                 onClose={() => closeColorMenu(key)}
               >
                 <PhotoshopPicker
@@ -216,9 +216,10 @@ export const EditRepresentationMenu = memo(
 
     return (
       <Menu
+        keepMounted
         id="representationEditMenu"
         anchorEl={editMenuAnchor}
-        open={Boolean(editMenuAnchor)}
+        open={active && Boolean(editMenuAnchor)}
         onClose={closeRepresentationEditMenu}
       >
         <div className={classes.menu}>

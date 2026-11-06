@@ -1,10 +1,8 @@
-import React, { useContext, memo } from 'react';
+import React, { useContext, useEffect, useRef, memo } from 'react';
 import { Drawer } from '../../../common/Navigation/Drawer';
 import { GridLegacy as Grid, IconButton, Select } from '@mui/material';
 import { makeStyles } from '../../../../ui/styles';
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { ChevronRight, ExpandMore, Edit, Visibility, Delete, VisibilityOff, Add } from '@mui/icons-material';
-import { TreeItem } from '@mui/x-tree-view/TreeItem';
+import { Edit, Visibility, Delete, VisibilityOff, Add } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { NglContext } from '../../../nglView/nglProvider';
 import {
@@ -17,35 +15,43 @@ import {
 } from '../../../../reducers/ngl/actions';
 import { deleteObject, checkRemoveFromDensityList } from '../../../../reducers/ngl/dispatchActions';
 import { MOL_REPRESENTATION, OBJECT_TYPE, SELECTION_TYPE } from '../../../nglView/constants';
-import { VIEWS } from '../../../../constants/constants';
 import { EditRepresentationMenu } from './editRepresentationMenu';
+import { VirtualDisplayTree, representationRowId, sortedRepresentations } from './VirtualDisplayTree';
 import { hideShapeRepresentations } from '../../../nglView/redux/dispatchActions';
 
+const EMPTY_OBJECTS = {};
+
 const useStyles = makeStyles(theme => ({
-  root: {
-    overflow: 'auto',
-    height: '100%'
-  },
   itemRow: {
     height: theme.spacing(3)
+  },
+  objectName: {
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    flex: 1
   }
 }));
 
 export default memo(({ open, onClose }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const objectsInView = useSelector(state => state.nglReducers.objectsInView) || {};
+  // Keep the tree mounted to retain its controls, but do not subscribe it to incoming loads while hidden.
+  const currentObjects =
+    useSelector(state => (open ? state.nglReducers.objectsInView : EMPTY_OBJECTS)) || EMPTY_OBJECTS;
+  const retainedObjects = useRef(EMPTY_OBJECTS);
+  if (open) retainedObjects.current = currentObjects;
+  const objectsInView = open ? currentObjects : retainedObjects.current;
   const { getViewerAdapter } = useContext(NglContext);
 
-  const [editMenuAnchors, setEditMenuAnchors] = React.useState({});
+  const [editor, setEditor] = React.useState(null);
 
-  const openRepresentationEditMenu = (event, key) => {
-    setEditMenuAnchors({ ...editMenuAnchors, [key]: event.currentTarget });
+  const openRepresentationEditMenu = (event, row) => {
+    setEditor({ id: row.id, parentKey: row.parentKey, anchor: event.currentTarget });
   };
 
-  const closeRepresentationEditMenu = key => e => {
-    setEditMenuAnchors({ ...editMenuAnchors, [key]: null });
-  };
+  const closeRepresentationEditMenu = () => setEditor(null);
 
   const changeVisibility = (representation, parentKey) => {
     const viewerAdapter = getViewerAdapter(objectsInView[parentKey].display_div);
@@ -173,119 +179,122 @@ export default memo(({ open, onClose }) => {
     return countOfNonVisibled !== representations.length;
   };
 
-  const renderSubtreeItem = (representation, item, index) => {
-    const representationKey = `${objectsInView[item].name}___${index}`;
+  const renderRepresentation = row => {
+    const { representation, parentKey: item } = row;
     return (
-      <TreeItem
-        itemId={representationKey}
-        key={representationKey}
-        label={
-          <Grid
-            container
-            justifyContent="space-between"
-            direction="row"
-            wrap="nowrap"
-            alignItems="center"
-            className={classes.itemRow}
+      <Grid
+        container
+        justifyContent="space-between"
+        direction="row"
+        wrap="nowrap"
+        alignItems="center"
+        className={classes.itemRow}
+      >
+        <Grid item xs={6}>
+          <Select
+            native
+            value={representation.type}
+            inputProps={{ 'aria-label': `Representation type for ${objectsInView[item].name}` }}
+            onChange={e => changeMolecularRepresentation(representation, item, e)}
           >
-            <Grid item xs={6}>
-              <Select
-                native
-                value={representation && representation.type}
-                onChange={e => changeMolecularRepresentation(representation, item, e)}
-              >
-                {Object.keys(MOL_REPRESENTATION).map(option => (
-                  <option key={MOL_REPRESENTATION[option]} value={MOL_REPRESENTATION[option]}>
-                    {MOL_REPRESENTATION[option]}
-                  </option>
-                ))}
-              </Select>
-            </Grid>
-            <Grid item xs={6} container justifyContent="flex-end" direction="row" wrap="nowrap">
-              <Grid item>
-                <IconButton onClick={e => openRepresentationEditMenu(e, representationKey)}>
-                  <Edit />
-                </IconButton>
-                <EditRepresentationMenu
-                  editMenuAnchor={editMenuAnchors[representationKey]}
-                  closeRepresentationEditMenu={closeRepresentationEditMenu(representationKey)}
-                  representation={representation}
-                  parentKey={item}
-                />
-              </Grid>
-              <Grid item>
-                <IconButton onClick={() => changeVisibility(representation, item)}>
-                  {representation && representation.params && representation.params.visible === true ? (
-                    <Visibility />
-                  ) : (
-                    <VisibilityOff />
-                  )}
-                </IconButton>
-              </Grid>
-              <Grid item>
-                <IconButton
-                  onClick={() => removeRepresentation(representation, item)}
-                  disabled={
-                    objectsInView[item].selectionType === SELECTION_TYPE.VECTOR ||
-                    objectsInView[item].OBJECT_TYPE === OBJECT_TYPE.PROTEIN
-                  }
-                >
-                  <Delete />
-                </IconButton>
-              </Grid>
-            </Grid>
-          </Grid>
-        }
-      />
+            {Object.keys(MOL_REPRESENTATION).map(option => (
+              <option key={MOL_REPRESENTATION[option]} value={MOL_REPRESENTATION[option]}>
+                {MOL_REPRESENTATION[option]}
+              </option>
+            ))}
+          </Select>
+        </Grid>
+        <Grid item xs={6} container justifyContent="flex-end" direction="row" wrap="nowrap">
+          <IconButton
+            aria-label={`Edit ${representation.type} for ${objectsInView[item].name}`}
+            onClick={e => openRepresentationEditMenu(e, row)}
+          >
+            <Edit />
+          </IconButton>
+          <IconButton
+            aria-label={`Toggle ${representation.type} for ${objectsInView[item].name}`}
+            onClick={() => changeVisibility(representation, item)}
+          >
+            {representation.params?.visible === true ? <Visibility /> : <VisibilityOff />}
+          </IconButton>
+          <IconButton
+            aria-label={`Remove ${representation.type} for ${objectsInView[item].name}`}
+            onClick={() => removeRepresentation(representation, item)}
+            disabled={
+              objectsInView[item].selectionType === SELECTION_TYPE.VECTOR ||
+              objectsInView[item].OBJECT_TYPE === OBJECT_TYPE.PROTEIN
+            }
+          >
+            <Delete />
+          </IconButton>
+        </Grid>
+      </Grid>
     );
   };
 
+  const renderObject = ({ parentKey: item }) => (
+    <Grid container justifyContent="space-between" direction="row" wrap="nowrap" alignItems="center">
+      <Grid item className={classes.objectName} title={objectsInView[item].name}>
+        {objectsInView[item].name}
+      </Grid>
+      <Grid item>
+        <IconButton
+          aria-label={`Add representation to ${objectsInView[item].name}`}
+          onClick={e => addMolecularRepresentation(item, e)}
+        >
+          <Add />
+        </IconButton>
+        <IconButton
+          aria-label={`Toggle ${objectsInView[item].name}`}
+          onClick={e => changeVisibilityMoleculeRepresentations(item, e)}
+        >
+          {hasAllRepresentationVisibled(item) ? <Visibility /> : <VisibilityOff />}
+        </IconButton>
+        <IconButton
+          aria-label={`Remove ${objectsInView[item].name}`}
+          disabled={
+            objectsInView[item].selectionType === SELECTION_TYPE.VECTOR ||
+            objectsInView[item].OBJECT_TYPE === OBJECT_TYPE.PROTEIN
+          }
+          onClick={e => removeMoleculeWithRepresentations(item, e)}
+        >
+          <Delete />
+        </IconButton>
+      </Grid>
+    </Grid>
+  );
+
+  const editedObject = editor && objectsInView[editor.parentKey];
+  const editedRepresentation =
+    editedObject &&
+    sortedRepresentations(editedObject).find(
+      (representation, index) => representationRowId(editor.parentKey, representation, index) === editor.id
+    );
+
+  useEffect(() => {
+    if (open && editor && !editedRepresentation) setEditor(null);
+  }, [open, editor, editedRepresentation]);
+
   return (
     <Drawer title="Display controls" open={open} onClose={onClose}>
-      <SimpleTreeView className={classes.root} slots={{ collapseIcon: ExpandMore, expandIcon: ChevronRight }}>
-        {Object.keys(objectsInView)
-          .filter(
-            item =>
-              objectsInView[item].display_div === VIEWS.MAJOR_VIEW &&
-              objectsInView[item].selectionType !== SELECTION_TYPE.VECTOR
-          )
-          .sort((a, b) => {
-            return a.localeCompare(b);
-          })
-          .map(parentItem => (
-            <TreeItem
-              itemId={objectsInView[parentItem].name}
-              key={objectsInView[parentItem].name}
-              label={
-                <Grid container justifyContent="space-between" direction="row" wrap="nowrap" alignItems="center">
-                  <Grid item>{objectsInView[parentItem].name}</Grid>
-                  <Grid item>
-                    <IconButton onClick={e => addMolecularRepresentation(parentItem, e)}>
-                      <Add />
-                    </IconButton>
-                    <IconButton onClick={e => changeVisibilityMoleculeRepresentations(parentItem, e)}>
-                      {hasAllRepresentationVisibled(parentItem) === true ? <Visibility /> : <VisibilityOff />}
-                    </IconButton>
-                    <IconButton
-                      disabled={
-                        objectsInView[parentItem].selectionType === SELECTION_TYPE.VECTOR ||
-                        objectsInView[parentItem].OBJECT_TYPE === OBJECT_TYPE.PROTEIN
-                      }
-                      onClick={e => removeMoleculeWithRepresentations(parentItem, e)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              }
-            >
-              {objectsInView[parentItem].representations &&
-                objectsInView[parentItem].representations
-                  .sort((a, b) => (a.lastKnownID > b.lastKnownID ? 1 : -1))
-                  .map((representation, index) => renderSubtreeItem(representation, parentItem, index))}
-            </TreeItem>
-          ))}
-      </SimpleTreeView>
+      <VirtualDisplayTree
+        objects={objectsInView}
+        open={open}
+        pinnedRowId={editedRepresentation ? editor.id : null}
+        renderObject={renderObject}
+        renderRepresentation={renderRepresentation}
+      />
+      {editedRepresentation && (
+        <EditRepresentationMenu
+          key={editor.id}
+          active={open}
+          editMenuAnchor={editor.anchor}
+          closeRepresentationEditMenu={closeRepresentationEditMenu}
+          representation={editedRepresentation}
+          parentKey={editor.parentKey}
+          displayDiv={editedObject.display_div}
+        />
+      )}
     </Drawer>
   );
 });

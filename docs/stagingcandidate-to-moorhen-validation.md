@@ -1225,3 +1225,64 @@ Validation:
 - NOT RUN: a new 930-ligand timing comparison, authenticated snapshot save/restore or same-project transitions,
   full RHS transfer/memory audit, unlocked/narrow viewport resizing, FPS or peak-memory measurement. Mocked worker
   chemistry does not establish visual/chemical parity by itself; live checks above supplement the automated tests.
+
+## Batched native ligand buffer publication (2026-11-11)
+
+Branch `codex/lhs-ligand-native-buffer-batching`, based on `codex/lhs-ligand-dictionary-loading` at `407fc4d1`.
+Implementation commits: `b16f8edb` and `90734275`.
+
+The ligand loading dialog adds **Batch native buffer publication**. Startup defaults and older presets leave it off;
+**Combined + native viewer experiments** enables it. The opaque-upload reduction checkbox remains independent.
+Settings are captured for each new bulk request and stay outside Redux/snapshots. Remove/reload a group to compare.
+Individual toggles and restored snapshot intents do not receive this option.
+
+For eligible new opaque CBs representations, the adapter stages the native buffers until atom data, symmetry setup
+and visibility are ready. Ready additions join one display-buffer publication and completion repaint per frame,
+using the existing repaint scheduler and fallback timer. Publication reads the current native buffer list at flush
+rather than retaining an earlier whole-scene list, preserving unrelated concurrent native additions/removals.
+Load readiness and render-slot release still await the publication repaint. Buffers retain their per-ligand ownership,
+atom metadata and multi-view group. Mesh generation and GPU allocation remain per ligand; the benefit depends on
+multiple ligands becoming ready before the same frame.
+
+A version-pinned Webpack bridge wraps only MoorhenMoleculeRepresentation.buildBuffers' publication expression in the
+installed JavaScript at build time. Native conversion, mesh construction and GPU upload methods still execute.
+An unregistered representation takes the original publication path. The bridge fails on an unexpected package
+version or absent/ambiguous native expression, and does not edit node_modules or worker/WASM/monomer assets.
+Temporary publication/deletion hooks are released after initial presentation. Translucent styles and subsequent
+edits use native publication. Failed or deleted staged representations release unpublished GPU buffers; an aborted
+publication cannot later reappear. Teardown and image capture flush ready work through the existing draw boundary.
+
+Validation:
+
+- PASS: final full Jest suite, 85 suites / 654 tests, 225.639 seconds, including adapter/boundary, display queues/hooks,
+  transfer and snapshot coverage. Fifteen new tests use the installed representation constructor and draw/build/
+  show/delete lifecycle with the same build bridge; worker mesh generation and GPU allocation are fixtures.
+  Eight simultaneous ligand additions produce eight native publications with batching off and one with batching on,
+  while atom readiness gates both. Tests cover live-buffer rebasing, picking metadata, circular native ownership,
+  private GPU cleanup, native deletion before atom readiness or while waiting for a frame, publication/draw failure
+  propagation, ordered removal, destruction, screenshot flushing, translucent fallback and later opacity edits.
+  Two cases verify that opaque-upload reduction remains independently selectable. Build tests verify the installed
+  publication expression and rejection of missing/ambiguous shapes. Existing dialog Apply/Cancel and snapshot-option
+  exclusion tests now cover the new flag.
+- PASS: targeted ESLint without findings for changed implementation/settings/bridge and presentation tests; whitespace
+  checks pass. The adapter test's existing lint findings were not changed by its additional mocked native action.
+- PASS: final production build/backend stats validation, `main-e3c1e4a758e89872e407.js`, with the two existing size
+  warnings. Explicit Moorhen integrity verification: 275 assets / 114,450,225 bytes.
+- PASS: Chrome through Django on port 8080, A71EV2A / lb18145-1, initial selected tag (13 poses / 19 observations).
+  With preparation=1000, rendering=8, fallback=100 ms and the native preset, 19/19 completed with batching on;
+  disabling only the batching checkbox and removing/reloading also completed 19/19. Restoring batching completed
+  another 19/19. The initial build (`main-8c568cba32eca4b0817a.js`) also passed opacity editing to 0.95 and restoration
+  to 1, RHS v1a removal/reload (19 to 18 to 19), rotation and Designs open/close with all six canvas identities retained.
+  Its fresh final capture contains 20 completions and no errors or buffer truncation.
+- PASS: the final build above additionally loaded 19/19 with batching on and opaque-upload reduction off. Removal
+  completed at 0/0 with only A71EV2A-x0188a_HIT_PROTEIN and PROTEIN_1_MAIN left in Display controls. Cached reload
+  returned to 19/19, with both checkbox states retained. The two loads give 38 unique native completion samples and
+  no application errors or captured UNL.cif requests. Console history was replayed/deduplicated after debugger-buffer
+  truncation; total network request counts are not used as a benchmark. No saved snapshots were created or modified,
+  and both test tabs were closed. Local evidence: native-buffer-batching-live-checks.json, native-buffer-batching-
+  independent-controls.json, and their scene/settings PNGs.
+- These are functional checks, not a controlled 930-ligand benchmark or a measured FPS/memory improvement. Some early
+  checks overlapped the test runner, and semantic automation deadlines occasionally expired after actions took effect;
+  fresh DOM observations verified their state before retrying.
+- NOT RUN: controlled 930-ligand timing, authenticated snapshot save/restore/same-project transitions, full RHS transfer
+  and memory audit, unlocked/narrow viewport resizing, live failure injection, FPS or peak-memory measurement.

@@ -4,6 +4,7 @@ import { LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS, USE_NGL_STYLE_INTERACTIONS } from '..
 import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from './moorhenMapUtils';
 import { NGL_VIEW_DEFAULT_VALUES } from '../components/nglView/constants';
 import { getSceneRadius, getSceneRanges } from './moorhenSceneSettings';
+import { registerNativeBufferPublisher } from './nativeBufferPublication';
 import {
   MoorhenMap,
   MoorhenMolecule,
@@ -24,6 +25,7 @@ import {
   setClipStart,
   setContourLevel,
   setDiffuse,
+  setDisplayBuffers,
   setFogEnd,
   setFogStart,
   setHeight,
@@ -183,6 +185,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.focusRequestSequence = 0;
     this.destroyed = false;
     this.pendingSceneDraw = null;
+    this.nativeBufferPublications = new Map();
     this.orientationAnimation = null;
     this.nativeCameraSequence = 0;
     this.sceneParameters = null;
@@ -356,6 +359,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         coalesceDraw: options.coalesceDraw === true,
         drawMaxWaitMs: options.drawMaxWaitMs,
         reduceNativeUpdates: options.bulkLigandOptions?.reduceNativeUpdates === true,
+        batchNativeBuffers: options.bulkLigandOptions?.batchNativeBuffers === true,
         centerZoomScale: LIGAND_FOCUS_ZOOM_SCALE
       });
       return this.getRepresentations(molecule);
@@ -552,7 +556,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     handle,
     coalesceDraw = false,
     drawMaxWaitMs,
-    reduceNativeUpdates = false
+    reduceNativeUpdates = false,
+    batchNativeBuffers = false
   ) {
     const initialise = async () => {
       if (!component.defaultColourRules) await component.fetchDefaultColourRules();
@@ -569,12 +574,15 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       const buildBuffers = representation.buildBuffers;
       let preparing = true;
       let revealOpaqueBuffers = false;
+      let publication;
+      let releasePublication;
+      const deleteBuffers = representation.deleteBuffers;
       representation.buildBuffers = function(...args) {
         buildBuffers.apply(this, args);
         // Opaque bond meshes already have alpha 1. Avoid dirtying and uploading
         // them again, and avoid hide/show's label-list updates for unlabelled bonds.
         const opaqueBonds =
-          reduceNativeUpdates &&
+          (reduceNativeUpdates || batchNativeBuffers) &&
           style === 'CBs' &&
           this.nonCustomOpacity === 1 &&
           this.buffers.length > 0 &&
@@ -609,7 +617,34 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         if (handle.type === 'contact') this.configureContactRepresentation(representation, handle);
         this.configureMoleculeRepresentationParameters(representation, handle.params);
         if (handle.params.visible !== false) {
+          if (batchNativeBuffers && style === 'CBs' && representation.nonCustomOpacity === 1) {
+            publication = { representation, buffers: new Set(), ready: false, cancelled: false };
+            this.nativeBufferPublications.set(representation, publication);
+            releasePublication = registerNativeBufferPublisher(representation, buffers => {
+              if (
+                publication.cancelled ||
+                !buffers.every(
+                  buffer =>
+                    typeof buffer.clearBuffers === 'function' &&
+                    !('labels' in buffer) &&
+                    !buffer.transparent &&
+                    buffer.triangleColours?.every(colours => {
+                      for (let index = 3; index < colours.length; index += 4) if (colours[index] !== 1) return false;
+                      return true;
+                    })
+                )
+              )
+                return false;
+              buffers.forEach(buffer => publication.buffers.add(buffer));
+              return true;
+            });
+            representation.deleteBuffers = (...args) => {
+              this.discardNativeBufferPublication(publication);
+              return deleteBuffers.apply(representation, args);
+            };
+          }
           await representation.draw();
+          if (publication?.cancelled) throw new Error('Ligand representation removed before buffer publication');
           await component.drawSymmetry(false);
           component.drawBiomolecule(false);
           if (revealOpaqueBuffers) {
@@ -620,7 +655,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           } else {
             await representation.show();
           }
-          await this.requestSceneDraw(coalesceDraw, drawMaxWaitMs);
+          if (publication) publication.ready = true;
+          await this.requestSceneDraw(coalesceDraw || !!publication, drawMaxWaitMs);
+          if (publication?.cancelled) throw new Error('Ligand representation removed before buffer publication');
         }
         handle.visible = handle.params.visible !== false;
         return representation;
@@ -630,6 +667,11 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         await this.requestSceneDraw(coalesceDraw, drawMaxWaitMs);
         throw error;
       } finally {
+        releasePublication?.();
+        if (publication) {
+          this.nativeBufferPublications.delete(representation);
+          representation.deleteBuffers = deleteBuffers;
+        }
         preparing = false;
       }
     };
@@ -696,7 +738,8 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           handle,
           options.coalesceDraw === true,
           options.drawMaxWaitMs,
-          options.reduceNativeUpdates === true
+          options.reduceNativeUpdates === true,
+          options.batchNativeBuffers === true
         );
       }
 
@@ -1775,6 +1818,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       (this.commandCentre.current?.activeMessages?.length || 0) +
       this.contactWorker.pending.size +
       this.pendingInteractionStyleChanges +
+      this.nativeBufferPublications.size +
       (this.pendingSceneDraw ? 1 : 0)
     );
   }
@@ -1941,8 +1985,43 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     }
   }
 
+  flushNativeBufferPublications() {
+    const ready = [...this.nativeBufferPublications.values()].filter(entry => entry.ready && !entry.cancelled);
+    if (!ready.length) return;
+    const current = this.store.getState().glRef.displayBuffers;
+    const existing = new Set(current);
+    const additions = [];
+    ready.forEach(entry =>
+      entry.buffers.forEach(buffer => {
+        if (!existing.has(buffer)) {
+          existing.add(buffer);
+          additions.push(buffer);
+        }
+      })
+    );
+    if (additions.length) this.store.dispatch(setDisplayBuffers([...current, ...additions]));
+  }
+
+  discardNativeBufferPublication(entry) {
+    if (entry.cancelled) return;
+    entry.cancelled = true;
+    this.nativeBufferPublications.delete(entry.representation);
+    const published = new Set(this.store.getState().glRef.displayBuffers);
+    entry.buffers.forEach(buffer => {
+      if (!published.has(buffer)) {
+        try {
+          buffer.clearBuffers();
+        } catch (error) {
+          console.error('Unable to release unpublished Moorhen buffer', error);
+        }
+      }
+    });
+    entry.buffers.clear();
+  }
+
   requestSceneDraw(coalesce = false, maxWaitMs = LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS) {
     if (!coalesce || this.destroyed) {
+      this.flushNativeBufferPublications();
       this.glRef.current?.drawScene?.();
       return;
     }
@@ -1972,6 +2051,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (pending.frame != null) cancelAnimationFrame(pending.frame);
     clearTimeout(pending.timer);
     try {
+      this.flushNativeBufferPublications();
       this.glRef.current?.drawScene?.();
       pending.resolve();
       return {};

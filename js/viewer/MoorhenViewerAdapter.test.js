@@ -74,6 +74,7 @@ jest.mock('moorhen', () => {
     setActiveMap: action('moorhen/setActiveMap'),
     setAmbient: action('moorhen/setAmbient'),
     setDiffuse: action('moorhen/setDiffuse'),
+    setDisplayBuffers: action('glRef/setDisplayBuffers'),
     setSpecular: action('moorhen/setSpecular'),
     setSpecularPower: action('moorhen/setSpecularPower'),
     setBackgroundColor: action('moorhen/setBackgroundColor'),

@@ -16,6 +16,7 @@ export const DEFAULT_BULK_LIGAND_SETTINGS = Object.freeze({
   coalesceDraw: true,
   deferModelsUI: false,
   reduceNativeUpdates: false,
+  batchNativeBuffers: false,
   lowDetail: false
 });
 
@@ -38,6 +39,7 @@ export const BULK_LIGAND_PRESETS = {
     coalesceDraw: true,
     deferModelsUI: true,
     reduceNativeUpdates: true,
+    batchNativeBuffers: true,
     lowDetail: true
   }
 };
@@ -60,7 +62,7 @@ export const validBulkLigandSettings = settings =>
   ) &&
   typeof settings.batchRequests === 'boolean' &&
   typeof settings.coalesceDraw === 'boolean' &&
-  ['deferModelsUI', 'reduceNativeUpdates', 'lowDetail'].every(key => typeof settings[key] === 'boolean');
+  ['deferModelsUI', 'reduceNativeUpdates', 'batchNativeBuffers', 'lowDetail'].every(key => typeof settings[key] === 'boolean');
 
 // Tab-local experimental controls never enter application Redux, saved snapshots,
 // native objects or API payloads.

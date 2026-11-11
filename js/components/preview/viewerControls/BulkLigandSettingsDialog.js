@@ -139,6 +139,19 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
               still wait for complete geometry before appearing.
             </Typography>
             <FormControlLabel
+              label="Batch native buffer publication"
+              control={
+                <Checkbox
+                  checked={draft.batchNativeBuffers}
+                  onChange={(_, checked) => update('batchNativeBuffers', checked)}
+                />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              Groups ready opaque bulk ligands and their completion repaint into one viewer update per frame.
+              Applies to new bulk loads; translucent styles and later edits keep their normal updates.
+            </Typography>
+            <FormControlLabel
               label="Low-detail bulk ligands"
               control={<Checkbox checked={draft.lowDetail} onChange={(_, checked) => update('lowDetail', checked)} />}
             />

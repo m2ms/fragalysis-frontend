@@ -142,6 +142,7 @@ export const useDisplayLigandLHS = () => {
               ? {
                   bulkLigandOptions: {
                     reduceNativeUpdates: settings.reduceNativeUpdates,
+                    batchNativeBuffers: settings.batchNativeBuffers,
                     lowDetail: settings.lowDetail
                   }
                 }

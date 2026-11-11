@@ -5,6 +5,8 @@ import { hexToRgb } from '@mui/material';
 import { MoorhenMoleculeRepresentation } from 'moorhen';
 import MoorhenViewerAdapter from './MoorhenViewerAdapter';
 import * as viewerConfig from '../config/viewer';
+import * as bufferPublication from './nativeBufferPublication';
+import { transformNativeBufferPublication } from '../../webpack/moorhenBuffersLoader';
 jest.mock('./contacts/createContactWorker', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('../config/viewer', () => ({ __esModule: true, USE_NGL_STYLE_INTERACTIONS: true }));
 
@@ -18,6 +20,7 @@ jest.mock('moorhen', () => {
     setBackgroundColor: action('setBackgroundColor'),
     setAmbient: action('setAmbient'),
     setDiffuse: action('setDiffuse'),
+    setDisplayBuffers: action('setDisplayBuffers'),
     setSpecular: action('setSpecular'),
     setSpecularPower: action('setSpecularPower'),
     setZoomWheelSensitivityFactor: action('setZoomWheelSensitivityFactor')
@@ -47,7 +50,12 @@ const installedRepresentation = () => {
       compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2019 }
     });
     const exports = {};
-    runInNewContext(compiled.outputText, { exports, require: name => dependencies[name] || {} });
+    const transformed = suffix.endsWith('MoorhenMoleculeRepresentation.ts')
+      ? transformNativeBufferPublication(compiled.outputText) : compiled.outputText;
+    runInNewContext(transformed, {
+      exports,
+      require: name => name.endsWith('nativeBufferPublication.js') ? bufferPublication : dependencies[name] || {}
+    });
     return exports;
   };
   let id = 0;
@@ -66,7 +74,7 @@ const installedRepresentation = () => {
     ),
     '../WebGLgComponents/buildBuffers': {
       buildBuffers: nativeBufferUploads,
-      appendOtherData: object => [{ ...object, visible: true, clearBuffers: () => {} }]
+      appendOtherData: object => [{ ...object, visible: true, clearBuffers: jest.fn() }]
     }
   }).MoorhenMoleculeRepresentation;
   return representation;
@@ -86,11 +94,11 @@ describe('representation appearance before first presentation', () => {
     };
     const store = {
       getState: () => state,
-      dispatch: action => {
+      dispatch: jest.fn(action => {
         if (action.type === 'setDisplayBuffers') state.glRef.displayBuffers = action.payload;
         if (action.type === 'setLabelBuffers') state.glRef.labelBuffers = action.payload;
         if (action.type === 'setRequestDrawScene' && action.payload) glRef.current.drawScene();
-      }
+      })
     };
     const commandCentre = { current: { activeMessages: [], cootCommand: jest.fn(async () => ({})) } };
     const frames = [];
@@ -114,9 +122,10 @@ describe('representation appearance before first presentation', () => {
           contacts.colours.map(colour => ({ style: representation.style, triangleColours: [new Float32Array(colour)] }))
         );
     }
-    const molecule = {
+    let nextMolecule = 0;
+    const createMolecule = () => ({
       type: 'molecule',
-      molNo: 1,
+      molNo: ++nextMolecule,
       name: 'new-molecule',
       representations: [],
       store,
@@ -132,8 +141,9 @@ describe('representation appearance before first presentation', () => {
       drawBiomolecule: jest.fn(),
       mergeMolecules: jest.fn(async () => {}),
       getAtoms: jest.fn(async () => 'ATOM\n'),
-      delete: jest.fn(async () => molecule.representations.forEach(representation => representation.deleteBuffers()))
-    };
+      delete: jest.fn(async function() { this.representations.forEach(representation => representation.deleteBuffers()); })
+    });
+    const molecule = createMolecule();
     jest.spyOn(adapter, 'createNativeMolecule').mockResolvedValue(molecule);
     const generatedMeshes = [];
     MoorhenMoleculeRepresentation.mockImplementation((...args) => {
@@ -163,7 +173,7 @@ describe('representation appearance before first presentation', () => {
       });
       return representation;
     });
-    return { adapter, molecule, atoms, built, generatedMeshes, existingBuffer, state, glRef, frames, commandCentre };
+    return { adapter, molecule, atoms, built, generatedMeshes, existingBuffer, state, glRef, frames, commandCentre, store, createMolecule };
   };
 
   const setupLiveContacts = async (enabled = false, visible = true) => {
@@ -189,6 +199,270 @@ describe('representation appearance before first presentation', () => {
     });
     return { ...fixture, handle: fixture.adapter.getRepresentations(fixture.molecule)[0] };
   };
+
+  describe('batched native buffer publication', () => {
+    // eslint-disable-next-line jest/no-hooks
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    // eslint-disable-next-line jest/no-hooks
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const awaitPaintRequests = (adapter, count = 1) => {
+      const ready = deferred();
+      const request = adapter.requestSceneDraw.bind(adapter);
+      let calls = 0;
+      jest.spyOn(adapter, 'requestSceneDraw').mockImplementation((...args) => {
+        const pending = request(...args);
+        if (++calls === count) ready.resolve();
+        return pending;
+      });
+      return ready.promise;
+    };
+    const publicationCount = store =>
+      store.dispatch.mock.calls.filter(([action]) => action.type === 'setDisplayBuffers').length;
+
+    it.each([false, true])(
+      'publishes eight native ligand additions in %s batching mode only after atom readiness',
+      async enabled => {
+        expect.hasAssertions();
+        const fixture = setup();
+        const { adapter, molecule, createMolecule, atoms, existingBuffer, state, store } = fixture;
+        const molecules = [molecule, ...Array.from({ length: 7 }, createMolecule)];
+        const built = deferred();
+        let builtCount = 0;
+        molecules.forEach(item => {
+          item.gemmiAtomsForCid.mockImplementation(() => {
+            if (++builtCount === 8) built.resolve();
+            return atoms.promise;
+          });
+          adapter.createNativeMolecule.mockResolvedValueOnce(item);
+        });
+        const ready = awaitPaintRequests(adapter, 8);
+        const loads = molecules.map((item, index) =>
+          adapter.loadMolecule('ligand', {
+            name: `batch-${index}`,
+            representation: 'licorice',
+            coalesceDraw: true,
+            reduceNativeUpdates: true,
+            batchNativeBuffers: enabled
+          })
+        );
+        await built.promise;
+        expect(publicationCount(store)).toBe(enabled ? 0 : 8);
+        expect(state.glRef.displayBuffers).toHaveLength(enabled ? 1 : 9);
+        expect(molecules.every(item => item.representations[0].buffers[0].visible === false)).toBe(true);
+        atoms.resolve([{ x: 1, y: 2, z: 3 }]);
+        await ready;
+        expect(publicationCount(store)).toBe(enabled ? 0 : 8);
+        await jest.advanceTimersByTimeAsync(16);
+        await Promise.all(loads);
+        expect(publicationCount(store)).toBe(enabled ? 1 : 8);
+        expect(state.glRef.displayBuffers).toHaveLength(9);
+        expect(state.glRef.displayBuffers[0]).toBe(existingBuffer);
+        molecules.forEach(item => {
+          const representation = item.representations[0];
+          expect(state.glRef.displayBuffers).toContain(representation.buffers[0]);
+          expect(representation.buffers[0].multiViewGroup).toBe(item.molNo);
+          expect(representation.buffers[0].atoms).toStrictEqual([{ x: 1, y: 2, z: 3 }]);
+        });
+        expect(adapter.nativeBufferPublications.size).toBe(0);
+        expect(adapter.getTaskCount()).toBe(0);
+      }
+    );
+
+    it('rebases the group on live buffers so concurrent native additions and removals survive', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, built, atoms, state, store, existingBuffer } = setup();
+      const ready = awaitPaintRequests(adapter);
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'batch',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      await built.promise;
+      const buffer = molecule.representations[0].buffers[0];
+      buffer.owner = molecule.representations[0];
+      const mapBuffer = { visible: true, name: 'new-map' };
+      store.dispatch({ type: 'setDisplayBuffers', payload: [mapBuffer] });
+      atoms.resolve([]);
+      await ready;
+      await jest.advanceTimersByTimeAsync(16);
+      await loading;
+      expect(state.glRef.displayBuffers).toStrictEqual([mapBuffer, buffer]);
+      expect(state.glRef.displayBuffers).not.toContain(existingBuffer);
+      expect(molecule.store).toBe(store);
+      expect(molecule.representations[0].parentMolecule).toBe(molecule);
+    });
+
+    it('clears unpublished GPU buffers on failure and cannot resurrect them in a later frame', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, built, atoms, state, existingBuffer } = setup();
+      const error = new Error('atom data failed');
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'failed-batch',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      const rejected = loading.catch(failure => failure);
+      await built.promise;
+      const buffer = molecule.representations[0].buffers[0];
+      atoms.reject(error);
+      expect(await rejected).toBe(error);
+      await jest.runAllTimersAsync();
+      expect(buffer.clearBuffers).toHaveBeenCalledTimes(1);
+      expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+      expect(adapter.getObjects('failed-batch')).toStrictEqual([]);
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+      expect(adapter.getTaskCount()).toBe(0);
+    });
+
+    it('orders removal after the publication repaint and drains teardown without waiting for another frame', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, built, atoms, state, existingBuffer } = setup();
+      const ready = awaitPaintRequests(adapter);
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'remove-batch',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      await built.promise;
+      let removed = false;
+      const removing = adapter.removeObjects('remove-batch').then(() => {
+        removed = true;
+      });
+      atoms.resolve([]);
+      await ready;
+      expect(removed).toBe(false);
+      await adapter.destroy();
+      await Promise.all([loading, removing]);
+      expect(removed).toBe(true);
+      expect(molecule.representations[0].buffers).toStrictEqual([]);
+      expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+      expect(adapter.getObjects('remove-batch')).toStrictEqual([]);
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it('cancels native deletion of a staged representation and releases its private buffers', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, built, atoms, state, existingBuffer } = setup();
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'native-delete',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      const rejected = loading.catch(error => error);
+      await built.promise;
+      const representation = molecule.representations[0];
+      const buffer = representation.buffers[0];
+      representation.deleteBuffers();
+      atoms.resolve([]);
+      expect(await rejected).toStrictEqual(new Error('Ligand representation removed before buffer publication'));
+      expect(buffer.clearBuffers).toHaveBeenCalledTimes(1);
+      expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+    });
+
+    it('flushes ready additions into image capture and leaves later opacity edits on native updates', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, atoms, state } = setup();
+      const ready = awaitPaintRequests(adapter);
+      atoms.resolve([]);
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'capture-batch',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      await ready;
+      const canvas = document.createElement('canvas');
+      jest.spyOn(canvas, 'toDataURL').mockReturnValue('data:image/png');
+      adapter.glRef.current.canvasRef = { current: canvas };
+      expect(await adapter.captureImage()).toBe('data:image/png');
+      await loading;
+      const handle = adapter.getRepresentations(molecule)[0];
+      const buffer = handle.nativeRepresentation.buffers[0];
+      expect(state.glRef.displayBuffers).toContain(buffer);
+      await adapter.setRepresentationParameters(handle, { opacity: 0.4 });
+      expect(buffer.transparent).toBe(true);
+      expect(buffer.triangleColours[0][3]).toBeCloseTo(0.4);
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it('retains immediate native publication for translucent bonds', async () => {
+      expect.hasAssertions();
+      const { adapter, molecule, atoms, store } = setup();
+      atoms.resolve([]);
+      await adapter.loadMolecule('ligand', {
+        name: 'transparent',
+        batchNativeBuffers: true,
+        representations: [{ type: 'licorice', params: { opacity: 0.4 } }]
+      });
+      expect(publicationCount(store)).toBe(1);
+      expect(molecule.representations[0].buffers[0].transparent).toBe(true);
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it.each(['publication', 'drawing'])(
+      'rolls back staged resources when %s fails and preserves that error',
+      async phase => {
+        expect.hasAssertions();
+        const { adapter, atoms, state, store, glRef, existingBuffer } = setup();
+        const ready = awaitPaintRequests(adapter);
+        atoms.resolve([]);
+        const loading = adapter.loadMolecule('ligand', {
+          name: 'failed-paint',
+          representation: 'licorice',
+          batchNativeBuffers: true
+        });
+        const rejected = loading.catch(error => error);
+        await ready;
+        const failure = new Error(`${phase} failed`);
+        if (phase === 'publication') {
+          const dispatch = store.dispatch.getMockImplementation();
+          store.dispatch
+            .mockImplementationOnce(() => {
+              throw failure;
+            })
+            .mockImplementation(dispatch);
+        } else
+          glRef.current.drawScene.mockImplementationOnce(() => {
+            throw failure;
+          });
+        await jest.advanceTimersByTimeAsync(16);
+        expect(await rejected).toBe(failure);
+        expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+        expect(adapter.getObjects('failed-paint')).toStrictEqual([]);
+        expect(adapter.nativeBufferPublications.size).toBe(0);
+        expect(adapter.getTaskCount()).toBe(0);
+      }
+    );
+
+    it('rejects native deletion while the publication frame is pending instead of acknowledging an empty ligand', async () => {
+      expect.hasAssertions();
+      const { adapter, atoms, molecule, state, existingBuffer } = setup();
+      const ready = awaitPaintRequests(adapter);
+      atoms.resolve([]);
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'deleted-before-paint',
+        representation: 'licorice',
+        batchNativeBuffers: true
+      });
+      const rejected = loading.catch(error => error);
+      await ready;
+      molecule.representations[0].deleteBuffers();
+      await jest.advanceTimersByTimeAsync(16);
+      expect(await rejected).toStrictEqual(new Error('Ligand representation removed before buffer publication'));
+      expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+      expect(adapter.getObjects('deleted-before-paint')).toStrictEqual([]);
+      expect(adapter.getTaskCount()).toBe(0);
+    });
+  });
 
   it.each([false, true])('preserves first-paint readiness while reducing opaque native updates: %s', async enabled => {
     expect.hasAssertions();

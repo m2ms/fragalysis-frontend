@@ -408,6 +408,33 @@ describe('representation appearance before first presentation', () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
+    it.each([false, true])(
+      'keeps opaque upload reduction independent from publication batching: %s',
+      async reduceNativeUpdates => {
+        expect.hasAssertions();
+        const { adapter, atoms, built, store, state, existingBuffer } = setup();
+        const ready = awaitPaintRequests(adapter);
+        const loading = adapter.loadMolecule('ligand', {
+          name: 'independent-controls',
+          representation: 'licorice',
+          batchNativeBuffers: true,
+          reduceNativeUpdates
+        });
+        await built.promise;
+        expect(nativeBufferUploads.mock.calls.filter(([buffers]) => buffers.length > 0)).toHaveLength(
+          reduceNativeUpdates ? 1 : 2
+        );
+        expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+        expect(publicationCount(store)).toBe(0);
+        atoms.resolve([]);
+        await ready;
+        await jest.advanceTimersByTimeAsync(16);
+        await loading;
+        expect(publicationCount(store)).toBe(1);
+        expect(adapter.nativeBufferPublications.size).toBe(0);
+      }
+    );
+
     it.each(['publication', 'drawing'])(
       'rolls back staged resources when %s fails and preserves that error',
       async phase => {

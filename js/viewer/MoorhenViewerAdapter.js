@@ -582,7 +582,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         // Opaque bond meshes already have alpha 1. Avoid dirtying and uploading
         // them again, and avoid hide/show's label-list updates for unlabelled bonds.
         const opaqueBonds =
-          (reduceNativeUpdates || batchNativeBuffers) &&
+          reduceNativeUpdates &&
           style === 'CBs' &&
           this.nonCustomOpacity === 1 &&
           this.buffers.length > 0 &&

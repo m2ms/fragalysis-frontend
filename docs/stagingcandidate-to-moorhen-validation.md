@@ -1213,7 +1213,7 @@ Validation:
   Explicit static verification: 275 Moorhen assets / 114,450,225 bytes.
 - PASS: Chrome through Django on port 8080, A71EV2A / lb18145-1, initial selected tag (13 poses / 19 observations),
   with the production bundle above. After initial loading, Network recording was enabled again following the page
-  reload. Bulk loading reached 19/19 downloaded/rendered with 18 observed coordinate requests and zero UNL.cif
+  reload. Bulk loading reached 19/19 downloaded/rendered with 13 observed MOL coordinate requests and zero UNL.cif
   requests. Removal reached 0/0 with only the two protein objects left in Display controls. Cached reload returned
   to 19/19. A separate fresh follow-up capture contains all 19 reload completions plus the RHS v1a ligand reload,
   zero UNL.cif requests, no application errors and no debugger-buffer truncation. The v1a control and Display entry

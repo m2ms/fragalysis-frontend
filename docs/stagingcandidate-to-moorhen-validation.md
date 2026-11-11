@@ -1182,3 +1182,46 @@ Validation:
   resizing/narrow viewport, live failure injection, FPS or peak-memory measurement. Automated coverage does not
   substitute for those visual checks. No saved snapshots were created or modified. Benchmark tabs were closed
   afterwards to release the native scenes.
+
+## Generated MOL dictionaries without redundant UNL lookup (2026-11-11)
+
+Branch `codex/lhs-ligand-dictionary-loading`, based on row-isolation validation commit `260f8c4d`.
+Moorhen 0.22.7's native MOL file loader produces UNL coordinates and a ligand-specific dictionary, then calls its
+string loader before installing that dictionary. The string loader ordinarily attempts missing-monomer resolution,
+including local, GitHub and EBI UNL.cif requests. These lookups are redundant for this generated MOL dictionary.
+
+The adapter's loadMoleculeFile helper suspends automatic missing-monomer lookup only on the new, unregistered
+molecule while its native .mol file load runs. The original method and its own/prototype ownership are restored in
+finally, on success or failure. The native converter, coordinate-preserving conversion arguments and per-molecule
+dictionary installation remain intact. Loading still awaits dictionary installation before object registration and
+representation creation. There is no global UNL definition or shared dictionary cache: concurrent ligands retain
+separate generated dictionaries attached to their own native molecule numbers. PDB/string/URL and other file types
+retain native dictionary lookup. No settings, snapshots, dependencies, workers or static assets are changed.
+
+Validation:
+
+- PASS: seven new regressions execute the installed Moorhen file/string loaders and missing-monomer resolver from
+  the package source map, with only worker chemistry and Gemmi supplied as fixtures. The unadapted loader reproduces
+  its three UNL fallback requests. The adapted path makes none for concurrent MOL-file/SDF-text loads, retains exact
+  native conversion inputs and options, attaches distinct generated dictionaries to their matching molecule numbers,
+  and waits for a deliberately delayed dictionary installation before registration/representation creation. Conversion
+  failures preserve the error, restore instance/prototype lookup and leave no registered object or pending operation.
+  A PDB file or string continues normal lookup while a different MOL load awaits its dictionary.
+- PASS: full Jest suite, 84 suites / 639 tests, 183.432 seconds, including adapter/boundary, native representation,
+  display queue/hook, transfer and snapshot coverage. Targeted ESLint passes without findings; diff whitespace checks pass.
+- PASS: production build and backend stats validation, main-2244737f75ee7e845ddb.js, with the two existing size warnings.
+  Explicit static verification: 275 Moorhen assets / 114,450,225 bytes.
+- PASS: Chrome through Django on port 8080, A71EV2A / lb18145-1, initial selected tag (13 poses / 19 observations),
+  with the production bundle above. After initial loading, Network recording was enabled again following the page
+  reload. Bulk loading reached 19/19 downloaded/rendered with 18 observed coordinate requests and zero UNL.cif
+  requests. Removal reached 0/0 with only the two protein objects left in Display controls. Cached reload returned
+  to 19/19. A separate fresh follow-up capture contains all 19 reload completions plus the RHS v1a ligand reload,
+  zero UNL.cif requests, no application errors and no debugger-buffer truncation. The v1a control and Display entry
+  acknowledged its removal/restoration. Designs open/close preserved all six canvas backend-node identities; native
+  dragging visibly rotated the loaded scene. No saved snapshots were created or modified. The test tab was closed.
+  Evidence is retained locally as ligand-dictionary-live-checks.json and ligand-dictionary-validation.png.
+- The observed 19-ligand action timers were 13.8 seconds for the first bulk load and 13.4 seconds for cached reload.
+  These are functional checks, not a controlled before/after rendering benchmark. No percentage speedup is claimed.
+- NOT RUN: a new 930-ligand timing comparison, authenticated snapshot save/restore or same-project transitions,
+  full RHS transfer/memory audit, unlocked/narrow viewport resizing, FPS or peak-memory measurement. Mocked worker
+  chemistry does not establish visual/chemical parity by itself; live checks above supplement the automated tests.

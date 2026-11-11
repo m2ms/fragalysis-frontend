@@ -496,6 +496,24 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     return stripPdbLigandRecords(pdbData);
   }
 
+  async loadMoleculeFile(molecule, source) {
+    if (!source.name.endsWith('.mol')) return molecule.loadToCootFromFile(source);
+
+    // Moorhen 0.22.7 converts MOL to UNL coordinates plus a per-molecule dictionary.
+    // Its string loader otherwise fetches UNL before the file loader installs that
+    // generated dictionary. Keep the native converter and dictionary installation;
+    // skip only automatic lookup on this unregistered molecule during this load.
+    const loadMissingMonomers = molecule.loadMissingMonomers;
+    const ownsLookup = Object.prototype.hasOwnProperty.call(molecule, 'loadMissingMonomers');
+    molecule.loadMissingMonomers = async () => {};
+    try {
+      return await molecule.loadToCootFromFile(source);
+    } finally {
+      if (ownsLookup) molecule.loadMissingMonomers = loadMissingMonomers;
+      else delete molecule.loadMissingMonomers;
+    }
+  }
+
   async createNativeMolecule(source, name, options = {}) {
     const molecule = new MoorhenMolecule(this.commandCentre, this.glRef, this.store, this.monomerLibraryPath);
     this.configureMoleculeRendering(molecule);
@@ -511,12 +529,12 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (isUrl(source) && options.fromString !== true) {
       await molecule.loadToCootFromURL(source, name, options.fetchOptions);
     } else if (isFileLike(source) && typeof molecule.loadToCootFromFile === 'function') {
-      await molecule.loadToCootFromFile(source);
+      await this.loadMoleculeFile(molecule, source);
     } else {
       const data = source && typeof source.text === 'function' ? await source.text() : source;
       if (isMolfileData(data) && typeof molecule.loadToCootFromFile === 'function') {
         const molfileName = `${name.replace(/\.(?:mol|sdf)$/i, '')}.mol`;
-        await molecule.loadToCootFromFile(new File([data], molfileName, { type: 'chemical/x-mdl-molfile' }));
+        await this.loadMoleculeFile(molecule, new File([data], molfileName, { type: 'chemical/x-mdl-molfile' }));
         this.contactInputs.set(molecule, { sdf: data });
       } else {
         await molecule.loadToCootFromString(data, name);

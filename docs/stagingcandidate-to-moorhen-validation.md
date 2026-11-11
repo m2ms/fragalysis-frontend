@@ -1087,3 +1087,98 @@ Validation:
 - NOT RUN: authenticated snapshot save/restore and same-project switching, a full RHS transfer/memory audit,
   narrow viewport/unlocked panel resizing or live failure/cancellation injection. Their automated coverage does not
   establish visual parity. These tests used an anonymous local target and did not create or modify saved snapshots.
+
+## Pose-row isolation and membership indexes (2026-11-11)
+
+Experiment: `codex/lhs-ligand-row-isolation`, implementation `52eb4e7d`, based on `codex/lhs-ligand-combined` at
+`821a0c16`. The comparison branch remains unchanged.
+
+Pose rows and detail controls subscribe to their own selected observation subsets instead of eight complete lists.
+Unrelated completions retain the selector result identity. Same-pose observation additions/removals still update it,
+so removal callbacks use the current subset even when the row's displayed boolean stays true. Observation order and
+dialog ownership are preserved. Private WeakMap indexes are shared by row selectors, wrapper membership filters and
+the existing any-observation selector. They preserve existing strict IDs, primitive versus density/selected-record
+matching, and the any-observation rule's artefact/quality exclusions. The column-width callback stays stable so
+unchanged row props retain memoization. These caches do not enter Redux or snapshots. Native rendering, scheduling,
+fetching, viewer lifecycle and representation settings are unchanged by this experiment.
+
+Validation:
+
+- PASS: full Jest suite, 83 suites / 632 tests, 182.973 seconds, including native adapter/boundary, queue, transfer and
+  snapshot tests. Nine new regressions use real reducers, rows/detail controls and the wrapper. Through 930 unrelated
+  acknowledgements, unaffected mounted rows produce zero React commits; for 930 row selectors, each acknowledgement
+  changes exactly one result. Coverage includes strict numeric/string IDs, density records, same-pose subset changes
+  and removal callbacks, cloned snapshot lists, replacement observation references, stable wrapper row props and
+  dialog ownership.
+- PASS: targeted ESLint with no new findings; the existing missing `ref` dependency warning in observationUnifiedView.js
+  remains. `git diff --check` passes.
+- PASS: production build and backend stats validator, `main-251a0e1000d6598307a9.js`, with the two existing size warnings.
+  Explicit static verification after the final build: 275 Moorhen assets / 114,450,225 bytes.
+- PASS: paired Chrome benchmark through Django on port 8080, A71EV2A / lb18145-1, 736 poses / 930 observations.
+  Baseline: `821a0c16`, bundle `main-4db0d4a40c36beb58004.js`. Experiment: `52eb4e7d`, bundle
+  `main-251a0e1000d6598307a9.js`. Each used a fresh tab, 2560 x 1313 viewport, Show all hits and 77 mounted table rows.
+  Display controls stayed unopened (zero tree rows), native Models was never opened, build/test runners were idle,
+  and no CPU profiler ran during either measurement.
+- Both timed loads used pipeline mode, preparation=1000, native rendering=8, batched requests, coalesced completion
+  repaint with 100 ms fallback, deferred Models, reduced opaque native updates and low-detail bonds. Before each
+  timing, preparation=1000 / rendering=1 warmed all 930 coordinates. Warmup was cancelled and all ligand intents
+  removed; zero counters and a completed removal timer were observed before setting rendering=8 and starting the
+  timed load. Initial proteins were retained in both runs.
+
+  | Measure | Combined baseline | Pose-row isolation |
+  | --- | ---: | ---: |
+  | Full-load action timer | 18:35.8 | 16:24.6 |
+  | Time to 500 native completions, from pre-confirmation capture | 550.0 s | 461.8 s |
+  | Native load entries | 930 | 930 |
+  | Successful native completions | 927 | 927 |
+  | Failed ligand loads | 3 | 3 |
+
+  The action timer improved by 131.2 seconds (11.8% less elapsed time). Both final counters were 927/927 and both
+  timers reported Failed because of the same three native MOL-loading errors
+  (`Cannot read properties of undefined (reading 'first')`, two console errors per failed load).
+
+  | Completed ligands | Baseline seconds for another 50 | Isolation seconds for another 50 |
+  | --- | ---: | ---: |
+  | 50 to 100 | 47.0 | 46.3 |
+  | 100 to 150 | 38.0 | 41.8 |
+  | 150 to 200 | 52.5 | 41.1 |
+  | 200 to 250 | 48.4 | 48.8 |
+  | 250 to 300 | 56.7 | 48.2 |
+  | 300 to 350 | 55.2 | 35.2 |
+  | 350 to 400 | 48.2 | 38.4 |
+  | 400 to 450 | 62.8 | 51.6 |
+  | 450 to 500 | 75.9 | 44.1 |
+  | 500 to 550 | 63.5 | 55.4 |
+  | 550 to 600 | 61.0 | 52.0 |
+  | 600 to 650 | 58.9 | 61.3 |
+  | 650 to 700 | 67.1 | 60.3 |
+  | 700 to 750 | 70.7 | 68.4 |
+  | 750 to 800 | 67.1 | 68.6 |
+  | 800 to 850 | 69.2 | 70.6 |
+  | 850 to 900 | 73.0 | 61.0 |
+
+  Intervals use native completion timestamps independently of counter polling. Debugger buffers overflowed in both
+  runs; console history was replayed and deduplicated by original timestamp and message. Final completion labels are
+  contiguous: 17 through 943 in baseline, 19 through 945 in the experiment (927 each), with 930 distinct load entries
+  each. There are no missing completion samples in the table. Experimental network events include monomer-dictionary
+  fallbacks and periodic status/quality polling, with no coordinate fetches. Baseline captured no Network events;
+  that does not establish zero total requests, so total request counts are not compared. Both UI coordinate-cache
+  warmups were verified. Raw captures/screenshots were retained locally as row-isolation-baseline.json/.png and
+  row-isolation-experiment.json/.png.
+
+  This is one paired observation, not a repeated statistical benchmark or an FPS/memory measurement. The result
+  supports row isolation as a useful UI-overhead reduction, but several later intervals are effectively unchanged
+  or slower, and the dense scene remains expensive.
+- PASS: live checks on the completed scene. The x0395a/x0395b two-observation dialog stayed open through partial
+  removal (927 to 926), then row removal of its remaining observation (925), with correct control colours. Reloaded
+  the first observation, independently added the second and used the row action to remove both (927 to 925), checking
+  that its callback used the latest subset. Both were restored to 927/927 through the dialog. A protein control
+  acknowledged a native load and changed colour, then returned to its off colour after removal; its temporary Display
+  object was absent afterwards. Rotation changed the visible scene. Designs open/close preserved all six canvas
+  backend-node identities and loaded counts. Display controls mounted 35 tree rows; initial protein expansion survived
+  closing/reopening. No additional application errors were captured. Some semantic automation actions exceeded their
+  deadline; fresh DOM observations confirmed completed effects before retrying.
+- NOT RUN: authenticated snapshot save/restore or same-project transitions, full RHS transfer/memory audit, unlocked
+  resizing/narrow viewport, live failure injection, FPS or peak-memory measurement. Automated coverage does not
+  substitute for those visual checks. No saved snapshots were created or modified. Benchmark tabs were closed
+  afterwards to release the native scenes.

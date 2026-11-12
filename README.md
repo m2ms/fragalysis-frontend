@@ -105,6 +105,21 @@ Start webpack dev server
 yarn start
 ```
 
+Alternatively, choose the local frontend build mode with the root script (including from Git Bash):
+
+```sh
+./run-frontend.sh dev
+# Stop development with Ctrl+C before switching:
+./run-frontend.sh prod
+```
+
+`dev` runs the hot-reloading frontend server in the foreground. `prod` builds the production bundle, verifies its
+Moorhen assets, selects it through `webpack-stats.json`, and exits. Both use the existing Django/backend stack on
+port 8080; the script does not start those containers. Reload the Fragalysis page and check its `DEV`/`PROD` badge.
+Stop any other `yarn start`, `yarn watch`, or `yarn dev` processes before switching, since they can overwrite the
+same stats file. The script refuses to proceed if the frontend port (`DEV_SERVER_PORT`, default 3030) is occupied
+and does not terminate existing processes. Dependencies must already be installed with `yarn install --immutable`.
+
 Start fragalysis stack
 
 ```

@@ -8,6 +8,7 @@ import {
   publishLigandActionTiming,
   trackLigandActionOperation
 } from '../../../reducers/ngl/ligandActionTiming';
+import { markMoleculeInputError } from '../../../viewer/moleculeInputErrors';
 
 jest.mock('../../tooltip/RichTooltip', () => ({ __esModule: true, default: ({ children }) => children }));
 
@@ -79,6 +80,46 @@ describe('ligand stopwatch', () => {
       publishLigandActionTiming(timing);
     });
     expect(screen.getByTestId('ligand-action-timer')).toHaveAttribute('data-status', 'running');
+    view.unmount();
+    jest.runAllTicks();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it.each([1, 3])('shows %i skipped inputs without labeling a completed render as Failed', async count => {
+    expect.hasAssertions();
+    const items = Array.from({ length: count }, (_, index) => ({ id: index + 1, type: 'LIGAND', display: true }));
+    const state = { selectionReducers: { toBeDisplayedList: items }, nglReducers: { objectsInView: {} } };
+    const view = render(<LigandActionTimer />);
+    let operations;
+    act(() => {
+      const timing = beginLigandActionTiming(
+        'load',
+        items.map(item => ({ id: item.id, code: `test-${item.id}` })),
+        () => state
+      );
+      bindLigandActionIntents(timing, items);
+      operations = items.map(item => {
+        let reject;
+        const promise = new Promise((resolve, fail) => {
+          reject = fail;
+        });
+        trackLigandActionOperation(item, promise);
+        return { promise, reject };
+      });
+      publishLigandActionTiming(timing);
+      jest.advanceTimersByTime(1250);
+    });
+    await act(async () => {
+      state.selectionReducers.toBeDisplayedList = [];
+      operations.forEach(operation => operation.reject(markMoleculeInputError(new Error('bad MOL'))));
+      await Promise.allSettled(operations.map(operation => operation.promise));
+    });
+    const timer = screen.getByTestId('ligand-action-timer');
+    const skippedLabel = `${count} ${count === 1 ? 'ligand' : 'ligands'} skipped`;
+    expect(timer).toHaveAttribute('data-status', 'completed');
+    expect(timer).toHaveTextContent(skippedLabel);
+    expect(timer).toHaveAttribute('aria-label', `Ligand load: completed, elapsed 1.2s, ${skippedLabel}`);
+    expect(timer).not.toHaveTextContent('Failed');
     view.unmount();
     jest.runAllTicks();
     expect(jest.getTimerCount()).toBe(0);

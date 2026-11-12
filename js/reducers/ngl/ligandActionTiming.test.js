@@ -8,6 +8,7 @@ import {
   subscribeLigandActionTiming,
   trackLigandActionOperation
 } from './ligandActionTiming';
+import { markMoleculeInputError } from '../../viewer/moleculeInputErrors';
 
 const deferred = () => {
   let resolve;
@@ -133,6 +134,57 @@ describe('bulk ligand action timing', () => {
     operation.reject(new Error('native failure'));
     await operation.promise.catch(() => {});
     expect(getLigandActionTiming().status).toBe('failed');
+  });
+
+  it('counts skipped inputs once and waits for the remaining ligands to finish rendering', async () => {
+    expect.hasAssertions();
+    const items = [intent(1), intent(2), intent(3), intent(4)];
+    const state = { selectionReducers: { toBeDisplayedList: items }, nglReducers: { objectsInView: {} } };
+    const request = beginLigandActionTiming(
+      'load',
+      items.map(item => ({ id: item.id, code: `obs-${item.id}` })),
+      () => state
+    );
+    bindLigandActionIntents(request, items);
+    const operations = items.map(() => deferred());
+    items.forEach((item, index) => trackLigandActionOperation(item, operations[index].promise));
+    trackLigandActionOperation(items[0], operations[0].promise);
+    publishLigandActionTiming(request);
+    state.selectionReducers.toBeDisplayedList = [items[3]];
+    operations.slice(0, 3).forEach(operation => operation.reject(markMoleculeInputError(new Error('bad MOL'))));
+    await Promise.allSettled(operations.slice(0, 3).map(operation => operation.promise));
+    reconcileLigandActionTiming();
+    expect(getLigandActionTiming().status).toBe('running');
+    state.selectionReducers.toBeDisplayedList = [{ ...items[3], rendered: true }];
+    state.nglReducers.objectsInView['obs-4_LIGAND'] = object(4);
+    operations[3].resolve('rendered');
+    await operations[3].promise;
+    expect(getLigandActionTiming()).toMatchObject({ status: 'completed', skippedCount: 3 });
+    reconcileLigandActionTiming();
+    expect(getLigandActionTiming().skippedCount).toBe(3);
+    const next = begin();
+    expect(getLigandActionTiming().skippedCount).toBe(0);
+    publishLigandActionTiming(next.request);
+  });
+
+  it('retains Failed for rendering errors even when another ligand was skipped', async () => {
+    expect.hasAssertions();
+    const items = [intent(1), intent(2)];
+    const state = { selectionReducers: { toBeDisplayedList: items }, nglReducers: { objectsInView: {} } };
+    const request = beginLigandActionTiming(
+      'load',
+      items.map(item => ({ id: item.id, code: `obs-${item.id}` })),
+      () => state
+    );
+    bindLigandActionIntents(request, items);
+    const operations = items.map(() => deferred());
+    items.forEach((item, index) => trackLigandActionOperation(item, operations[index].promise));
+    publishLigandActionTiming(request);
+    state.selectionReducers.toBeDisplayedList = [];
+    operations[0].reject(markMoleculeInputError(new Error('conversion failed')));
+    operations[1].reject(new Error('repaint failed'));
+    await Promise.allSettled(operations.map(operation => operation.promise));
+    expect(getLigandActionTiming()).toMatchObject({ status: 'failed', skippedCount: 1 });
   });
 
   it('does not let an old completion overwrite a later action', async () => {

@@ -607,6 +607,7 @@ describe('pipelined bulk LHS ligand loading', () => {
         5
       ]);
       expect(scene.store.getState().nglReducers.countOfPendingNglObjects.major_view).toBe(0);
+      expect(getLigandActionTiming().status).toBe('running');
       expect(fetchedPaths()).toStrictEqual(['/ligand/1', '/ligand/2', '/ligand/3']);
       await act(async () => {
         scene.coordinates[1].resolve();
@@ -614,6 +615,16 @@ describe('pipelined bulk LHS ligand loading', () => {
       await advancePipeline();
 
       expect(nativeIds(scene.stage)).toContain(2);
+      for (let index = 1; index < scene.observations.length; index++) {
+        await act(async () => scene.coordinates[index].resolve());
+        await advancePipeline();
+        await act(async () => scene.rendering[index].resolve());
+        await advancePipeline();
+      }
+      expect(getLigandActionTiming()).toMatchObject({
+        status: phase === 'coordinates' ? 'completed' : 'failed',
+        skippedCount: phase === 'coordinates' ? 1 : 0
+      });
     }
   );
 

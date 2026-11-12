@@ -8,6 +8,7 @@ import { registerNativeBufferPublisher } from './nativeBufferPublication';
 import { NativeSceneDrawScheduler } from './nativeSceneDrawScheduler';
 import { NativePickingController } from './nativePicking';
 import { acquireNativeCommandBatcher } from './nativeCommandBatcher';
+import { markMoleculeInputError } from './moleculeInputErrors';
 import {
   MoorhenMap,
   MoorhenMolecule,
@@ -704,8 +705,13 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       await this.removeObjectNow(existingObject);
     }
 
-    const coordinates = options.stripLigand ? await this.getPdbWithoutLigand(source, options.fetchOptions) : source;
-    const molecule = await this.createNativeMolecule(coordinates, name, options);
+    let molecule;
+    try {
+      const coordinates = options.stripLigand ? await this.getPdbWithoutLigand(source, options.fetchOptions) : source;
+      molecule = await this.createNativeMolecule(coordinates, name, options);
+    } catch (error) {
+      throw markMoleculeInputError(error);
+    }
     if (options.contactEnvironment) this.contactInputs.set(molecule, { environment: true });
     this.store.dispatch(addMolecule(molecule));
     this.store.dispatch(showMolecule(molecule));

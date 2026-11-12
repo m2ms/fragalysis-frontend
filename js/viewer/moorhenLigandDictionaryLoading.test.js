@@ -3,6 +3,7 @@ import { runInNewContext } from 'vm';
 import ts from 'typescript';
 import { MoorhenMolecule } from 'moorhen';
 import MoorhenViewerAdapter from './MoorhenViewerAdapter';
+import { isMoleculeInputError } from './moleculeInputErrors';
 
 jest.mock('./contacts/createContactWorker', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('moorhen', () => {
@@ -76,7 +77,7 @@ const pdb = name =>
 const dictionary = name => `data_comp_UNL\n_generated_for ${name}\n`;
 const response = result => ({ data: { result: { status: 'Completed', result } } });
 
-const setup = ({ conversionError, installDictionary = async () => {} } = {}) => {
+const setup = ({ conversionError, missingConversionResult, installDictionary = async () => {} } = {}) => {
   const fetchDictionary = jest.fn(async () => ({ ok: false }));
   const NativeMolecule = installedMolecule(fetchDictionary);
   const molecules = [];
@@ -89,6 +90,7 @@ const setup = ({ conversionError, installDictionary = async () => {} } = {}) => 
       cootCommand: jest.fn(async ({ command, commandArgs }) => {
         if (command === 'mol_text_to_pdb') {
           if (conversionError) throw conversionError;
+          if (missingConversionResult) return response(undefined);
           const name = commandArgs[0].split('\n')[0];
           return response({ first: pdb(name), second: dictionary(name) });
         }
@@ -137,6 +139,18 @@ const setup = ({ conversionError, installDictionary = async () => {} } = {}) => 
 };
 
 describe('generated ligand dictionaries from MOL files', () => {
+  it('classifies the native missing MOL conversion result as a skipped input before registration', async () => {
+    expect.hasAssertions();
+    const { adapter, commands, molecules } = setup({ missingConversionResult: true });
+    const error = await adapter.loadMolecule(molfile('invalid'), { name: 'invalid' }).catch(failure => failure);
+    expect(error.message).toMatch(/reading 'first'/);
+    expect(isMoleculeInputError(error)).toBe(true);
+    expect(commands('read_coords_string')).toHaveLength(0);
+    expect(adapter.getObject('invalid')).toBeUndefined();
+    expect(molecules[0].molNo).toBeNull();
+    expect(Object.prototype.hasOwnProperty.call(molecules[0], 'loadMissingMonomers')).toBe(false);
+  });
+
   it('reproduces redundant UNL fallback requests in the installed unadapted MOL loader', async () => {
     expect.hasAssertions();
     const { createMolecule, commands, fetchDictionary, dictionaries } = setup();
@@ -209,13 +223,14 @@ describe('generated ligand dictionaries from MOL files', () => {
     'restores the %s lookup after conversion failure without registering an object',
     async owner => {
       expect.hasAssertions();
-      const error = new Error('native MOL conversion failed');
+      const error = Object.freeze(new Error('native MOL conversion failed'));
       const { adapter, commands, molecules, createMolecule, NativeMolecule } = setup({ conversionError: error });
       const molecule = createMolecule();
       const lookup = owner === 'instance' ? jest.fn() : NativeMolecule.prototype.loadMissingMonomers;
       if (owner === 'instance') molecule.loadMissingMonomers = lookup;
       MoorhenMolecule.mockImplementationOnce(() => molecule);
       await expect(adapter.loadMolecule(molfile('failed'), { name: 'failed', fromString: true })).rejects.toBe(error);
+      expect(isMoleculeInputError(error)).toBe(true);
       expect(molecule.loadMissingMonomers).toBe(lookup);
       expect(Object.prototype.hasOwnProperty.call(molecule, 'loadMissingMonomers')).toBe(owner === 'instance');
       expect(commands('read_coords_string')).toHaveLength(0);

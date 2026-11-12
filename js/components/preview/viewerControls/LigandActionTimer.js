@@ -18,7 +18,7 @@ export const LigandActionTimer = () => {
     return () => clearInterval(interval);
   }, [timing]);
   const elapsed = timing ? formatLigandActionTime((timing.finishedAt ?? clock) - timing.startedAt) : '—';
-  const label = !timing
+  const actionLabel = !timing
     ? 'Time'
     : timing.status === 'failed'
     ? 'Failed'
@@ -27,6 +27,14 @@ export const LigandActionTimer = () => {
     : timing.kind === 'load'
     ? 'Load'
     : 'Remove';
+  const skippedLabel = timing?.skippedCount
+    ? `${timing.skippedCount} ${timing.skippedCount === 1 ? 'ligand' : 'ligands'} skipped`
+    : '';
+  const label = skippedLabel
+    ? timing.status === 'completed'
+      ? skippedLabel
+      : `${actionLabel} · ${skippedLabel}`
+    : actionLabel;
   return (
     <RichTooltip path="ligandActionTime">
       <Typography
@@ -36,7 +44,9 @@ export const LigandActionTimer = () => {
         data-testid="ligand-action-timer"
         data-status={timing?.status || 'idle'}
         aria-label={
-          timing ? `Ligand ${timing.kind}: ${timing.status}, elapsed ${elapsed}` : 'Ligand action timer: idle'
+          timing
+            ? `Ligand ${timing.kind}: ${timing.status}, elapsed ${elapsed}${skippedLabel ? `, ${skippedLabel}` : ''}`
+            : 'Ligand action timer: idle'
         }
         sx={{ flexShrink: 0, lineHeight: 1.3, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
       >

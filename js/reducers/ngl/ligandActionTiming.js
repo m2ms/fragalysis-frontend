@@ -1,4 +1,5 @@
 import { NGL_OBJECTS } from './constants';
+import { isMoleculeInputError } from '../../viewer/moleculeInputErrors';
 
 const requestsByIntent = new WeakMap();
 const listeners = new Set();
@@ -16,7 +17,7 @@ const notify = () => listeners.forEach(listener => listener());
 
 const finish = (request, status) => {
   if (current !== request || snapshot?.status !== 'running') return;
-  snapshot = Object.freeze({ ...snapshot, status, finishedAt: now() });
+  snapshot = Object.freeze({ ...snapshot, status, skippedCount: request.skippedCount, finishedAt: now() });
   request.records.clear();
   request.getState = null;
   notify();
@@ -35,6 +36,7 @@ export const beginLigandActionTiming = (kind, observations, getState) => {
     getState,
     publishing: true,
     failed: false,
+    skippedCount: 0,
     cancelled: false,
     records: new Map(
       observations.map(observation => [
@@ -47,7 +49,7 @@ export const beginLigandActionTiming = (kind, observations, getState) => {
       ])
     )
   };
-  snapshot = Object.freeze({ sequence: ++sequence, kind, status: 'running', startedAt, finishedAt: null });
+  snapshot = Object.freeze({ sequence: ++sequence, kind, status: 'running', skippedCount: 0, startedAt, finishedAt: null });
   notify();
   return current;
 };
@@ -83,6 +85,8 @@ export const reconcileLigandActionTiming = () => {
     const removing = matching.some(item => item.display === false);
     if (record.failed) {
       request.failed = true;
+    } else if (record.skipped) {
+      request.skippedCount++;
     } else if (request.kind === 'load') {
       // A cancellation may have queued disposal after the load. Keep timing
       // until its tombstone is acknowledged, even if the load just settled.
@@ -120,15 +124,19 @@ export const trackLigandActionOperation = (item, promise) => {
   const record = request?.records.get(item.id);
   if (!record || snapshot?.status !== 'running' || record.promises.has(promise)) return;
   record.promises.add(promise);
-  const settled = (result, failed = false) => {
+  const settled = (result, failed = false, skipped = false) => {
     if (current !== request || snapshot?.status !== 'running') return;
     record.promises.delete(promise);
     record.result = result;
     record.failed = record.failed || failed;
+    record.skipped = record.skipped || skipped;
     reconcileLigandActionTiming();
   };
   promise.then(
     result => settled(result),
-    () => settled(undefined, true)
+    error => {
+      const skipped = request.kind === 'load' && item.display !== false && isMoleculeInputError(error);
+      settled(undefined, !skipped, skipped);
+    }
   );
 };

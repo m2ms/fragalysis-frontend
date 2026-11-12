@@ -21,6 +21,7 @@ import { getToBeDisplayedStructures } from './utils';
 import { setNglOrientation } from './actions';
 import { getBulkLigandSettingsForItem, isBulkLigand } from './bulkLigands';
 import { DEFAULT_BULK_LIGAND_SETTINGS, getBulkLigandLimits } from './bulkLigandSettings';
+import { markMoleculeInputError } from '../../viewer/moleculeInputErrors';
 import {
   cancelLigandActionTiming,
   reconcileLigandActionTiming,
@@ -113,6 +114,7 @@ export const useDisplayLigandLHS = () => {
       const colourToggle = getRandomColor(data);
       const molId = generateMoleculeId(data);
 
+      let nativeLoadStarted = false;
       try {
         let moleculeObject = await dispatch(generateMoleculeObject(data, colourToggle));
         if (bulkEntry && (!(await waitForBulkRender(bulkEntry)) || !mounted.current || !bulkEntry.isCurrent()))
@@ -130,6 +132,7 @@ export const useDisplayLigandLHS = () => {
         }
         const settings = bulkEntry?.settings;
 
+        nativeLoadStarted = true;
         await dispatch(
           loadObject({
             target: Object.assign({ display_div: VIEWS.MAJOR_VIEW }, moleculeObject),
@@ -164,7 +167,7 @@ export const useDisplayLigandLHS = () => {
           dispatch(removeFromQualityList(molId));
           dispatch(removeFromToBeDisplayedList({ id: data.id, type: NGL_OBJECTS.LIGAND }));
         }
-        throw error;
+        throw nativeLoadStarted ? error : markMoleculeInputError(error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

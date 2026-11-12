@@ -80,6 +80,10 @@ describe('native redundant label and texture update bridge', () => {
     expect(transformed).toContain('.publishNativeBuffers(');
     expect(transformed).not.toContain('//# sourceMappingURL=data:');
     expect(fs.readFileSync(bundlePath, 'utf8')).toBe(bundle);
+    [require('../webpack.config'), require('../webpack.config-dev')].forEach(config => {
+      const nativeRule = config.module.rules.find(rule => rule.test?.test(bundlePath));
+      expect(nativeRule.use).toContain(require.resolve('./moorhenLabelsLoader'));
+    });
   });
 
   it('fails visibly for missing or duplicate native update sites', () => {

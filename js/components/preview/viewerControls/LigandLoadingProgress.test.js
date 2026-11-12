@@ -158,6 +158,9 @@ describe('ligand loading progress', () => {
       'Defer native Models UI until first opened',
       'Skip redundant opaque buffer updates',
       'Batch native buffer publication',
+      'Coalesce native scene repaints',
+      'Accelerate atom picking and sample hover per frame',
+      'Batch bulk ligand Coot commands',
       'Low-detail bulk ligands'
     ].forEach(name => {
       expect(screen.getByRole('checkbox', { name })).not.toBeChecked();

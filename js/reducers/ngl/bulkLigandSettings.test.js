@@ -40,6 +40,9 @@ describe('bulk ligand experiment settings', () => {
       deferModelsUI: true,
       reduceNativeUpdates: true,
       batchNativeBuffers: true,
+      coalesceNativeDraw: true,
+      acceleratePicking: true,
+      batchCootCommands: true,
       lowDetail: true
     });
     Object.keys(BULK_LIGAND_PRESETS).forEach(name => expect(getBulkLigandPreset(bulkLigandPreset(name))).toBe(name));

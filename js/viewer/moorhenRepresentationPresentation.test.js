@@ -7,6 +7,7 @@ import MoorhenViewerAdapter from './MoorhenViewerAdapter';
 import * as viewerConfig from '../config/viewer';
 import * as bufferPublication from './nativeBufferPublication';
 import { transformNativeBufferPublication } from '../../webpack/moorhenBuffersLoader';
+import { NativeCommandBatcher } from './nativeCommandBatcher';
 jest.mock('./contacts/createContactWorker', () => ({ __esModule: true, default: jest.fn() }));
 jest.mock('../config/viewer', () => ({ __esModule: true, USE_NGL_STYLE_INTERACTIONS: true }));
 
@@ -199,6 +200,49 @@ describe('representation appearance before first presentation', () => {
     });
     return { ...fixture, handle: fixture.adapter.getRepresentations(fixture.molecule)[0] };
   };
+
+  it('discards unpublished geometry and rejects readiness when a scoped Coot batch fails', async () => {
+    expect.hasAssertions();
+    const { adapter, commandCentre, atoms, built, state, existingBuffer, molecule } = setup();
+    const worker = new EventTarget();
+    worker.postMessage = () => {};
+    worker.onmessage = () => {};
+    commandCentre.current.cootWorker = worker;
+    const failure = new Error('Coot colour command failed');
+    const scope = {
+      assertHealthy: jest
+        .fn()
+        .mockImplementationOnce(() => {})
+        .mockImplementation(() => {
+          throw failure;
+        }),
+      release: jest.fn()
+    };
+    const register = jest.spyOn(NativeCommandBatcher.prototype, 'register').mockReturnValue(scope);
+    try {
+      const loading = adapter.loadMolecule('ligand', {
+        name: 'failed-command',
+        representation: 'licorice',
+        batchCootCommands: true,
+        batchNativeBuffers: true,
+        reduceNativeUpdates: true
+      });
+      const rejected = loading.catch(error => error);
+      await built.promise;
+      const representation = molecule.representations[0];
+      const buffer = representation.buffers[0];
+      expect(state.glRef.displayBuffers).toStrictEqual([existingBuffer]);
+      atoms.resolve([]);
+      expect(await rejected).toBe(failure);
+      expect(buffer.clearBuffers).toHaveBeenCalledTimes(1);
+      expect(adapter.getObject('failed-command')).toBeUndefined();
+      expect(adapter.nativeBufferPublications.size).toBe(0);
+      expect(scope.release).toHaveBeenCalledTimes(1);
+    } finally {
+      register.mockRestore();
+      await adapter.destroy();
+    }
+  });
 
   describe('batched native buffer publication', () => {
     // eslint-disable-next-line jest/no-hooks

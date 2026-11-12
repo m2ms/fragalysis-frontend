@@ -246,6 +246,7 @@ describe('pipelined bulk LHS ligand loading', () => {
       pendingSceneDraw: null,
       nativeBufferPublications: new Map(),
       flushNativeBufferPublications: MoorhenViewerAdapter.prototype.flushNativeBufferPublications,
+      drawSceneNow: MoorhenViewerAdapter.prototype.drawSceneNow,
       glRef: { current: { drawScene: jest.fn() } },
       flushPendingSceneDraw: MoorhenViewerAdapter.prototype.flushPendingSceneDraw
     };
@@ -296,6 +297,7 @@ describe('pipelined bulk LHS ligand loading', () => {
       pendingSceneDraw: null,
       nativeBufferPublications: new Map(),
       flushNativeBufferPublications: MoorhenViewerAdapter.prototype.flushNativeBufferPublications,
+      drawSceneNow: MoorhenViewerAdapter.prototype.drawSceneNow,
       glRef: { current: { drawScene: jest.fn() } },
       flushPendingSceneDraw: MoorhenViewerAdapter.prototype.flushPendingSceneDraw
     };
@@ -439,11 +441,16 @@ describe('pipelined bulk LHS ligand loading', () => {
     expect(
       requests
         .filter(options => options.target.moleculeId !== 3)
-        .every(options => options.bulkLigandOptions.reduceNativeUpdates && options.bulkLigandOptions.lowDetail &&
-          options.bulkLigandOptions.batchNativeBuffers)
+        .every(
+          options =>
+            options.bulkLigandOptions.reduceNativeUpdates &&
+            options.bulkLigandOptions.lowDetail &&
+            options.bulkLigandOptions.batchNativeBuffers &&
+            options.bulkLigandOptions.batchCootCommands
+        )
     ).toBe(true);
     expect(JSON.stringify(createSnapshotStateForSaving(scene.store.getState()))).not.toMatch(
-      /bulkLigandOptions|reduceNativeUpdates|batchNativeBuffers|lowDetail|deferModelsUI/
+      /bulkLigandOptions|reduceNativeUpdates|batchNativeBuffers|batchCootCommands|lowDetail|deferModelsUI/
     );
     await act(async () => {
       scene.rendering.forEach(item => item.resolve());

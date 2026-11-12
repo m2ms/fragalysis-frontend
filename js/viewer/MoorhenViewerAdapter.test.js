@@ -519,6 +519,101 @@ describe('opt-in bulk ligand repaint coalescing', () => {
   });
 });
 
+describe('native repaint and picking experiment integration', () => {
+  // eslint-disable-next-line jest/no-hooks
+  beforeEach(() => jest.useFakeTimers());
+
+  // eslint-disable-next-line jest/no-hooks
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('tracks a queued native paint and completes ligand/capture paints synchronously', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef, canvas } = createAdapter();
+    const draw = jest.fn();
+    glRef.current.drawScene = draw;
+    adapter.configureNativePerformance({ coalesceNativeDraw: true, acceleratePicking: true });
+    for (let i = 0; i < 30; i++) glRef.current.drawScene();
+    expect(draw).not.toHaveBeenCalled();
+    expect(adapter.getTaskCount()).toBe(1);
+    adapter.requestSceneDraw(false);
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(adapter.getTaskCount()).toBe(0);
+    glRef.current.drawScene();
+    canvas.toDataURL.mockImplementation(() => {
+      expect(draw).toHaveBeenCalledTimes(2);
+      return 'data:image/png';
+    });
+    expect(await adapter.captureImage()).toBe('data:image/png');
+    jest.runOnlyPendingTimers();
+    expect(draw).toHaveBeenCalledTimes(2);
+    await adapter.destroy();
+  });
+
+  it('keeps native camera and render-to-texture draws immediate and cancels frames on teardown', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    const draw = jest.fn();
+    glRef.current.drawScene = draw;
+    adapter.configureNativePerformance({ coalesceNativeDraw: true });
+    for (const flag of ['mouseDown', 'animating', 'renderToTexture', 'save_pixel_data']) {
+      glRef.current[flag] = true;
+      glRef.current.drawScene();
+      glRef.current[flag] = false;
+    }
+    expect(draw).toHaveBeenCalledTimes(4);
+    glRef.current.drawScene();
+    await adapter.destroy();
+    expect(glRef.current.drawScene).toBe(draw);
+    jest.runOnlyPendingTimers();
+    expect(draw).toHaveBeenCalledTimes(4);
+    expect(adapter.getTaskCount()).toBe(0);
+  });
+
+  it('joins native store repaint requests to an existing completion frame without acknowledging work early', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    const draw = jest.fn();
+    glRef.current.drawScene = draw;
+    adapter.configureNativePerformance({ coalesceNativeDraw: true });
+    glRef.current.drawScene();
+    const completed = jest.fn();
+    const pending = adapter.requestSceneDraw(true).then(completed);
+    for (let i = 0; i < 20; i++) glRef.current.drawScene();
+    expect(adapter.sceneSettingsGuard.scheduler.pending).toBeNull();
+    expect(adapter.getTaskCount()).toBe(1);
+    expect(completed).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(16);
+    await pending;
+    expect(draw).toHaveBeenCalledTimes(1);
+    expect(completed).toHaveBeenCalledTimes(1);
+    expect(adapter.getTaskCount()).toBe(0);
+    await adapter.destroy();
+  });
+
+  it('flushes a pending native paint before synchronous click picking and restores native methods', async () => {
+    expect.hasAssertions();
+    const { adapter, glRef } = createAdapter();
+    const draw = jest.fn();
+    const hit = { atom: { x: 0, y: 0, z: 0 } };
+    const pick = jest.fn(() => {
+      expect(draw).toHaveBeenCalledTimes(1);
+      return hit;
+    });
+    glRef.current.drawScene = draw;
+    glRef.current.getAtomFomMouseXY = pick;
+    adapter.configureNativePerformance({ coalesceNativeDraw: true, acceleratePicking: true });
+    glRef.current.drawScene();
+    expect(glRef.current.getAtomFomMouseXY({}, glRef.current)).toBe(hit);
+    expect(adapter.getTaskCount()).toBe(0);
+    await adapter.destroy();
+    expect(glRef.current.getAtomFomMouseXY).toBe(pick);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});
+
 describe('moorhen scene settings', () => {
   it('drains a native background redraw before deleting its molecule and skips callbacks queued after disposal starts', async () => {
     expect.hasAssertions();

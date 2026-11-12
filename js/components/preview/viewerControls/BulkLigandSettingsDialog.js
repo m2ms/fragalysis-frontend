@@ -35,7 +35,7 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
             : next.strategy === 'pipeline'
             ? ['poolSize']
             : ['poolSize', 'downloads', 'renders']
-          : key === 'coalesceDraw' && !value
+          : ['coalesceDraw', 'coalesceNativeDraw'].includes(key) && !next.coalesceDraw && !next.coalesceNativeDraw
           ? ['drawMaxWaitMs']
           : [];
       hidden.forEach(field => {
@@ -112,7 +112,7 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
               }
             />
           </Box>
-          {draft.coalesceDraw && numeric('drawMaxWaitMs', 'Repaint fallback delay (ms)')}
+          {(draft.coalesceDraw || draft.coalesceNativeDraw) && numeric('drawMaxWaitMs', 'Repaint fallback delay (ms)')}
           <Box>
             <Typography variant="subtitle2">Native viewer experiments</Typography>
             <FormControlLabel
@@ -148,8 +148,8 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
               }
             />
             <Typography variant="caption" color="textSecondary" component="p">
-              Groups ready opaque bulk ligands and their completion repaint into one viewer update per frame.
-              Applies to new bulk loads; translucent styles and later edits keep their normal updates.
+              Groups ready opaque bulk ligands and their completion repaint into one viewer update per frame. Applies to
+              new bulk loads; translucent styles and later edits keep their normal updates.
             </Typography>
             <FormControlLabel
               label="Low-detail bulk ligands"
@@ -158,6 +158,47 @@ export const BulkLigandSettingsDialog = ({ onClose }) => {
             <Typography variant="caption" color="textSecondary" component="p">
               New default bulk ligand styles use bond smoothness 1 instead of 3. Saved or customized styles keep their
               settings. Remove and reload the group to compare detail.
+            </Typography>
+            <FormControlLabel
+              label="Coalesce native scene repaints"
+              control={
+                <Checkbox
+                  checked={draft.coalesceNativeDraw}
+                  onChange={(_, checked) => update('coalesceNativeDraw', checked)}
+                />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              Applies immediately. Native store repaint requests share one frame. Camera motion, clicks, image capture
+              and ligand completion still force a current frame. This reduces redraw frequency, not the final scene's
+              draw calls.
+            </Typography>
+            <FormControlLabel
+              label="Accelerate atom picking and sample hover per frame"
+              control={
+                <Checkbox
+                  checked={draft.acceleratePicking}
+                  onChange={(_, checked) => update('acceleratePicking', checked)}
+                />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              Applies immediately. Rejects buffers outside the picking ray, indexes atoms within each buffer, and samples
+              the latest mouse position once per frame. Click picking stays synchronous and retains native hit and
+              clipping rules.
+            </Typography>
+            <FormControlLabel
+              label="Batch bulk ligand Coot commands"
+              control={
+                <Checkbox
+                  checked={draft.batchCootCommands}
+                  onChange={(_, checked) => update('batchCootCommands', checked)}
+                />
+              }
+            />
+            <Typography variant="caption" color="textSecondary" component="p">
+              New bulk ligands group compatible colour and bond-mesh commands, up to eight per worker message. Uses the
+              existing shared Coot runtime and preserves individual command replies. Does not raise its memory limit.
             </Typography>
           </Box>
           <Typography variant="caption" color="textSecondary">

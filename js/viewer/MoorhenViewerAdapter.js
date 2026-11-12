@@ -5,6 +5,9 @@ import { getAbsoluteMapContour, readCcp4MapMetadata, transformCcp4MapMesh } from
 import { NGL_VIEW_DEFAULT_VALUES } from '../components/nglView/constants';
 import { getSceneRadius, getSceneRanges } from './moorhenSceneSettings';
 import { registerNativeBufferPublisher } from './nativeBufferPublication';
+import { NativeSceneDrawScheduler } from './nativeSceneDrawScheduler';
+import { NativePickingController } from './nativePicking';
+import { acquireNativeCommandBatcher } from './nativeCommandBatcher';
 import {
   MoorhenMap,
   MoorhenMolecule,
@@ -186,6 +189,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.destroyed = false;
     this.pendingSceneDraw = null;
     this.nativeBufferPublications = new Map();
+    this.nativeCommandScopes = new WeakMap();
     this.orientationAnimation = null;
     this.nativeCameraSequence = 0;
     this.sceneParameters = null;
@@ -360,6 +364,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
         drawMaxWaitMs: options.drawMaxWaitMs,
         reduceNativeUpdates: options.bulkLigandOptions?.reduceNativeUpdates === true,
         batchNativeBuffers: options.bulkLigandOptions?.batchNativeBuffers === true,
+        batchCootCommands: options.bulkLigandOptions?.batchCootCommands === true,
         centerZoomScale: LIGAND_FOCUS_ZOOM_SCALE
       });
       return this.getRepresentations(molecule);
@@ -644,6 +649,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
             };
           }
           await representation.draw();
+          this.nativeCommandScopes.get(component)?.assertHealthy();
           if (publication?.cancelled) throw new Error('Ligand representation removed before buffer publication');
           await component.drawSymmetry(false);
           component.drawBiomolecule(false);
@@ -655,8 +661,10 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           } else {
             await representation.show();
           }
+          this.nativeCommandScopes.get(component)?.assertHealthy();
           if (publication) publication.ready = true;
           await this.requestSceneDraw(coalesceDraw || !!publication, drawMaxWaitMs);
+          this.nativeCommandScopes.get(component)?.assertHealthy();
           if (publication?.cancelled) throw new Error('Ligand representation removed before buffer publication');
         }
         handle.visible = handle.params.visible !== false;
@@ -702,11 +710,22 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     this.store.dispatch(addMolecule(molecule));
     this.store.dispatch(showMolecule(molecule));
     const registeredMolecule = this.registerObject(molecule, name);
+    let commandScope;
     const centerZoomScale = Number(options.centerZoomScale);
     if (Number.isFinite(centerZoomScale) && centerZoomScale > 0) {
       this.centerZoomScaleByObject.set(registeredMolecule, centerZoomScale);
     }
     try {
+      if (options.batchCootCommands === true) {
+        const worker = this.commandCentre.current.cootWorker;
+        if (!worker?.postMessage || typeof worker.onmessage !== 'function') {
+          throw new Error('Native command batching requires the initialized Coot worker transport');
+        }
+        if (!this.nativeCommandBatcher) this.nativeCommandBatcher = acquireNativeCommandBatcher(worker);
+        commandScope = this.nativeCommandBatcher.register(registeredMolecule.molNo);
+        this.nativeCommandScopes.set(registeredMolecule, commandScope);
+        commandScope.assertHealthy();
+      }
       const definitions =
         options.representations?.length > 0
           ? options.representations
@@ -750,6 +769,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     } catch (error) {
       await this.removeObjectNow(registeredMolecule);
       throw error;
+    } finally {
+      commandScope?.release();
+      this.nativeCommandScopes.delete(registeredMolecule);
     }
   }
 
@@ -977,7 +999,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     // Draw after each buffer change so maps appear/disappear without a mouse move.
     map.hideMapContour = (...args) => {
       hideContour(...args);
-      this.glRef.current?.drawScene?.();
+      this.drawSceneNow();
     };
     map.setupContourBuffers = (objects, ...args) => {
       if (!rendering.disposing && rendering.visible) {
@@ -985,7 +1007,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           objects.map(mesh => transformCcp4MapMesh(mesh, metadata)),
           ...args
         );
-        this.glRef.current?.drawScene?.();
+        this.drawSceneNow();
       }
     };
     // Native managers can schedule redraws during edits and camera movement.
@@ -1098,7 +1120,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
               await representation.redraw();
               if (handle.params.visible === false || representation.visible === false) representation.hide();
             }
-            this.glRef.current?.drawScene?.();
+            this.drawSceneNow();
             return representation;
           });
         return handle.ready;
@@ -1678,7 +1700,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
           renderer.origin = start.origin.map((value, index) => value + (destination.origin[index] - value) * eased);
           renderer.myQuat = new Float32Array(interpolateMoorhenQuaternion(start.quat4, destination.quat4, eased));
           renderer.zoom = start.zoom + (destination.zoom - start.zoom) * eased;
-          renderer.drawScene();
+          this.drawSceneNow();
           if (progress === 1) finish('completed');
           else frameId = requestAnimationFrame(frame);
         } catch (error) {
@@ -1740,7 +1762,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       this.installSceneSettingsGuard();
       this.store.dispatch(setResetClippingFogging(false));
       this.applySceneRanges(true);
-      this.glRef.current?.drawScene?.();
+      this.drawSceneNow();
     }
     return parameters;
   }
@@ -1748,19 +1770,67 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   installSceneSettingsGuard() {
     const renderer = this.glRef.current;
     if (!renderer?.drawScene || this.sceneSettingsGuard?.renderer === renderer) return;
+    if (this.sceneSettingsGuard) {
+      const previous = this.sceneSettingsGuard;
+      previous.scheduler.cancel();
+      previous.picking.dispose();
+      previous.renderer.drawScene = previous.drawScene;
+      document.removeEventListener('zoomChanged', previous.zoomChanged);
+      this.sceneSettingsGuard = null;
+    }
     const drawScene = renderer.drawScene;
     // Native zoom animations set their own slab between frames even when
     // resetClippingFogging is off. Recompute before drawing a changed view.
     // Leave native manual range edits alone until the view/settings change.
+    const scheduler = new NativeSceneDrawScheduler(
+      (...args) => {
+        if (!this.destroyed) this.applySceneRanges();
+        return drawScene.apply(renderer, args);
+      },
+      () =>
+        !!(
+          this.nativeDrawForceDepth ||
+          this.destroyed ||
+          renderer.mouseDown ||
+          renderer.animating ||
+          renderer.renderToTexture ||
+          renderer.save_pixel_data
+        )
+    );
     renderer.drawScene = (...args) => {
-      if (!this.destroyed) this.applySceneRanges();
-      return drawScene.apply(renderer, args);
+      if (scheduler.enabled && this.pendingSceneDraw && !scheduler.immediate()) return;
+      return scheduler.request(...args);
     };
+    const picking = new NativePickingController(renderer, () => {
+      const pending = this.flushPendingSceneDraw();
+      if (pending?.error) throw pending.error;
+      if (!pending && scheduler.pending) this.drawSceneNow();
+    });
     const zoomChanged = () => {
       if (!this.destroyed) this.applySceneRanges(true);
     };
     document.addEventListener('zoomChanged', zoomChanged);
-    this.sceneSettingsGuard = { renderer, drawScene, zoomChanged };
+    this.sceneSettingsGuard = { renderer, drawScene, zoomChanged, scheduler, picking };
+    this.configureNativePerformance();
+  }
+
+  configureNativePerformance(settings = this.nativePerformanceSettings || {}) {
+    if (this.destroyed) return;
+    this.nativePerformanceSettings = settings;
+    if (!this.sceneSettingsGuard && (settings.coalesceNativeDraw || settings.acceleratePicking)) {
+      this.installSceneSettingsGuard();
+    }
+    this.sceneSettingsGuard?.scheduler.configure(settings.coalesceNativeDraw === true, settings.drawMaxWaitMs || 100);
+    this.sceneSettingsGuard?.picking.configure(settings.acceleratePicking === true);
+  }
+
+  drawSceneNow(...args) {
+    this.nativeDrawForceDepth = (this.nativeDrawForceDepth || 0) + 1;
+    try {
+      return this.glRef.current?.drawScene?.(...args);
+    } finally {
+      this.nativeDrawForceDepth--;
+    }
   }
 
   applySceneRanges(publish = false) {
@@ -1806,7 +1876,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     if (scene.width !== width) this.store.dispatch(setWidth(width));
     if (scene.height !== height) this.store.dispatch(setHeight(height));
     this.glRef.current.resize(width, height);
-    this.glRef.current.drawScene?.();
+    this.drawSceneNow();
   }
 
   getRendererElement() {
@@ -1819,6 +1889,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       this.contactWorker.pending.size +
       this.pendingInteractionStyleChanges +
       this.nativeBufferPublications.size +
+      (this.sceneSettingsGuard?.scheduler.pending ? 1 : 0) +
       (this.pendingSceneDraw ? 1 : 0)
     );
   }
@@ -1968,7 +2039,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     } else {
       await component.delete?.();
       this.store.dispatch(component.type === 'map' ? removeMap(component) : removeMolecule(component));
-      if (component.type === 'map') this.glRef.current?.drawScene?.();
+      if (component.type === 'map') this.drawSceneNow();
     }
     for (const [name, object] of this.objectsByName.entries()) {
       if (object === component) this.objectsByName.delete(name);
@@ -2022,10 +2093,11 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
   requestSceneDraw(coalesce = false, maxWaitMs = LHS_BULK_LIGAND_DRAW_MAX_WAIT_MS) {
     if (!coalesce || this.destroyed) {
       this.flushNativeBufferPublications();
-      this.glRef.current?.drawScene?.();
+      this.drawSceneNow();
       return;
     }
     if (!this.pendingSceneDraw) {
+      if (this.sceneSettingsGuard?.scheduler.enabled) this.sceneSettingsGuard.scheduler.cancel();
       let resolve;
       let reject;
       const promise = new Promise((accept, fail) => {
@@ -2052,7 +2124,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     clearTimeout(pending.timer);
     try {
       this.flushNativeBufferPublications();
-      this.glRef.current?.drawScene?.();
+      this.drawSceneNow();
       pending.resolve();
       return {};
     } catch (error) {
@@ -2066,7 +2138,7 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     // the same turn as drawing it, before asynchronous DOM cloning can yield.
     const pendingDraw = this.flushPendingSceneDraw();
     if (pendingDraw?.error) throw pendingDraw.error;
-    if (!pendingDraw) this.glRef.current?.drawScene?.();
+    if (!pendingDraw) this.drawSceneNow();
     const image = this.getRendererElement()?.toDataURL('image/png');
     if (options && typeof options.capture === 'function') {
       return options.capture(image);
@@ -2081,7 +2153,9 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
     // draw synchronously during teardown and cannot schedule another frame.
     this.flushPendingSceneDraw();
     if (this.sceneSettingsGuard) {
-      const { renderer, drawScene, zoomChanged } = this.sceneSettingsGuard;
+      const { renderer, drawScene, zoomChanged, scheduler, picking } = this.sceneSettingsGuard;
+      scheduler.cancel();
+      picking.dispose();
       renderer.drawScene = drawScene;
       document.removeEventListener('zoomChanged', zoomChanged);
       this.sceneSettingsGuard = null;
@@ -2095,7 +2169,11 @@ export class MoorhenViewerAdapter extends ViewerAdapter {
       this.cameraAnimationGuard = null;
     }
     await this.interactionStyleChange.catch(() => undefined);
-    await this.removeAll();
+    try {
+      await this.removeAll();
+    } finally {
+      await this.nativeCommandBatcher?.dispose();
+    }
     this.contactWorker.dispose();
     Array.from(this.pickHandlers.keys()).forEach(handler => this.removePickHandler(handler));
     Array.from(this.clickHandlers.keys()).forEach(handler => this.removeClickHandler(handler));

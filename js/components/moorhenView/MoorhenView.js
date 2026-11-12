@@ -26,6 +26,7 @@ import { useInitialViewerPresentation } from './useInitialViewerPresentation';
 import { useMoorhenInteractionPreferences } from './useMoorhenInteractionPreferences';
 import { NGL_VIEW_DEFAULT_VALUES } from '../nglView/constants';
 import { normaliseMoorhenColour } from '../../viewer/moorhenAdapterUtils';
+import { getBulkLigandSettings, subscribeBulkLigandSettings } from '../../reducers/ngl/bulkLigandSettings';
 
 const MOORHEN_INITIALIZATION_TIMEOUT_MS = 300000;
 let moorhenStorePrepared = false;
@@ -196,6 +197,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
     let handlePick;
     let handleOrientationChanged;
     let resizeObserver;
+    let unsubscribePerformance;
     let resizeFrame = null;
     let observingSize = true;
     const stopObservingSize = () => {
@@ -213,6 +215,9 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
         containerElement: containerRef
       });
       adapter.setParameters({ ...NGL_VIEW_DEFAULT_VALUES, ...viewParamsRef.current });
+      const applyPerformance = () => adapter.configureNativePerformance(getBulkLigandSettings());
+      applyPerformance();
+      unsubscribePerformance = subscribeBulkLigandSettings(applyPerformance);
       registerNglView(div_id, adapter);
       handlePick = (viewerAdapter, pick) => dispatchAppAction(handleNglViewPick(viewerAdapter, pick, getViewerAdapter));
       handleOrientationChanged = () => dispatchAppAction(setOrientationByInteraction(div_id, adapter.getOrientation()));
@@ -234,6 +239,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
       initializationTelemetryRef.current.ready({ phase: 'adapter-registration' });
       setStatus('Moorhen ready');
     } catch (initializationError) {
+      unsubscribePerformance?.();
       stopObservingSize();
       if (adapter) {
         if (handlePick) adapter.removePickHandler(handlePick);
@@ -246,6 +252,7 @@ const MoorhenMainView = memo(({ div_id, dispatchAppAction, onInitializationFailu
     }
 
     return () => {
+      unsubscribePerformance?.();
       stopObservingSize();
       adapter.removePickHandler(handlePick);
       adapter.removeOrientationChangeHandler(handleOrientationChanged);

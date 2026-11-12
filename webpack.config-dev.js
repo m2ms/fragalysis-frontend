@@ -58,7 +58,10 @@ module.exports = {
     rules: [
       {
         test: /node_modules[\\/]moorhen[\\/]moorhen\.js$/,
-        use: [path.resolve(__dirname, 'webpack/moorhenLabelsLoader.js')]
+        use: [
+          path.resolve(__dirname, 'webpack/moorhenLabelsLoader.js'),
+          path.resolve(__dirname, 'webpack/moorhenPickingLoader.js')
+        ]
       },
       {
         test: /contacts[\\/]vendor[\\/]detector\.mjs$/,

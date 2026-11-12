@@ -7,6 +7,7 @@ import { NglContext } from '../nglView/nglProvider';
 import MoorhenViewerAdapter from '../../viewer/MoorhenViewerAdapter';
 import { initializeMoorhenCcp4Module } from '../moorhenProof/moorhenCcp4';
 import MoorhenView from './MoorhenView';
+import { getBulkLigandSettings, setBulkLigandSettings } from '../../reducers/ngl/bulkLigandSettings';
 
 jest.mock('../nglView/nglProvider', () => ({ NglContext: require('react').createContext() }));
 jest.mock('../nglView/redux/dispatchActions', () => ({ handleNglViewPick: jest.fn() }));
@@ -26,6 +27,7 @@ jest.mock('../../viewer/MoorhenViewerAdapter', () => ({
     prepareInitialView: jest.fn(() => true),
     resize: jest.fn(),
     setParameters: jest.fn(),
+    configureNativePerformance: jest.fn(),
     setNglStyleInteractions: jest.fn(async () => {}),
     destroy: jest.fn(async () => {})
   }))
@@ -139,6 +141,15 @@ describe('embedded Moorhen viewport', () => {
       const panel = document.getElementById('major_view');
       const canvas = view.getByTestId('webgl-canvas');
       const adapter = MoorhenViewerAdapter.mock.results[0].value;
+      const preferences = getBulkLigandSettings();
+      expect(adapter.configureNativePerformance).toHaveBeenCalledWith(preferences);
+      await act(async () =>
+        setBulkLigandSettings({ ...preferences, coalesceNativeDraw: true, acceleratePicking: true })
+      );
+      expect(adapter.configureNativePerformance).toHaveBeenLastCalledWith(
+        expect.objectContaining({ coalesceNativeDraw: true, acceleratePicking: true })
+      );
+      await act(async () => setBulkLigandSettings(preferences));
       expect(adapter.setParameters).toHaveBeenCalledWith(expect.objectContaining(initialState.nglReducers.viewParams));
       const interactionsSwitch = view.getByRole('switch', { name: 'NGL style interactions' });
       expect(interactionsSwitch).not.toBeChecked();
@@ -213,6 +224,10 @@ describe('embedded Moorhen viewport', () => {
       observer.notify();
       expect(frames.size).toBe(0);
       expect(adapter.destroy).toHaveBeenCalledTimes(1);
+      const performanceCalls = adapter.configureNativePerformance.mock.calls.length;
+      setBulkLigandSettings({ ...preferences, acceleratePicking: true });
+      expect(adapter.configureNativePerformance).toHaveBeenCalledTimes(performanceCalls);
+      setBulkLigandSettings(preferences);
       expect(context.unregisterNglView).toHaveBeenCalledWith('major_view');
     } finally {
       view?.unmount();

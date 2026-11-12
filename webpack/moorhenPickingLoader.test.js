@@ -90,9 +90,12 @@ describe('installed native picking build bridge', () => {
     expect(() => parse(transformed)).not.toThrow();
     expect(fs.readFileSync(file, 'utf8')).toBe(bundle);
     [require('../webpack.config'), require('../webpack.config-dev')].forEach(config => {
-      expect(config.module.rules.find(rule => rule.test?.test(file)).use).toContain(
+      expect(config.module.rules.find(rule => rule.test?.test(file)).use).toStrictEqual([
+        require.resolve('./moorhenModelsLoader'),
+        require.resolve('./moorhenBuffersLoader'),
+        require.resolve('./moorhenLabelsLoader'),
         require.resolve('./moorhenPickingLoader')
-      );
+      ]);
     });
     expect(() => transformNativePicking('class Other {}')).toThrow('expected one');
   });

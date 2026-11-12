@@ -59,6 +59,8 @@ module.exports = {
       {
         test: /node_modules[\\/]moorhen[\\/]moorhen\.js$/,
         use: [
+          path.resolve(__dirname, 'webpack/moorhenModelsLoader.js'),
+          path.resolve(__dirname, 'webpack/moorhenBuffersLoader.js'),
           path.resolve(__dirname, 'webpack/moorhenLabelsLoader.js'),
           path.resolve(__dirname, 'webpack/moorhenPickingLoader.js')
         ]

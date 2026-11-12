@@ -48,8 +48,9 @@ canvas leave cancel stale samples. Click picking remains synchronous and flushes
 
 `webpack/moorhenPickingLoader.js` patches the installed JavaScript at build time. It checks the package version
 (`0.22.7`) and exactly one native atom loop and dirty-buffer builder, failing for an unexpected source shape.
-Production and development register the new picking bridge. The baseline's earlier Models and buffer-publication
-bridges remain production-only; this branch does not change that existing configuration difference.
+Production and development now register all four bridges in the same order: Models, buffer publication, labels,
+and picking. The Models and buffer bridges were originally production-only; the development configuration was
+subsequently aligned. Restart `yarn start` after changing loader configuration.
 
 ## Worker transport
 
@@ -107,3 +108,18 @@ The small browser runs were functional checks while the automated suite was runn
 a controlled performance comparison. No new paired 930-ligand benchmark, prolonged memory/FPS measurement, full RHS
 transfer matrix, snapshot save/restore or smooth same-project snapshot transition was performed in this task.
 Snapshot and lifecycle contracts are covered by the automated suite, with those broader live workflows still unverified.
+
+### Development loader parity
+
+`webpack.config-dev.js` now uses the same four loaders, in the same order, as production. The installed-bundle
+composition test asserts the complete ordered list for both configurations to prevent configuration drift.
+
+- Four loader suites / 15 tests passed; targeted ESLint, whitespace, asset integrity and backend stats checks passed.
+- Restarted `yarn start` on port 3030; the development bundle compiled successfully. Django loaded
+  `main-88bd71579ca71a806eb1.js` from that server and initialized Moorhen.
+- With Combined + native viewer experiments enabled, the initial 19-ligand group loaded at 19/19, removed at 0/0,
+  and reloaded at 19/19 with visible geometry and completed action timers. The temporary verification tab was closed.
+- The development console reported one React missing-key warning for component `PM`; no ligand-loading errors
+  were reported. This check does not establish parity of development and production performance or exercise HMR
+  state preservation, full 930-ligand timing, snapshot transitions or the full transfer/memory audit.
+- Local evidence: `moorhen-development-loaders-live.json`, `moorhen-development-loaders.png`, and test/start logs.

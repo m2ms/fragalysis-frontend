@@ -100,6 +100,16 @@ describe('ligand loading progress', () => {
       </Provider>
     );
     const counter = screen.getByTestId('ligand-loading-progress');
+    const buildMode = screen.getByTestId('build-mode-indicator');
+    expect(buildMode).toHaveTextContent('DEV');
+    expect(buildMode).toHaveAttribute('aria-label', 'Build mode: development');
+    expect(
+      screen.getByTestId('ligand-action-timer').compareDocumentPosition(buildMode) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      buildMode.compareDocumentPosition(screen.getByRole('button', { name: 'Viewer settings' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(
       screen
         .getByRole('button', { name: 'Ligand loading settings' })

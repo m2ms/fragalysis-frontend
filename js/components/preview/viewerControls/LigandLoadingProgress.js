@@ -7,6 +7,11 @@ import RichTooltip from '../../tooltip/RichTooltip';
 import { BulkLigandSettingsDialog } from './BulkLigandSettingsDialog';
 import { LigandActionTimer } from './LigandActionTimer';
 
+// Webpack replaces NODE_ENV, so this describes the loaded bundle even if
+// webpack-stats.json is changed by another build after the page has loaded.
+const IS_PRODUCTION_BUILD = process.env.NODE_ENV === 'production';
+const BUILD_MODE = IS_PRODUCTION_BUILD ? 'production' : 'development';
+
 // Count current hit-ligand intent, not cumulative downloads or queued removals.
 // Native completion needs both its queue acknowledgement and matching metadata.
 export const getLigandLoadingProgress = (intents = [], coordinates = [], observations = [], objects = {}) => {
@@ -72,6 +77,27 @@ export const LigandLoadingProgress = memo(() => {
         </IconButton>
       </RichTooltip>
       <LigandActionTimer />
+      <Typography
+        component="span"
+        variant="caption"
+        aria-label={`Build mode: ${BUILD_MODE}`}
+        title={`${IS_PRODUCTION_BUILD ? 'Production' : 'Development'} build`}
+        data-testid="build-mode-indicator"
+        data-build-mode={BUILD_MODE}
+        sx={{
+          flexShrink: 0,
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+          color: IS_PRODUCTION_BUILD ? 'success.main' : 'warning.dark',
+          border: '1px solid',
+          borderColor: 'currentColor',
+          borderRadius: 1,
+          px: 0.5,
+          lineHeight: 1.5
+        }}
+      >
+        {IS_PRODUCTION_BUILD ? 'PROD' : 'DEV'}
+      </Typography>
       {settingsOpen && <BulkLigandSettingsDialog onClose={() => setSettingsOpen(false)} />}
     </Box>
   );

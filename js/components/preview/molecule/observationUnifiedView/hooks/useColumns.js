@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getObservationColumns } from './observationColumns';
 import { useSelector } from 'react-redux';
 import { LHS_OBSERVATION_VIEW_CONFIG } from '../viewConfigs';

@@ -6,6 +6,7 @@ import { useFilters } from './useFilters';
 import { buildObservationViewConfig, LHS_OBSERVATION_VIEW_CONFIG } from '../viewConfigs';
 
 jest.mock('@loschmidt/jsme-react', () => ({ Jsme: () => null }));
+jest.mock('../../../../../utils/djangoContext', () => ({ DJANGO_CONTEXT: { pk: null } }));
 
 describe('displayed-observation filtering cost', () => {
   it('skips the displayed-hit override when off and checks once per pose when on', () => {

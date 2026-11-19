@@ -37,7 +37,10 @@ jest.mock('./molecule/poseListRHS', () => ({
     </div>
   )
 }));
-jest.mock('./plotly/plotlyView', () => ({ PlotlyView: () => <div data-testid="graphs" /> }));
+jest.mock('./plotly/LazyPlotlyView', () => ({
+  __esModule: true,
+  default: () => <div data-testid="graphs" />
+}));
 jest.mock('./viewerControls', () => ({ ViewerControls: () => null }));
 
 const setup = () => {
